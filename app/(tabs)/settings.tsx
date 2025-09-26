@@ -1,145 +1,119 @@
 import React from 'react';
-import { View, Text, ScrollView, Switch, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { Screen } from '../../src/components/Screen';
-import { Card } from '../../src/components/Card';
-import { ListItem } from '../../src/components/ListItem';
-import { Button } from '../../src/components/Button';
-import { useAuth } from '../../src/hooks/useAuth';
-import { useSettings } from '../../src/hooks/useSettings';
+import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
+  User, 
   Bell, 
   Globe, 
   Shield, 
-  Download, 
+  HelpCircle, 
   LogOut,
   ChevronRight 
 } from 'lucide-react-native';
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation();
-  const { logout } = useAuth();
-  const { settings, updateSetting } = useSettings();
+  const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('settings.logoutTitle'),
-      t('settings.logoutMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { 
-          text: t('settings.logout'),
-          style: 'destructive',
-          onPress: logout
-        }
-      ]
-    );
-  };
-
-  const changeLanguage = () => {
-    const languages = [
-      { code: 'ko', name: '한국어' },
-      { code: 'en', name: 'English' },
-      { code: 'ja', name: '日本語' }
-    ];
-
-    Alert.alert(
-      t('settings.language'),
-      '',
-      languages.map(lang => ({
-        text: lang.name,
-        onPress: () => {
-          i18n.changeLanguage(lang.code);
-          updateSetting('language', lang.code);
-        }
-      })).concat([
-        { text: t('common.cancel'), style: 'cancel' }
-      ])
-    );
-  };
+  const settingsItems = [
+    {
+      icon: <User size={20} color="#64748b" />,
+      title: '프로필 설정',
+      subtitle: '개인정보 및 프로필 관리',
+      hasArrow: true,
+    },
+    {
+      icon: <Bell size={20} color="#64748b" />,
+      title: '알림 설정',
+      subtitle: '푸시 알림 및 이메일 설정',
+      hasSwitch: true,
+      switchValue: notificationsEnabled,
+      onSwitchChange: setNotificationsEnabled,
+    },
+    {
+      icon: <Globe size={20} color="#64748b" />,
+      title: '언어 설정',
+      subtitle: '한국어',
+      hasArrow: true,
+    },
+    {
+      icon: <Shield size={20} color="#64748b" />,
+      title: '개인정보 보호',
+      subtitle: '데이터 및 개인정보 설정',
+      hasArrow: true,
+    },
+    {
+      icon: <HelpCircle size={20} color="#64748b" />,
+      title: '도움말 및 지원',
+      subtitle: '자주 묻는 질문 및 고객지원',
+      hasArrow: true,
+    },
+  ];
 
   return (
-    <Screen>
+    <SafeAreaView className="flex-1 bg-gray-50">
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="px-6 py-8">
-          <Text className="text-2xl font-bold text-secondary-800 mb-6">
-            {t('settings.title')}
-          </Text>
+        {/* Header */}
+        <View className="bg-white px-6 py-4 border-b border-gray-200">
+          <Text className="text-2xl font-bold text-gray-800">설정</Text>
+          <Text className="text-gray-600 mt-1">앱 설정 및 계정 관리</Text>
+        </View>
 
-          <Card className="mb-6">
-            <Text className="text-lg font-semibold text-secondary-800 mb-4 px-6 pt-4">
-              {t('settings.notifications')}
-            </Text>
-            <ListItem
-              icon={<Bell size={20} color="#64748b" />}
-              title={t('settings.pushNotifications')}
-              subtitle={t('settings.pushNotificationsDesc')}
-              rightComponent={
+        {/* Profile Section */}
+        <View className="bg-white mt-4 mx-4 rounded-lg shadow-sm p-4">
+          <View className="flex-row items-center">
+            <View className="w-16 h-16 bg-primary-100 rounded-full items-center justify-center mr-4">
+              <Text className="text-primary-600 text-xl font-bold">김</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-lg font-semibold text-gray-800">김다이버</Text>
+              <Text className="text-gray-600">diver@example.com</Text>
+              <Text className="text-primary-600 text-sm mt-1">프로필 편집</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Settings Items */}
+        <View className="bg-white mt-4 mx-4 rounded-lg shadow-sm">
+          {settingsItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              className={`flex-row items-center p-4 ${
+                index !== settingsItems.length - 1 ? 'border-b border-gray-100' : ''
+              }`}
+            >
+              <View className="mr-4">{item.icon}</View>
+              <View className="flex-1">
+                <Text className="text-gray-800 font-medium">{item.title}</Text>
+                <Text className="text-gray-600 text-sm mt-1">{item.subtitle}</Text>
+              </View>
+              {item.hasSwitch && (
                 <Switch
-                  value={settings?.pushNotifications ?? true}
-                  onValueChange={(value) => updateSetting('pushNotifications', value)}
+                  value={item.switchValue}
+                  onValueChange={item.onSwitchChange}
                   trackColor={{ false: '#e2e8f0', true: '#0ea5e9' }}
                   thumbColor="#ffffff"
                 />
-              }
-            />
-          </Card>
+              )}
+              {item.hasArrow && <ChevronRight size={20} color="#64748b" />}
+            </TouchableOpacity>
+          ))}
+        </View>
 
-          <Card className="mb-6">
-            <Text className="text-lg font-semibold text-secondary-800 mb-4 px-6 pt-4">
-              {t('settings.preferences')}
-            </Text>
-            <ListItem
-              icon={<Globe size={20} color="#64748b" />}
-              title={t('settings.language')}
-              subtitle={t('settings.languageDesc')}
-              rightComponent={<ChevronRight size={20} color="#64748b" />}
-              onPress={changeLanguage}
-            />
-          </Card>
+        {/* App Info */}
+        <View className="bg-white mt-4 mx-4 rounded-lg shadow-sm p-4">
+          <Text className="text-gray-800 font-medium mb-2">앱 정보</Text>
+          <Text className="text-gray-600 text-sm">버전 1.0.0</Text>
+          <Text className="text-gray-600 text-sm">© 2024 Divergram</Text>
+        </View>
 
-          <Card className="mb-6">
-            <Text className="text-lg font-semibold text-secondary-800 mb-4 px-6 pt-4">
-              {t('settings.permissions')}
-            </Text>
-            <ListItem
-              icon={<Shield size={20} color="#64748b" />}
-              title={t('settings.permissions')}
-              subtitle={t('settings.permissionsDesc')}
-              rightComponent={<ChevronRight size={20} color="#64748b" />}
-              onPress={() => router.push('/settings/permissions')}
-            />
-          </Card>
-
-          <Card className="mb-6">
-            <Text className="text-lg font-semibold text-secondary-800 mb-4 px-6 pt-4">
-              {t('settings.data')}
-            </Text>
-            <ListItem
-              icon={<Download size={20} color="#64748b" />}
-              title={t('settings.exportData')}
-              subtitle={t('settings.exportDataDesc')}
-              rightComponent={<ChevronRight size={20} color="#64748b" />}
-              onPress={() => {/* TODO: Implement data export */}}
-            />
-          </Card>
-
-          <View className="mt-8">
-            <Button
-              onPress={handleLogout}
-              variant="outline"
-              size="lg"
-              className="w-full flex-row items-center border-danger-300"
-            >
-              <LogOut size={20} color="#ef4444" className="mr-3" />
-              <Text className="text-danger-500 font-semibold">
-                {t('settings.logout')}
-              </Text>
-            </Button>
-          </View>
+        {/* Logout Button */}
+        <View className="mx-4 mt-6 mb-8">
+          <TouchableOpacity className="bg-white rounded-lg shadow-sm p-4 flex-row items-center justify-center border border-red-200">
+            <LogOut size={20} color="#ef4444" />
+            <Text className="text-red-500 font-medium ml-2">로그아웃</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-    </Screen>
+    </SafeAreaView>
   );
 }

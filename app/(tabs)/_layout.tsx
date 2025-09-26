@@ -1,17 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { 
-  Home, 
-  BookOpen, 
-  Bluetooth, 
-  User, 
-  Settings 
-} from 'lucide-react-native';
+import { Home, BookOpen, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
-  const { t } = useTranslation();
-
   return (
     <Tabs
       screenOptions={{
@@ -26,9 +17,9 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="feed"
+        name="index"
         options={{
-          title: t('tabs.feed'),
+          title: '홈',
           tabBarIcon: ({ size, color }) => (
             <Home size={size} color={color} />
           ),
@@ -37,34 +28,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="logs"
         options={{
-          title: t('tabs.logs'),
+          title: '다이빙 로그',
           tabBarIcon: ({ size, color }) => (
             <BookOpen size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="devices"
-        options={{
-          title: t('tabs.devices'),
-          tabBarIcon: ({ size, color }) => (
-            <Bluetooth size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: t('tabs.profile'),
-          tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{
-          title: t('tabs.settings'),
+          title: '설정',
           tabBarIcon: ({ size, color }) => (
             <Settings size={size} color={color} />
           ),
