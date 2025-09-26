@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'com.divergram.app',
     buildNumber: '1',
-    deploymentTarget: '13.4',
+    deploymentTarget: '15.1',
     infoPlist: {
       NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
       NSLocationAlwaysAndWhenInUseUsageDescription: '백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.',
@@ -83,7 +83,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           buildToolsVersion: '34.0.0'
         },
         ios: {
-          deploymentTarget: '13.4'
+          deploymentTarget: '15.1'
         }
       }
     ]

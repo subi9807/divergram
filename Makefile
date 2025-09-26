@@ -6,7 +6,7 @@ ENV ?= development
 # Development commands
 dev:
 	@echo "🚀 Starting Divergram development server..."
-	EXPO_NO_TELEMETRY=1 npx expo start --port 8081 --tunnel --non-interactive --clear
+	CI=1 EXPO_NO_TELEMETRY=1 npx expo start --port 8081 --tunnel --clear
 
 # Linting
 lint:
