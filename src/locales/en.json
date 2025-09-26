@@ -1,0 +1,142 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "next": "Next",
+    "previous": "Previous",
+    "done": "Done"
+  },
+  "welcome": {
+    "subtitle": "Record your diving experiences\nand share with the community"
+  },
+  "auth": {
+    "welcome": "Welcome",
+    "loginSubtitle": "Sign in to your account",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "continueWithFacebook": "Continue with Facebook",
+    "continueWithKakao": "Continue with Kakao",
+    "continueWithNaver": "Continue with Naver",
+    "continueWithEmail": "Continue with Email",
+    "or": "or",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign In",
+    "backToSocial": "Back to social login",
+    "error": "Error",
+    "loginFailed": "Login failed",
+    "fillAllFields": "Please fill all fields",
+    "processing": "Processing...",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+  "privacy": {
+    "content1": "Divergram takes user privacy seriously.",
+    "content2": "Collected information is used only for service provision and is not shared with third parties.",
+    "content3": "Please refer to the privacy policy on our website for details."
+  },
+  "terms": {
+    "content1": "These terms govern the use of Divergram services.",
+    "content2": "By using the service, you agree to these terms.",
+    "content3": "Please refer to the terms of service on our website for details."
+  },
+  "tabs": {
+    "feed": "Feed",
+    "logs": "Dive Logs",
+    "devices": "Devices",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "feed": {
+    "error": "Unable to load feed",
+    "errorSubtitle": "Please check your network and try again",
+    "empty": "No posts yet",
+    "emptySubtitle": "Create your first dive log!"
+  },
+  "logs": {
+    "title": "Dive Logs",
+    "subtitle": "My diving records",
+    "create": "Create",
+    "createFirst": "Create first log",
+    "error": "Unable to load logs",
+    "errorSubtitle": "Please check your network and try again",
+    "empty": "No dive logs yet",
+    "emptySubtitle": "Create your first dive log!"
+  },
+  "devices": {
+    "title": "Dive Devices",
+    "subtitle": "BLE diving equipment connection",
+    "nearby": "Nearby Devices",
+    "startScan": "Start Scan",
+    "stopScan": "Stop Scan",
+    "liveData": "Live Data",
+    "empty": "No devices nearby",
+    "emptySubtitle": "Turn on your diving equipment and start scanning",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "connected": "Connected"
+  },
+  "profile": {
+    "unnamed": "Unnamed",
+    "edit": "Edit Profile",
+    "about": "About",
+    "noBio": "No bio yet",
+    "stats": {
+      "totalDives": "Total Dives",
+      "maxDepth": "Max Depth",
+      "totalTime": "Total Time"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": "Notifications",
+    "pushNotifications": "Push Notifications",
+    "pushNotificationsDesc": "Receive notifications for new activities",
+    "preferences": "Preferences",
+    "language": "Language",
+    "languageDesc": "Change app language",
+    "permissions": "Permissions",
+    "permissionsDesc": "Manage app permissions",
+    "data": "Data",
+    "exportData": "Export Data",
+    "exportDataDesc": "Save your data to a file",
+    "logout": "Sign Out",
+    "logoutTitle": "Sign Out",
+    "logoutMessage": "Are you sure you want to sign out?"
+  },
+  "permissions": {
+    "grant": "Grant Permission",
+    "settingsTitle": "Go to Settings",
+    "settingsMessage": "Please allow permission in settings",
+    "openSettings": "Open Settings",
+    "location": {
+      "title": "Location Permission Required",
+      "description": "Location permission is needed to record location in dive logs"
+    },
+    "bluetooth": {
+      "title": "Bluetooth Permission Required",
+      "description": "Bluetooth permission is needed to connect to diving equipment"
+    },
+    "notifications": {
+      "title": "Notification Permission Required",
+      "description": "Permission is needed to receive important notifications"
+    }
+  },
+  "ble": {
+    "permissionDenied": "Permission Denied",
+    "permissionDeniedMessage": "Bluetooth permission is required",
+    "connected": "Connected",
+    "connectedMessage": "Connected to {{name}}",
+    "connectionFailed": "Connection Failed",
+    "connectionFailedMessage": "Failed to connect to device",
+    "disconnected": "Disconnected",
+    "disconnectedMessage": "Device disconnected"
+  }
+}
