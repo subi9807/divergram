@@ -1,22 +1,16 @@
 import { Redirect } from 'expo-router';
-import { useAuth } from '../src/hooks/useAuth';
-import { LoadingOverlay } from '../src/components/LoadingOverlay';
-import { View } from 'react-native';
+import { Platform } from 'react-native';
+import { WebViewScreen } from '../src/components/WebViewScreen';
 
 export default function Index() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <View className="flex-1">
-        <LoadingOverlay visible={true} />
-      </View>
-    );
+  // 웹 플랫폼에서는 divergram.com으로 리다이렉트
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://divergram.com';
+    }
+    return null;
   }
 
-  if (user) {
-    return <Redirect href="/(tabs)/feed" />;
-  }
-
-  return <Redirect href="/(auth)/welcome" />;
+  // 모바일에서는 웹뷰로 divergram.com 표시
+  return <WebViewScreen />;
 }
