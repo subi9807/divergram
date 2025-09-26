@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Waves, MapPin, Clock, Users } from 'lucide-react-native';
+import { Waves, MapPin, Clock, Users, BookOpen } from 'lucide-react-native';
 
 export default function HomeScreen() {
+  // 웹에서는 SafeAreaView 대신 일반 View 사용
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <Container className="flex-1 bg-gray-50" style={Platform.OS === 'web' ? { minHeight: '100vh' } : undefined}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="bg-primary-500 px-6 py-8">

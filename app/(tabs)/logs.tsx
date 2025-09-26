@@ -1,9 +1,12 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, MapPin, Clock, Thermometer } from 'lucide-react-native';
 
 export default function LogsScreen() {
+  // 웹에서는 SafeAreaView 대신 일반 View 사용
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+
   const dummyLogs = [
     {
       id: 1,
@@ -35,7 +38,7 @@ export default function LogsScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <Container className="flex-1 bg-gray-50" style={Platform.OS === 'web' ? { minHeight: '100vh' } : undefined}>
       <View className="flex-1">
         {/* Header */}
         <View className="bg-white px-6 py-4 border-b border-gray-200">

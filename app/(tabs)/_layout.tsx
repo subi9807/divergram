@@ -1,5 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
 import { Home, BookOpen, Settings } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -13,6 +14,12 @@ export default function TabLayout() {
           backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#e2e8f0',
+          // 웹에서 탭바 높이 조정
+          height: Platform.OS === 'web' ? 60 : undefined,
+          paddingBottom: Platform.OS === 'web' ? 8 : undefined,
+        },
+        tabBarLabelStyle: {
+          fontSize: Platform.OS === 'web' ? 12 : undefined,
         },
       }}
     >

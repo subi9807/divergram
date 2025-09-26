@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   User, 
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react-native';
 
 export default function SettingsScreen() {
+  // 웹에서는 SafeAreaView 대신 일반 View 사용
+  const Container = Platform.OS === 'web' ? View : SafeAreaView;
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
   const settingsItems = [
@@ -50,7 +52,7 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <Container className="flex-1 bg-gray-50" style={Platform.OS === 'web' ? { minHeight: '100vh' } : undefined}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="bg-white px-6 py-4 border-b border-gray-200">

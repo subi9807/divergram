@@ -19,19 +19,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.divergram.app',
-    associatedDomains: [
-      'applinks:divergram.com',
-      'applinks:*.divergram.com'
-    ],
+    buildNumber: '1',
+    deploymentTarget: '13.4',
     infoPlist: {
       NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
       NSLocationAlwaysAndWhenInUseUsageDescription: '백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.',
       NSBluetoothAlwaysUsageDescription: '다이빙 장비와의 연결을 위해 블루투스 권한이 필요합니다.',
       NSBluetoothPeripheralUsageDescription: '다이빙 디바이스와의 데이터 교환을 위해 블루투스 권한이 필요합니다.',
-      NSUserTrackingUsageDescription: '앱 개선을 위한 사용 패턴 분석에 사용됩니다.',
       CFBundleURLTypes: [
         {
-          CFBundleURLName: 'divergram-auth',
+          CFBundleURLName: 'divergram-app',
           CFBundleURLSchemes: ['divergram']
         }
       ]
@@ -43,6 +40,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#0EA5E9'
     },
     package: 'com.divergram.app',
+    versionCode: 1,
+    compileSdkVersion: 34,
+    targetSdkVersion: 34,
     permissions: [
       'ACCESS_FINE_LOCATION',
       'ACCESS_COARSE_LOCATION',
@@ -55,43 +55,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'POST_NOTIFICATIONS',
       'INTERNET',
       'ACCESS_NETWORK_STATE'
-    ],
-    intentFilters: [
-      {
-        action: 'VIEW',
-        autoVerify: true,
-        data: [
-          {
-            scheme: 'https',
-            host: 'divergram.com',
-            pathPrefix: '/auth'
-          },
-          {
-            scheme: 'divergram'
-          }
-        ],
-        category: ['BROWSABLE', 'DEFAULT']
-      }
     ]
   },
   web: {
     bundler: 'metro',
     output: 'static',
-    favicon: './assets/images/favicon.png'
+    favicon: './assets/images/favicon.png',
+    name: 'Divergram',
+    shortName: 'Divergram',
+    description: '다이빙 커뮤니티 앱',
+    themeColor: '#0EA5E9',
+    backgroundColor: '#ffffff',
+    display: 'standalone',
+    orientation: 'portrait',
+    startUrl: '/',
+    lang: 'ko'
   },
   plugins: [
     'expo-router',
     'expo-font',
-    'expo-notifications',
-    'expo-location',
-    [
-      'react-native-ble-plx',
-      {
-        isBackgroundEnabled: true,
-        modes: ['peripheral', 'central'],
-        bluetoothAlwaysPermission: '다이빙 장비와의 연결을 위해 블루투스 권한이 필요합니다.'
-      }
-    ],
     [
       'expo-build-properties',
       {
@@ -101,7 +83,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           buildToolsVersion: '34.0.0'
         },
         ios: {
-          deploymentTarget: '15.1'
+          deploymentTarget: '13.4'
         }
       }
     ]
