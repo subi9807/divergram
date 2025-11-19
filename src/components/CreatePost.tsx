@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Upload, Waves, Film, Trash2 } from 'lucide-react';
+import { X, Upload, Waves, Film, Trash2, GripVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import MentionInput from './MentionInput';
@@ -17,6 +17,8 @@ interface FilePreview {
 
 export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) {
   const [files, setFiles] = useState<FilePreview[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [caption, setCaption] = useState('');
   const [diveType, setDiveType] = useState<'scuba' | 'freediving'>('scuba');
   const [diveDate, setDiveDate] = useState('');
@@ -73,6 +75,46 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
   const handleRemoveFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newFiles = [...files];
+    const draggedFile = newFiles[draggedIndex];
+
+    newFiles.splice(draggedIndex, 1);
+    newFiles.splice(dropIndex, 0, draggedFile);
+
+    setFiles(newFiles);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const uploadFiles = async (): Promise<Array<{ url: string; type: 'image' | 'video' }> | null> => {
@@ -193,31 +235,67 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               사진 또는 영상 업로드 * (최대 10개)
             </label>
+            {files.length > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                드래그하여 순서를 변경할 수 있습니다. 첫 번째 미디어가 메인 이미지가 됩니다.
+              </p>
+            )}
 
             <div className="grid grid-cols-3 gap-3 mb-3">
               {files.map((filePreview, index) => (
-                <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-300 dark:border-gray-700">
+                <div
+                  key={index}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-move ${
+                    draggedIndex === index
+                      ? 'opacity-40 border-blue-500 scale-95'
+                      : dragOverIndex === index
+                      ? 'border-blue-500 scale-105 shadow-lg'
+                      : 'border-gray-300 dark:border-gray-700'
+                  }`}
+                >
                   {filePreview.type === 'video' ? (
                     <video
                       src={filePreview.previewUrl}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                     />
                   ) : (
                     <img
                       src={filePreview.previewUrl}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                     />
                   )}
+
+                  <div className="absolute top-1 left-1 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow-md">
+                    {index + 1}
+                  </div>
+
+                  <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-gray-900 bg-opacity-70 text-white p-1 rounded cursor-move">
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+
+                  {index === 0 && (
+                    <div className="absolute bottom-1 left-1 bg-green-500 text-white text-xs px-2 py-0.5 rounded font-semibold shadow-md">
+                      메인
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => handleRemoveFile(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors shadow-md z-10"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
+
                   {filePreview.type === 'video' && (
-                    <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">
+                    <div className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-2 py-0.5 rounded flex items-center gap-1">
                       <Film className="h-3 w-3" />
                       VIDEO
                     </div>
@@ -267,7 +345,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               다이빙 타입 *
             </label>
             <div className="flex gap-4">
@@ -279,7 +357,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   onChange={(e) => setDiveType(e.target.value as 'scuba')}
                   className="mr-2"
                 />
-                <span className="text-sm">스쿠버다이빙</span>
+                <span className="text-sm dark:text-gray-300">스쿠버다이빙</span>
               </label>
               <label className="flex items-center cursor-pointer">
                 <input
@@ -289,26 +367,26 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   onChange={(e) => setDiveType(e.target.value as 'freediving')}
                   className="mr-2"
                 />
-                <span className="text-sm">프리다이빙</span>
+                <span className="text-sm dark:text-gray-300">프리다이빙</span>
               </label>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 다이빙 날짜
               </label>
               <input
                 type="date"
                 value={diveDate}
                 onChange={(e) => setDiveDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 최대 수심 (m)
               </label>
               <input
@@ -317,12 +395,12 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={maxDepth}
                 onChange={(e) => setMaxDepth(e.target.value)}
                 placeholder="예: 18.5"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 수온 (°C)
               </label>
               <input
@@ -331,13 +409,13 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={waterTemperature}
                 onChange={(e) => setWaterTemperature(e.target.value)}
                 placeholder="예: 24.0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {diveType === 'scuba' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   다이빙 시간 (분)
                 </label>
                 <input
@@ -345,13 +423,13 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   value={diveDuration}
                   onChange={(e) => setDiveDuration(e.target.value)}
                   placeholder="예: 45"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 가시거리 (m)
               </label>
               <input
@@ -360,13 +438,13 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value)}
                 placeholder="예: 15.0"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               다이빙 사이트
             </label>
             <input
@@ -374,12 +452,12 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={diveSite}
               onChange={(e) => setDiveSite(e.target.value)}
               placeholder="예: 제주 문섬"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               위치
             </label>
             <input
@@ -387,24 +465,24 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="예: 제주도"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               버디
             </label>
             <MentionInput
               value={buddyName}
               onChange={setBuddyName}
               placeholder="@를 입력하여 버디 태그하기"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               다이빙 노트
             </label>
             <MentionInput
@@ -421,7 +499,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               type="button"
               onClick={onClose}
               disabled={loading || uploading}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 dark:text-white rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               취소
             </button>
