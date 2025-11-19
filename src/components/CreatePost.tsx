@@ -123,23 +123,27 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
     setUploading(true);
     try {
       const uploadedFiles: Array<{ url: string; type: 'image' | 'video' }> = [];
+      const timestamp = Date.now();
 
-      for (const filePreview of files) {
+      for (let i = 0; i < files.length; i++) {
+        const filePreview = files[i];
         const fileExt = filePreview.file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`;
-        const bucketName = filePreview.type === 'video' ? 'videos' : 'diving-media';
+        const fileName = `${user.id}/${timestamp}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from(bucketName)
+          .from('diving-media')
           .upload(fileName, filePreview.file, {
             cacheControl: '3600',
             upsert: false
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
 
         const { data: { publicUrl } } = supabase.storage
-          .from(bucketName)
+          .from('diving-media')
           .getPublicUrl(fileName);
 
         uploadedFiles.push({ url: publicUrl, type: filePreview.type });

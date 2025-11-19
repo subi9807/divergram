@@ -62,20 +62,24 @@ export default function EditPostModal({
 
     try {
       const uploadedMediaUrls: { url: string; type: 'image' | 'video' }[] = [];
+      const timestamp = Date.now();
 
-      for (const file of newFiles) {
+      for (let i = 0; i < newFiles.length; i++) {
+        const file = newFiles[i];
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}_${Math.random()}.${fileExt}`;
-        const bucketName = file.type.startsWith('video/') ? 'videos' : 'diving-media';
+        const fileName = `${user.id}/${timestamp}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(bucketName)
+          .from('diving-media')
           .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
 
         const { data: urlData } = supabase.storage
-          .from(bucketName)
+          .from('diving-media')
           .getPublicUrl(uploadData.path);
 
         uploadedMediaUrls.push({
@@ -88,12 +92,14 @@ export default function EditPostModal({
         const media = post.post_media?.find(m => m.id === mediaId);
         if (media) {
           const urlParts = media.media_url.split('/');
-          const bucketName = media.media_type === 'video' ? 'videos' : 'diving-media';
-          const filePath = urlParts.slice(urlParts.indexOf(bucketName) + 1).join('/');
+          const bucketIndex = urlParts.indexOf('diving-media');
+          if (bucketIndex !== -1) {
+            const filePath = urlParts.slice(bucketIndex + 1).join('/');
 
-          await supabase.storage
-            .from(bucketName)
-            .remove([filePath]);
+            await supabase.storage
+              .from('diving-media')
+              .remove([filePath]);
+          }
 
           await supabase
             .from('post_media')
