@@ -127,6 +127,22 @@ npm run build
 npm run preview
 ```
 
+### Firebase 배포
+
+Firebase Hosting에 배포:
+
+```bash
+npm run firebase:deploy
+```
+
+미리보기 채널에 배포:
+
+```bash
+npm run firebase:preview
+```
+
+자세한 배포 가이드는 [FIREBASE_DEPLOYMENT.md](./FIREBASE_DEPLOYMENT.md)를 참고하세요.
+
 ## 프로젝트 구조
 
 ```
