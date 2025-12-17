@@ -38,6 +38,24 @@ jobs:
         run: |
           tar -czf dist.tar.gz dist
 
+      # ✅ [추가] 업로드 전에 서버에 target 디렉토리 생성/권한 정리
+      # - scp-action은 target 디렉토리가 "미리 존재"해야 안정적으로 동작합니다.
+      # - /var/www 아래는 권한이 빡빡한 경우가 많아, sudo + 소유권 조정으로 예방합니다.
+      - name: Prepare remote directories
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22 # ✅ [추가] 명시(기본값이 22여도 로그/가독성 측면에서 추천)
+          script: |
+            set -e
+            sudo mkdir -p /var/www/divergram/tmp
+            sudo mkdir -p /var/www/divergram/releases
+            # ✅ [추가] 업로드/압축해제 단계에서 권한 문제 방지
+            # 배포 계정이 파일을 쓰고, 이후 www-data로 일괄 변경하는 흐름에 맞춥니다.
+            sudo chown -R $USER:$USER /var/www/divergram/tmp /var/www/divergram/releases
+
       # 6. EC2로 파일 전송
       - name: Upload build to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -45,8 +63,10 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22 # ✅ [추가] 명시
           source: dist.tar.gz
           target: /var/www/divergram/tmp
+          overwrite: true # ✅ [추가] 이전 파일이 있어도 덮어쓰기(재배포 안정성)
 
       # 7. EC2에서 배포 (symlink 교체)
       - name: Deploy on EC2
@@ -55,6 +75,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22 # ✅ [추가] 명시
           script: |
             set -e
 
@@ -70,14 +91,14 @@ jobs:
             mkdir -p $TMP_DIR
 
             # 새 릴리즈 디렉토리 생성
-            mkdir $RELEASE_DIR/$TIMESTAMP
+            mkdir -p $RELEASE_DIR/$TIMESTAMP # ✅ [변경] -p로 안전하게
             tar -xzf $TMP_DIR/dist.tar.gz -C $RELEASE_DIR/$TIMESTAMP
 
             # 심볼릭 링크 교체
             ln -sfn $RELEASE_DIR/$TIMESTAMP/dist $CURRENT_LINK
 
-            # 권한 정리
-            chown -R www-data:www-data $APP_DIR
+            # ✅ [변경] /var/www 아래 권한 문제 방지: sudo로 일괄 정리
+            sudo chown -R www-data:www-data $APP_DIR
 
             # Nginx reload
             sudo systemctl reload nginx
