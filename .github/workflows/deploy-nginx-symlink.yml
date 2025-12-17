@@ -1,0 +1,33 @@
+name: Build and Deploy (divergram)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Publish release and switch symlink
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -e
+          RELEASE_DIR="/home/divergram/releases/${SHA}"
+          mkdir -p "${RELEASE_DIR}"
+          rm -rf "${RELEASE_DIR:?}/"*
+          cp -r dist/* "${RELEASE_DIR}/"
+          ln -sfn "${RELEASE_DIR}" /home/divergram/www
+
+      - run: sudo systemctl reload nginx
