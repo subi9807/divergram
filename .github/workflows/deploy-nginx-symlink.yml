@@ -1,33 +1,85 @@
-name: Build and Deploy (divergram)
+name: Deploy to EC2 with Nginx (symlink)
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 60
-    
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # 1. 소스 체크아웃
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Node 설정
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 20
+          cache: npm
 
-      - run: npm ci
-      - run: npm run build
+      # 3. 의존성 설치
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Publish release and switch symlink
+      # 4. 빌드
+      - name: Build (Vite)
         env:
-          SHA: ${{ github.sha }}
-        run: |
-          set -e
-          RELEASE_DIR="/home/divergram/releases/${SHA}"
-          mkdir -p "${RELEASE_DIR}"
-          rm -rf "${RELEASE_DIR:?}/"*
-          cp -r dist/* "${RELEASE_DIR}/"
-          ln -sfn "${RELEASE_DIR}" /home/divergram/www
+          CI: true
+          NODE_OPTIONS: --max_old_space_size=4096
+        run: npm run build
 
-      - run: sudo systemctl reload nginx
+      # 5. 빌드 산출물 압축
+      - name: Archive build output
+        run: |
+          tar -czf dist.tar.gz dist
+
+      # 6. EC2로 파일 전송
+      - name: Upload build to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: dist.tar.gz
+          target: /var/www/divergram/tmp
+
+      # 7. EC2에서 배포 (symlink 교체)
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            APP_DIR=/var/www/divergram
+            RELEASE_DIR=$APP_DIR/releases
+            CURRENT_LINK=$APP_DIR/current
+            TMP_DIR=$APP_DIR/tmp
+            TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+
+            echo "▶ Deploying release $TIMESTAMP"
+
+            mkdir -p $RELEASE_DIR
+            mkdir -p $TMP_DIR
+
+            # 새 릴리즈 디렉토리 생성
+            mkdir $RELEASE_DIR/$TIMESTAMP
+            tar -xzf $TMP_DIR/dist.tar.gz -C $RELEASE_DIR/$TIMESTAMP
+
+            # 심볼릭 링크 교체
+            ln -sfn $RELEASE_DIR/$TIMESTAMP/dist $CURRENT_LINK
+
+            # 권한 정리
+            chown -R www-data:www-data $APP_DIR
+
+            # Nginx reload
+            sudo systemctl reload nginx
+
+            echo "✅ Deployment completed"
