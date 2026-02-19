@@ -202,14 +202,14 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
                 <div className="flex space-x-2">
                   <button
                     onClick={onEditProfile}
-                    className="px-4 py-2 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
                   >
                     <Settings className="h-4 w-4 inline mr-1" />
                     프로필 편집
                   </button>
                   <button
                     onClick={signOut}
-                    className="px-4 py-2 border border-gray-300 rounded-lg font-semibold text-sm hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
                   >
                     <LogOut className="h-4 w-4 inline mr-1" />
                     로그아웃
@@ -248,14 +248,14 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
           </div>
         </div>
 
-        <div className="border-t border-gray-300 mt-12">
+        <div className="border-t border-gray-300 dark:border-gray-700 mt-12">
           <div className="flex justify-center space-x-12">
             <button
               onClick={() => setActiveTab('posts')}
               className={`flex items-center space-x-2 py-4 -mt-px ${
                 activeTab === 'posts'
-                  ? 'border-t border-black text-black'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'border-t border-black dark:border-white text-black dark:text-white'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <Grid className="h-4 w-4" />
@@ -265,8 +265,8 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
               onClick={() => setActiveTab('reels')}
               className={`flex items-center space-x-2 py-4 -mt-px ${
                 activeTab === 'reels'
-                  ? 'border-t border-black text-black'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'border-t border-black dark:border-white text-black dark:text-white'
+                  : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <Film className="h-4 w-4" />
@@ -277,8 +277,8 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
                 onClick={() => setActiveTab('saved')}
                 className={`flex items-center space-x-2 py-4 -mt-px ${
                   activeTab === 'saved'
-                    ? 'border-t border-black text-black'
-                    : 'text-gray-400 hover:text-gray-600'
+                    ? 'border-t border-black dark:border-white text-black dark:text-white'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                 }`}
               >
                 <Bookmark className="h-4 w-4" />
