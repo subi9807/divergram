@@ -269,7 +269,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
   const handleDeletePost = async () => {
     if (!selectedPost || !user) {
-      console.log('No selected post or user');
       return;
     }
 
@@ -277,16 +276,12 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const postId = selectedPost.id;
 
     try {
-      console.log('Attempting to delete post:', postId, 'for user:', user.id);
-
-      const { data, error: deleteError, count } = await supabase
+      const { data, error: deleteError } = await supabase
         .from('posts')
         .delete()
         .eq('id', postId)
         .eq('user_id', user.id)
         .select();
-
-      console.log('Delete result:', { data, error: deleteError, count });
 
       if (deleteError) {
         console.error('Delete error:', deleteError);
@@ -296,8 +291,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       if (!data || data.length === 0) {
         throw new Error('삭제할 게시물을 찾을 수 없습니다. 권한을 확인해주세요.');
       }
-
-      console.log('Post deleted successfully, updating UI');
 
       const updatedPosts = posts.filter(p => p.id !== postId);
       setPosts(updatedPosts);

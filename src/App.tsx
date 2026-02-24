@@ -14,7 +14,7 @@ import LocationFeed from './components/LocationFeed';
 import ProfileEdit from './components/ProfileEdit';
 
 function MainApp() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -95,23 +95,36 @@ function MainApp() {
         ) : <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
       case 'settings':
         return (
-          <div className="p-8">
+          <div className="p-6 md:p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">설정</h1>
-            <p className="text-gray-600">설정 페이지 준비 중입니다.</p>
+            <div className="space-y-3">
+              <button onClick={handleEditProfile} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">프로필 수정</button>
+              <button onClick={() => setCurrentPage('activity')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">내 활동 보기</button>
+              <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">문제 신고</button>
+              <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">로그아웃</button>
+            </div>
           </div>
         );
       case 'activity':
         return (
-          <div className="p-8">
+          <div className="p-6 md:p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">내 활동</h1>
-            <p className="text-gray-600">내 활동 페이지 준비 중입니다.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">128</p></div>
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">74</p></div>
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">39</p></div>
+            </div>
           </div>
         );
       case 'report':
         return (
-          <div className="p-8">
+          <div className="p-6 md:p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">문제 신고</h1>
-            <p className="text-gray-600">문제 신고 페이지 준비 중입니다.</p>
+            <div className="rounded-lg border p-4">
+              <p className="text-gray-700 mb-3">서비스 문제를 남겨주세요.</p>
+              <textarea className="w-full border rounded-md p-3 min-h-32" placeholder="예: 로그인 후 피드가 비어 보입니다." />
+              <button className="mt-3 px-4 py-2 rounded-md bg-blue-500 text-white">제출</button>
+            </div>
           </div>
         );
       default:

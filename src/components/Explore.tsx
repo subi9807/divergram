@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase, Post } from '../lib/supabase';
 import MasonryGrid from './MasonryGrid';
+import PostDetail from './PostDetail';
 
 export default function Explore() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -58,12 +60,23 @@ export default function Explore() {
               aspectRatio,
             };
           })}
-          onItemClick={(id) => console.log('Explore post clicked:', id)}
+          onItemClick={(id) => {
+            const found = posts.find((p) => p.id === id) || null;
+            setSelectedPost(found);
+          }}
         />
       ) : (
         <div className="text-center py-12 text-gray-500">
           <p>탐색할 게시물이 없습니다</p>
         </div>
+      )}
+
+      {selectedPost && (
+        <PostDetail
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onViewProfile={() => {}}
+        />
       )}
     </div>
   );
