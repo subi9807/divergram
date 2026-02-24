@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -12,6 +12,7 @@ import Reels from './components/Reels';
 import Notifications from './components/Notifications';
 import LocationFeed from './components/LocationFeed';
 import ProfileEdit from './components/ProfileEdit';
+import { supabase } from './lib/supabase';
 
 function MainApp() {
   const { user, loading, signOut } = useAuth();
@@ -24,6 +25,25 @@ function MainApp() {
   const [selectedPostId, setSelectedPostId] = useState<string | undefined>();
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [activityCounts, setActivityCounts] = useState({ likes: 0, comments: 0, saved: 0 });
+  const [reportText, setReportText] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [{ data: likes }, { data: comments }, { data: saved }] = await Promise.all([
+        supabase.from('likes').select('*').eq('user_id', user.id),
+        supabase.from('comments').select('*').eq('user_id', user.id),
+        supabase.from('saved_posts').select('*').eq('user_id', user.id),
+      ]);
+      setActivityCounts({
+        likes: likes?.length || 0,
+        comments: comments?.length || 0,
+        saved: saved?.length || 0,
+      });
+    })();
+  }, [user]);
 
   if (loading) {
     return (
@@ -73,12 +93,26 @@ function MainApp() {
     setShowProfileEdit(true);
   };
 
+  const handleSubmitReport = async () => {
+    if (!user || !reportText.trim() || reportLoading) return;
+    setReportLoading(true);
+    await supabase.from('reports').insert({
+      user_id: user.id,
+      reason: reportText.trim(),
+      status: 'open',
+      created_at: new Date().toISOString(),
+    });
+    setReportText('');
+    setReportLoading(false);
+    alert('신고가 접수되었습니다.');
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
       case 'explore':
-        return <Explore />;
+        return <Explore onViewProfile={handleViewProfile} />;
       case 'reels':
         return <Reels onViewProfile={handleViewProfile} />;
       case 'profile':
@@ -110,9 +144,9 @@ function MainApp() {
           <div className="p-6 md:p-8 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">내 활동</h1>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">128</p></div>
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">74</p></div>
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">39</p></div>
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">{activityCounts.likes}</p></div>
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">{activityCounts.comments}</p></div>
+              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">{activityCounts.saved}</p></div>
             </div>
           </div>
         );
@@ -122,8 +156,19 @@ function MainApp() {
             <h1 className="text-2xl font-bold mb-6">문제 신고</h1>
             <div className="rounded-lg border p-4">
               <p className="text-gray-700 mb-3">서비스 문제를 남겨주세요.</p>
-              <textarea className="w-full border rounded-md p-3 min-h-32" placeholder="예: 로그인 후 피드가 비어 보입니다." />
-              <button className="mt-3 px-4 py-2 rounded-md bg-blue-500 text-white">제출</button>
+              <textarea
+                className="w-full border rounded-md p-3 min-h-32"
+                placeholder="예: 로그인 후 피드가 비어 보입니다."
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+              />
+              <button
+                className="mt-3 px-4 py-2 rounded-md bg-blue-500 text-white disabled:opacity-50"
+                onClick={handleSubmitReport}
+                disabled={reportLoading || !reportText.trim()}
+              >
+                {reportLoading ? '제출 중...' : '제출'}
+              </button>
             </div>
           </div>
         );

@@ -3,7 +3,11 @@ import { supabase, Post } from '../lib/supabase';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
 
-export default function Explore() {
+interface ExploreProps {
+  onViewProfile?: (userId: string) => void;
+}
+
+export default function Explore({ onViewProfile }: ExploreProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -75,7 +79,10 @@ export default function Explore() {
         <PostDetail
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
-          onViewProfile={() => {}}
+          onViewProfile={(userId) => {
+            onViewProfile?.(userId);
+            setSelectedPost(null);
+          }}
         />
       )}
     </div>
