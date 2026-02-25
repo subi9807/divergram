@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -29,6 +29,48 @@ function MainApp() {
   const [reportText, setReportText] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
 
+  const urlState = useMemo(() => {
+    const modal = showCreatePost
+      ? 'create'
+      : showSearch
+      ? 'search'
+      : showNotifications
+      ? 'notifications'
+      : showMessages
+      ? 'messages'
+      : showProfileEdit
+      ? 'edit-profile'
+      : '';
+
+    let pathname = '/';
+    if (currentPage === 'explore') pathname = '/explore';
+    else if (currentPage === 'reels') pathname = '/reels';
+    else if (currentPage === 'profile') pathname = '/profile';
+    else if (currentPage === 'profile-saved') pathname = '/profile/saved';
+    else if (currentPage === 'location') pathname = '/location';
+    else if (currentPage === 'settings') pathname = '/settings';
+    else if (currentPage === 'activity') pathname = '/activity';
+    else if (currentPage === 'report') pathname = '/report';
+
+    const params = new URLSearchParams();
+    if (selectedUserId) params.set('user', selectedUserId);
+    if (selectedPostId) params.set('post', selectedPostId);
+    if (selectedLocation) params.set('loc', selectedLocation);
+    if (modal) params.set('modal', modal);
+
+    return `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+  }, [
+    currentPage,
+    selectedUserId,
+    selectedPostId,
+    selectedLocation,
+    showCreatePost,
+    showSearch,
+    showNotifications,
+    showMessages,
+    showProfileEdit,
+  ]);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -44,6 +86,46 @@ function MainApp() {
       });
     })();
   }, [user]);
+
+  useEffect(() => {
+    const applyFromUrl = () => {
+      const { pathname, search } = window.location;
+      const q = new URLSearchParams(search);
+
+      if (pathname === '/explore') setCurrentPage('explore');
+      else if (pathname === '/reels') setCurrentPage('reels');
+      else if (pathname === '/profile') setCurrentPage('profile');
+      else if (pathname === '/profile/saved') setCurrentPage('profile-saved');
+      else if (pathname === '/location') setCurrentPage('location');
+      else if (pathname === '/settings') setCurrentPage('settings');
+      else if (pathname === '/activity') setCurrentPage('activity');
+      else if (pathname === '/report') setCurrentPage('report');
+      else setCurrentPage('home');
+
+      setSelectedUserId(q.get('user') || undefined);
+      setSelectedPostId(q.get('post') || undefined);
+      setSelectedLocation(q.get('loc') || undefined);
+
+      const modal = q.get('modal');
+      setShowCreatePost(modal === 'create');
+      setShowSearch(modal === 'search');
+      setShowNotifications(modal === 'notifications');
+      setShowMessages(modal === 'messages');
+      setShowProfileEdit(modal === 'edit-profile');
+    };
+
+    applyFromUrl();
+    window.addEventListener('popstate', applyFromUrl);
+    return () => window.removeEventListener('popstate', applyFromUrl);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const nextUrl = `${window.location.origin}${urlState}`;
+    if (`${window.location.origin}${window.location.pathname}${window.location.search}` !== nextUrl) {
+      window.history.replaceState({}, '', urlState);
+    }
+  }, [urlState, user]);
 
   if (loading) {
     return (
