@@ -30,6 +30,7 @@ export function AdminApp() {
   const [selectedTable, setSelectedTable] = useState('app_users');
   const [tableRows, setTableRows] = useState([]);
   const [authCheck, setAuthCheck] = useState(null);
+  const [growth, setGrowth] = useState(null);
 
   const refresh = async () => {
     if (!adminKey) {
@@ -40,16 +41,18 @@ export function AdminApp() {
     setError('');
     localStorage.setItem('dg_admin_key', adminKey);
     try {
-      const [s, u, l, t] = await Promise.all([
+      const [s, u, l, t, g] = await Promise.all([
         api('/api/admin/stats', { adminKey }),
         api(`/api/admin/users?q=${encodeURIComponent(query)}&limit=50`, { adminKey }),
         api('/api/admin/audit-logs?limit=20', { adminKey }),
         api('/api/admin/tables', { adminKey }),
+        api('/api/admin/growth?days=14', { adminKey }),
       ]);
       setStats(s.stats);
       setUsers(u.users || []);
       setLogs(l.logs || []);
       setTables(t.tables || []);
+      setGrowth(g);
     } catch (e) {
       setError(e.message || '요청 실패');
     } finally {
@@ -159,12 +162,50 @@ export function AdminApp() {
         </div>
 
         {section === 'dashboard' && (
-          <div className="grid">
-            <div className="card stat"><h3>총 사용자</h3><strong>{stats?.users ?? '-'}</strong></div>
-            <div className="card stat"><h3>관리자 수</h3><strong>{stats?.adminUsers ?? '-'}</strong></div>
-            <div className="card stat"><h3>차단 사용자</h3><strong>{stats?.blockedUsers ?? '-'}</strong></div>
-            <div className="card stat"><h3>API 업타임(초)</h3><strong>{stats?.uptimeSec ?? '-'}</strong></div>
-          </div>
+          <>
+            <div className="grid">
+              <div className="card stat"><h3>총 사용자</h3><strong>{stats?.users ?? '-'}</strong></div>
+              <div className="card stat"><h3>관리자 수</h3><strong>{stats?.adminUsers ?? '-'}</strong></div>
+              <div className="card stat"><h3>차단 사용자</h3><strong>{stats?.blockedUsers ?? '-'}</strong></div>
+              <div className="card stat"><h3>API 업타임(초)</h3><strong>{stats?.uptimeSec ?? '-'}</strong></div>
+            </div>
+            <div className="grid">
+              <div className="card stat"><h3>14일 가입자</h3><strong>{growth?.series?.signups?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
+              <div className="card stat"><h3>14일 게시물</h3><strong>{growth?.series?.posts?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
+              <div className="card stat"><h3>14일 인터랙션</h3><strong>{growth?.series?.interactions?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
+              <div className="card stat"><h3>최근 DAU(근사)</h3><strong>{growth?.series?.dauApprox?.at(-1)?.count ?? 0}</strong></div>
+            </div>
+            <div className="card">
+              <h2>최근 14일 유입/활동 추이</h2>
+              <table>
+                <thead><tr><th>일자</th><th>가입자</th><th>게시물</th><th>인터랙션</th><th>DAU(근사)</th></tr></thead>
+                <tbody>
+                  {(() => {
+                    const days = new Set([
+                      ...(growth?.series?.signups || []).map((x) => x.day),
+                      ...(growth?.series?.posts || []).map((x) => x.day),
+                      ...(growth?.series?.interactions || []).map((x) => x.day),
+                      ...(growth?.series?.dauApprox || []).map((x) => x.day),
+                    ]);
+                    const mapify = (arr) => Object.fromEntries((arr || []).map((x) => [x.day, x.count]));
+                    const s = mapify(growth?.series?.signups);
+                    const p = mapify(growth?.series?.posts);
+                    const i = mapify(growth?.series?.interactions);
+                    const d = mapify(growth?.series?.dauApprox);
+                    return [...days].sort().map((day) => (
+                      <tr key={day}>
+                        <td>{day}</td>
+                        <td>{s[day] || 0}</td>
+                        <td>{p[day] || 0}</td>
+                        <td>{i[day] || 0}</td>
+                        <td>{d[day] || 0}</td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {section === 'users' && (
