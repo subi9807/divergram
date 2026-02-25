@@ -23,7 +23,7 @@ app.use(cors({
     if (CORS_ORIGINS.includes(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   credentials: false,
 }));
 app.use(express.json({ limit: '100kb' }));
@@ -101,14 +101,28 @@ async function ensureSchema() {
       password_hash TEXT,
       password_sha256 TEXT,
       username TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      is_blocked BOOLEAN NOT NULL DEFAULT false,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
   await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash TEXT;`);
   await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_sha256 TEXT;`);
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';`);
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT false;`);
   await pool.query(`ALTER TABLE app_users ALTER COLUMN password_sha256 DROP NOT NULL;`);
   await pool.query(`ALTER TABLE app_users ALTER COLUMN password_hash DROP NOT NULL;`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS app_users_email_lower_uniq ON app_users ((lower(email)));`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_audit_logs (
+      id BIGSERIAL PRIMARY KEY,
+      action TEXT NOT NULL,
+      target_user_id BIGINT,
+      detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -153,10 +167,12 @@ app.post('/api/auth/login', authRateLimit(), async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'email/password required' });
 
   try {
-    const q = await pool.query('SELECT id,email,username,password_hash,password_sha256 FROM app_users WHERE lower(email)=lower($1)', [email]);
+    const q = await pool.query('SELECT id,email,username,password_hash,password_sha256,is_blocked FROM app_users WHERE lower(email)=lower($1)', [email]);
     if (!q.rows.length) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
     const row = q.rows[0];
+    if (row.is_blocked) return res.status(403).json({ error: '차단된 계정입니다. 관리자에게 문의하세요.' });
+
     let ok = false;
     if (row.password_hash) {
       ok = await bcrypt.compare(password, row.password_hash);
@@ -217,18 +233,132 @@ app.get('/api/admin/health', requireAdmin, async (_req, res) => {
 
 app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   try {
-    const users = await pool.query('SELECT COUNT(*)::int AS count FROM app_users');
-    const latest = await pool.query('SELECT id, email, username, created_at FROM app_users ORDER BY created_at DESC LIMIT 5');
+    const totalUsers = await pool.query('SELECT COUNT(*)::int AS count FROM app_users');
+    const blockedUsers = await pool.query('SELECT COUNT(*)::int AS count FROM app_users WHERE is_blocked = true');
+    const adminUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_users WHERE role = 'admin'");
+    const latest = await pool.query('SELECT id, email, username, role, is_blocked, created_at FROM app_users ORDER BY created_at DESC LIMIT 5');
     res.json({
       ok: true,
       stats: {
-        users: users.rows[0]?.count || 0,
+        users: totalUsers.rows[0]?.count || 0,
+        blockedUsers: blockedUsers.rows[0]?.count || 0,
+        adminUsers: adminUsers.rows[0]?.count || 0,
         uptimeSec: Math.round(process.uptime()),
       },
       latestUsers: latest.rows,
     });
   } catch {
     res.status(500).json({ ok: false, error: 'admin_stats_failed' });
+  }
+});
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+  const offset = Math.max(Number(req.query.offset || 0), 0);
+
+  try {
+    const params = [];
+    let where = '';
+    if (q) {
+      params.push(`%${q.toLowerCase()}%`);
+      where = `WHERE lower(email) LIKE $${params.length} OR lower(username) LIKE $${params.length}`;
+    }
+
+    params.push(limit);
+    params.push(offset);
+
+    const list = await pool.query(
+      `SELECT id, email, username, role, is_blocked, created_at
+       FROM app_users
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    res.json({ ok: true, users: list.rows, limit, offset });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_users_failed' });
+  }
+});
+
+app.patch('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const role = req.body?.role;
+  const isBlocked = req.body?.is_blocked;
+  if (!id) return res.status(400).json({ error: 'invalid_user_id' });
+
+  const fields = [];
+  const values = [];
+
+  if (role !== undefined) {
+    if (!['user', 'admin'].includes(role)) return res.status(400).json({ error: 'invalid_role' });
+    values.push(role);
+    fields.push(`role = $${values.length}`);
+  }
+
+  if (isBlocked !== undefined) {
+    values.push(Boolean(isBlocked));
+    fields.push(`is_blocked = $${values.length}`);
+  }
+
+  if (!fields.length) return res.status(400).json({ error: 'no_changes' });
+
+  values.push(id);
+
+  try {
+    const updated = await pool.query(
+      `UPDATE app_users
+       SET ${fields.join(', ')}
+       WHERE id = $${values.length}
+       RETURNING id, email, username, role, is_blocked, created_at`,
+      values
+    );
+
+    if (!updated.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+    await pool.query(
+      'INSERT INTO admin_audit_logs(action, target_user_id, detail) VALUES ($1, $2, $3::jsonb)',
+      ['user_update', id, JSON.stringify({ role, is_blocked: isBlocked })]
+    );
+
+    res.json({ ok: true, user: updated.rows[0] });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_user_update_failed' });
+  }
+});
+
+app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: 'invalid_user_id' });
+
+  try {
+    const deleted = await pool.query('DELETE FROM app_users WHERE id = $1 RETURNING id, email', [id]);
+    if (!deleted.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+    await pool.query(
+      'INSERT INTO admin_audit_logs(action, target_user_id, detail) VALUES ($1, $2, $3::jsonb)',
+      ['user_delete', id, JSON.stringify({ email: deleted.rows[0].email })]
+    );
+
+    res.json({ ok: true, deleted: deleted.rows[0] });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_user_delete_failed' });
+  }
+});
+
+app.get('/api/admin/audit-logs', requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit || 30), 1), 200);
+
+  try {
+    const logs = await pool.query(
+      'SELECT id, action, target_user_id, detail, created_at FROM admin_audit_logs ORDER BY created_at DESC LIMIT $1',
+      [limit]
+    );
+    res.json({ ok: true, logs: logs.rows });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_audit_logs_failed' });
   }
 });
 
