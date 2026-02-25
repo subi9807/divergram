@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.server' });
 const app = express();
 
 const isProd = process.env.NODE_ENV === 'production';
-const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://127.0.0.1:5173,http://localhost:5173')
+const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:5175,http://localhost:5175')
   .split(',')
   .map((v) => v.trim())
   .filter(Boolean);
@@ -52,6 +52,12 @@ const pool = new pg.Pool({
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
   console.error('❌ JWT_SECRET must be set and at least 32 characters.');
+  process.exit(1);
+}
+
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+if (!ADMIN_API_KEY || ADMIN_API_KEY.length < 16) {
+  console.error('❌ ADMIN_API_KEY must be set and at least 16 characters.');
   process.exit(1);
 }
 
@@ -196,6 +202,33 @@ app.get('/api/auth/session', async (req, res) => {
     });
   } catch {
     return res.json({ session: null });
+  }
+});
+
+function requireAdmin(req, res, next) {
+  const key = req.headers['x-admin-key'];
+  if (!key || key !== ADMIN_API_KEY) return res.status(401).json({ error: 'unauthorized' });
+  return next();
+}
+
+app.get('/api/admin/health', requireAdmin, async (_req, res) => {
+  res.json({ ok: true, service: 'admin-api' });
+});
+
+app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
+  try {
+    const users = await pool.query('SELECT COUNT(*)::int AS count FROM app_users');
+    const latest = await pool.query('SELECT id, email, username, created_at FROM app_users ORDER BY created_at DESC LIMIT 5');
+    res.json({
+      ok: true,
+      stats: {
+        users: users.rows[0]?.count || 0,
+        uptimeSec: Math.round(process.uptime()),
+      },
+      latestUsers: latest.rows,
+    });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_stats_failed' });
   }
 });
 

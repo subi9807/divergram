@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    env_file:
+      - .env.server
+    ports:
+      - "4000:4000"
+
+  admin-web:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    environment:
+      - VITE_ADMIN_API_BASE=http://api:4000
+    ports:
+      - "5175:5175"
+    depends_on:
+      - api
