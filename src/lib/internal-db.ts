@@ -5,6 +5,7 @@ const TOKEN_KEY = 'dg_token';
 const USER_KEY = 'dg_user';
 const PROFILE_KEY = 'dg_profile';
 const DB_KEY = 'dg_mockdb_v3_legacy';
+const STORAGE_KEY = 'dg_mock_storage_v1';
 let seedPromise: Promise<void> | null = null;
 
 export interface User { id: string; email: string; }
@@ -265,6 +266,27 @@ function loadDb() {
 }
 function saveDb(db: AnyObj) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
+function loadStorageMap(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveStorageMap(map: Record<string, string>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 function applyFilters(rows: any[], filters: AnyObj[]) {
   const get = (obj: any, key: string) => obj?.[key];
 
@@ -468,9 +490,26 @@ export const db = {
   storage: {
     from(_bucket: string) {
       return {
-        async upload(path: string, _file: File) { return { data: { path }, error: null }; },
-        getPublicUrl(path: string) { return { data: { publicUrl: path } }; },
-        async remove(_paths: string[]) { return { data: null, error: null }; },
+        async upload(path: string, file: File) {
+          try {
+            const map = loadStorageMap();
+            map[path] = await fileToDataUrl(file);
+            saveStorageMap(map);
+            return { data: { path }, error: null };
+          } catch (e: any) {
+            return { data: null, error: { message: e?.message || 'upload failed' } };
+          }
+        },
+        getPublicUrl(path: string) {
+          const map = loadStorageMap();
+          return { data: { publicUrl: map[path] || path } };
+        },
+        async remove(paths: string[]) {
+          const map = loadStorageMap();
+          for (const p of paths || []) delete map[p];
+          saveStorageMap(map);
+          return { data: null, error: null };
+        },
       };
     },
   },

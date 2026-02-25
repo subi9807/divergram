@@ -26,7 +26,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
   credentials: false,
 }));
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');

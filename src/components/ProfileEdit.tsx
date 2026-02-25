@@ -38,21 +38,16 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const toDataUrl = (f: File) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('failed to read image'));
+        reader.readAsDataURL(f);
+      });
 
-      const { error: uploadError } = await db.storage
-        .from('media')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = db.storage
-        .from('media')
-        .getPublicUrl(filePath);
-
-      setFormData({ ...formData, avatar_url: publicUrl });
+      // local/mock 모드에서는 데이터 URL로 저장해 항상 미리보기/재로딩이 보장되도록 처리
+      const dataUrl = await toDataUrl(file);
+      setFormData((prev) => ({ ...prev, avatar_url: dataUrl }));
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('이미지 업로드에 실패했습니다.');
