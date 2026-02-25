@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, MapPin, Waves, Gauge, Thermometer, Clock, Eye, Users } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 import { getVideoInfo } from '../utils/videoUtils';
@@ -72,7 +72,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const loadFollowingUsers = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id);
@@ -85,7 +85,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const loadSavedPosts = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('saved_posts')
       .select('post_id')
       .eq('user_id', user.id);
@@ -101,7 +101,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       return;
     }
 
-    const { data: followingData } = await supabase
+    const { data: followingData } = await db
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id);
@@ -109,7 +109,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const followingIds = followingData?.map(f => f.following_id) || [];
     const userIds = [user.id, ...followingIds];
 
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -138,16 +138,16 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const isLiked = post.likes.some((like: any) => like.user_id === user.id);
 
     if (isLiked) {
-      await supabase
+      await db
         .from('likes')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', user.id);
     } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+      await db.from('likes').insert({ post_id: postId, user_id: user.id });
 
       if (post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
+        await db.from('notifications').insert({
           user_id: post.user_id,
           actor_id: user.id,
           type: 'like',
@@ -165,7 +165,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const isSaved = savedPosts.has(postId);
 
     if (isSaved) {
-      await supabase
+      await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
@@ -175,7 +175,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       newSaved.delete(postId);
       setSavedPosts(newSaved);
     } else {
-      await supabase
+      await db
         .from('saved_posts')
         .insert({ user_id: user.id, post_id: postId });
 
@@ -203,7 +203,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const isFollowing = followingUsers.has(selectedPost.user_id);
 
     if (isFollowing) {
-      await supabase
+      await db
         .from('follows')
         .delete()
         .eq('follower_id', user.id)
@@ -213,14 +213,14 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       newFollowing.delete(selectedPost.user_id);
       setFollowingUsers(newFollowing);
     } else {
-      await supabase
+      await db
         .from('follows')
         .insert({
           follower_id: user.id,
           following_id: selectedPost.user_id,
         });
 
-      await supabase.from('notifications').insert({
+      await db.from('notifications').insert({
         user_id: selectedPost.user_id,
         actor_id: user.id,
         type: 'follow',
@@ -252,7 +252,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const handleEditPost = async (updatedData: Partial<Post>) => {
     if (!selectedPost || !user) return;
 
-    await supabase
+    await db
       .from('posts')
       .update(updatedData)
       .eq('id', selectedPost.id);
@@ -276,7 +276,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     const postId = selectedPost.id;
 
     try {
-      const { data, error: deleteError } = await supabase
+      const { data, error: deleteError } = await db
         .from('posts')
         .delete()
         .eq('id', postId)
@@ -599,7 +599,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   <p className="text-sm leading-relaxed dark:text-white">
                     <span className="font-semibold mr-2 dark:text-white">{post.profiles.username}</span>
                     {renderTextWithMentions(post.caption || '', async (username) => {
-                      const { data } = await supabase
+                      const { data } = await db
                         .from('profiles')
                         .select('id')
                         .eq('username', username)

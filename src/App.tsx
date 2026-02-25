@@ -12,7 +12,7 @@ import Reels from './components/Reels';
 import Notifications from './components/Notifications';
 import LocationFeed from './components/LocationFeed';
 import ProfileEdit from './components/ProfileEdit';
-import { supabase } from './lib/supabase';
+import { db } from './lib/internal-db';
 
 function MainApp() {
   const { user, loading, signOut } = useAuth();
@@ -33,9 +33,9 @@ function MainApp() {
     if (!user) return;
     (async () => {
       const [{ data: likes }, { data: comments }, { data: saved }] = await Promise.all([
-        supabase.from('likes').select('*').eq('user_id', user.id),
-        supabase.from('comments').select('*').eq('user_id', user.id),
-        supabase.from('saved_posts').select('*').eq('user_id', user.id),
+        db.from('likes').select('*').eq('user_id', user.id),
+        db.from('comments').select('*').eq('user_id', user.id),
+        db.from('saved_posts').select('*').eq('user_id', user.id),
       ]);
       setActivityCounts({
         likes: likes?.length || 0,
@@ -96,7 +96,7 @@ function MainApp() {
   const handleSubmitReport = async () => {
     if (!user || !reportText.trim() || reportLoading) return;
     setReportLoading(true);
-    await supabase.from('reports').insert({
+    await db.from('reports').insert({
       user_id: user.id,
       reason: reportText.trim(),
       status: 'open',

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { X, Upload, FileText } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ReportModalProps {
@@ -50,20 +50,20 @@ export default function ReportModal({ onClose }: ReportModalProps) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Math.random()}.${fileExt}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await db.storage
           .from('reports')
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = db.storage
           .from('reports')
           .getPublicUrl(uploadData.path);
 
         attachmentUrl = urlData.publicUrl;
       }
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await db
         .from('reports')
         .insert({
           user_id: user.id,

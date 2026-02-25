@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search as SearchIcon, X, User, Image } from 'lucide-react';
-import { supabase, Profile, Post } from '../lib/supabase';
+import { db, Profile, Post } from '../lib/internal-db';
 import MasonryGrid from './MasonryGrid';
 
 interface SearchProps {
@@ -32,12 +32,12 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
     setLoading(true);
 
     const [usersResponse, postsResponse] = await Promise.all([
-      supabase
+      db
         .from('profiles')
         .select('*')
         .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
         .limit(10),
-      supabase
+      db
         .from('posts')
         .select(`
           *,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Grid2x2 as Grid, Film, Bookmark, Settings, LogOut } from 'lucide-react';
-import { supabase, Profile as ProfileType, Post } from '../lib/supabase';
+import { db, Profile as ProfileType, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
@@ -47,7 +47,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   }, [activeTab]);
 
   const loadProfile = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('profiles')
       .select('*')
       .eq('id', profileId)
@@ -59,7 +59,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   };
 
   const loadPosts = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -79,7 +79,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   };
 
   const loadReels = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -100,7 +100,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   const loadSavedPosts = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('saved_posts')
       .select(`
         post_id,
@@ -123,8 +123,8 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
 
   const loadFollowStats = async () => {
     const [followersResult, followingResult] = await Promise.all([
-      supabase.from('follows').select('id', { count: 'exact' }).eq('following_id', profileId),
-      supabase.from('follows').select('id', { count: 'exact' }).eq('follower_id', profileId),
+      db.from('follows').select('id', { count: 'exact' }).eq('following_id', profileId),
+      db.from('follows').select('id', { count: 'exact' }).eq('follower_id', profileId),
     ]);
 
     setFollowStats({
@@ -136,7 +136,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   const checkFollowing = async () => {
     if (!user || isOwnProfile) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
@@ -150,13 +150,13 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
     if (!user || isOwnProfile) return;
 
     if (isFollowing) {
-      await supabase
+      await db
         .from('follows')
         .delete()
         .eq('follower_id', user.id)
         .eq('following_id', profileId);
     } else {
-      await supabase.from('follows').insert({
+      await db.from('follows').insert({
         follower_id: user.id,
         following_id: profileId,
       });

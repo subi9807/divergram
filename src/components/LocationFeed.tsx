@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ArrowLeft, MapPin, Waves, Gauge, Thermometer, Clock, Eye, Users } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 import { loadGoogleMaps } from '../utils/googleMaps';
@@ -151,7 +151,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const loadFollowingUsers = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id);
@@ -164,7 +164,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const loadSavedPosts = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('saved_posts')
       .select('post_id')
       .eq('user_id', user.id);
@@ -177,7 +177,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const loadPosts = async () => {
     setLoading(true);
 
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -204,16 +204,16 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
     const userLiked = post.likes?.some((like: any) => like.user_id === user.id);
 
     if (userLiked) {
-      await supabase
+      await db
         .from('likes')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', user.id);
     } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+      await db.from('likes').insert({ post_id: postId, user_id: user.id });
 
       if (post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
+        await db.from('notifications').insert({
           user_id: post.user_id,
           actor_id: user.id,
           type: 'like',
@@ -231,7 +231,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
     const isSaved = savedPosts.has(postId);
 
     if (isSaved) {
-      await supabase
+      await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
@@ -241,7 +241,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
       newSaved.delete(postId);
       setSavedPosts(newSaved);
     } else {
-      await supabase.from('saved_posts').insert({ user_id: user.id, post_id: postId });
+      await db.from('saved_posts').insert({ user_id: user.id, post_id: postId });
 
       const newSaved = new Set(savedPosts);
       newSaved.add(postId);
@@ -255,14 +255,14 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
     const post = posts.find(p => p.id === postId);
     if (!post) return;
 
-    await supabase.from('comments').insert({
+    await db.from('comments').insert({
       post_id: postId,
       user_id: user.id,
       content: commentInputs[postId].trim(),
     });
 
     if (post.user_id !== user.id) {
-      await supabase.from('notifications').insert({
+      await db.from('notifications').insert({
         user_id: post.user_id,
         actor_id: user.id,
         type: 'comment',
@@ -285,7 +285,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
     const isFollowing = followingUsers.has(selectedPost.user_id);
 
     if (isFollowing) {
-      await supabase
+      await db
         .from('follows')
         .delete()
         .eq('follower_id', user.id)
@@ -295,14 +295,14 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
       newFollowing.delete(selectedPost.user_id);
       setFollowingUsers(newFollowing);
     } else {
-      await supabase
+      await db
         .from('follows')
         .insert({
           follower_id: user.id,
           following_id: selectedPost.user_id,
         });
 
-      await supabase.from('notifications').insert({
+      await db.from('notifications').insert({
         user_id: selectedPost.user_id,
         actor_id: user.id,
         type: 'follow',
@@ -331,7 +331,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const handleEditPost = async (updatedData: Partial<Post>) => {
     if (!selectedPost || !user) return;
 
-    await supabase
+    await db
       .from('posts')
       .update(updatedData)
       .eq('id', selectedPost.id);

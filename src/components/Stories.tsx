@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
-import { supabase, Profile } from '../lib/supabase';
+import { db, Profile } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface StoriesProps {
@@ -29,7 +29,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
   const loadMyProfile = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('profiles')
       .select('*')
       .eq('id', user.id)
@@ -43,7 +43,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
   const loadSuggestedUsers = async () => {
     if (!user) return;
 
-    const { data: followingData } = await supabase
+    const { data: followingData } = await db
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id);
@@ -52,7 +52,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
     const result: UserWithRecentPost[] = [];
 
     if (followingIds.length > 0) {
-      const { data: postsData } = await supabase
+      const { data: postsData } = await db
         .from('posts')
         .select(`
           user_id,
@@ -89,7 +89,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
       const remainingFollowing = followingIds.filter(id => !alreadyIncludedIds.has(id));
 
       if (remainingFollowing.length > 0) {
-        const { data: followingProfiles } = await supabase
+        const { data: followingProfiles } = await db
           .from('profiles')
           .select('id, username, avatar_url')
           .in('id', remainingFollowing)
@@ -106,7 +106,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
     }
 
     if (result.length < 10) {
-      const { data: myFollowersData } = await supabase
+      const { data: myFollowersData } = await db
         .from('follows')
         .select('follower_id')
         .eq('following_id', user.id);
@@ -128,7 +128,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
           : myFollowerIds.filter(id => !alreadyIncludedIds.has(id));
 
         if (mutualFollowerIds.length > 0) {
-          const { data: mutualProfiles } = await supabase
+          const { data: mutualProfiles } = await db
             .from('profiles')
             .select('id, username, avatar_url')
             .in('id', mutualFollowerIds)

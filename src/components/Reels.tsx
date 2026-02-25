@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Volume2, VolumeX } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getVideoInfo } from '../utils/videoUtils';
 import PostOptionsModal from './PostOptionsModal';
@@ -62,7 +62,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   }, [currentIndex, posts.length]);
 
   const loadPosts = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -84,7 +84,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const loadFollowingUsers = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select('following_id')
       .eq('follower_id', user.id);
@@ -97,7 +97,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const loadSavedPosts = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('saved_posts')
       .select('post_id')
       .eq('user_id', user.id);
@@ -117,16 +117,16 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     const isLiked = post.likes.some((like: any) => like.user_id === user.id);
 
     if (isLiked) {
-      await supabase
+      await db
         .from('likes')
         .delete()
         .eq('post_id', postId)
         .eq('user_id', user.id);
     } else {
-      await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+      await db.from('likes').insert({ post_id: postId, user_id: user.id });
 
       if (post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
+        await db.from('notifications').insert({
           user_id: post.user_id,
           actor_id: user.id,
           type: 'like',
@@ -151,7 +151,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     const isFollowing = followingUsers.has(userId);
 
     if (isFollowing) {
-      await supabase
+      await db
         .from('follows')
         .delete()
         .eq('follower_id', user.id)
@@ -161,11 +161,11 @@ export default function Reels({ onViewProfile }: ReelsProps) {
       newFollowing.delete(userId);
       setFollowingUsers(newFollowing);
     } else {
-      await supabase
+      await db
         .from('follows')
         .insert({ follower_id: user.id, following_id: userId });
 
-      await supabase.from('notifications').insert({
+      await db.from('notifications').insert({
         user_id: userId,
         actor_id: user.id,
         type: 'follow',
@@ -184,7 +184,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     const isSaved = savedPosts.has(postId);
 
     if (isSaved) {
-      await supabase
+      await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
@@ -194,7 +194,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
       newSaved.delete(postId);
       setSavedPosts(newSaved);
     } else {
-      await supabase
+      await db
         .from('saved_posts')
         .insert({ user_id: user.id, post_id: postId });
 
@@ -433,7 +433,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           onGoToPost={() => setShowPostDetail(true)}
           onAboutAccount={() => onViewProfile(selectedPost.user_id)}
           onDelete={async () => {
-            await supabase.from('posts').delete().eq('id', selectedPost.id);
+            await db.from('posts').delete().eq('id', selectedPost.id);
             setShowOptionsModal(false);
             setSelectedPost(null);
             await loadPosts();

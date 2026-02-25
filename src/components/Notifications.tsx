@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 
@@ -41,7 +41,7 @@ export default function Notifications({ isOpen, onClose, onViewProfile }: Notifi
   const loadNotifications = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('notifications')
       .select(`
         id,
@@ -77,7 +77,7 @@ export default function Notifications({ isOpen, onClose, onViewProfile }: Notifi
   };
 
   const markAsRead = async (notificationId: string) => {
-    await supabase
+    await db
       .from('notifications')
       .update({ read: true })
       .eq('id', notificationId);
@@ -90,7 +90,7 @@ export default function Notifications({ isOpen, onClose, onViewProfile }: Notifi
   const markAllAsRead = async () => {
     if (!user) return;
 
-    await supabase
+    await db
       .from('notifications')
       .update({ read: true })
       .eq('user_id', user.id)

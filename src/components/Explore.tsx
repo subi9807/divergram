@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
 
@@ -17,7 +17,7 @@ export default function Explore({ onViewProfile }: ExploreProps) {
   }, []);
 
   const loadPosts = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,

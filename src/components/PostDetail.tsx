@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, MapPin, X, Waves, Gauge, Thermometer, Clock, Eye, Users } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 import { getVideoInfo } from '../utils/videoUtils';
@@ -43,7 +43,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   }, [initialPost.id]);
 
   const loadPost = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('posts')
       .select(`
         *,
@@ -61,7 +61,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   };
 
   const loadComments = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('comments')
       .select(`
         *,
@@ -78,7 +78,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   const checkFollowing = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
@@ -91,7 +91,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   const checkSaved = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('saved_posts')
       .select('id')
       .eq('user_id', user.id)
@@ -105,7 +105,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
     if (!user) return;
 
     if (isSaved) {
-      await supabase
+      await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
@@ -113,7 +113,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
 
       setIsSaved(false);
     } else {
-      await supabase
+      await db
         .from('saved_posts')
         .insert({ user_id: user.id, post_id: post.id });
 
@@ -127,13 +127,13 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
     const isLiked = post.likes.some((like: any) => like.user_id === user.id);
 
     if (isLiked) {
-      await supabase
+      await db
         .from('likes')
         .delete()
         .eq('post_id', post.id)
         .eq('user_id', user.id);
     } else {
-      await supabase
+      await db
         .from('likes')
         .insert({ post_id: post.id, user_id: user.id });
     }
@@ -144,7 +144,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   const addComment = async () => {
     if (!user || !commentInput.trim()) return;
 
-    await supabase.from('comments').insert({
+    await db.from('comments').insert({
       post_id: post.id,
       user_id: user.id,
       content: commentInput,
@@ -159,14 +159,14 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
     if (!user || !post) return;
 
     if (isFollowing) {
-      await supabase
+      await db
         .from('follows')
         .delete()
         .eq('follower_id', user.id)
         .eq('following_id', post.user_id);
       setIsFollowing(false);
     } else {
-      await supabase
+      await db
         .from('follows')
         .insert({
           follower_id: user.id,
@@ -330,7 +330,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
               <p className="text-sm dark:text-white">
                 <span className="font-semibold mr-2">{post.profiles.username}</span>
                 {renderTextWithMentions(post.caption || '', async (username) => {
-                  const { data } = await supabase
+                  const { data } = await db
                     .from('profiles')
                     .select('id')
                     .eq('username', username)
@@ -459,7 +459,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                 <p className="text-sm dark:text-white">
                   <span className="font-semibold mr-2">{post.profiles.username}</span>
                   {renderTextWithMentions(post.caption || '', async (username) => {
-                    const { data } = await supabase
+                    const { data } = await db
                       .from('profiles')
                       .select('id')
                       .eq('username', username)
@@ -503,7 +503,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                   <p className="text-sm dark:text-white">
                     <span className="font-semibold mr-2">{comment.profiles.username}</span>
                     {renderTextWithMentions(comment.content, async (username) => {
-                      const { data } = await supabase
+                      const { data } = await db
                         .from('profiles')
                         .select('id')
                         .eq('username', username)

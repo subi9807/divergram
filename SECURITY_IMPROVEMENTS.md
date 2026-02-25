@@ -60,9 +60,9 @@ ORDER BY tablename, indexname;
 
 **How to Enable:**
 
-#### Option 1: Supabase Dashboard (Recommended)
+#### Option 1: DB Admin Dashboard (Recommended)
 
-1. Open your [Supabase Dashboard](https://app.supabase.com)
+1. Open your [DB Admin Dashboard]((internal-db))
 2. Select your project
 3. Navigate to **Authentication** → **Policies** (or **Configuration**)
 4. Look for **"Password Protection"** or **"Security"** section
@@ -75,7 +75,7 @@ If you have API access to auth configuration:
 
 ```bash
 # This may require project owner permissions
-curl -X PATCH 'https://your-project.supabase.co/auth/v1/admin/config' \
+curl -X PATCH 'http://127.0.0.1:4000/auth/v1/admin/config' \
   -H "Authorization: Bearer YOUR_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   -d '{"password_breach_check_enabled": true}'
@@ -109,7 +109,7 @@ Error: This password has appeared in a data breach. Please choose a different pa
 After enabling, test with a known breached password (e.g., "password123") to verify the feature is working:
 
 ```javascript
-const { error } = await supabase.auth.signUp({
+const { error } = await db.auth.signUp({
   email: 'test@example.com',
   password: 'password123' // This should fail
 });
@@ -141,11 +141,11 @@ console.log(error); // Should show breach detection error
 ### Recommended Additional Steps
 
 1. **Enable Multi-Factor Authentication (MFA)**
-   - Go to Authentication → Settings in Supabase Dashboard
+   - Go to Authentication → Settings in DB Admin Dashboard
    - Enable MFA for enhanced security
 
 2. **Set Up Rate Limiting**
-   - Configure rate limits in Supabase Dashboard
+   - Configure rate limits in DB Admin Dashboard
    - Protect against brute force attacks
 
 3. **Regular Security Audits**
@@ -237,7 +237,7 @@ LIMIT 10;
 - ✅ Documented security improvements and best practices
 
 ### Required Action
-- ⚠️ **Enable password breach protection in Supabase Dashboard**
+- ⚠️ **Enable password breach protection in DB Admin Dashboard**
   - Go to Authentication → Policies
   - Enable "Check for leaked passwords"
   - Save changes
@@ -253,6 +253,6 @@ LIMIT 10;
 ## Questions?
 
 If you have questions about these security improvements or need help implementing them, please refer to:
-- [Supabase Security Documentation](https://supabase.com/docs/guides/auth/auth-security)
+- [Internal DB/Auth Security Notes](https://owasp.org/www-project-top-ten/)
 - [HaveIBeenPwned API](https://haveibeenpwned.com/API/v3)
 - [PostgreSQL Index Documentation](https://www.postgresql.org/docs/current/indexes.html)

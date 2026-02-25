@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/internal-db';
 
 interface MentionInputProps {
   value: string;
@@ -53,7 +53,7 @@ export default function MentionInput({
   }, [value, cursorPosition]);
 
   const searchUsers = async (search: string) => {
-    let query = supabase
+    let query = db
       .from('profiles')
       .select('id, username, avatar_url, full_name')
       .limit(5);

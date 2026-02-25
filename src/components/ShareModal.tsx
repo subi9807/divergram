@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Search } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ShareModalProps {
@@ -37,7 +37,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
   const loadFollowers = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data } = await db
       .from('follows')
       .select(`
         id,
@@ -72,7 +72,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
       : `${post.profiles.username}님의 게시물을 공유했습니다: ${postUrl}`;
 
     for (const receiverId of selectedUsers) {
-      const { data: existingParticipants } = await supabase
+      const { data: existingParticipants } = await db
         .from('participants')
         .select('room_id, rooms!inner(id, type)')
         .eq('user_id', user.id);
@@ -81,7 +81,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
 
       if (existingParticipants) {
         for (const p of existingParticipants) {
-          const { data: otherUserInRoom } = await supabase
+          const { data: otherUserInRoom } = await db
             .from('participants')
             .select('user_id')
             .eq('room_id', p.room_id)
@@ -96,14 +96,14 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
       }
 
       if (!roomId) {
-        const { data: newRoom } = await supabase
+        const { data: newRoom } = await db
           .from('rooms')
           .insert({ type: 'direct' })
           .select()
           .single();
 
         if (newRoom) {
-          await supabase.from('participants').insert([
+          await db.from('participants').insert([
             { room_id: newRoom.id, user_id: user.id },
             { room_id: newRoom.id, user_id: receiverId },
           ]);
@@ -112,7 +112,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
       }
 
       if (roomId) {
-        await supabase.from('messages').insert({
+        await db.from('messages').insert({
           room_id: roomId,
           sender_id: user.id,
           content: messageContent,

@@ -64,7 +64,7 @@
   - 실시간 구독
 
 ### 주요 라이브러리
-- `@supabase/supabase-js` - Supabase 클라이언트
+- `(removed)` - Supabase 클라이언트
 - `lucide-react` - 아이콘 컴포넌트
 
 ## 시작하기
@@ -92,15 +92,15 @@ npm install
 `.env` 파일을 프로젝트 루트에 생성하고 다음 내용을 추가합니다:
 
 ```env
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_API_BASE_URL=http://127.0.0.1:4000
+# no public anon key required
 ```
 
 Supabase 프로젝트 설정에서 URL과 API 키를 확인할 수 있습니다.
 
 4. **데이터베이스 마이그레이션**
 
-Supabase 대시보드의 SQL 에디터에서 `supabase/migrations` 폴더의 마이그레이션 파일들을 순서대로 실행합니다.
+DB 관리 도구의 SQL 에디터에서 `db/migrations` 폴더의 마이그레이션 파일들을 순서대로 실행합니다.
 
 5. **개발 서버 실행**
 ```bash
@@ -162,7 +162,7 @@ divergram/
 │   ├── contexts/           # React Context
 │   │   └── AuthContext.tsx # 인증 상태 관리
 │   ├── lib/               # 라이브러리 설정
-│   │   └── supabase.ts    # Supabase 클라이언트
+│   │   └── internal-db.ts # Internal DB 클라이언트
 │   ├── utils/             # 유틸리티 함수
 │   │   ├── videoUtils.ts  # 비디오 URL 처리
 │   │   ├── timeFormat.ts  # 시간 포맷팅
@@ -170,7 +170,7 @@ divergram/
 │   ├── App.tsx            # 메인 앱 컴포넌트
 │   ├── main.tsx           # 앱 엔트리 포인트
 │   └── index.css          # 글로벌 스타일
-├── supabase/
+├── db/
 │   └── migrations/        # 데이터베이스 마이그레이션
 ├── public/                # 정적 파일
 ├── package.json

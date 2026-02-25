@@ -309,7 +309,7 @@ class LocalQueryBuilder {
   }
 }
 
-export const supabase = {
+export const db = {
   channel(_name: string) {
     return {
       on() { return this; },

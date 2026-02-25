@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Upload, Waves, Film, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import MentionInput from './MentionInput';
 
@@ -130,7 +130,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
         const fileExt = filePreview.file.name.split('.').pop();
         const fileName = `${user.id}/${timestamp}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await db.storage
           .from('diving-media')
           .upload(fileName, filePreview.file, {
             cacheControl: '3600',
@@ -142,7 +142,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
           throw uploadError;
         }
 
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = db.storage
           .from('diving-media')
           .getPublicUrl(fileName);
 
@@ -171,7 +171,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
         throw new Error('파일 업로드에 실패했습니다.');
       }
 
-      const { data: postData, error: insertError } = await supabase.from('posts').insert({
+      const { data: postData, error: insertError } = await db.from('posts').insert({
         user_id: user.id,
         caption: caption,
         dive_type: diveType,
@@ -195,7 +195,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
           order_index: index,
         }));
 
-        const { error: mediaError } = await supabase
+        const { error: mediaError } = await db
           .from('post_media')
           .insert(mediaInserts);
 

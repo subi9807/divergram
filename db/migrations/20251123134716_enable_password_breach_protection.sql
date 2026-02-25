@@ -2,7 +2,7 @@
   # Enable Password Breach Protection
 
   This migration documents the password breach protection feature that needs to be
-  enabled in the Supabase Dashboard for enhanced security.
+  enabled in the DB Admin Dashboard for enhanced security.
 
   ## Security Enhancement: Password Breach Protection
 
@@ -11,7 +11,7 @@
 
   ### How to Enable:
 
-  #### Option 1: Supabase Dashboard (Recommended)
+  #### Option 1: DB Admin Dashboard (Recommended)
   1. Go to your Supabase project dashboard
   2. Navigate to Authentication → Policies
   3. Find "Password Protection" or "Security" section
@@ -20,7 +20,7 @@
 
   #### Option 2: Supabase CLI (if available)
   ```bash
-  supabase dashboard
+  DB admin dashboard
   # Then follow the dashboard steps above
   ```
 
@@ -65,9 +65,9 @@ INSERT INTO public.security_config_docs (feature_name, enabled, notes)
 VALUES (
   'password_breach_protection',
   false,
-  'Enable password breach protection in Supabase Dashboard → Authentication → Policies. This feature checks passwords against HaveIBeenPwned.org to prevent use of compromised passwords.'
+  'Enable password breach protection in DB Admin Dashboard → Authentication → Policies. This feature checks passwords against HaveIBeenPwned.org to prevent use of compromised passwords.'
 )
 ON CONFLICT DO NOTHING;
 
 -- Add comment to the table
-COMMENT ON TABLE public.security_config_docs IS 'Documentation table for security features that require configuration in Supabase Dashboard or CLI.';
+COMMENT ON TABLE public.security_config_docs IS 'Documentation table for security features that require configuration in DB Admin Dashboard or CLI.';

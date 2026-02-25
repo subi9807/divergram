@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Send, ArrowLeft, X } from 'lucide-react';
-import { supabase, Room, Message, Profile } from '../lib/supabase';
+import { db, Room, Message, Profile } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 
@@ -35,7 +35,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
     if (selectedRoom) {
       loadMessages(selectedRoom.id);
 
-      const channel = supabase
+      const channel = db
         .channel(`room_${selectedRoom.id}`)
         .on(
           'postgres_changes',
@@ -73,7 +73,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
   const loadRooms = async () => {
     if (!user) return;
 
-    const { data: participantData } = await supabase
+    const { data: participantData } = await db
       .from('participants')
       .select('room_id, rooms(id, type, created_at)')
       .eq('user_id', user.id);
@@ -85,13 +85,13 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
 
     const roomIds = participantData.map((p: any) => p.rooms.id);
 
-    const { data: otherParticipants } = await supabase
+    const { data: otherParticipants } = await db
       .from('participants')
       .select('room_id, user_id, profiles(id, username, avatar_url, full_name)')
       .in('room_id', roomIds)
       .neq('user_id', user.id);
 
-    const { data: lastMessages } = await supabase
+    const { data: lastMessages } = await db
       .from('messages')
       .select('*')
       .in('room_id', roomIds)
@@ -120,7 +120,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
   };
 
   const loadMessages = async (roomId: string) => {
-    const { data } = await supabase
+    const { data } = await db
       .from('messages')
       .select('*, profiles(id, username, avatar_url)')
       .eq('room_id', roomId)
@@ -134,7 +134,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
         .map((m: Message) => m.id);
 
       if (unreadIds.length > 0) {
-        await supabase
+        await db
           .from('messages')
           .update({ read_at: new Date().toISOString() })
           .in('id', unreadIds);
@@ -143,7 +143,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
   };
 
   const markAsRead = async (messageId: string) => {
-    await supabase
+    await db
       .from('messages')
       .update({ read_at: new Date().toISOString() })
       .eq('id', messageId);
@@ -153,7 +153,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
     e.preventDefault();
     if (!user || !selectedRoom || !newMessage.trim()) return;
 
-    await supabase.from('messages').insert({
+    await db.from('messages').insert({
       room_id: selectedRoom.id,
       sender_id: user.id,
       content: newMessage.trim(),

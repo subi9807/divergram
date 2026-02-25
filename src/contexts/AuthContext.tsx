@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, Profile, User } from '../lib/supabase';
+import { db, Profile, User } from '../lib/internal-db';
 
 interface AuthContextType {
   user: User | null;
@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    db.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadProfile(session.user.id);
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
       (async () => {
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProfile = async (userId: string) => {
-    const { data } = await supabase
+    const { data } = await db
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -54,14 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await db.auth.signUp({
       email,
       password,
     });
 
     if (error) throw error;
     if (data.user) {
-      await supabase.from('profiles').insert({
+      await db.from('profiles').insert({
         id: data.user.id,
         username,
         full_name: username,
@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await db.auth.signInWithPassword({
       email,
       password,
     });
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await db.auth.signOut();
     if (error) throw error;
   };
 

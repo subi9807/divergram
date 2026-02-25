@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
-import { Post, supabase, PostMedia } from '../lib/supabase';
+import { Post, db, PostMedia } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface EditPostModalProps {
@@ -69,7 +69,7 @@ export default function EditPostModal({
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${timestamp}_${i}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { data: uploadData, error: uploadError } = await db.storage
           .from('diving-media')
           .upload(fileName, file);
 
@@ -78,7 +78,7 @@ export default function EditPostModal({
           throw uploadError;
         }
 
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = db.storage
           .from('diving-media')
           .getPublicUrl(uploadData.path);
 
@@ -96,12 +96,12 @@ export default function EditPostModal({
           if (bucketIndex !== -1) {
             const filePath = urlParts.slice(bucketIndex + 1).join('/');
 
-            await supabase.storage
+            await db.storage
               .from('diving-media')
               .remove([filePath]);
           }
 
-          await supabase
+          await db
             .from('post_media')
             .delete()
             .eq('id', mediaId);
@@ -115,7 +115,7 @@ export default function EditPostModal({
 
       for (let i = 0; i < uploadedMediaUrls.length; i++) {
         const mediaData = uploadedMediaUrls[i];
-        await supabase.from('post_media').insert({
+        await db.from('post_media').insert({
           post_id: post.id,
           media_url: mediaData.url,
           media_type: mediaData.type,

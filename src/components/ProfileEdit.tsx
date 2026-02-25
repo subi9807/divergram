@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Camera, Loader } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProfileEditProps {
@@ -42,13 +42,13 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await db.storage
         .from('media')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from('media')
         .getPublicUrl(filePath);
 
@@ -67,7 +67,7 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from('profiles')
         .update({
           username: formData.username,
