@@ -667,7 +667,7 @@ app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
           return d[c] ?? null;
         });
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-        const updates = cols.filter((c) => c !== 'id').map((c, i) => `${c}=EXCLUDED.${c}`).join(', ');
+        const updates = cols.filter((c) => c !== 'id').map((c) => `${c}=EXCLUDED.${c}`).join(', ');
         await pool.query(
           `INSERT INTO ${dstTable}(${cols.join(',')}) VALUES (${placeholders})
            ON CONFLICT (id) DO UPDATE SET ${updates}`,
@@ -681,6 +681,151 @@ app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
     res.json({ ok: true, migrated: result });
   } catch {
     res.status(500).json({ ok: false, error: 'normalized_migration_failed' });
+  }
+});
+
+app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
+  const usersN = Math.min(Math.max(Number(req.body?.users || 30), 1), 300);
+  const postsN = Math.min(Math.max(Number(req.body?.posts || 120), 1), 1200);
+  const commentsN = Math.min(Math.max(Number(req.body?.comments || 300), 1), 3000);
+  const likesN = Math.min(Math.max(Number(req.body?.likes || 600), 1), 6000);
+
+  try {
+    const pass = 'Password123!';
+    const hash = await bcrypt.hash(pass, 10);
+    const sha = crypto.createHash('sha256').update(pass).digest('hex');
+
+    const profileIds = [];
+    for (let i = 1; i <= usersN; i++) {
+      const username = `sample_user_${i}`;
+      const email = `sample${i}@divergram.local`;
+      await pool.query(
+        `INSERT INTO app_users(email,password_hash,password_sha256,username,role,is_blocked)
+         VALUES ($1,$2,$3,$4,'user',false)
+         ON CONFLICT (email) DO UPDATE SET username=EXCLUDED.username
+         RETURNING id::text`,
+        [email, hash, sha, username]
+      );
+      const id = String((await pool.query('SELECT id::text FROM app_users WHERE email=$1', [email])).rows[0].id);
+      profileIds.push(id);
+      await pool.query(
+        `INSERT INTO app_profiles(id,username,full_name,bio,avatar_url)
+         VALUES ($1,$2,$3,$4,'')
+         ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,full_name=EXCLUDED.full_name,bio=EXCLUDED.bio`,
+        [id, username, `Sample User ${i}`, `Auto-generated profile #${i}`]
+      );
+      await pool.query(
+        `INSERT INTO app_records(table_name,record_id,data)
+         VALUES ('profiles',$1,$2::jsonb)
+         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+        [id, JSON.stringify({ id, username, full_name: `Sample User ${i}`, bio: `Auto-generated profile #${i}`, avatar_url: '' })]
+      );
+    }
+
+    const postIds = [];
+    for (let i = 1; i <= postsN; i++) {
+      const id = `bulk_post_${i}`;
+      const userId = profileIds[i % profileIds.length];
+      const row = {
+        id,
+        user_id: userId,
+        image_url: `https://picsum.photos/seed/divergram-${i}/1200/900`,
+        caption: `샘플 게시물 ${i}`,
+        location: ['Jeju','Bali','Cebu','Okinawa'][i % 4],
+        created_at: new Date(Date.now() - i * 60000).toISOString(),
+      };
+      postIds.push(id);
+      await pool.query(
+        `INSERT INTO app_posts(id,user_id,image_url,caption,location,created_at)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (id) DO UPDATE SET caption=EXCLUDED.caption,location=EXCLUDED.location`,
+        [row.id,row.user_id,row.image_url,row.caption,row.location,row.created_at]
+      );
+      await pool.query(
+        `INSERT INTO app_records(table_name,record_id,data)
+         VALUES ('posts',$1,$2::jsonb)
+         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+        [row.id, JSON.stringify(row)]
+      );
+    }
+
+    for (let i = 1; i <= commentsN; i++) {
+      const id = `bulk_comment_${i}`;
+      const row = {
+        id,
+        post_id: postIds[i % postIds.length],
+        user_id: profileIds[(i + 3) % profileIds.length],
+        content: `샘플 댓글 ${i}`,
+        created_at: new Date(Date.now() - i * 30000).toISOString(),
+      };
+      await pool.query(
+        `INSERT INTO app_comments(id,post_id,user_id,content,created_at)
+         VALUES ($1,$2,$3,$4,$5)
+         ON CONFLICT (id) DO UPDATE SET content=EXCLUDED.content`,
+        [row.id,row.post_id,row.user_id,row.content,row.created_at]
+      );
+      await pool.query(
+        `INSERT INTO app_records(table_name,record_id,data)
+         VALUES ('comments',$1,$2::jsonb)
+         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+        [row.id, JSON.stringify(row)]
+      );
+    }
+
+    for (let i = 1; i <= likesN; i++) {
+      const id = `bulk_like_${i}`;
+      const row = {
+        id,
+        post_id: postIds[i % postIds.length],
+        user_id: profileIds[(i + 7) % profileIds.length],
+        created_at: new Date(Date.now() - i * 20000).toISOString(),
+      };
+      await pool.query(
+        `INSERT INTO app_likes(id,post_id,user_id,created_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [row.id,row.post_id,row.user_id,row.created_at]
+      );
+      await pool.query(
+        `INSERT INTO app_records(table_name,record_id,data)
+         VALUES ('likes',$1,$2::jsonb)
+         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+        [row.id, JSON.stringify(row)]
+      );
+    }
+
+    res.json({ ok: true, seeded: { users: usersN, posts: postsN, comments: commentsN, likes: likesN } });
+  } catch {
+    res.status(500).json({ ok: false, error: 'seed_bulk_failed' });
+  }
+});
+
+app.get('/api/admin/tables', requireAdmin, async (_req, res) => {
+  const tableNames = [
+    'app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','admin_audit_logs','app_records'
+  ];
+  try {
+    const out = [];
+    for (const t of tableNames) {
+      const c = await pool.query(`SELECT COUNT(*)::int AS count FROM ${t}`);
+      out.push({ table: t, count: c.rows[0].count });
+    }
+    res.json({ ok: true, tables: out });
+  } catch {
+    res.status(500).json({ ok: false, error: 'tables_failed' });
+  }
+});
+
+app.get('/api/admin/table/:name', requireAdmin, async (req, res) => {
+  const name = String(req.params.name || '').trim();
+  const allow = new Set(['app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','admin_audit_logs','app_records']);
+  if (!allow.has(name)) return res.status(400).json({ ok: false, error: 'table_not_allowed' });
+  const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
+  try {
+    const rows = await pool.query(`SELECT * FROM ${name} ORDER BY 1 DESC LIMIT $1`, [limit]);
+    res.json({ ok: true, table: name, rows: rows.rows });
+  } catch {
+    res.status(500).json({ ok: false, error: 'table_rows_failed' });
   }
 });
 
