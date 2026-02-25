@@ -229,6 +229,44 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_rooms (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_participants (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      joined_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_messages (
+      id TEXT PRIMARY KEY,
+      room_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      read_at TIMESTAMPTZ
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_reports (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -493,10 +531,7 @@ function applyJsonFilters(rows, filters = []) {
         const [, col, op, raw] = m;
         const rowVal = get(r, col);
         if (op === 'eq') return String(rowVal ?? '') === raw;
-        if (op === 'ilike') {
-          const p = raw.toLowerCase().replace(/%/g, '');
-          return String(rowVal ?? '').toLowerCase().includes(p);
-        }
+        if (op === 'ilike') return String(rowVal ?? '').toLowerCase().includes(raw.toLowerCase().replace(/%/g, ''));
         return false;
       });
     }
@@ -504,14 +539,33 @@ function applyJsonFilters(rows, filters = []) {
   }));
 }
 
+const DATA_TABLES = {
+  profiles: { table: 'app_profiles', columns: ['id','username','full_name','bio','avatar_url','website','created_at'] },
+  posts: { table: 'app_posts', columns: ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','visibility','buddy','buddy_name','created_at'] },
+  post_media: { table: 'app_post_media', columns: ['id','post_id','media_url','media_type','order_index','created_at'] },
+  likes: { table: 'app_likes', columns: ['id','post_id','user_id','created_at'] },
+  comments: { table: 'app_comments', columns: ['id','post_id','user_id','content','created_at'] },
+  follows: { table: 'app_follows', columns: ['id','follower_id','following_id','created_at'] },
+  saved_posts: { table: 'app_saved_posts', columns: ['id','user_id','post_id','created_at'] },
+  notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','is_read','created_at'] },
+  rooms: { table: 'app_rooms', columns: ['id','type','created_at'] },
+  participants: { table: 'app_participants', columns: ['id','room_id','user_id','joined_at'] },
+  messages: { table: 'app_messages', columns: ['id','room_id','sender_id','content','created_at','read_at'] },
+  reports: { table: 'app_reports', columns: ['id','user_id','reason','status','created_at'] },
+};
+
+function resolveDataTable(name) {
+  return DATA_TABLES[name] || null;
+}
+
 app.get('/api/data/:table', async (req, res) => {
-  const table = String(req.params.table || '').trim();
-  if (!table) return res.status(400).json({ error: 'invalid_table' });
+  const key = String(req.params.table || '').trim();
+  const spec = resolveDataTable(key);
+  if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
   try {
-    const raw = await pool.query('SELECT data FROM app_records WHERE table_name=$1', [table]);
-    let rows = raw.rows.map((r) => r.data);
-
+    const raw = await pool.query(`SELECT * FROM ${spec.table}`);
+    let rows = raw.rows;
     const filters = req.query.filters ? JSON.parse(String(req.query.filters)) : [];
     rows = applyJsonFilters(rows, filters);
 
@@ -521,15 +575,11 @@ app.get('/api/data/:table', async (req, res) => {
       const asc = order.ascending !== false;
       rows.sort((a, b) => (a[col] > b[col] ? 1 : -1) * (asc ? 1 : -1));
     }
-
     if (req.query.range) {
       const [a, b] = JSON.parse(String(req.query.range));
       rows = rows.slice(Number(a), Number(b) + 1);
     }
-
-    if (req.query.limit) {
-      rows = rows.slice(0, Number(req.query.limit));
-    }
+    if (req.query.limit) rows = rows.slice(0, Number(req.query.limit));
 
     res.json({ data: rows, error: null, count: rows.length });
   } catch {
@@ -538,20 +588,22 @@ app.get('/api/data/:table', async (req, res) => {
 });
 
 app.post('/api/data/:table', async (req, res) => {
-  const table = String(req.params.table || '').trim();
+  const key = String(req.params.table || '').trim();
+  const spec = resolveDataTable(key);
   const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
-  if (!table) return res.status(400).json({ error: 'invalid_table' });
+  if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
   try {
     for (const row of rows) {
-      const id = String(row.id || row.record_id || crypto.randomUUID());
-      const payload = { ...row, id };
+      const payload = { ...row, id: String(row.id || crypto.randomUUID()) };
+      const cols = spec.columns.filter((c) => payload[c] !== undefined);
+      if (!cols.includes('id')) cols.unshift('id');
+      const vals = cols.map((c) => payload[c]);
+      const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+      const updates = cols.filter((c) => c !== 'id').map((c) => `${c}=EXCLUDED.${c}`).join(', ');
       await pool.query(
-        `INSERT INTO app_records(table_name, record_id, data)
-         VALUES ($1, $2, $3::jsonb)
-         ON CONFLICT (table_name, record_id)
-         DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
-        [table, id, JSON.stringify(payload)]
+        `INSERT INTO ${spec.table}(${cols.join(',')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${updates || 'id=EXCLUDED.id'}`,
+        vals
       );
     }
     res.json({ data: rows, error: null });
@@ -561,22 +613,23 @@ app.post('/api/data/:table', async (req, res) => {
 });
 
 app.patch('/api/data/:table', async (req, res) => {
-  const table = String(req.params.table || '').trim();
+  const key = String(req.params.table || '').trim();
+  const spec = resolveDataTable(key);
   const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
   const patch = req.body?.patch || {};
-  if (!table) return res.status(400).json({ error: 'invalid_table' });
+  if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
   try {
-    const raw = await pool.query('SELECT record_id, data FROM app_records WHERE table_name=$1', [table]);
-    const matched = applyJsonFilters(raw.rows.map((r) => ({ ...r.data, __id: r.record_id })), filters);
+    const raw = await pool.query(`SELECT * FROM ${spec.table}`);
+    const matched = applyJsonFilters(raw.rows, filters);
+    const patchCols = spec.columns.filter((c) => c !== 'id' && patch[c] !== undefined);
 
     for (const row of matched) {
-      const next = { ...row, ...patch };
-      delete next.__id;
-      await pool.query(
-        'UPDATE app_records SET data=$1::jsonb, updated_at=now() WHERE table_name=$2 AND record_id=$3',
-        [JSON.stringify(next), table, row.__id]
-      );
+      if (!patchCols.length) continue;
+      const assigns = patchCols.map((c, i) => `${c}=$${i + 1}`).join(', ');
+      const vals = patchCols.map((c) => patch[c]);
+      vals.push(row.id);
+      await pool.query(`UPDATE ${spec.table} SET ${assigns} WHERE id=$${vals.length}`, vals);
     }
 
     res.json({ data: null, error: null, updated: matched.length });
@@ -586,15 +639,16 @@ app.patch('/api/data/:table', async (req, res) => {
 });
 
 app.delete('/api/data/:table', async (req, res) => {
-  const table = String(req.params.table || '').trim();
+  const key = String(req.params.table || '').trim();
+  const spec = resolveDataTable(key);
   const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
-  if (!table) return res.status(400).json({ error: 'invalid_table' });
+  if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
   try {
-    const raw = await pool.query('SELECT record_id, data FROM app_records WHERE table_name=$1', [table]);
-    const matched = applyJsonFilters(raw.rows.map((r) => ({ ...r.data, __id: r.record_id })), filters);
+    const raw = await pool.query(`SELECT * FROM ${spec.table}`);
+    const matched = applyJsonFilters(raw.rows, filters);
     for (const row of matched) {
-      await pool.query('DELETE FROM app_records WHERE table_name=$1 AND record_id=$2', [table, row.__id]);
+      await pool.query(`DELETE FROM ${spec.table} WHERE id=$1`, [row.id]);
     }
     res.json({ data: null, error: null, deleted: matched.length });
   } catch {
@@ -604,37 +658,25 @@ app.delete('/api/data/:table', async (req, res) => {
 
 app.post('/api/data/seed/default', async (_req, res) => {
   const now = new Date().toISOString();
-  const samples = {
-    profiles: [
-      { id: 'u_demo', username: 'demo', full_name: 'Demo User', bio: 'Diver', avatar_url: '' },
-      { id: 'u_ocean', username: 'ocean_lee', full_name: 'Ocean Lee', bio: 'Ocean lover', avatar_url: '' },
-      { id: 'u_blue', username: 'blue_fin', full_name: 'Blue Fin', bio: 'Freediver', avatar_url: '' }
-    ],
-    posts: [
-      { id: 'p1', user_id: 'u_ocean', image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200', caption: '야간다이빙 기록 #Jeju', created_at: now, location: 'Jeju' },
-      { id: 'p2', user_id: 'u_blue', image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=1200', caption: '프리다이빙 세션 #Bali', created_at: now, location: 'Bali', video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
-    ],
-    likes: [], comments: [], follows: [], saved_posts: [], notifications: [], post_media: [], rooms: [], participants: [], messages: [], reports: []
-  };
-
   try {
-    const exists = await pool.query("SELECT COUNT(*)::int AS count FROM app_records WHERE table_name='profiles'");
-    if ((exists.rows[0]?.count || 0) > 0) {
-      return res.json({ ok: true, seeded: false, reason: 'already_seeded' });
-    }
+    const exists = await pool.query('SELECT COUNT(*)::int AS count FROM app_profiles');
+    if ((exists.rows[0]?.count || 0) > 0) return res.json({ ok: true, seeded: false, reason: 'already_seeded' });
 
-    for (const [table, rows] of Object.entries(samples)) {
-      for (const row of rows) {
-        const id = String(row.id || crypto.randomUUID());
-        await pool.query(
-          `INSERT INTO app_records(table_name, record_id, data)
-           VALUES ($1, $2, $3::jsonb)
-           ON CONFLICT (table_name, record_id)
-           DO NOTHING`,
-          [table, id, JSON.stringify({ ...row, id })]
-        );
-      }
-    }
+    await pool.query(`INSERT INTO app_profiles(id,username,full_name,bio,avatar_url,created_at) VALUES
+      ('u_demo','demo','Demo User','Diver','',$1),
+      ('u_ocean','ocean_lee','Ocean Lee','Ocean lover','',$1),
+      ('u_blue','blue_fin','Blue Fin','Freediver','',$1)
+    ON CONFLICT (id) DO NOTHING`, [now]);
+
+    await pool.query(`INSERT INTO app_posts(id,user_id,image_url,caption,location,created_at) VALUES
+      ('p1','u_ocean','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200','야간다이빙 기록 #Jeju','Jeju',$1),
+      ('p2','u_blue','https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=1200','프리다이빙 세션 #Bali','Bali',$1)
+    ON CONFLICT (id) DO NOTHING`, [now]);
+
+    await pool.query(`INSERT INTO app_post_media(id,post_id,media_url,media_type,order_index,created_at) VALUES
+      ('pm1','p1','https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200','image',0,$1),
+      ('pm2','p2','https://www.youtube.com/watch?v=dQw4w9WgXcQ','video',0,$1)
+    ON CONFLICT (id) DO NOTHING`, [now]);
 
     res.json({ ok: true, seeded: true });
   } catch {
@@ -714,12 +756,6 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
          ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,full_name=EXCLUDED.full_name,bio=EXCLUDED.bio`,
         [id, username, `Sample User ${i}`, `Auto-generated profile #${i}`]
       );
-      await pool.query(
-        `INSERT INTO app_records(table_name,record_id,data)
-         VALUES ('profiles',$1,$2::jsonb)
-         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
-        [id, JSON.stringify({ id, username, full_name: `Sample User ${i}`, bio: `Auto-generated profile #${i}`, avatar_url: '' })]
-      );
     }
 
     const postIds = [];
@@ -741,12 +777,6 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
          ON CONFLICT (id) DO UPDATE SET caption=EXCLUDED.caption,location=EXCLUDED.location`,
         [row.id,row.user_id,row.image_url,row.caption,row.location,row.created_at]
       );
-      await pool.query(
-        `INSERT INTO app_records(table_name,record_id,data)
-         VALUES ('posts',$1,$2::jsonb)
-         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
-        [row.id, JSON.stringify(row)]
-      );
     }
 
     for (let i = 1; i <= commentsN; i++) {
@@ -764,12 +794,6 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
          ON CONFLICT (id) DO UPDATE SET content=EXCLUDED.content`,
         [row.id,row.post_id,row.user_id,row.content,row.created_at]
       );
-      await pool.query(
-        `INSERT INTO app_records(table_name,record_id,data)
-         VALUES ('comments',$1,$2::jsonb)
-         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
-        [row.id, JSON.stringify(row)]
-      );
     }
 
     for (let i = 1; i <= likesN; i++) {
@@ -786,11 +810,83 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
          ON CONFLICT (id) DO NOTHING`,
         [row.id,row.post_id,row.user_id,row.created_at]
       );
+    }
+
+    // sample rows for remaining tables
+    for (let i = 1; i <= Math.min(120, postsN); i++) {
+      const id = `bulk_media_${i}`;
       await pool.query(
-        `INSERT INTO app_records(table_name,record_id,data)
-         VALUES ('likes',$1,$2::jsonb)
-         ON CONFLICT (table_name,record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
-        [row.id, JSON.stringify(row)]
+        `INSERT INTO app_post_media(id,post_id,media_url,media_type,order_index,created_at)
+         VALUES ($1,$2,$3,'image',0,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [id, postIds[i % postIds.length], `https://picsum.photos/seed/media-${i}/1200/900`, new Date().toISOString()]
+      );
+    }
+
+    for (let i = 1; i <= Math.min(300, usersN * 2); i++) {
+      const id = `bulk_follow_${i}`;
+      await pool.query(
+        `INSERT INTO app_follows(id,follower_id,following_id,created_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [id, profileIds[i % profileIds.length], profileIds[(i + 1) % profileIds.length], new Date().toISOString()]
+      );
+    }
+
+    for (let i = 1; i <= Math.min(500, postsN); i++) {
+      const id = `bulk_saved_${i}`;
+      await pool.query(
+        `INSERT INTO app_saved_posts(id,user_id,post_id,created_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [id, profileIds[(i + 2) % profileIds.length], postIds[i % postIds.length], new Date().toISOString()]
+      );
+    }
+
+    for (let i = 1; i <= Math.min(800, likesN); i++) {
+      const id = `bulk_noti_${i}`;
+      await pool.query(
+        `INSERT INTO app_notifications(id,user_id,actor_id,type,post_id,is_read,created_at)
+         VALUES ($1,$2,$3,'like',$4,false,$5)
+         ON CONFLICT (id) DO NOTHING`,
+        [id, profileIds[i % profileIds.length], profileIds[(i + 3) % profileIds.length], postIds[i % postIds.length], new Date().toISOString()]
+      );
+    }
+
+    for (let i = 1; i <= 40; i++) {
+      const roomId = `bulk_room_${i}`;
+      await pool.query(
+        `INSERT INTO app_rooms(id,type,created_at)
+         VALUES ($1,'direct',$2)
+         ON CONFLICT (id) DO NOTHING`,
+        [roomId, new Date().toISOString()]
+      );
+      await pool.query(
+        `INSERT INTO app_participants(id,room_id,user_id,joined_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [`bulk_pt_${i}_1`, roomId, profileIds[i % profileIds.length], new Date().toISOString()]
+      );
+      await pool.query(
+        `INSERT INTO app_participants(id,room_id,user_id,joined_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [`bulk_pt_${i}_2`, roomId, profileIds[(i + 5) % profileIds.length], new Date().toISOString()]
+      );
+      await pool.query(
+        `INSERT INTO app_messages(id,room_id,sender_id,content,created_at,read_at)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (id) DO NOTHING`,
+        [`bulk_msg_${i}`, roomId, profileIds[i % profileIds.length], `샘플 메시지 ${i}`, new Date().toISOString(), null]
+      );
+    }
+
+    for (let i = 1; i <= 80; i++) {
+      await pool.query(
+        `INSERT INTO app_reports(id,user_id,reason,status,created_at)
+         VALUES ($1,$2,$3,'open',$4)
+         ON CONFLICT (id) DO NOTHING`,
+        [`bulk_report_${i}`, profileIds[i % profileIds.length], `샘플 신고 ${i}`, new Date().toISOString()]
       );
     }
 
@@ -802,7 +898,7 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/tables', requireAdmin, async (_req, res) => {
   const tableNames = [
-    'app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','admin_audit_logs','app_records'
+    'app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','app_rooms','app_participants','app_messages','app_reports','admin_audit_logs'
   ];
   try {
     const out = [];
@@ -818,7 +914,7 @@ app.get('/api/admin/tables', requireAdmin, async (_req, res) => {
 
 app.get('/api/admin/table/:name', requireAdmin, async (req, res) => {
   const name = String(req.params.name || '').trim();
-  const allow = new Set(['app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','admin_audit_logs','app_records']);
+  const allow = new Set(['app_users','app_profiles','app_posts','app_post_media','app_likes','app_comments','app_follows','app_saved_posts','app_notifications','app_rooms','app_participants','app_messages','app_reports','admin_audit_logs']);
   if (!allow.has(name)) return res.status(400).json({ ok: false, error: 'table_not_allowed' });
   const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 200);
   try {
