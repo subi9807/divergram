@@ -58,16 +58,22 @@ export default function PersonalInfoEdit() {
   return (
     <div className="p-6 md:p-8 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">개인정보 수정</h1>
-      <div className="space-y-3">
-        <input className="w-full border rounded-md p-3" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일" />
-        <input className="w-full border rounded-md p-3" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="사용자명" />
-        <input className="w-full border rounded-md p-3" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="이름" />
+      <form
+        className="space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave();
+        }}
+      >
+        <input autoComplete="email" className="w-full border rounded-md p-3" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일" />
+        <input autoComplete="username" className="w-full border rounded-md p-3" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="사용자명" />
+        <input autoComplete="name" className="w-full border rounded-md p-3" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="이름" />
         <textarea className="w-full border rounded-md p-3 min-h-24" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="자기소개" />
-        <input type="password" className="w-full border rounded-md p-3" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="새 비밀번호(선택)" />
-        <button className="px-4 py-2 rounded-md bg-blue-500 text-white disabled:opacity-50" disabled={saving} onClick={onSave}>
+        <input type="password" autoComplete="new-password" className="w-full border rounded-md p-3" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="새 비밀번호(선택)" />
+        <button type="submit" className="px-4 py-2 rounded-md bg-blue-500 text-white disabled:opacity-50" disabled={saving}>
           {saving ? '저장 중...' : '저장'}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

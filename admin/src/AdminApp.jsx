@@ -148,16 +148,24 @@ export function AdminApp() {
       <main className="content">
         <div className="card">
           <h2>연결 설정</h2>
-          <div className="row">
+          <form
+            className="row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              refresh();
+            }}
+          >
+            <input type="text" autoComplete="username" value="admin" readOnly style={{ display: 'none' }} />
             <input
               type="password"
+              autoComplete="current-password"
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
               placeholder="ADMIN_API_KEY"
             />
-            <button onClick={refresh} disabled={loading}>{loading ? '로딩...' : '새로고침'}</button>
-            <button onClick={seedBulk} disabled={loading}>대량 샘플 생성</button>
-          </div>
+            <button type="submit" disabled={loading}>{loading ? '로딩...' : '새로고침'}</button>
+            <button type="button" onClick={seedBulk} disabled={loading}>대량 샘플 생성</button>
+          </form>
           {error && <p className="error">{error}</p>}
         </div>
 
