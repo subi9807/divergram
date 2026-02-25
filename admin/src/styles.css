@@ -4,6 +4,9 @@ body { margin: 0; font-family: Inter, -apple-system, sans-serif; background: #f4
 .sidebar { background: linear-gradient(180deg, #0f2a4d, #1f4b7a); color: #fff; padding: 24px; }
 .sidebar h1 { margin: 0 0 8px; font-size: 22px; }
 .sidebar p { opacity: .85; font-size: 13px; }
+.side-menu { margin-top: 20px; display: grid; gap: 8px; }
+.side-menu button { width: 100%; text-align: left; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); }
+.side-menu button.active { background: #fff; color: #12365f; border-color: #fff; font-weight: 700; }
 .content { padding: 24px; display: grid; gap: 16px; }
 .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
 .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
