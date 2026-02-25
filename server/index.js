@@ -135,6 +135,100 @@ async function ensureSchema() {
     );
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS app_records_table_name_idx ON app_records(table_name);`);
+
+  // 2nd-phase normalized tables
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_profiles (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL,
+      full_name TEXT NOT NULL DEFAULT '',
+      bio TEXT NOT NULL DEFAULT '',
+      avatar_url TEXT NOT NULL DEFAULT '',
+      website TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_posts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      image_url TEXT,
+      video_url TEXT,
+      caption TEXT NOT NULL DEFAULT '',
+      location TEXT,
+      dive_type TEXT,
+      dive_date TEXT,
+      max_depth DOUBLE PRECISION,
+      water_temperature DOUBLE PRECISION,
+      dive_duration DOUBLE PRECISION,
+      dive_site TEXT,
+      visibility DOUBLE PRECISION,
+      buddy TEXT,
+      buddy_name TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_post_media (
+      id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL,
+      media_url TEXT NOT NULL,
+      media_type TEXT NOT NULL,
+      order_index INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_likes (
+      id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_comments (
+      id TEXT PRIMARY KEY,
+      post_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_follows (
+      id TEXT PRIMARY KEY,
+      follower_id TEXT NOT NULL,
+      following_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_saved_posts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      post_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      actor_id TEXT,
+      type TEXT NOT NULL,
+      post_id TEXT,
+      is_read BOOLEAN NOT NULL DEFAULT false,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -545,6 +639,48 @@ app.post('/api/data/seed/default', async (_req, res) => {
     res.json({ ok: true, seeded: true });
   } catch {
     res.status(500).json({ ok: false, error: 'seed_failed' });
+  }
+});
+
+app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
+  try {
+    const mapping = [
+      ['profiles', 'app_profiles', ['id','username','full_name','bio','avatar_url','website','created_at']],
+      ['posts', 'app_posts', ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','visibility','buddy','buddy_name','created_at']],
+      ['post_media', 'app_post_media', ['id','post_id','media_url','media_type','order_index','created_at']],
+      ['likes', 'app_likes', ['id','post_id','user_id','created_at']],
+      ['comments', 'app_comments', ['id','post_id','user_id','content','created_at']],
+      ['follows', 'app_follows', ['id','follower_id','following_id','created_at']],
+      ['saved_posts', 'app_saved_posts', ['id','user_id','post_id','created_at']],
+      ['notifications', 'app_notifications', ['id','user_id','actor_id','type','post_id','is_read','created_at']],
+    ];
+
+    const result = {};
+
+    for (const [srcTable, dstTable, cols] of mapping) {
+      const raw = await pool.query('SELECT data FROM app_records WHERE table_name=$1', [srcTable]);
+      let count = 0;
+      for (const row of raw.rows) {
+        const d = row.data || {};
+        const values = cols.map((c) => {
+          if (c === 'created_at') return d[c] || new Date().toISOString();
+          return d[c] ?? null;
+        });
+        const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
+        const updates = cols.filter((c) => c !== 'id').map((c, i) => `${c}=EXCLUDED.${c}`).join(', ');
+        await pool.query(
+          `INSERT INTO ${dstTable}(${cols.join(',')}) VALUES (${placeholders})
+           ON CONFLICT (id) DO UPDATE SET ${updates}`,
+          values
+        );
+        count += 1;
+      }
+      result[srcTable] = count;
+    }
+
+    res.json({ ok: true, migrated: result });
+  } catch {
+    res.status(500).json({ ok: false, error: 'normalized_migration_failed' });
   }
 });
 
