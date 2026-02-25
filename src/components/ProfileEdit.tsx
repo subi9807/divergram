@@ -1,11 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Camera, Loader } from 'lucide-react';
+import Cropper, { Area } from 'react-easy-crop';
 import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProfileEditProps {
   onClose: () => void;
   onSaved: () => void;
+}
+
+async function getCroppedImage(imageSrc: string, pixelCrop: Area, size = 512): Promise<string> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('이미지를 불러오지 못했습니다.'));
+    img.src = imageSrc;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('캔버스를 초기화하지 못했습니다.');
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    size,
+    size
+  );
+
+  return canvas.toDataURL('image/jpeg', 0.9);
 }
 
 export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
@@ -20,6 +50,11 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const [cropImageSrc, setCropImageSrc] = useState('');
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -31,6 +66,10 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
       });
     }
   }, [profile]);
+
+  const onCropComplete = useCallback((_croppedArea: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,12 +84,31 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
         reader.readAsDataURL(f);
       });
 
-      // local/mock 모드에서는 데이터 URL로 저장해 항상 미리보기/재로딩이 보장되도록 처리
       const dataUrl = await toDataUrl(file);
-      setFormData((prev) => ({ ...prev, avatar_url: dataUrl }));
+      setCropImageSrc(dataUrl);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
     } catch (error) {
       console.error('Error uploading image:', error);
       alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleApplyCrop = async () => {
+    if (!cropImageSrc || !croppedAreaPixels) return;
+
+    setUploading(true);
+    try {
+      const cropped = await getCroppedImage(cropImageSrc, croppedAreaPixels, 512);
+      setFormData((prev) => ({ ...prev, avatar_url: cropped }));
+      setCropImageSrc('');
+    } catch (error) {
+      console.error('Error cropping image:', error);
+      alert('이미지 크롭에 실패했습니다.');
     } finally {
       setUploading(false);
     }
@@ -142,6 +200,53 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
               disabled={uploading}
             />
           </div>
+
+          {cropImageSrc && (
+            <div className="mb-8 p-4 border border-gray-200 rounded-lg">
+              <p className="text-sm font-semibold mb-3">사진 크롭 (정사각형)</p>
+              <div className="relative w-full h-72 bg-black rounded-lg overflow-hidden">
+                <Cropper
+                  image={cropImageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  cropShape="round"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                />
+              </div>
+              <div className="mt-4">
+                <label className="block text-xs text-gray-600 mb-1">확대</label>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+              <div className="mt-4 flex gap-2 justify-end">
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm rounded-lg border border-gray-300"
+                  onClick={() => setCropImageSrc('')}
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  className="px-3 py-2 text-sm rounded-lg bg-blue-500 text-white"
+                  onClick={handleApplyCrop}
+                >
+                  크롭 적용
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-6">
             <div>
