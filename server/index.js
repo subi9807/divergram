@@ -123,6 +123,18 @@ async function ensureSchema() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_records (
+      table_name TEXT NOT NULL,
+      record_id TEXT NOT NULL,
+      data JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (table_name, record_id)
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS app_records_table_name_idx ON app_records(table_name);`);
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -359,6 +371,180 @@ app.get('/api/admin/audit-logs', requireAdmin, async (req, res) => {
     res.json({ ok: true, logs: logs.rows });
   } catch {
     res.status(500).json({ ok: false, error: 'admin_audit_logs_failed' });
+  }
+});
+
+function applyJsonFilters(rows, filters = []) {
+  const get = (obj, key) => obj?.[key];
+  return rows.filter((r) => filters.every((f) => {
+    const value = get(r, f.column);
+    if (f.op === 'eq') return value === f.value;
+    if (f.op === 'neq') return value !== f.value;
+    if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(value);
+    if (f.op === 'is') return f.value === null ? value == null : value === f.value;
+    if (f.op === 'not') {
+      if (f.operator === 'is' && f.value === null) return value != null;
+      if (f.operator === 'eq') return value !== f.value;
+      return true;
+    }
+    if (f.op === 'ilike') {
+      const pattern = String(f.value || '').toLowerCase().replace(/%/g, '');
+      return String(value || '').toLowerCase().includes(pattern);
+    }
+    if (f.op === 'or') {
+      const clauses = String(f.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+      return clauses.some((clause) => {
+        const m = clause.match(/^([^\.]+)\.(eq|ilike)\.(.+)$/);
+        if (!m) return false;
+        const [, col, op, raw] = m;
+        const rowVal = get(r, col);
+        if (op === 'eq') return String(rowVal ?? '') === raw;
+        if (op === 'ilike') {
+          const p = raw.toLowerCase().replace(/%/g, '');
+          return String(rowVal ?? '').toLowerCase().includes(p);
+        }
+        return false;
+      });
+    }
+    return true;
+  }));
+}
+
+app.get('/api/data/:table', async (req, res) => {
+  const table = String(req.params.table || '').trim();
+  if (!table) return res.status(400).json({ error: 'invalid_table' });
+
+  try {
+    const raw = await pool.query('SELECT data FROM app_records WHERE table_name=$1', [table]);
+    let rows = raw.rows.map((r) => r.data);
+
+    const filters = req.query.filters ? JSON.parse(String(req.query.filters)) : [];
+    rows = applyJsonFilters(rows, filters);
+
+    if (req.query.order) {
+      const order = JSON.parse(String(req.query.order));
+      const col = order.column;
+      const asc = order.ascending !== false;
+      rows.sort((a, b) => (a[col] > b[col] ? 1 : -1) * (asc ? 1 : -1));
+    }
+
+    if (req.query.range) {
+      const [a, b] = JSON.parse(String(req.query.range));
+      rows = rows.slice(Number(a), Number(b) + 1);
+    }
+
+    if (req.query.limit) {
+      rows = rows.slice(0, Number(req.query.limit));
+    }
+
+    res.json({ data: rows, error: null, count: rows.length });
+  } catch {
+    res.status(500).json({ error: 'data_read_failed' });
+  }
+});
+
+app.post('/api/data/:table', async (req, res) => {
+  const table = String(req.params.table || '').trim();
+  const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
+  if (!table) return res.status(400).json({ error: 'invalid_table' });
+
+  try {
+    for (const row of rows) {
+      const id = String(row.id || row.record_id || crypto.randomUUID());
+      const payload = { ...row, id };
+      await pool.query(
+        `INSERT INTO app_records(table_name, record_id, data)
+         VALUES ($1, $2, $3::jsonb)
+         ON CONFLICT (table_name, record_id)
+         DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+        [table, id, JSON.stringify(payload)]
+      );
+    }
+    res.json({ data: rows, error: null });
+  } catch {
+    res.status(500).json({ error: 'data_insert_failed' });
+  }
+});
+
+app.patch('/api/data/:table', async (req, res) => {
+  const table = String(req.params.table || '').trim();
+  const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
+  const patch = req.body?.patch || {};
+  if (!table) return res.status(400).json({ error: 'invalid_table' });
+
+  try {
+    const raw = await pool.query('SELECT record_id, data FROM app_records WHERE table_name=$1', [table]);
+    const matched = applyJsonFilters(raw.rows.map((r) => ({ ...r.data, __id: r.record_id })), filters);
+
+    for (const row of matched) {
+      const next = { ...row, ...patch };
+      delete next.__id;
+      await pool.query(
+        'UPDATE app_records SET data=$1::jsonb, updated_at=now() WHERE table_name=$2 AND record_id=$3',
+        [JSON.stringify(next), table, row.__id]
+      );
+    }
+
+    res.json({ data: null, error: null, updated: matched.length });
+  } catch {
+    res.status(500).json({ error: 'data_update_failed' });
+  }
+});
+
+app.delete('/api/data/:table', async (req, res) => {
+  const table = String(req.params.table || '').trim();
+  const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
+  if (!table) return res.status(400).json({ error: 'invalid_table' });
+
+  try {
+    const raw = await pool.query('SELECT record_id, data FROM app_records WHERE table_name=$1', [table]);
+    const matched = applyJsonFilters(raw.rows.map((r) => ({ ...r.data, __id: r.record_id })), filters);
+    for (const row of matched) {
+      await pool.query('DELETE FROM app_records WHERE table_name=$1 AND record_id=$2', [table, row.__id]);
+    }
+    res.json({ data: null, error: null, deleted: matched.length });
+  } catch {
+    res.status(500).json({ error: 'data_delete_failed' });
+  }
+});
+
+app.post('/api/data/seed/default', async (_req, res) => {
+  const now = new Date().toISOString();
+  const samples = {
+    profiles: [
+      { id: 'u_demo', username: 'demo', full_name: 'Demo User', bio: 'Diver', avatar_url: '' },
+      { id: 'u_ocean', username: 'ocean_lee', full_name: 'Ocean Lee', bio: 'Ocean lover', avatar_url: '' },
+      { id: 'u_blue', username: 'blue_fin', full_name: 'Blue Fin', bio: 'Freediver', avatar_url: '' }
+    ],
+    posts: [
+      { id: 'p1', user_id: 'u_ocean', image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200', caption: '야간다이빙 기록 #Jeju', created_at: now, location: 'Jeju' },
+      { id: 'p2', user_id: 'u_blue', image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=1200', caption: '프리다이빙 세션 #Bali', created_at: now, location: 'Bali', video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+    ],
+    likes: [], comments: [], follows: [], saved_posts: [], notifications: [], post_media: [], rooms: [], participants: [], messages: [], reports: []
+  };
+
+  try {
+    const exists = await pool.query("SELECT COUNT(*)::int AS count FROM app_records WHERE table_name='profiles'");
+    if ((exists.rows[0]?.count || 0) > 0) {
+      return res.json({ ok: true, seeded: false, reason: 'already_seeded' });
+    }
+
+    for (const [table, rows] of Object.entries(samples)) {
+      for (const row of rows) {
+        const id = String(row.id || crypto.randomUUID());
+        await pool.query(
+          `INSERT INTO app_records(table_name, record_id, data)
+           VALUES ($1, $2, $3::jsonb)
+           ON CONFLICT (table_name, record_id)
+           DO NOTHING`,
+          [table, id, JSON.stringify({ ...row, id })]
+        );
+      }
+    }
+
+    res.json({ ok: true, seeded: true });
+  } catch {
+    res.status(500).json({ ok: false, error: 'seed_failed' });
   }
 });
 

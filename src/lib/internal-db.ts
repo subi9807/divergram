@@ -4,7 +4,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
 const TOKEN_KEY = 'dg_token';
 const USER_KEY = 'dg_user';
 const PROFILE_KEY = 'dg_profile';
-const DB_KEY = 'dg_mockdb_v3';
+const DB_KEY = 'dg_mockdb_v3_legacy';
+let seedPromise: Promise<void> | null = null;
 
 export interface User { id: string; email: string; }
 export interface Profile {
@@ -49,6 +50,54 @@ function getSessionLocal() {
   const profileRaw = localStorage.getItem(PROFILE_KEY);
   if (!userRaw || !profileRaw) return null;
   return { user: JSON.parse(userRaw), profile: JSON.parse(profileRaw), token };
+}
+
+async function ensureSeeded() {
+  if (!seedPromise) {
+    seedPromise = fetch(`${API_BASE}/api/data/seed/default`, { method: 'POST' })
+      .then(() => undefined)
+      .catch(() => undefined);
+  }
+  await seedPromise;
+}
+
+async function fetchTable(table: string, options: AnyObj = {}) {
+  await ensureSeeded();
+  const q = new URLSearchParams();
+  if (options.filters?.length) q.set('filters', JSON.stringify(options.filters));
+  if (options.order) q.set('order', JSON.stringify(options.order));
+  if (options.limit != null) q.set('limit', String(options.limit));
+  if (options.range) q.set('range', JSON.stringify(options.range));
+  const r = await fetch(`${API_BASE}/api/data/${table}?${q.toString()}`);
+  const j = await r.json();
+  return j.data || [];
+}
+
+async function writeTable(table: string, rows: AnyObj[]) {
+  const r = await fetch(`${API_BASE}/api/data/${table}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows }),
+  });
+  return r.json();
+}
+
+async function patchTable(table: string, filters: AnyObj[], patch: AnyObj) {
+  const r = await fetch(`${API_BASE}/api/data/${table}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filters, patch }),
+  });
+  return r.json();
+}
+
+async function deleteTable(table: string, filters: AnyObj[]) {
+  const r = await fetch(`${API_BASE}/api/data/${table}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filters }),
+  });
+  return r.json();
 }
 
 function seedDb() {
@@ -299,19 +348,34 @@ class LocalQueryBuilder {
   range(a: number, b: number) { this._range = [a, b]; return this; }
 
   async _rows() {
-    const db = loadDb();
-    let rows = [...(db[this.table] || [])];
-    rows = applyFilters(rows, this.filters);
+    let rows = await fetchTable(this.table, {
+      filters: this.filters,
+      order: this._order,
+      limit: this._limit,
+      range: this._range,
+    });
 
-    if (this.table === 'posts') rows = rows.map((p) => normalizePost(p, db));
-    if (this.table === 'comments') rows = rows.map((c) => ({ ...c, profiles: db.profiles.find((p: any) => p.id === c.user_id) || c.profiles }));
-
-    if (this._order) {
-      const { column, ascending } = this._order;
-      rows.sort((a, b) => (a[column] > b[column] ? 1 : -1) * (ascending ? 1 : -1));
+    if (this.table === 'posts') {
+      const [profiles, likes, comments, postMedia] = await Promise.all([
+        fetchTable('profiles'),
+        fetchTable('likes'),
+        fetchTable('comments'),
+        fetchTable('post_media'),
+      ]);
+      rows = rows.map((p: any) => ({
+        ...p,
+        profiles: profiles.find((x: any) => x.id === p.user_id) || p.profiles || null,
+        likes: likes.filter((x: any) => x.post_id === p.id).map((x: any) => ({ id: x.id, user_id: x.user_id })),
+        comments: comments.filter((x: any) => x.post_id === p.id).map((x: any) => ({ id: x.id })),
+        post_media: postMedia.filter((x: any) => x.post_id === p.id),
+      }));
     }
-    if (this._range) rows = rows.slice(this._range[0], this._range[1] + 1);
-    if (this._limit != null) rows = rows.slice(0, this._limit);
+
+    if (this.table === 'comments') {
+      const profiles = await fetchTable('profiles');
+      rows = rows.map((c: any) => ({ ...c, profiles: profiles.find((p: any) => p.id === c.user_id) || c.profiles }));
+    }
+
     return rows;
   }
 
@@ -319,31 +383,30 @@ class LocalQueryBuilder {
   async single() { const rows = await this._rows(); return { data: rows[0] || null, error: null }; }
 
   async insert(data: any) {
-    const db = loadDb();
     const arr = Array.isArray(data) ? data : [data];
     const out = arr.map((r) => ({ id: r.id || uid(this.table), created_at: r.created_at || nowIso(), ...r }));
-    db[this.table] = [...(db[this.table] || []), ...out];
-    if (this.table === 'posts') {
-      db.posts = db.posts.map((p: any) => normalizePost(p, db));
-    }
-    saveDb(db);
+    await writeTable(this.table, out);
     return { data: out, error: null };
   }
 
-  async update(data: any) {
-    const db = loadDb();
-    const rows = db[this.table] || [];
-    db[this.table] = rows.map((r: any) => applyFilters([r], this.filters).length ? { ...r, ...data } : r);
-    saveDb(db);
-    return { data: null, error: null };
+  update(data: any) {
+    return {
+      eq: async (column: string, value: any) => {
+        await patchTable(this.table, [...this.filters, { op: 'eq', column, value }], data);
+        return { data: null, error: null };
+      },
+      then: (resolve: any, reject: any) => patchTable(this.table, this.filters, data).then(() => ({ data: null, error: null })).then(resolve, reject),
+    } as any;
   }
 
-  async delete() {
-    const db = loadDb();
-    const rows = db[this.table] || [];
-    db[this.table] = rows.filter((r: any) => !applyFilters([r], this.filters).length);
-    saveDb(db);
-    return { data: null, error: null };
+  delete() {
+    return {
+      eq: async (column: string, value: any) => {
+        await deleteTable(this.table, [...this.filters, { op: 'eq', column, value }]);
+        return { data: null, error: null };
+      },
+      then: (resolve: any, reject: any) => deleteTable(this.table, this.filters).then(() => ({ data: null, error: null })).then(resolve, reject),
+    } as any;
   }
 
   then(resolve: any, reject: any) {
@@ -383,11 +446,7 @@ export const db = {
       const j = await r.json();
       if (!r.ok) return { data: { user: null }, error: { message: j.error || 'signup failed' } };
       setSession(j.user, j.profile, j.token);
-      const db = loadDb();
-      if (!(db.profiles || []).find((p: any) => p.id === j.profile.id)) {
-        db.profiles = [...(db.profiles || []), j.profile];
-        saveDb(db);
-      }
+      await writeTable('profiles', [j.profile]);
       const session = { user: j.user, profile: j.profile };
       emit('SIGNED_IN', session);
       return { data: { user: j.user, session }, error: null };
@@ -399,11 +458,7 @@ export const db = {
       const j = await r.json();
       if (!r.ok) return { data: null, error: { message: j.error || 'login failed' } };
       setSession(j.user, j.profile, j.token);
-      const db = loadDb();
-      if (!(db.profiles || []).find((p: any) => p.id === j.profile.id)) {
-        db.profiles = [...(db.profiles || []), j.profile];
-        saveDb(db);
-      }
+      await writeTable('profiles', [j.profile]);
       emit('SIGNED_IN', { user: j.user, profile: j.profile });
       return { data: { session: { user: j.user, profile: j.profile } }, error: null };
     },
