@@ -249,14 +249,19 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     <>
       <div className="snap-y snap-mandatory h-screen">
         {posts.map((post, index) => {
-          const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
-          const likeCount = post.likes.length;
-          const commentCount = post.comments.length;
+          const likes = Array.isArray(post.likes) ? post.likes : [];
+          const comments = Array.isArray(post.comments) ? post.comments : [];
+          const media = Array.isArray(post.post_media) ? post.post_media : [];
+          const author = post.profiles || { username: 'unknown', avatar_url: '' };
+
+          const isLiked = likes.some((like: any) => like?.user_id === user?.id);
+          const likeCount = likes.length;
+          const commentCount = comments.length;
           const isFollowing = followingUsers.has(post.user_id);
           const isSaved = savedPosts.has(post.id);
 
-          const firstVideoMedia = post.post_media && post.post_media.length > 0
-            ? post.post_media.find(m => m.media_type === 'video')
+          const firstVideoMedia = media.length > 0
+            ? media.find(m => m.media_type === 'video')
             : null;
           const videoUrl = firstVideoMedia?.media_url || post.video_url || '';
 
@@ -298,15 +303,15 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5"
                   >
                     <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                      {post.profiles.avatar_url ? (
+                      {author.avatar_url ? (
                         <img
-                          src={post.profiles.avatar_url}
-                          alt={post.profiles.username}
+                          src={author.avatar_url}
+                          alt={author.username}
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
                         <span className="text-gray-600 font-semibold text-sm">
-                          {post.profiles.username[0].toUpperCase()}
+                          {(author.username?.[0] || '?').toUpperCase()}
                         </span>
                       )}
                     </div>
@@ -315,7 +320,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     onClick={() => onViewProfile(post.user_id)}
                     className="text-white font-semibold text-sm drop-shadow-lg"
                   >
-                    {post.profiles.username}
+                    {author.username}
                   </button>
                   {user?.id !== post.user_id && (
                     <button
@@ -343,7 +348,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   onClick={() => onViewProfile(post.user_id)}
                   className="text-white font-semibold text-sm mb-2 drop-shadow-lg hover:underline"
                 >
-                  {post.profiles.username}
+                  {author.username}
                 </button>
                 {post.caption && (
                   <p className="text-white text-sm drop-shadow-lg line-clamp-2">

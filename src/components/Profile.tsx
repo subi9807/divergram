@@ -189,7 +189,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
                 />
               ) : (
                 <span className="text-gray-600 font-semibold text-4xl">
-                  {profile.username[0].toUpperCase()}
+                  {(profile.username?.[0] || '?').toUpperCase()}
                 </span>
               )}
             </div>
