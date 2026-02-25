@@ -365,6 +365,56 @@ app.get('/api/auth/session', async (req, res) => {
   }
 });
 
+app.patch('/api/auth/me', authRateLimit(20, 60_000), async (req, res) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return res.status(401).json({ error: 'unauthorized' });
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    const userId = String(payload.sub || '');
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+
+    const email = req.body?.email ? normalizeEmail(req.body.email) : undefined;
+    const username = req.body?.username ? String(req.body.username).trim() : undefined;
+    const password = req.body?.password ? String(req.body.password) : undefined;
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'invalid_email' });
+    if (username && (username.length < 2 || username.length > 32 || !/^[a-zA-Z0-9_]+$/.test(username))) return res.status(400).json({ error: 'invalid_username' });
+    if (password && (password.length < 8 || password.length > 128)) return res.status(400).json({ error: 'invalid_password' });
+
+    const fields = [];
+    const vals = [];
+
+    if (email !== undefined) { vals.push(email); fields.push(`email=$${vals.length}`); }
+    if (username !== undefined) { vals.push(username); fields.push(`username=$${vals.length}`); }
+    if (password !== undefined) {
+      const hash = await bcrypt.hash(password, 12);
+      const sha = crypto.createHash('sha256').update(password).digest('hex');
+      vals.push(hash); fields.push(`password_hash=$${vals.length}`);
+      vals.push(sha); fields.push(`password_sha256=$${vals.length}`);
+    }
+
+    if (!fields.length) return res.status(400).json({ error: 'no_changes' });
+    vals.push(userId);
+
+    const q = await pool.query(
+      `UPDATE app_users SET ${fields.join(', ')} WHERE id=$${vals.length} RETURNING id,email,username`,
+      vals
+    );
+
+    if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+    if (username !== undefined) {
+      await pool.query('UPDATE app_profiles SET username=$1, full_name=COALESCE(NULLIF(full_name,\'\'), $1) WHERE id=$2', [username, userId]);
+    }
+
+    return res.json({ ok: true, user: { id: String(q.rows[0].id), email: q.rows[0].email, username: q.rows[0].username } });
+  } catch {
+    return res.status(500).json({ error: 'update_me_failed' });
+  }
+});
+
 function requireAdmin(req, res, next) {
   const key = req.headers['x-admin-key'];
   if (!key || key !== ADMIN_API_KEY) return res.status(401).json({ error: 'unauthorized' });

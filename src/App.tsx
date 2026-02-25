@@ -12,6 +12,7 @@ import Reels from './components/Reels';
 import Notifications from './components/Notifications';
 import LocationFeed from './components/LocationFeed';
 import ProfileEdit from './components/ProfileEdit';
+import PersonalInfoEdit from './components/PersonalInfoEdit';
 import { db } from './lib/internal-db';
 
 function MainApp() {
@@ -50,6 +51,7 @@ function MainApp() {
     else if (currentPage === 'location') pathname = '/location';
     else if (currentPage === 'settings') pathname = '/settings';
     else if (currentPage === 'activity') pathname = '/activity';
+    else if (currentPage === 'account') pathname = '/account';
     else if (currentPage === 'report') pathname = '/report';
 
     const params = new URLSearchParams();
@@ -99,6 +101,7 @@ function MainApp() {
       else if (pathname === '/location') setCurrentPage('location');
       else if (pathname === '/settings') setCurrentPage('settings');
       else if (pathname === '/activity') setCurrentPage('activity');
+      else if (pathname === '/account') setCurrentPage('account');
       else if (pathname === '/report') setCurrentPage('report');
       else setCurrentPage('home');
 
@@ -215,6 +218,7 @@ function MainApp() {
             <h1 className="text-2xl font-bold mb-6">설정</h1>
             <div className="space-y-3">
               <button onClick={handleEditProfile} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">프로필 수정</button>
+              <button onClick={() => setCurrentPage('account')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">개인정보 수정</button>
               <button onClick={() => setCurrentPage('activity')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">내 활동 보기</button>
               <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">문제 신고</button>
               <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">로그아웃</button>
@@ -232,6 +236,8 @@ function MainApp() {
             </div>
           </div>
         );
+      case 'account':
+        return <PersonalInfoEdit />;
       case 'report':
         return (
           <div className="p-6 md:p-8 max-w-3xl">
