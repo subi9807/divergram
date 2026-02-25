@@ -217,10 +217,48 @@ function loadDb() {
 function saveDb(db: AnyObj) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
 function applyFilters(rows: any[], filters: AnyObj[]) {
+  const get = (obj: any, key: string) => obj?.[key];
+
   return rows.filter((r) => filters.every((f) => {
-    if (f.op === 'eq') return r[f.column] === f.value;
-    if (f.op === 'neq') return r[f.column] !== f.value;
-    if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(r[f.column]);
+    const value = get(r, f.column);
+
+    if (f.op === 'eq') return value === f.value;
+    if (f.op === 'neq') return value !== f.value;
+    if (f.op === 'in') return Array.isArray(f.value) && f.value.includes(value);
+    if (f.op === 'is') {
+      if (f.value === null) return value == null;
+      return value === f.value;
+    }
+    if (f.op === 'not') {
+      if (f.operator === 'is' && f.value === null) return value != null;
+      if (f.operator === 'eq') return value !== f.value;
+      return true;
+    }
+    if (f.op === 'ilike') {
+      const pattern = String(f.value || '').toLowerCase().replace(/%/g, '');
+      return String(value || '').toLowerCase().includes(pattern);
+    }
+    if (f.op === 'or') {
+      const clauses = String(f.value || '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+      if (!clauses.length) return true;
+
+      return clauses.some((clause: string) => {
+        const m = clause.match(/^([^\.]+)\.(eq|ilike)\.(.+)$/);
+        if (!m) return false;
+        const [, col, op, raw] = m;
+        const rowVal = get(r, col);
+        if (op === 'eq') return String(rowVal ?? '') === raw;
+        if (op === 'ilike') {
+          const p = raw.toLowerCase().replace(/%/g, '');
+          return String(rowVal ?? '').toLowerCase().includes(p);
+        }
+        return false;
+      });
+    }
+
     return true;
   }));
 }
@@ -252,6 +290,10 @@ class LocalQueryBuilder {
   eq(column: string, value: any) { this.filters.push({ op: 'eq', column, value }); return this; }
   neq(column: string, value: any) { this.filters.push({ op: 'neq', column, value }); return this; }
   in(column: string, value: any[]) { this.filters.push({ op: 'in', column, value }); return this; }
+  is(column: string, value: any) { this.filters.push({ op: 'is', column, value }); return this; }
+  not(column: string, operator: string, value: any) { this.filters.push({ op: 'not', column, operator, value }); return this; }
+  ilike(column: string, value: string) { this.filters.push({ op: 'ilike', column, value }); return this; }
+  or(value: string) { this.filters.push({ op: 'or', value }); return this; }
   order(column: string, opts?: AnyObj) { this._order = { column, ascending: opts?.ascending !== false }; return this; }
   limit(n: number) { this._limit = n; return this; }
   range(a: number, b: number) { this._range = [a, b]; return this; }
