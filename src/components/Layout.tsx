@@ -140,11 +140,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
                     className={`w-full flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
-                      isActive ? 'font-semibold' : ''
+                      isActive ? 'font-bold' : 'font-medium'
                     }`}
                   >
-                    <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} />
-                    <span className="text-[15px]">{item.label}</span>
+                    <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} strokeWidth={2.1} />
+                    <span className="text-[16px]">{item.label}</span>
                   </button>
                 );
               })}

@@ -425,7 +425,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
           return (
             <div key={post.id} className="bg-white dark:bg-black border-t md:border border-gray-300 dark:border-gray-800 md:rounded-none transition-colors">
-              <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => onViewProfile(post.user_id)}
@@ -520,7 +520,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 />
               ) : null}
 
-              <div className="px-4 py-3 space-y-3">
+              <div className="px-3 py-2.5 space-y-2.5">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-4">
                     <button
@@ -528,20 +528,21 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                       className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 transition-colors"
                     >
                       <Heart
-                        className={`h-7 w-7 ${isLiked ? 'fill-red-500 text-red-500' : ''}`}
+                        className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : ''}`}
+                        strokeWidth={2.1}
                       />
                     </button>
                     <button
                       onClick={() => setViewPost(post)}
                       className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300"
                     >
-                      <MessageCircle className="h-7 w-7" />
+                      <MessageCircle className="h-6 w-6" strokeWidth={2.1} />
                     </button>
                     <button
                       onClick={() => handleShare(post)}
                       className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300"
                     >
-                      <Send className="h-7 w-7" />
+                      <Send className="h-6 w-6" strokeWidth={2.1} />
                     </button>
                   </div>
                   <button
@@ -549,9 +550,10 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                     className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 transition-colors"
                   >
                     <Bookmark
-                      className={`h-7 w-7 ${
+                      className={`h-6 w-6 ${
                         savedPosts.has(post.id) ? 'fill-yellow-400 text-yellow-400' : ''
                       }`}
+                      strokeWidth={2.1}
                     />
                   </button>
                 </div>
