@@ -145,7 +145,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         <button
           type="button"
           onClick={() => scrollByAmount('left')}
-          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 text-xs hover:bg-gray-100"
+          className="h-14 w-14 rounded-full border border-gray-300 text-gray-600 text-2xl hover:bg-gray-100"
           aria-label="이전"
         >
           ‹
@@ -183,7 +183,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         <button
           type="button"
           onClick={() => scrollByAmount('right')}
-          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 text-xs hover:bg-gray-100"
+          className="h-14 w-14 rounded-full border border-gray-300 text-gray-600 text-2xl hover:bg-gray-100"
           aria-label="다음"
         >
           ›
