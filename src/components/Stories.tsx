@@ -67,7 +67,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         }));
     }
 
-    if (result.length < 10 && followingIds.length > 0) {
+    if (result.length < 20 && followingIds.length > 0) {
       const alreadyIncludedIds = new Set(result.map(u => u.id));
       const remainingFollowing = followingIds.filter(id => !alreadyIncludedIds.has(id));
 
@@ -76,7 +76,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
           .from('profiles')
           .select('id, username, avatar_url')
           .in('id', remainingFollowing)
-          .limit(10 - result.length);
+          .limit(20 - result.length);
 
         if (followingProfiles) {
           result.push(...followingProfiles.map(profile => ({
@@ -88,7 +88,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
       }
     }
 
-    if (result.length < 10) {
+    if (result.length < 20) {
       const { data: myFollowersData } = await db
         .from('follows')
         .select('follower_id')
@@ -115,7 +115,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
             .from('profiles')
             .select('id, username, avatar_url')
             .in('id', mutualFollowerIds)
-            .limit(10 - result.length);
+            .limit(20 - result.length);
 
           if (mutualProfiles) {
             result.push(...mutualProfiles.map(profile => ({
@@ -128,13 +128,13 @@ export default function Stories({ onUserSelect }: StoriesProps) {
       }
     }
 
-    setUsers(result.slice(0, 10));
+    setUsers(result.slice(0, 20));
   };
 
   return (
     <div className="px-4 md:px-0 py-4 bg-white dark:bg-black transition-colors">
-      <div className="mx-auto max-w-[400px] overflow-x-auto scrollbar-hide">
-        <div className="flex w-max space-x-4">
+      <div className="mx-auto max-w-[416px] overflow-x-auto scrollbar-hide">
+        <div className="flex w-max space-x-6">
           {users.map((user) => (
             <button
               key={user.id}
