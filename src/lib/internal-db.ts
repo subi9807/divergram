@@ -422,13 +422,22 @@ class LocalQueryBuilder {
   }
 
   delete() {
-    return {
-      eq: async (column: string, value: any) => {
-        await deleteTable(this.table, [...this.filters, { op: 'eq', column, value }]);
-        return { data: null, error: null };
+    const qb = this;
+    const runtimeFilters: AnyObj[] = [...this.filters];
+    const api = {
+      eq(column: string, value: any) { runtimeFilters.push({ op: 'eq', column, value }); return api; },
+      neq(column: string, value: any) { runtimeFilters.push({ op: 'neq', column, value }); return api; },
+      in(column: string, value: any[]) { runtimeFilters.push({ op: 'in', column, value }); return api; },
+      async select() {
+        const before = await fetchTable(qb.table, { filters: runtimeFilters });
+        await deleteTable(qb.table, runtimeFilters);
+        return { data: before || [], error: null };
       },
-      then: (resolve: any, reject: any) => deleteTable(this.table, this.filters).then(() => ({ data: null, error: null })).then(resolve, reject),
+      then(resolve: any, reject: any) {
+        return deleteTable(qb.table, runtimeFilters).then(() => ({ data: null, error: null })).then(resolve, reject);
+      },
     } as any;
+    return api;
   }
 
   then(resolve: any, reject: any) {
