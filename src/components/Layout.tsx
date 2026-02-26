@@ -302,7 +302,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
       >
         <div className="bg-white dark:bg-black rounded-full p-3 transition-colors">
-          <MessageCircle className={`h-6 w-6 ${currentPage === 'messages' ? 'fill-current text-purple-600' : 'text-gray-700'}`} />
+          <ChatBubbleOvalLeftEllipsisIcon className={`h-6 w-6 ${currentPage === 'messages' ? 'text-purple-600' : 'text-gray-700'}`} />
         </div>
       </button>
 
