@@ -165,6 +165,7 @@ export function AdminApp() {
     const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
     if (kind === 'dashboard') return <svg {...common}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>;
     if (kind === 'users') return <svg {...common}><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3"/><path d="M22 19v-1a4 4 0 0 0-3-3.87"/><path d="M16 3.13a3 3 0 0 1 0 5.74"/></svg>;
+    if (kind === 'map') return <svg {...common}><path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>;
     if (kind === 'tables') return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/></svg>;
     if (kind === 'logs') return <svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16l4-3 4 3 4-3 4 3V8z"/><path d="M14 2v6h6"/></svg>;
     return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V22a2 2 0 1 1-4 0v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H2a2 2 0 1 1 0-4h.08a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V2a2 2 0 1 1 4 0v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H22a2 2 0 1 1 0 4h-.08a1.7 1.7 0 0 0-1.55 1z"/></svg>;
@@ -172,6 +173,7 @@ export function AdminApp() {
 
   const menus = [
     { key: 'dashboard', label: '대시보드' },
+    { key: 'map', label: '포인트 지도' },
     { key: 'users', label: '사용자 관리' },
     { key: 'tables', label: '테이블 조회' },
     { key: 'logs', label: '감사 로그' },
@@ -265,6 +267,14 @@ export function AdminApp() {
               </div>
             </div>
           </>
+        )}
+
+        {section === 'map' && (
+          <div className="card">
+            <h2>포인트 지도</h2>
+            <p style={{ marginBottom: 12 }}>사용자 서비스의 포인트 지도로 이동해서 전체 마커를 확인할 수 있어.</p>
+            <button onClick={() => window.open('http://127.0.0.1:5173/location', '_blank')}>포인트 지도 열기</button>
+          </div>
         )}
 
         {section === 'users' && (
