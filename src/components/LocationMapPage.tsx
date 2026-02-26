@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { loadGoogleMaps } from '../utils/googleMaps';
+import { db } from '../lib/internal-db';
 
 interface Props {
   location: string;
   onBack: () => void;
 }
+
+const parseCoord = (v: string) => {
+  const m = String(v || '').match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (!m) return null;
+  return { lat: Number(m[1]), lng: Number(m[2]) };
+};
 
 export default function LocationMapPage({ location, onBack }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -13,10 +20,13 @@ export default function LocationMapPage({ location, onBack }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps()
-      .then(() => {
+
+    const init = async () => {
+      try {
+        await loadGoogleMaps();
         if (cancelled || !mapRef.current || !(window as any).google) return;
         const google = (window as any).google;
+
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: 36.5, lng: 127.8 },
           zoom: 7,
@@ -26,31 +36,78 @@ export default function LocationMapPage({ location, onBack }: Props) {
         });
 
         const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ address: location }, (results: any, status: string) => {
-          if (status === 'OK' && results?.[0]) {
-            const loc = results[0].geometry.location;
-            map.setCenter(loc);
-            map.setZoom(12);
-            new google.maps.Marker({
-              map,
-              position: loc,
-              title: location,
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: '#ef4444',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 2,
-              },
-            });
-          } else {
-            setError('위치를 찾을 수 없습니다.');
-          }
-        });
-      })
-      .catch(() => setError('지도를 불러오지 못했습니다.'));
 
+        const { data } = await db
+          .from('posts')
+          .select('location, dive_site')
+          .order('created_at', { ascending: false })
+          .limit(500);
+
+        const names = Array.from(
+          new Set(
+            (data || [])
+              .flatMap((p: any) => [p.location, p.dive_site])
+              .map((v) => String(v || '').trim())
+              .filter(Boolean)
+          )
+        );
+
+        const bounds = new google.maps.LatLngBounds();
+        let hasMarker = false;
+
+        const addMarker = (pos: { lat: number; lng: number }, title: string, highlight = false) => {
+          hasMarker = true;
+          bounds.extend(pos);
+          new google.maps.Marker({
+            map,
+            position: pos,
+            title,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: highlight ? 9 : 7,
+              fillColor: highlight ? '#ef4444' : '#2563eb',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+            },
+          });
+        };
+
+        const targetCoord = parseCoord(location);
+
+        for (const name of names.slice(0, 120)) {
+          const c = parseCoord(name);
+          if (c) {
+            addMarker(c, name, Boolean(targetCoord && targetCoord.lat === c.lat && targetCoord.lng === c.lng));
+            continue;
+          }
+
+          await new Promise<void>((resolve) => {
+            geocoder.geocode({ address: name }, (results: any, status: string) => {
+              if (status === 'OK' && results?.[0]) {
+                const loc = results[0].geometry.location;
+                addMarker({ lat: loc.lat(), lng: loc.lng() }, name, name === location);
+              }
+              resolve();
+            });
+          });
+        }
+
+        if (targetCoord) {
+          addMarker(targetCoord, location, true);
+        }
+
+        if (hasMarker) {
+          map.fitBounds(bounds);
+        } else {
+          setError('등록된 다이빙 포인트가 없습니다.');
+        }
+      } catch {
+        setError('지도를 불러오지 못했습니다.');
+      }
+    };
+
+    init();
     return () => {
       cancelled = true;
     };
@@ -64,7 +121,7 @@ export default function LocationMapPage({ location, onBack }: Props) {
         </button>
         <div className="text-sm font-semibold dark:text-white flex items-center gap-1">
           <MapPin className="h-4 w-4 text-red-500" />
-          {location}
+          다이빙 포인트 지도
         </div>
       </div>
       {error && (
