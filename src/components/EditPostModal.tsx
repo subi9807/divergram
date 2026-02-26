@@ -289,7 +289,7 @@ export default function EditPostModal({
               미디어
             </label>
 
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-3 w-full">
               {existingMedia.map((media) => (
                 <div key={media.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   {media.media_type === 'image' ? (
@@ -327,10 +327,10 @@ export default function EditPostModal({
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-col items-center justify-center transition-colors"
+                className="col-span-3 w-full h-16 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-row items-center justify-center gap-2 transition-colors"
               >
-                <Upload className="h-6 w-6 text-gray-400 dark:text-gray-500 mb-1" />
-                <span className="text-xs text-gray-500 dark:text-gray-400">추가</span>
+                <Upload className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                <span className="text-sm text-gray-500 dark:text-gray-400">미디어 추가</span>
               </button>
             </div>
 
