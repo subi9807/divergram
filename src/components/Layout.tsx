@@ -154,7 +154,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-[#121212] overflow-visible transition-colors">
+        <aside className={`hidden xl:block fixed left-0 top-0 w-[84px] h-screen overflow-visible transition-colors ${currentPage === 'location' ? 'bg-white/60 dark:bg-[#121212]/60 backdrop-blur-md' : 'bg-white dark:bg-[#121212]'}`}>
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
               <button onClick={() => onNavigate('home')} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
@@ -287,7 +287,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </aside>
 
         <main className="flex-1 pt-16 xl:pt-0 pb-20 md:pb-4 xl:ml-[84px] overflow-x-hidden">
-          <div className="w-full md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto">
+          <div className={`w-full ${currentPage === 'location' ? '' : 'md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto'}`}>
             {children}
           </div>
         </main>
