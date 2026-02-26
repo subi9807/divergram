@@ -124,7 +124,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-visible transition-colors">
+        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black overflow-visible transition-colors">
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
               <h1 className="text-2xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
@@ -139,7 +139,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    className={`group relative w-full flex items-center justify-center px-2 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                    className={`group relative w-full flex items-center justify-center px-2 py-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
                       isActive ? 'font-bold' : 'font-medium'
                     }`}
                   >
@@ -155,7 +155,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="mt-auto relative px-2 mb-4" ref={moreMenuRef}>
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="group relative w-full flex items-center justify-center px-2 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
+                className="group relative w-full flex items-center justify-center px-2 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
               >
                 <Menu className="h-6 w-6" />
                 <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
