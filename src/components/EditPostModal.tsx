@@ -78,7 +78,9 @@ export default function EditPostModal({
   const [buddySuggestions, setBuddySuggestions] = useState<Array<{ id: string; username: string }>>([]);
   const [showBuddyList, setShowBuddyList] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
-  const [resortSuggestions, setResortSuggestions] = useState<string[]>([]);
+  const [resortSuggestions, setResortSuggestions] = useState<Array<{ id: string; username: string }>>([]);
+  const [resortQuery, setResortQuery] = useState(post.dive_site || '');
+  const [showResortList, setShowResortList] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const { user } = useAuth();
 
@@ -123,7 +125,13 @@ export default function EditPostModal({
       ));
 
       setLocationSuggestions(merged);
-      setResortSuggestions(Array.from(new Set((data || []).map((item: any) => String(item.dive_site || '').trim()).filter(Boolean))));
+
+      const { data: resorts } = await db
+        .from('profiles')
+        .select('id, username, account_type')
+        .eq('account_type', 'resort');
+
+      setResortSuggestions((resorts || []).map((r: any) => ({ id: String(r.id), username: String(r.username || '') })));
     };
 
     if (isOpen) {
@@ -407,7 +415,7 @@ export default function EditPostModal({
 
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              문구
+              다이빙컨디션
             </label>
             <textarea
               ref={captionRef}
@@ -438,7 +446,7 @@ export default function EditPostModal({
                 }
               }}
               className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="문구를 입력하세요..."
+              placeholder="다이빙 컨디션을 입력하세요..."
             />
 
             {showMentionList && (
@@ -537,23 +545,49 @@ export default function EditPostModal({
                   />
                 </div>
 
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     다이빙 리조트
                   </label>
                   <input
                     type="text"
-                    list="edit-resort-options"
-                    value={diveSite}
-                    onChange={(e) => setDiveSite(e.target.value)}
+                    value={resortQuery || diveSite}
+                    onChange={(e) => {
+                      setResortQuery(e.target.value);
+                      setDiveSite(e.target.value);
+                      setShowResortList(true);
+                    }}
+                    onFocus={() => setShowResortList(true)}
+                    onBlur={() => setTimeout(() => setShowResortList(false), 120)}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="다이빙 리조트 검색"
+                    placeholder="리조트 계정 검색"
                   />
-                  <datalist id="edit-resort-options">
-                    {resortSuggestions.map((item) => (
-                      <option key={item} value={item} />
-                    ))}
-                  </datalist>
+
+                  {showResortList && (
+                    <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
+                      {resortSuggestions
+                        .filter((r) => r.username.toLowerCase().includes((resortQuery || diveSite).toLowerCase()))
+                        .slice(0, 8)
+                        .map((r) => (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setDiveSite(r.username);
+                              setResortQuery(r.username);
+                              setShowResortList(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
+                          >
+                            @{r.username}
+                          </button>
+                        ))}
+                      {resortSuggestions.filter((r) => r.username.toLowerCase().includes((resortQuery || diveSite).toLowerCase())).length === 0 && (
+                        <div className="px-3 py-2 text-xs text-gray-500">리조트 계정을 찾을 수 없습니다.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

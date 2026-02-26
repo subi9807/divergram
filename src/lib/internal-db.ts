@@ -16,6 +16,7 @@ export interface Profile {
   bio: string;
   avatar_url: string;
   website?: string;
+  account_type?: 'personal' | 'resort';
   created_at?: string;
 }
 export interface PostMedia { id: string; post_id: string; media_url: string; media_type: 'image' | 'video'; order_index: number; created_at: string; }

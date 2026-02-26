@@ -157,9 +157,11 @@ async function ensureSchema() {
       bio TEXT NOT NULL DEFAULT '',
       avatar_url TEXT NOT NULL DEFAULT '',
       website TEXT,
+      account_type TEXT NOT NULL DEFAULT 'personal',
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS account_type TEXT NOT NULL DEFAULT 'personal';`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_posts (
@@ -730,7 +732,7 @@ function applyJsonFilters(rows, filters = []) {
 }
 
 const DATA_TABLES = {
-  profiles: { table: 'app_profiles', columns: ['id','username','full_name','bio','avatar_url','website','created_at'] },
+  profiles: { table: 'app_profiles', columns: ['id','username','full_name','bio','avatar_url','website','account_type','created_at'] },
   posts: { table: 'app_posts', columns: ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','visibility','buddy','buddy_name','created_at'] },
   post_media: { table: 'app_post_media', columns: ['id','post_id','media_url','media_type','order_index','created_at'] },
   likes: { table: 'app_likes', columns: ['id','post_id','user_id','created_at'] },
@@ -877,7 +879,7 @@ app.post('/api/data/seed/default', async (_req, res) => {
 app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
   try {
     const mapping = [
-      ['profiles', 'app_profiles', ['id','username','full_name','bio','avatar_url','website','created_at']],
+      ['profiles', 'app_profiles', ['id','username','full_name','bio','avatar_url','website','account_type','created_at']],
       ['posts', 'app_posts', ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','visibility','buddy','buddy_name','created_at']],
       ['post_media', 'app_post_media', ['id','post_id','media_url','media_type','order_index','created_at']],
       ['likes', 'app_likes', ['id','post_id','user_id','created_at']],
