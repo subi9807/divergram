@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,6 +15,7 @@ interface UserWithRecentPost {
 
 export default function Stories({ onUserSelect }: StoriesProps) {
   const [users, setUsers] = useState<UserWithRecentPost[]>([]);
+  const scrollerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -131,40 +132,65 @@ export default function Stories({ onUserSelect }: StoriesProps) {
     setUsers(result.slice(0, 20));
   };
 
+  const scrollByAmount = (dir: 'left' | 'right') => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const amount = Math.round(el.clientWidth * 0.8);
+    el.scrollBy({ left: dir === 'right' ? amount : -amount, behavior: 'smooth' });
+  };
+
   return (
     <div className="px-4 md:px-0 py-4 bg-white dark:bg-black transition-colors">
-      <div className="mx-auto max-w-[416px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-        <div className="flex w-max space-x-6 pr-2">
-          {users.map((user) => (
-            <button
-              key={user.id}
-              onClick={() => onUserSelect(user.id)}
-              className="flex flex-col items-center space-y-2 flex-shrink-0 snap-start"
-            >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
-                <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
-                  {user.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt={user.username}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
-                      <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
-                        {user.username[0].toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+      <div className="mx-auto max-w-[416px] flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => scrollByAmount('left')}
+          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 text-xs hover:bg-gray-100"
+          aria-label="이전"
+        >
+          ‹
+        </button>
+        <div ref={scrollerRef} className="flex-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex w-max space-x-6 pr-2">
+            {users.map((user) => (
+              <button
+                key={user.id}
+                onClick={() => onUserSelect(user.id)}
+                className="flex flex-col items-center space-y-2 flex-shrink-0 snap-start"
+              >
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
+                  <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
+                    {user.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt={user.username}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
+                        <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
+                          {user.username[0].toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">{user.username}</span>
-            </button>
-          ))}
+                <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">{user.username}</span>
+              </button>
+            ))}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => scrollByAmount('right')}
+          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 text-xs hover:bg-gray-100"
+          aria-label="다음"
+        >
+          ›
+        </button>
       </div>
       {users.length > 5 && (
-        <p className="text-[11px] text-gray-400 mt-2 text-center">좌우로 스와이프해서 더 보기</p>
+        <p className="text-[11px] text-gray-400 mt-2 text-center">좌우 버튼 또는 스와이프로 더 보기</p>
       )}
     </div>
   );
