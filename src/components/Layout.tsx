@@ -16,7 +16,6 @@ import {
   ExclamationTriangleIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
-  CameraIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -92,13 +91,17 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black transition-colors">
-      <header className="fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-black border-b border-gray-300 dark:border-gray-800 z-50 transition-colors">
+    <div className="min-h-screen bg-white dark:bg-[#121212] transition-colors">
+      <header className="fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626] z-50 transition-colors">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <h1 className="text-3xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
-              Divergram
-            </h1>
+            <button onClick={() => onNavigate('home')} className="cursor-pointer" aria-label="Divergram 홈">
+              <img
+                src={isDarkMode ? '/assets/logo/divergram-logo-dark.png' : '/assets/logo/divergram-logo-light.png'}
+                alt="Divergram"
+                className="h-8 w-8 object-contain"
+              />
+            </button>
 
             <div className="hidden md:flex flex-1 max-w-md">
               <div className="relative w-full">
@@ -125,7 +128,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </header>
 
       {showMobileMenu && (
-        <div className="fixed top-16 right-0 w-64 bg-white dark:bg-black border-l border-b border-gray-300 dark:border-gray-800 shadow-lg z-40 md:hidden transition-colors">
+        <div className="fixed top-16 right-0 w-64 bg-white dark:bg-[#121212] border-l border-b border-gray-300 dark:border-[#262626] shadow-lg z-40 md:hidden transition-colors">
           <div className="py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -151,11 +154,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black overflow-visible transition-colors">
+        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-[#121212] overflow-visible transition-colors">
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
-              <button onClick={() => onNavigate('home')} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
-                <CameraIcon className="h-7 w-7 text-gray-900 dark:text-white" />
+              <button onClick={() => onNavigate('home')} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
+                <img
+                  src={isDarkMode ? '/assets/logo/divergram-logo-dark.png' : '/assets/logo/divergram-logo-light.png'}
+                  alt="Divergram"
+                  className="h-8 w-8 object-contain"
+                />
               </button>
             </div>
             <div className="flex-1 flex flex-col justify-center">
@@ -191,7 +198,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
 
               {showMoreMenu && (
-                <div className="absolute bottom-full left-[76px] mb-2 w-56 bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 py-2 z-50 transition-colors">
+                <div className="absolute bottom-full left-[76px] mb-2 w-56 bg-white dark:bg-[#121212] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#262626] py-2 z-50 transition-colors">
                   <button
                     onClick={() => {
                       onNavigate('settings');
@@ -264,7 +271,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <span className="text-sm">관리자</span>
                   </button>
 
-                  <div className="border-t border-gray-200 dark:border-gray-800 my-2"></div>
+                  <div className="border-t border-gray-200 dark:border-[#262626] my-2"></div>
 
                   <button
                     onClick={handleLogout}
@@ -286,7 +293,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-black border-t border-gray-300 dark:border-gray-800 z-50 xl:hidden transition-colors">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-50 xl:hidden transition-colors">
         <div className="flex items-center justify-around h-16">
           {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map((item) => {
             const Icon = item.icon;
@@ -318,7 +325,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         onClick={() => onNavigate('messages')}
         className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
       >
-        <div className="bg-white dark:bg-black rounded-full p-3 transition-colors">
+        <div className="bg-white dark:bg-[#121212] rounded-full p-3 transition-colors">
           {currentPage === 'messages' ? (
             <ChatBubbleOvalLeftEllipsisIconSolid className="h-6 w-6 text-purple-600" />
           ) : (
