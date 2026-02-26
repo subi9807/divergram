@@ -150,15 +150,15 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         >
           ‹
         </button>
-        <div ref={scrollerRef} className="w-[460px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex w-max space-x-6">
+        <div ref={scrollerRef} className="w-[520px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex w-max space-x-8">
             {users.map((user) => (
               <button
                 key={user.id}
                 onClick={() => onUserSelect(user.id)}
                 className="flex flex-col items-center space-y-2 flex-shrink-0 snap-start"
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
+                <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                   <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
                     {user.avatar_url ? (
                       <img
@@ -175,7 +175,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">{user.username}</span>
+                <span className="text-xs text-gray-900 dark:text-white max-w-[80px] truncate">{user.username}</span>
               </button>
             ))}
           </div>
