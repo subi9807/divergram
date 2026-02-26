@@ -176,7 +176,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
 
   return (
     <>
-    <div className="w-full px-4 md:px-6 lg:px-8 py-4 md:py-8">
+    <div className="w-full px-4 md:px-6 lg:px-0 py-4 md:py-8">
       <div className="mb-8 md:mb-12">
         <div className="flex flex-col md:flex-row items-center md:items-center space-y-6 md:space-y-0 md:space-x-8 mb-6 md:mb-8">
           <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 flex-shrink-0">
@@ -248,8 +248,8 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
           </div>
         </div>
 
-        <div className="border-t border-gray-300 dark:border-gray-700 mt-12">
-          <div className="flex justify-center space-x-12">
+        <div className="border-t border-gray-200 dark:border-gray-700 mt-10">
+          <div className="flex justify-center space-x-10">
             <button
               onClick={() => setActiveTab('posts')}
               className={`flex flex-col items-center gap-1 py-3 -mt-px ${

@@ -65,7 +65,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors">
+    <div className="min-h-screen bg-white dark:bg-black transition-colors">
       <header className="fixed top-0 left-0 right-0 bg-white dark:bg-black border-b border-gray-300 dark:border-gray-800 z-50 transition-colors">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
@@ -124,7 +124,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white dark:bg-black border-r border-gray-300 dark:border-gray-800 overflow-y-auto transition-colors">
+        <aside className="hidden xl:block fixed left-0 top-16 w-[244px] h-[calc(100vh-4rem)] bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
           <nav className="py-4 flex flex-col h-full">
             <div>
               {navItems.map((item) => {
@@ -134,24 +134,24 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center space-x-4 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                    className={`w-full flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
                       isActive ? 'font-semibold' : ''
                     }`}
                   >
-                    <Icon className={`h-7 w-7 ${isActive ? 'fill-current' : ''}`} />
-                    <span className="text-base">{item.label}</span>
+                    <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} />
+                    <span className="text-[15px]">{item.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-auto relative px-6 mb-4" ref={moreMenuRef}>
+            <div className="mt-auto relative px-4 mb-4" ref={moreMenuRef}>
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="w-full flex items-center space-x-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
+                className="w-full flex items-center space-x-4 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
               >
-                <Menu className="h-7 w-7" />
-                <span className="text-base">더보기</span>
+                <Menu className="h-6 w-6" />
+                <span className="text-[15px]">더보기</span>
               </button>
 
               {showMoreMenu && (
@@ -243,8 +243,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </nav>
         </aside>
 
-        <main className="flex-1 pt-16 pb-20 md:pb-4 xl:ml-64 overflow-x-hidden">
-          <div className="w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto">
+        <main className="flex-1 pt-16 pb-20 md:pb-4 xl:ml-[244px] overflow-x-hidden">
+          <div className="w-full md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto">
             {children}
           </div>
         </main>
