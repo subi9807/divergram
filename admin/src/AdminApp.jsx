@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_ADMIN_API_BASE || 'http://127.0.0.1:4000';
+const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || '';
 
 async function api(path, { adminKey, method = 'GET', body } = {}) {
   const r = await fetch(`${API_BASE}${path}`, {
@@ -17,7 +18,7 @@ async function api(path, { adminKey, method = 'GET', body } = {}) {
 }
 
 export function AdminApp() {
-  const [adminKey, setAdminKey] = useState(localStorage.getItem('dg_admin_key') || '');
+  const [adminKey, setAdminKey] = useState(localStorage.getItem('dg_admin_key') || DEFAULT_ADMIN_KEY || '');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
