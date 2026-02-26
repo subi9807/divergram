@@ -58,18 +58,21 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
               key={item.id}
               className="relative group cursor-pointer rounded-lg overflow-hidden bg-gray-100"
               onClick={() => onItemClick?.(item.id)}
+              style={item.aspectRatio ? { aspectRatio: String(item.aspectRatio) } : undefined}
             >
               {item.isVideo ? (
-                <video
-                  src={item.url}
-                  className="w-full h-auto object-cover"
-                  style={{ display: 'block' }}
-                />
+                <div className="w-full h-full bg-black/70">
+                  <video
+                    src={item.url}
+                    className="w-full h-full object-contain"
+                    style={{ display: 'block' }}
+                  />
+                </div>
               ) : (
                 <img
                   src={item.url}
                   alt="Post"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-full object-cover"
                   style={{ display: 'block' }}
                 />
               )}
