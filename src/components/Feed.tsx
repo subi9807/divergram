@@ -42,6 +42,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const { user } = useAuth();
   const moreButtonRefs = useRef<Record<string, HTMLButtonElement>>({});
   const [toastMessage, setToastMessage] = useState('');
+  const [buddyProfileMap, setBuddyProfileMap] = useState<Record<string, string>>({});
 
   const showToast = (message: string) => {
     setToastMessage(message);
@@ -126,9 +127,30 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       .order('created_at', { ascending: false });
 
     if (data) {
-      setPosts(data as Post[]);
-      setDisplayedPosts((data as Post[]).slice(0, POSTS_PER_PAGE));
+      const loadedPosts = data as Post[];
+      setPosts(loadedPosts);
+      setDisplayedPosts(loadedPosts.slice(0, POSTS_PER_PAGE));
       setPage(1);
+
+      const buddyNames = Array.from(new Set(
+        loadedPosts
+          .flatMap((p) => (p.buddy_name || '').split(',').map((v) => v.trim()).filter(Boolean))
+      ));
+
+      if (buddyNames.length) {
+        const { data: buddyProfiles } = await db
+          .from('profiles')
+          .select('id, username')
+          .in('username', buddyNames);
+
+        const nextMap: Record<string, string> = {};
+        (buddyProfiles || []).forEach((p: any) => {
+          nextMap[p.username] = String(p.id);
+        });
+        setBuddyProfileMap(nextMap);
+      } else {
+        setBuddyProfileMap({});
+      }
     }
     setLoading(false);
   };
@@ -621,7 +643,31 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                         {post.buddy_name && (
                           <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                             <Users className="h-3 w-3" />
-                            <span>{post.buddy_name}</span>
+                            <span className="flex flex-wrap items-center gap-1">
+                              {post.buddy_name
+                                .split(',')
+                                .map((name) => name.trim())
+                                .filter(Boolean)
+                                .map((name, idx, arr) => {
+                                  const buddyId = buddyProfileMap[name];
+                                  return (
+                                    <span key={`${post.id}-buddy-${name}-${idx}`}>
+                                      {buddyId ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => onViewProfile(buddyId)}
+                                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                                        >
+                                          @{name}
+                                        </button>
+                                      ) : (
+                                        <span>@{name}</span>
+                                      )}
+                                      {idx < arr.length - 1 ? ', ' : ''}
+                                    </span>
+                                  );
+                                })}
+                            </span>
                           </div>
                         )}
                       </div>
