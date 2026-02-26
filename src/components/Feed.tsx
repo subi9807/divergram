@@ -49,6 +49,16 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     window.setTimeout(() => setToastMessage(''), 1800);
   };
 
+  const goToLocationPage = (location: string) => {
+    if (!location) return;
+    if (onViewLocation) {
+      onViewLocation(location);
+      return;
+    }
+    window.history.pushState({}, '', `/location/${encodeURIComponent(location)}`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   useEffect(() => {
     loadPosts();
     if (user) {
@@ -490,7 +500,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                     </div>
                     {post.location && (
                       <button
-                        onClick={() => onViewLocation?.(post.location!)}
+                        onClick={() => goToLocationPage(post.location!)}
                         className="text-xs text-gray-600 dark:text-gray-400 flex items-center hover:text-gray-900 dark:hover:text-gray-200"
                       >
                         <MapPin className="h-3 w-3 mr-1" />
@@ -613,7 +623,13 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                         {post.dive_site && (
                           <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
                             <MapPin className="h-3 w-3" />
-                            <span>{post.dive_site}</span>
+                            <button
+                              type="button"
+                              onClick={() => goToLocationPage(post.dive_site!)}
+                              className="hover:underline"
+                            >
+                              {post.dive_site}
+                            </button>
                           </div>
                         )}
                         {post.max_depth != null && (
@@ -675,7 +691,18 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                       {(post.dive_date || post.location) && (
                         <div className="text-xs text-gray-600 dark:text-gray-400 pt-1 border-t border-blue-200 dark:border-blue-900 space-y-0.5">
                           {post.dive_date && <div>다이빙 날짜: {new Date(post.dive_date).toLocaleDateString('ko-KR')}</div>}
-                          {post.location && <div>기록 위치: {post.location}</div>}
+                          {post.location && (
+                            <div>
+                              기록 위치:{' '}
+                              <button
+                                type="button"
+                                onClick={() => goToLocationPage(post.location!)}
+                                className="hover:underline"
+                              >
+                                {post.location}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
