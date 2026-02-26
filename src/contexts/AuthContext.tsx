@@ -5,7 +5,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string) => Promise<void>;
+  signUp: (email: string, password: string, username: string, accountType: 'personal' | 'resort') => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string, username: string, accountType: 'personal' | 'resort') => {
     const { data, error } = await db.auth.signUp({
       email,
       password,
@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: data.user.id,
         username,
         full_name: username,
+        account_type: accountType,
       });
     }
   };

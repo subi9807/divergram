@@ -12,6 +12,7 @@ export default function PersonalInfoEdit() {
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
+  const [accountType, setAccountType] = useState<'personal' | 'resort'>('personal');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
@@ -20,7 +21,7 @@ export default function PersonalInfoEdit() {
   const [verifying, setVerifying] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [initial, setInitial] = useState({ email: '', username: '', fullName: '', bio: '' });
+  const [initial, setInitial] = useState({ email: '', username: '', fullName: '', bio: '', accountType: 'personal' as 'personal' | 'resort' });
 
   useEffect(() => {
     if (!user) return;
@@ -33,10 +34,12 @@ export default function PersonalInfoEdit() {
           username: data.username || '',
           fullName: data.full_name || '',
           bio: data.bio || '',
+          accountType: (data.account_type || 'personal') as 'personal' | 'resort',
         };
         setUsername(next.username);
         setFullName(next.fullName);
         setBio(next.bio);
+        setAccountType(next.accountType);
         setInitial(next);
       }
     })();
@@ -54,10 +57,11 @@ export default function PersonalInfoEdit() {
       username !== initial.username ||
       fullName !== initial.fullName ||
       bio !== initial.bio ||
+      accountType !== initial.accountType ||
       password.length > 0 ||
       passwordConfirm.length > 0
     );
-  }, [email, username, fullName, bio, password, passwordConfirm, initial]);
+  }, [email, username, fullName, bio, accountType, password, passwordConfirm, initial]);
 
   const canSave = emailValid && usernameValid && passwordValid && passwordMatch && isDirty && !saving;
 
@@ -83,9 +87,9 @@ export default function PersonalInfoEdit() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'save_failed');
 
-      await db.from('profiles').update({ username, full_name: fullName, bio }).eq('id', user.id);
+      await db.from('profiles').update({ username, full_name: fullName, bio, account_type: accountType }).eq('id', user.id);
 
-      setInitial((prev) => ({ ...prev, username, fullName, bio, email: j.emailVerificationRequested ? prev.email : email }));
+      setInitial((prev) => ({ ...prev, username, fullName, bio, accountType, email: j.emailVerificationRequested ? prev.email : email }));
       setPassword('');
       setPasswordConfirm('');
 
@@ -155,6 +159,20 @@ export default function PersonalInfoEdit() {
         <div>
           <input autoComplete="username" className="w-full border rounded-md p-3" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="사용자명 (4~32자, 영문/숫자/_)" />
           {!usernameValid && <p className="text-xs text-red-500 mt-1">사용자명은 4~32자, 영문/숫자/_만 가능합니다.</p>}
+        </div>
+
+        <div className="border rounded-md p-3">
+          <p className="text-sm mb-2">계정 유형</p>
+          <div className="flex gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="radio" checked={accountType === 'personal'} onChange={() => setAccountType('personal')} />
+              개인
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" checked={accountType === 'resort'} onChange={() => setAccountType('resort')} />
+              리조트
+            </label>
+          </div>
         </div>
 
         <input autoComplete="name" className="w-full border rounded-md p-3" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="이름" />

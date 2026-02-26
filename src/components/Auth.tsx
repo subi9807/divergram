@@ -9,6 +9,7 @@ export default function Auth() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [accountType, setAccountType] = useState<'personal' | 'resort'>('personal');
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,7 +21,7 @@ export default function Auth() {
       if (isLogin) {
         await signIn(email, password);
       } else {
-        await signUp(email, password, username);
+        await signUp(email, password, username, accountType);
       }
     } catch (err: any) {
       setError(err.message);
@@ -38,7 +39,7 @@ export default function Auth() {
     } catch (err: any) {
       setError('테스트 계정으로 로그인할 수 없습니다. 계정을 생성 중입니다...');
       try {
-        await signUp('demo@instagram.com', 'demo1234', 'demo_user');
+        await signUp('demo@instagram.com', 'demo1234', 'demo_user', 'personal');
         await signIn('demo@instagram.com', 'demo1234');
       } catch (signUpErr: any) {
         setError(signUpErr.message);
@@ -76,14 +77,29 @@ export default function Auth() {
             />
 
             {!isLogin && (
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="사용자 이름"
-              />
+              <>
+                <input
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="appearance-none rounded relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="사용자 이름"
+                />
+                <div className="rounded border border-gray-300 p-3 text-sm">
+                  <p className="mb-2 text-gray-600">계정 유형</p>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input type="radio" checked={accountType === 'personal'} onChange={() => setAccountType('personal')} />
+                      개인
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="radio" checked={accountType === 'resort'} onChange={() => setAccountType('resort')} />
+                      리조트
+                    </label>
+                  </div>
+                </div>
+              </>
             )}
 
             <input
