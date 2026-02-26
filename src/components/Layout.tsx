@@ -66,7 +66,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
   return (
     <div className="min-h-screen bg-white dark:bg-black transition-colors">
-      <header className="fixed top-0 left-0 right-0 bg-white dark:bg-black border-b border-gray-300 dark:border-gray-800 z-50 transition-colors">
+      <header className="fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-black border-b border-gray-300 dark:border-gray-800 z-50 transition-colors">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <h1 className="text-3xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
@@ -124,8 +124,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-16 w-[244px] h-[calc(100vh-4rem)] bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
-          <nav className="py-4 flex flex-col h-full">
+        <aside className="hidden xl:block fixed left-0 top-0 w-[244px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
+          <nav className="py-6 flex flex-col h-full">
+            <div className="px-4 pb-6">
+              <h1 className="text-3xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
+                Divergram
+              </h1>
+            </div>
             <div>
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -243,7 +248,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </nav>
         </aside>
 
-        <main className="flex-1 pt-16 pb-20 md:pb-4 xl:ml-[244px] overflow-x-hidden">
+        <main className="flex-1 pt-16 xl:pt-0 pb-20 md:pb-4 xl:ml-[244px] overflow-x-hidden">
           <div className="w-full md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto">
             {children}
           </div>

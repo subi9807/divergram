@@ -417,14 +417,14 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         <Stories onUserSelect={onViewProfile} />
       </div>
 
-      <div className="space-y-4 md:space-y-6 max-w-[630px] mx-auto">
+      <div className="space-y-0 md:space-y-6 max-w-[630px] mx-auto">
         {displayedPosts.map((post) => {
           const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
           const likeCount = post.likes.length;
           const commentCount = post.comments.length;
 
           return (
-            <div key={post.id} className="bg-white dark:bg-black border-0 md:border border-gray-300 dark:border-gray-800 md:rounded-lg transition-colors">
+            <div key={post.id} className="bg-white dark:bg-black border-t md:border border-gray-300 dark:border-gray-800 md:rounded-none transition-colors">
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center space-x-3">
                   <button
