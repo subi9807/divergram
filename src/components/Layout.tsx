@@ -18,6 +18,14 @@ import {
   ShieldCheckIcon,
   CameraIcon,
 } from '@heroicons/react/24/outline';
+import {
+  HomeIcon as HomeIconSolid,
+  MapIcon as MapIconSolid,
+  FilmIcon as FilmIconSolid,
+  PlusCircleIcon as PlusCircleIconSolid,
+  UserCircleIcon as UserCircleIconSolid,
+  ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisIconSolid,
+} from '@heroicons/react/24/solid';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ReportModal from './ReportModal';
@@ -283,6 +291,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
+            const solidMap: Record<string, any> = {
+              home: HomeIconSolid,
+              explore: MapIconSolid,
+              reels: FilmIconSolid,
+              create: PlusCircleIconSolid,
+              profile: UserCircleIconSolid,
+            };
+            const ActiveIcon = solidMap[item.id] || Icon;
             return (
               <button
                 key={item.id}
@@ -291,7 +307,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   isActive ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                <Icon className={`h-7 w-7 ${isActive ? 'fill-current' : ''}`} />
+                {isActive ? <ActiveIcon className="h-7 w-7" /> : <Icon className="h-7 w-7" />}
               </button>
             );
           })}
@@ -303,7 +319,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
       >
         <div className="bg-white dark:bg-black rounded-full p-3 transition-colors">
-          <ChatBubbleOvalLeftEllipsisIcon className={`h-6 w-6 ${currentPage === 'messages' ? 'text-purple-600' : 'text-gray-700'}`} />
+          {currentPage === 'messages' ? (
+            <ChatBubbleOvalLeftEllipsisIconSolid className="h-6 w-6 text-purple-600" />
+          ) : (
+            <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-gray-700" />
+          )}
         </div>
       </button>
 
