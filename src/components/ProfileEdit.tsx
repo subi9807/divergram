@@ -134,7 +134,7 @@ export default function ProfileEdit({ onClose, onSaved }: ProfileEditProps) {
       if (error) throw error;
 
       onSaved();
-      window.location.reload();
+      onClose();
     } catch (error: any) {
       console.error('Error updating profile:', error);
       alert(error.message || '프로필 업데이트에 실패했습니다.');

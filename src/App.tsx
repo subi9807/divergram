@@ -178,6 +178,16 @@ function MainApp() {
     setShowProfileEdit(true);
   };
 
+  const closeProfileEdit = () => {
+    setShowProfileEdit(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('modal') === 'edit-profile') {
+      url.searchParams.delete('modal');
+      const next = `${url.pathname}${url.search}`;
+      window.history.replaceState({}, '', next || '/');
+    }
+  };
+
   const handleSubmitReport = async () => {
     if (!user || !reportText.trim() || reportLoading) return;
     setReportLoading(true);
@@ -314,10 +324,8 @@ function MainApp() {
 
       {showProfileEdit && (
         <ProfileEdit
-          onClose={() => setShowProfileEdit(false)}
-          onSaved={() => {
-            setShowProfileEdit(false);
-          }}
+          onClose={closeProfileEdit}
+          onSaved={closeProfileEdit}
         />
       )}
     </>
