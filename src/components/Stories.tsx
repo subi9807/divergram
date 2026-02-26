@@ -189,9 +189,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
           ›
         </button>
       </div>
-      {users.length > 5 && (
-        <p className="text-[11px] text-gray-400 mt-2 text-center">좌우 버튼 또는 스와이프로 더 보기</p>
-      )}
+
     </div>
   );
 }

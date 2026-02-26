@@ -39,8 +39,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
         <img
           src={currentMedia.media_url}
           alt="Post"
-          className="w-full object-cover"
-          style={{ maxHeight: '600px' }}
+          className="w-full h-full object-cover"
         />
       );
     }
@@ -49,11 +48,10 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
 
     if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
       return (
-        <div className="relative w-full" style={{ paddingBottom: '56.25%', maxHeight: '600px' }}>
+        <div className="relative w-full h-full bg-black">
           <iframe
             src={videoInfo.embedUrl}
             className="absolute top-0 left-0 w-full h-full"
-            style={{ maxHeight: '600px' }}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             title="Video player"
@@ -63,14 +61,15 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
     }
 
     return (
-      <video
-        src={currentMedia.media_url}
-        controls
-        playsInline
-        preload="metadata"
-        className="w-full object-cover"
-        style={{ maxHeight: '600px' }}
-      />
+      <div className="w-full h-full bg-gradient-to-b from-black/70 via-black/85 to-black/70">
+        <video
+          src={currentMedia.media_url}
+          controls
+          playsInline
+          preload="metadata"
+          className="w-full h-full object-contain"
+        />
+      </div>
     );
   };
 

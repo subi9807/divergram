@@ -478,7 +478,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 </button>
               </div>
 
-              <div className="w-full rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '4 / 6' }}>
+              <div className="w-full rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '3 / 4' }}>
                 {post.post_media && post.post_media.length > 0 ? (
                   <MediaCarousel
                     media={post.post_media}
@@ -502,13 +502,15 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                       );
                     }
                     return (
-                      <video
-                        src={post.video_url}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="w-full h-full bg-gradient-to-b from-black/70 via-black/85 to-black/70">
+                        <video
+                          src={post.video_url}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
                     );
                   })()
                 ) : post.image_url ? (
