@@ -1,4 +1,22 @@
-import { Home, Search, PlusSquare, MessageCircle, User, Compass, Film, Bell, Menu, Settings, Activity, Bookmark, Moon, Sun, AlertCircle, LogOut, Shield } from 'lucide-react';
+import {
+  HomeIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
+  UserCircleIcon,
+  MapIcon,
+  FilmIcon,
+  BellIcon,
+  Bars3Icon,
+  PlusCircleIcon,
+  Cog6ToothIcon,
+  ClockIcon,
+  BookmarkIcon,
+  MoonIcon,
+  SunIcon,
+  ExclamationTriangleIcon,
+  ArrowRightOnRectangleIcon,
+  ShieldCheckIcon,
+} from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ReportModal from './ReportModal';
@@ -55,13 +73,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   };
 
   const navItems = [
-    { id: 'home', icon: Home, label: '홈' },
-    { id: 'explore', icon: Compass, label: '탐색' },
-    { id: 'reels', icon: Film, label: '릴스' },
-    { id: 'create', icon: PlusSquare, label: '게시물 등록' },
-    { id: 'messages', icon: MessageCircle, label: '메시지' },
-    { id: 'notifications', icon: Bell, label: '알림' },
-    { id: 'profile', icon: User, label: '프로필' },
+    { id: 'home', icon: HomeIcon, label: '홈' },
+    { id: 'explore', icon: MapIcon, label: '탐색' },
+    { id: 'reels', icon: FilmIcon, label: '릴스' },
+    { id: 'create', icon: PlusCircleIcon, label: '게시물 등록' },
+    { id: 'messages', icon: ChatBubbleOvalLeftEllipsisIcon, label: '메시지' },
+    { id: 'notifications', icon: BellIcon, label: '알림' },
+    { id: 'profile', icon: UserCircleIcon, label: '프로필' },
   ];
 
   return (
@@ -75,7 +93,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
             <div className="hidden md:flex flex-1 max-w-md">
               <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="검색"
@@ -91,7 +109,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               onClick={() => onNavigate('notifications')}
               className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full relative transition-colors"
             >
-              <Bell className={`h-6 w-6 dark:text-white ${currentPage === 'notifications' ? 'fill-current' : ''}`} />
+              <BellIcon className={`h-6 w-6 dark:text-white ${currentPage === 'notifications' ? 'text-black dark:text-white' : ''}`} />
             </button>
           </div>
         </div>
@@ -143,7 +161,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       isActive ? 'font-bold' : 'font-medium'
                     }`}
                   >
-                    <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} strokeWidth={2.1} />
+                    <Icon className={`h-6 w-6 ${isActive ? 'text-black dark:text-white' : ''}`} />
                     <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                       {item.label}
                     </span>
@@ -157,7 +175,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
                 className="group relative w-full flex items-center justify-center px-2 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
               >
-                <Menu className="h-6 w-6" />
+                <Bars3Icon className="h-6 w-6" />
                 <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                   더보기
                 </span>
@@ -172,7 +190,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <Settings className="h-5 w-5" />
+                    <Cog6ToothIcon className="h-5 w-5" />
                     <span className="text-sm">설정</span>
                   </button>
 
@@ -183,7 +201,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <Activity className="h-5 w-5" />
+                    <ClockIcon className="h-5 w-5" />
                     <span className="text-sm">내 활동</span>
                   </button>
 
@@ -194,7 +212,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <Bookmark className="h-5 w-5" />
+                    <BookmarkIcon className="h-5 w-5" />
                     <span className="text-sm">저장됨</span>
                   </button>
 
@@ -204,12 +222,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     {isDarkMode ? (
                       <>
-                        <Sun className="h-5 w-5" />
+                        <SunIcon className="h-5 w-5" />
                         <span className="text-sm">라이트 모드</span>
                       </>
                     ) : (
                       <>
-                        <Moon className="h-5 w-5" />
+                        <MoonIcon className="h-5 w-5" />
                         <span className="text-sm">다크 모드</span>
                       </>
                     )}
@@ -222,7 +240,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <AlertCircle className="h-5 w-5" />
+                    <ExclamationTriangleIcon className="h-5 w-5" />
                     <span className="text-sm">문제 신고</span>
                   </button>
 
@@ -233,7 +251,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <Shield className="h-5 w-5" />
+                    <ShieldCheckIcon className="h-5 w-5" />
                     <span className="text-sm">관리자</span>
                   </button>
 
@@ -243,7 +261,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     onClick={handleLogout}
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
-                    <LogOut className="h-5 w-5" />
+                    <ArrowRightOnRectangleIcon className="h-5 w-5" />
                     <span className="text-sm">로그아웃</span>
                   </button>
                 </div>
