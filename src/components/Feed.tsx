@@ -95,7 +95,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       .eq('user_id', user.id);
 
     if (data) {
-      setSavedPosts(new Set(data.map(s => s.post_id)));
+      setSavedPosts(new Set(data.map(s => String(s.post_id))));
     }
   };
 
@@ -183,25 +183,26 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const toggleSave = async (postId: string) => {
     if (!user) return;
 
-    const isSaved = savedPosts.has(postId);
+    const pid = String(postId);
+    const isSaved = savedPosts.has(pid);
 
     if (isSaved) {
       await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
-        .eq('post_id', postId);
+        .eq('post_id', pid);
 
       const newSaved = new Set(savedPosts);
-      newSaved.delete(postId);
+      newSaved.delete(pid);
       setSavedPosts(newSaved);
     } else {
       await db
         .from('saved_posts')
-        .insert({ user_id: user.id, post_id: postId });
+        .insert({ user_id: user.id, post_id: pid });
 
       const newSaved = new Set(savedPosts);
-      newSaved.add(postId);
+      newSaved.add(pid);
       setSavedPosts(newSaved);
     }
   };
@@ -562,7 +563,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   >
                     <Bookmark
                       className={`h-6 w-6 ${
-                        savedPosts.has(post.id) ? 'fill-yellow-400 text-yellow-400' : ''
+                        savedPosts.has(String(post.id)) ? 'fill-yellow-400 text-yellow-400' : ''
                       }`}
                       strokeWidth={2.1}
                     />

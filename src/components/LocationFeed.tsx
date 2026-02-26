@@ -170,7 +170,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
       .eq('user_id', user.id);
 
     if (data) {
-      setSavedPosts(new Set(data.map(s => s.post_id)));
+      setSavedPosts(new Set(data.map(s => String(s.post_id))));
     }
   };
 
@@ -228,23 +228,24 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const toggleSave = async (postId: string) => {
     if (!user) return;
 
-    const isSaved = savedPosts.has(postId);
+    const pid = String(postId);
+    const isSaved = savedPosts.has(pid);
 
     if (isSaved) {
       await db
         .from('saved_posts')
         .delete()
         .eq('user_id', user.id)
-        .eq('post_id', postId);
+        .eq('post_id', pid);
 
       const newSaved = new Set(savedPosts);
-      newSaved.delete(postId);
+      newSaved.delete(pid);
       setSavedPosts(newSaved);
     } else {
-      await db.from('saved_posts').insert({ user_id: user.id, post_id: postId });
+      await db.from('saved_posts').insert({ user_id: user.id, post_id: pid });
 
       const newSaved = new Set(savedPosts);
-      newSaved.add(postId);
+      newSaved.add(pid);
       setSavedPosts(newSaved);
     }
   };
@@ -454,7 +455,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
                 </div>
                 <button onClick={() => toggleSave(post.id)} className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 transition-colors">
                   <Bookmark
-                    className={`h-7 w-7 ${savedPosts.has(post.id) ? 'fill-yellow-400 text-yellow-400' : ''}`}
+                    className={`h-7 w-7 ${savedPosts.has(String(post.id)) ? 'fill-yellow-400 text-yellow-400' : ''}`}
                   />
                 </button>
               </div>
