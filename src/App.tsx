@@ -13,6 +13,7 @@ import Notifications from './components/Notifications';
 import LocationFeed from './components/LocationFeed';
 import ProfileEdit from './components/ProfileEdit';
 import PersonalInfoEdit from './components/PersonalInfoEdit';
+import AdminConsole from './components/AdminConsole';
 import { db } from './lib/internal-db';
 
 function MainApp() {
@@ -103,6 +104,7 @@ function MainApp() {
       else if (pathname === '/activity') setCurrentPage('activity');
       else if (pathname === '/account') setCurrentPage('account');
       else if (pathname === '/report') setCurrentPage('report');
+      else if (pathname === '/admin') setCurrentPage('admin');
       else setCurrentPage('home');
 
       setSelectedUserId(q.get('user') || undefined);
@@ -154,7 +156,7 @@ function MainApp() {
     } else if (page === 'saved') {
       setSelectedUserId(user?.id);
       setCurrentPage('profile-saved');
-    } else if (page === 'settings' || page === 'activity' || page === 'report') {
+    } else if (page === 'settings' || page === 'activity' || page === 'report' || page === 'admin') {
       setCurrentPage(page);
       setSelectedUserId(undefined);
     } else {
@@ -270,6 +272,8 @@ function MainApp() {
             </div>
           </div>
         );
+      case 'admin':
+        return <AdminConsole />;
       default:
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
     }

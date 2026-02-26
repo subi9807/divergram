@@ -1,4 +1,4 @@
-import { Home, Search, PlusSquare, MessageCircle, User, Compass, Film, Bell, Menu, Settings, Activity, Bookmark, Moon, Sun, AlertCircle, LogOut } from 'lucide-react';
+import { Home, Search, PlusSquare, MessageCircle, User, Compass, Film, Bell, Menu, Settings, Activity, Bookmark, Moon, Sun, AlertCircle, LogOut, Shield } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ReportModal from './ReportModal';
@@ -215,6 +215,17 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   >
                     <AlertCircle className="h-5 w-5" />
                     <span className="text-sm">문제 신고</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onNavigate('admin');
+                      setShowMoreMenu(false);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
+                  >
+                    <Shield className="h-5 w-5" />
+                    <span className="text-sm">관리자</span>
                   </button>
 
                   <div className="border-t border-gray-200 dark:border-gray-800 my-2"></div>

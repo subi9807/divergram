@@ -137,26 +137,43 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
     const isLiked = post.likes.some((like: any) => like.user_id === user.id);
 
-    if (isLiked) {
-      await db
-        .from('likes')
-        .delete()
-        .eq('post_id', postId)
-        .eq('user_id', user.id);
-    } else {
-      await db.from('likes').insert({ post_id: postId, user_id: user.id });
+    // optimistic update: 전체 피드 재조회 없이 즉시 반영
+    const nextPosts = posts.map((p: any) => {
+      if (p.id !== postId) return p;
+      const likes = Array.isArray(p.likes) ? p.likes : [];
+      return {
+        ...p,
+        likes: isLiked
+          ? likes.filter((l: any) => l.user_id !== user.id)
+          : [...likes, { id: `tmp_${Date.now()}`, user_id: user.id }],
+      };
+    });
+    setPosts(nextPosts as Post[]);
+    setDisplayedPosts((nextPosts as Post[]).slice(0, page * POSTS_PER_PAGE));
 
-      if (post.user_id !== user.id) {
-        await db.from('notifications').insert({
-          user_id: post.user_id,
-          actor_id: user.id,
-          type: 'like',
-          post_id: postId,
-        });
+    try {
+      if (isLiked) {
+        await db
+          .from('likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      } else {
+        await db.from('likes').insert({ post_id: postId, user_id: user.id });
+
+        if (post.user_id !== user.id) {
+          await db.from('notifications').insert({
+            user_id: post.user_id,
+            actor_id: user.id,
+            type: 'like',
+            post_id: postId,
+          });
+        }
       }
+    } catch {
+      // 실패 시 서버 상태 재동기화
+      await loadPosts();
     }
-
-    await loadPosts();
   };
 
   const toggleSave = async (postId: string) => {
