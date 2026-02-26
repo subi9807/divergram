@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Upload, Waves, Film, Trash2, GripVertical } from 'lucide-react';
 import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,10 +29,32 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
   const [visibility, setVisibility] = useState('');
   const [buddyName, setBuddyName] = useState('');
   const [location, setLocation] = useState('');
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const { user } = useAuth();
+
+  useEffect(() => {
+    const loadLocationSuggestions = async () => {
+      const { data } = await db
+        .from('posts')
+        .select('location, dive_site')
+        .order('created_at', { ascending: false })
+        .limit(300);
+
+      const merged = Array.from(new Set(
+        (data || [])
+          .flatMap((item: any) => [item.location, item.dive_site])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean)
+      ));
+
+      setLocationSuggestions(merged);
+    };
+
+    loadLocationSuggestions();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -466,11 +488,17 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             </label>
             <input
               type="text"
+              list="create-location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="예: 제주도"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <datalist id="create-location-options">
+              {locationSuggestions.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
           </div>
 
           <div>

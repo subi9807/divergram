@@ -75,6 +75,7 @@ export default function EditPostModal({
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [buddySuggestions, setBuddySuggestions] = useState<Array<{ id: string; username: string }>>([]);
   const [showBuddyList, setShowBuddyList] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -102,7 +103,28 @@ export default function EditPostModal({
       setFollowingUsers(list);
       setBuddySuggestions(list);
     };
-    if (isOpen) loadRelations();
+
+    const loadLocationSuggestions = async () => {
+      const { data } = await db
+        .from('posts')
+        .select('location, dive_site')
+        .order('created_at', { ascending: false })
+        .limit(300);
+
+      const merged = Array.from(new Set(
+        (data || [])
+          .flatMap((item: any) => [item.location, item.dive_site])
+          .map((v) => String(v || '').trim())
+          .filter(Boolean)
+      ));
+
+      setLocationSuggestions(merged);
+    };
+
+    if (isOpen) {
+      loadRelations();
+      loadLocationSuggestions();
+    }
   }, [isOpen, user]);
 
   if (!isOpen) return null;
@@ -428,11 +450,17 @@ export default function EditPostModal({
             </label>
             <input
               type="text"
+              list="edit-location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="위치를 입력하세요"
+              placeholder="위치를 선택하거나 입력하세요"
             />
+            <datalist id="edit-location-options">
+              {locationSuggestions.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
           </div>
 
           <div>
