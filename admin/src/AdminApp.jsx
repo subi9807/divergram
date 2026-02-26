@@ -281,18 +281,35 @@ export function AdminApp() {
             </button>
           ))}
         </nav>
+
+        <div className="sidebar-bottom">
+          <div className="status-pill side">
+            <span className={`dot ${stats ? 'ok' : 'bad'}`} />
+            {stats ? '연결됨' : '미연결'}
+          </div>
+          <button
+            className="logout-btn"
+            onClick={() => {
+              localStorage.removeItem('dg_admin_key');
+              setAdminKey('');
+              setStats(null);
+              setUsers([]);
+              setLogs([]);
+              setGrowth(null);
+            }}
+            title="로그아웃"
+          >
+            로그아웃
+          </button>
+        </div>
       </aside>
 
-      <main className="content">
+      <main className={`content ${section === 'map' ? 'map-mode' : ''}`}>
         <div className="topbar">
-          <div className="status-pill">
-            <span className={`dot ${stats ? 'ok' : 'bad'}`} />
-            {stats ? 'API 연결됨' : 'API 미연결'}
-          </div>
           <button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button>
         </div>
 
-        {error && <p className="error">{error}</p>}
+        {section !== 'map' && error && <p className="error">{error}</p>}
 
         {section === 'dashboard' && (
           <>
@@ -353,9 +370,8 @@ export function AdminApp() {
         )}
 
         {section === 'map' && (
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', fontWeight: 600 }}>포인트 지도 (줌아웃 시 그룹화)</div>
-            <div ref={mapRef} style={{ width: '100%', height: 'calc(100vh - 180px)' }} />
+          <div className="map-full">
+            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
           </div>
         )}
 
