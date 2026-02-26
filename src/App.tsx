@@ -254,12 +254,12 @@ function MainApp() {
       case 'profile-saved':
         return <Profile userId={selectedUserId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} initialTab="saved" />;
       case 'location':
-        return selectedLocation ? (
+        return (
           <LocationMapPage
-            location={selectedLocation}
+            location={selectedLocation || ''}
             onBack={() => setCurrentPage('home')}
           />
-        ) : <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
+        );
       case 'post':
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} singlePostMode />;
       case 'settings':

@@ -83,6 +83,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const navItems = [
     { id: 'home', icon: HomeIcon, label: '홈' },
     { id: 'explore', icon: MapIcon, label: '탐색' },
+    { id: 'location', icon: MapIcon, label: '포인트 지도' },
     { id: 'reels', icon: FilmIcon, label: '릴스' },
     { id: 'create', icon: PlusCircleIcon, label: '게시물 등록' },
     { id: 'messages', icon: ChatBubbleOvalLeftEllipsisIcon, label: '메시지' },
