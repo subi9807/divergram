@@ -124,7 +124,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
+        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-visible transition-colors">
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
               <h1 className="text-2xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
