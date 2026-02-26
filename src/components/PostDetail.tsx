@@ -338,6 +338,9 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                   if (data) {
                     onViewProfile(data.id);
                   }
+                }, (tag) => {
+                  window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
+                  window.dispatchEvent(new PopStateEvent('popstate'));
                 })}
               </p>
 
@@ -467,6 +470,9 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                     if (data) {
                       onViewProfile(data.id);
                     }
+                  }, (tag) => {
+                    window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
                   })}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getRelativeTime(post.created_at)}</p>
@@ -511,6 +517,9 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                       if (data) {
                         onViewProfile(data.id);
                       }
+                    }, (tag) => {
+                      window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
                     })}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getRelativeTime(comment.created_at)}</p>

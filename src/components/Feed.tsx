@@ -639,16 +639,23 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 <div className="-mt-1">
                   <p className="text-sm leading-relaxed dark:text-white">
                     <span className="font-semibold mr-2 dark:text-white">{post.profiles.username}</span>
-                    {renderTextWithMentions(post.caption || '', async (username) => {
-                      const { data } = await db
-                        .from('profiles')
-                        .select('id')
-                        .eq('username', username)
-                        .maybeSingle();
-                      if (data) {
-                        onViewProfile(data.id);
+                    {renderTextWithMentions(
+                      post.caption || '',
+                      async (username) => {
+                        const { data } = await db
+                          .from('profiles')
+                          .select('id')
+                          .eq('username', username)
+                          .maybeSingle();
+                        if (data) {
+                          onViewProfile(data.id);
+                        }
+                      },
+                      (tag) => {
+                        window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
+                        window.dispatchEvent(new PopStateEvent('popstate'));
                       }
-                    })}
+                    )}
                   </p>
                 </div>
 

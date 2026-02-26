@@ -26,6 +26,7 @@ function MainApp() {
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const [selectedPostId, setSelectedPostId] = useState<string | undefined>();
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
+  const [exploreTag, setExploreTag] = useState('');
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [activityCounts, setActivityCounts] = useState({ likes: 0, comments: 0, saved: 0 });
   const [reportText, setReportText] = useState('');
@@ -63,6 +64,7 @@ function MainApp() {
     if (selectedUserId) params.set('user', selectedUserId);
     if (selectedPostId) params.set('post', selectedPostId);
     if (selectedLocation) params.set('loc', selectedLocation);
+    if (currentPage === 'explore' && exploreTag) params.set('tag', exploreTag);
     if (modal) params.set('modal', modal);
 
     return `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
@@ -77,6 +79,7 @@ function MainApp() {
     showMessages,
     showProfileEdit,
     settingsTab,
+    exploreTag,
   ]);
 
   useEffect(() => {
@@ -125,6 +128,7 @@ function MainApp() {
       setSelectedUserId(q.get('user') || undefined);
       setSelectedPostId(q.get('post') || undefined);
       setSelectedLocation(q.get('loc') || undefined);
+      setExploreTag(q.get('tag') || '');
 
       const modal = q.get('modal');
       setShowCreatePost(modal === 'create');
@@ -238,7 +242,7 @@ function MainApp() {
       case 'home':
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
       case 'explore':
-        return <Explore onViewProfile={handleViewProfile} />;
+        return <Explore onViewProfile={handleViewProfile} initialTag={exploreTag} />;
       case 'reels':
         return <Reels onViewProfile={handleViewProfile} />;
       case 'profile':

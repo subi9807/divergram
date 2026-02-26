@@ -471,7 +471,10 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
                   >
                     {post.profiles.username}
                   </button>
-                  {renderTextWithMentions(post.caption, onViewProfile)}
+                  {renderTextWithMentions(post.caption, onViewProfile, (tag) => {
+                    window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  })}
                 </p>
               )}
 
