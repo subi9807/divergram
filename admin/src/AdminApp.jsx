@@ -270,10 +270,13 @@ export function AdminApp() {
         )}
 
         {section === 'map' && (
-          <div className="card">
-            <h2>포인트 지도</h2>
-            <p style={{ marginBottom: 12 }}>사용자 서비스의 포인트 지도로 이동해서 전체 마커를 확인할 수 있어.</p>
-            <button onClick={() => window.open('http://127.0.0.1:5173/location', '_blank')}>포인트 지도 열기</button>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', fontWeight: 600 }}>포인트 지도</div>
+            <iframe
+              title="admin-point-map"
+              src="http://127.0.0.1:5173/location"
+              style={{ width: '100%', height: 'calc(100vh - 180px)', border: 'none', display: 'block' }}
+            />
           </div>
         )}
 
