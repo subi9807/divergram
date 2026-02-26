@@ -190,7 +190,18 @@ export function AdminApp() {
         for (const name of unique.slice(0, 300)) {
           const coord = parseCoord(name);
           if (coord) {
-            const marker = new google.maps.Marker({ position: coord, title: name });
+            const marker = new google.maps.Marker({
+              position: coord,
+              title: name,
+              icon: {
+                path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                scale: 6,
+                fillColor: '#ef4444',
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 1.5,
+              },
+            });
             markers.push(marker);
             bounds.extend(coord);
             continue;
@@ -200,7 +211,18 @@ export function AdminApp() {
             geocoder.geocode({ address: name }, (results, status) => {
               if (status === 'OK' && results?.[0]) {
                 const loc = results[0].geometry.location;
-                const marker = new google.maps.Marker({ position: { lat: loc.lat(), lng: loc.lng() }, title: name });
+                const marker = new google.maps.Marker({
+                  position: { lat: loc.lat(), lng: loc.lng() },
+                  title: name,
+                  icon: {
+                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    scale: 6,
+                    fillColor: '#ef4444',
+                    fillOpacity: 1,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 1.5,
+                  },
+                });
                 markers.push(marker);
                 bounds.extend(loc);
               }
