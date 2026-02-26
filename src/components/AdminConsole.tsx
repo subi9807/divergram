@@ -57,12 +57,12 @@ export default function AdminConsole() {
     <div className="p-6 md:p-8 max-w-4xl">
       <h1 className="text-2xl font-bold mb-4">관리자 콘솔</h1>
 
-      <div className="rounded-lg border p-4 bg-white dark:bg-black mb-4">
+      <div className="rounded-lg border p-4 bg-white dark:bg-[#121212] mb-4">
         <label className="block text-sm font-semibold mb-2">Admin API Key</label>
         <div className="flex gap-2">
           <input
             type="password"
-            className="flex-1 border rounded-md p-3 dark:bg-gray-900"
+            className="flex-1 border rounded-md p-3 dark:bg-[#262626]"
             value={adminKey}
             onChange={(e) => setAdminKey(e.target.value)}
             placeholder="x-admin-key 입력"
@@ -89,7 +89,7 @@ export default function AdminConsole() {
 
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+              <thead className="bg-gray-50 dark:bg-[#262626]">
                 <tr>
                   <th className="text-left px-3 py-2">ID</th>
                   <th className="text-left px-3 py-2">Email</th>
@@ -119,7 +119,7 @@ export default function AdminConsole() {
 
 function Card({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border p-4 bg-white dark:bg-black">
+    <div className="rounded-lg border p-4 bg-white dark:bg-[#121212]">
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-xl font-bold">{value}</p>
     </div>

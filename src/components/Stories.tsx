@@ -140,7 +140,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
   };
 
   return (
-    <div className="px-4 md:px-0 py-4 bg-white dark:bg-black transition-colors">
+    <div className="px-4 md:px-0 py-4 bg-white dark:bg-[#121212] transition-colors">
       <div className="mx-auto max-w-[620px] flex items-center justify-center gap-2">
         <button
           type="button"
@@ -159,7 +159,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
                 className="flex flex-col items-center space-y-2 flex-shrink-0 snap-start"
               >
                 <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
-                  <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
+                  <div className="w-full h-full rounded-full bg-white dark:bg-[#121212] p-0.5 flex items-center justify-center transition-colors">
                     {user.avatar_url ? (
                       <img
                         src={user.avatar_url}
@@ -167,7 +167,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
+                      <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#262626] flex items-center justify-center transition-colors">
                         <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
                           {user.username[0].toUpperCase()}
                         </span>

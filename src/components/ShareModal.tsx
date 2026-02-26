@@ -135,17 +135,17 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
   const modalContent = (
     <div className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white dark:bg-black rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-[#121212] rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-lg font-semibold dark:text-white">공유하기</h2>
           <button onClick={onClose} className="hover:bg-gray-100 dark:hover:bg-gray-900 p-2 rounded-full">
             <X className="h-5 w-5 dark:text-white" />
           </button>
         </div>
 
-        <div className="p-4 border-b border-gray-300 dark:border-gray-800">
+        <div className="p-4 border-b border-gray-300 dark:border-[#262626]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
             <input
@@ -153,7 +153,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
               placeholder="검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-900 dark:text-white rounded-lg outline-none focus:bg-gray-200 dark:focus:bg-gray-800"
+              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#262626] dark:text-white rounded-lg outline-none focus:bg-gray-200 dark:focus:bg-gray-800"
             />
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
         </div>
 
         {selectedUsers.size > 0 && (
-          <div className="p-4 border-t border-gray-300 dark:border-gray-800">
+          <div className="p-4 border-t border-gray-300 dark:border-[#262626]">
             <button
               onClick={handleSend}
               disabled={sending}

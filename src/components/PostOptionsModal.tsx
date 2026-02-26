@@ -138,7 +138,7 @@ export default function PostOptionsModal({
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
       <div
         ref={modalRef}
-        className="fixed z-50 bg-white dark:bg-gray-900 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-[160px]"
+        className="fixed z-50 bg-white dark:bg-[#262626] rounded-md shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden w-[160px]"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,

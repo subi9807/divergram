@@ -211,7 +211,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
       </button>
 
       <div
-        className="bg-white dark:bg-black w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
+        className="bg-white dark:bg-[#121212] w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-1 max-h-[90vh] bg-black dark:bg-gray-950 flex items-center justify-center">
@@ -248,8 +248,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
           ) : null}
         </div>
 
-        <div className="w-[420px] flex flex-col bg-white dark:bg-black max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800 sticky top-0 bg-white dark:bg-black z-10">
+        <div className="w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                 <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             </button>
           </div>
 
-          <div className="border-b border-gray-300 dark:border-gray-800">
+          <div className="border-b border-gray-300 dark:border-[#262626]">
             <div className="w-full bg-black flex items-center justify-center">
               {post.post_media && post.post_media.length > 0 ? (
                 <MediaCarousel
@@ -392,7 +392,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             </div>
           </div>
 
-          <div className="border-b border-gray-300 dark:border-gray-800 p-4">
+          <div className="border-b border-gray-300 dark:border-[#262626] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-4">
                 <button
@@ -425,7 +425,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                 onChange={setCommentInput}
                 onSubmit={addComment}
                 placeholder="댓글 달기..."
-                className="flex-1 outline-none text-sm px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-full focus:border-gray-400 dark:focus:border-gray-500"
+                className="flex-1 outline-none text-sm px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-full focus:border-gray-400 dark:focus:border-gray-500"
               />
               {commentInput.trim() && (
                 <button
@@ -438,7 +438,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             </div>
           </div>
 
-          <div className="p-4 space-y-4 dark:bg-black">
+          <div className="p-4 space-y-4 dark:bg-[#121212]">
             <div className="flex space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5 flex-shrink-0">
                 <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
@@ -519,7 +519,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             ))}
           </div>
 
-          <div className="border-t border-gray-300 dark:border-gray-800 p-3 dark:bg-black">
+          <div className="border-t border-gray-300 dark:border-[#262626] p-3 dark:bg-[#121212]">
             <p className="text-xs text-gray-500 dark:text-gray-400">{getRelativeTime(post.created_at)}</p>
           </div>
         </div>

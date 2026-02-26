@@ -86,8 +86,8 @@ export default function ReportModal({ onClose }: ReportModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-black border dark:border-gray-800 rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-black border-b dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+      <div className="bg-white dark:bg-[#121212] border dark:border-[#262626] rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-[#121212] border-b dark:border-[#262626] px-4 py-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold dark:text-white">문제 신고</h2>
           <button
             onClick={onClose}
@@ -107,7 +107,7 @@ export default function ReportModal({ onClose }: ReportModalProps) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="신고하실 내용을 상세히 작성해주세요."
               rows={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               required
             />
           </div>
@@ -138,7 +138,7 @@ export default function ReportModal({ onClose }: ReportModalProps) {
             </button>
 
             {file && (
-              <div className="mt-2 flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div className="mt-2 flex items-center space-x-2 p-2 bg-gray-50 dark:bg-[#262626] rounded-lg">
                 <FileText className="h-5 w-5 text-blue-500" />
                 <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">
                   {file.name}

@@ -424,14 +424,14 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           const commentCount = post.comments.length;
 
           return (
-            <div key={post.id} className="bg-white dark:bg-black transition-colors">
+            <div key={post.id} className="bg-white dark:bg-[#121212] transition-colors">
               <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => onViewProfile(post.user_id)}
                     className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5"
                   >
-                    <div className="w-full h-full rounded-full bg-white dark:bg-black flex items-center justify-center transition-colors">
+                    <div className="w-full h-full rounded-full bg-white dark:bg-[#121212] flex items-center justify-center transition-colors">
                       {post.profiles.avatar_url ? (
                         <img
                           src={post.profiles.avatar_url}

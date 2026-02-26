@@ -148,8 +148,8 @@ export default function EditPostModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-black rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800">
+      <div className="bg-white dark:bg-[#121212] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold dark:text-white">게시물 수정</h2>
           <button
             onClick={onClose}
@@ -227,7 +227,7 @@ export default function EditPostModal({
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="문구를 입력하세요..."
             />
           </div>
@@ -240,7 +240,7 @@ export default function EditPostModal({
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="위치를 입력하세요"
             />
           </div>
@@ -252,7 +252,7 @@ export default function EditPostModal({
             <select
               value={diveType || ''}
               onChange={(e) => setDiveType(e.target.value as 'scuba' | 'freediving' || undefined)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">선택 안함</option>
               <option value="scuba">스쿠버 다이빙</option>
@@ -271,7 +271,7 @@ export default function EditPostModal({
                     type="date"
                     value={diveDate}
                     onChange={(e) => setDiveDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -283,7 +283,7 @@ export default function EditPostModal({
                     type="text"
                     value={diveSite}
                     onChange={(e) => setDiveSite(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="다이빙 사이트"
                   />
                 </div>
@@ -296,7 +296,7 @@ export default function EditPostModal({
                     type="number"
                     value={maxDepth}
                     onChange={(e) => setMaxDepth(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -310,7 +310,7 @@ export default function EditPostModal({
                     type="number"
                     value={waterTemp}
                     onChange={(e) => setWaterTemp(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -324,7 +324,7 @@ export default function EditPostModal({
                     type="number"
                     value={diveDuration}
                     onChange={(e) => setDiveDuration(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                   />
                 </div>
@@ -337,7 +337,7 @@ export default function EditPostModal({
                     type="number"
                     value={visibility}
                     onChange={(e) => setVisibility(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -352,7 +352,7 @@ export default function EditPostModal({
                   type="text"
                   value={buddyName}
                   onChange={(e) => setBuddyName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="버디 이름"
                 />
               </div>

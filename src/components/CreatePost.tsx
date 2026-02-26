@@ -214,8 +214,8 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-black rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-gray-800">
+      <div className="bg-white dark:bg-[#121212] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold flex items-center gap-2 dark:text-white">
             <Waves className="h-6 w-6 text-blue-500" />
             새 다이빙 로그 작성
@@ -308,7 +308,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               ))}
 
               {files.length < 10 && (
-                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 dark:bg-gray-900">
+                <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 dark:bg-[#262626]">
                   <Upload className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-1" />
                   <span className="text-xs text-gray-500 dark:text-gray-400">추가</span>
                   <input
@@ -323,7 +323,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             </div>
 
             {files.length === 0 && (
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-[#262626] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-12 h-12 mb-3 text-gray-400 dark:text-gray-500" />
                   <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
@@ -385,7 +385,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 type="date"
                 value={diveDate}
                 onChange={(e) => setDiveDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -399,7 +399,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={maxDepth}
                 onChange={(e) => setMaxDepth(e.target.value)}
                 placeholder="예: 18.5"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -413,7 +413,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={waterTemperature}
                 onChange={(e) => setWaterTemperature(e.target.value)}
                 placeholder="예: 24.0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -427,7 +427,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   value={diveDuration}
                   onChange={(e) => setDiveDuration(e.target.value)}
                   placeholder="예: 45"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -442,7 +442,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value)}
                 placeholder="예: 15.0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -456,7 +456,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={diveSite}
               onChange={(e) => setDiveSite(e.target.value)}
               placeholder="예: 제주 문섬"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -469,7 +469,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="예: 제주도"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -481,7 +481,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={buddyName}
               onChange={setBuddyName}
               placeholder="@를 입력하여 버디 태그하기"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
