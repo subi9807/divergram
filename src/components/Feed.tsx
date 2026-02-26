@@ -698,7 +698,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           isOpen={showOptionsModal}
           onClose={() => {
             setShowOptionsModal(false);
-            setSelectedPost(null);
           }}
           onReport={() => alert('신고 기능은 준비중입니다')}
           onFollow={handleFollowAction}
@@ -761,7 +760,10 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       {showDeleteModal && (
         <DeleteConfirmModal
           isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setSelectedPost(null);
+          }}
           onConfirm={handleDeletePost}
           loading={deleting}
         />

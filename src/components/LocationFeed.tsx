@@ -555,7 +555,6 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
           isOpen={showOptionsModal}
           onClose={() => {
             setShowOptionsModal(false);
-            setSelectedPost(null);
           }}
           onReport={() => alert('신고 기능은 준비중입니다')}
           onFollow={handleFollowAction}

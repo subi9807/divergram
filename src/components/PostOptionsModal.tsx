@@ -152,7 +152,6 @@ export default function PostOptionsModal({
                 key={index}
                 onClick={() => {
                   option.onClick();
-                  onClose();
                 }}
                 className={`w-full py-2.5 px-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-white transition-colors flex items-center gap-2 ${
                   option.className || ''
