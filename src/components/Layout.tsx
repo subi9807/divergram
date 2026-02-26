@@ -124,11 +124,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className="hidden xl:block fixed left-0 top-0 w-[244px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
+        <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 overflow-y-auto transition-colors">
           <nav className="py-6 flex flex-col h-full">
-            <div className="px-4 pb-6">
-              <h1 className="text-3xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
-                Divergram
+            <div className="px-4 pb-6 flex justify-center">
+              <h1 className="text-2xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
+                D
               </h1>
             </div>
             <div>
@@ -139,28 +139,32 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    className={`w-full flex items-center space-x-4 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                    className={`group relative w-full flex items-center justify-center px-2 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
                       isActive ? 'font-bold' : 'font-medium'
                     }`}
                   >
                     <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} strokeWidth={2.1} />
-                    <span className="text-[16px]">{item.label}</span>
+                    <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                      {item.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-auto relative px-4 mb-4" ref={moreMenuRef}>
+            <div className="mt-auto relative px-2 mb-4" ref={moreMenuRef}>
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="w-full flex items-center space-x-4 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
+                className="group relative w-full flex items-center justify-center px-2 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
               >
                 <Menu className="h-6 w-6" />
-                <span className="text-[15px]">더보기</span>
+                <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                  더보기
+                </span>
               </button>
 
               {showMoreMenu && (
-                <div className="absolute bottom-full left-6 mb-2 w-56 bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 py-2 z-50 transition-colors">
+                <div className="absolute bottom-full left-[76px] mb-2 w-56 bg-white dark:bg-black rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 py-2 z-50 transition-colors">
                   <button
                     onClick={() => {
                       onNavigate('settings');
@@ -248,7 +252,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </nav>
         </aside>
 
-        <main className="flex-1 pt-16 xl:pt-0 pb-20 md:pb-4 xl:ml-[244px] overflow-x-hidden">
+        <main className="flex-1 pt-16 xl:pt-0 pb-20 md:pb-4 xl:ml-[84px] overflow-x-hidden">
           <div className="w-full md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto">
             {children}
           </div>
