@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import { Post, db, PostMedia } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,7 +31,26 @@ export default function EditPostModal({
   const [deletedMediaIds, setDeletedMediaIds] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const captionRef = useRef<HTMLTextAreaElement>(null);
+  const [followingUsers, setFollowingUsers] = useState<Array<{ id: string; username: string }>>([]);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentionList, setShowMentionList] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    const loadFollowing = async () => {
+      if (!user) return;
+      const { data: follows } = await db.from('follows').select('following_id').eq('follower_id', user.id);
+      const ids = (follows || []).map((f: any) => String(f.following_id));
+      if (!ids.length) {
+        setFollowingUsers([]);
+        return;
+      }
+      const { data: profiles } = await db.from('profiles').select('id, username').in('id', ids);
+      setFollowingUsers((profiles || []).map((p: any) => ({ id: String(p.id), username: p.username })));
+    };
+    if (isOpen) loadFollowing();
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -53,6 +72,47 @@ export default function EditPostModal({
   const handleRemoveExistingMedia = (mediaId: string) => {
     setDeletedMediaIds(prev => [...prev, mediaId]);
     setExistingMedia(prev => prev.filter(m => m.id !== mediaId));
+  };
+
+  const handleCaptionChange = (value: string) => {
+    setCaption(value);
+    const el = captionRef.current;
+    if (!el) return;
+    const caret = el.selectionStart ?? value.length;
+    const textUntilCaret = value.slice(0, caret);
+    const m = textUntilCaret.match(/(^|\s)@([a-zA-Z0-9_]*)$/);
+    if (m) {
+      setMentionQuery(m[2] || '');
+      setShowMentionList(true);
+    } else {
+      setShowMentionList(false);
+      setMentionQuery('');
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const el = captionRef.current;
+    const current = caption;
+    if (!el) {
+      setCaption(`${current} @${username} `);
+      setShowMentionList(false);
+      return;
+    }
+
+    const caret = el.selectionStart ?? current.length;
+    const before = current.slice(0, caret);
+    const after = current.slice(caret);
+    const replaced = before.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1@${username} `);
+    const next = replaced + after;
+    setCaption(next);
+    setShowMentionList(false);
+    setMentionQuery('');
+
+    requestAnimationFrame(() => {
+      const pos = replaced.length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
   };
 
   const handleSave = async () => {
@@ -220,16 +280,38 @@ export default function EditPostModal({
             />
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               문구
             </label>
             <textarea
+              ref={captionRef}
               value={caption}
-              onChange={(e) => setCaption(e.target.value)}
+              onChange={(e) => handleCaptionChange(e.target.value)}
               className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="문구를 입력하세요..."
             />
+
+            {showMentionList && (
+              <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
+                {followingUsers
+                  .filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase()))
+                  .slice(0, 8)
+                  .map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => insertMention(u.username)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
+                    >
+                      @{u.username}
+                    </button>
+                  ))}
+                {followingUsers.filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
+                  <div className="px-3 py-2 text-xs text-gray-500">표시할 팔로우가 없습니다.</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
