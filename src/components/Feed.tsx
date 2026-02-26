@@ -41,6 +41,12 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const POSTS_PER_PAGE = 12;
   const { user } = useAuth();
   const moreButtonRefs = useRef<Record<string, HTMLButtonElement>>({});
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    window.setTimeout(() => setToastMessage(''), 1800);
+  };
 
   useEffect(() => {
     loadPosts();
@@ -251,7 +257,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     if (!selectedPost) return;
     const url = `${window.location.origin}/post/${selectedPost.id}`;
     navigator.clipboard.writeText(url);
-    alert('링크가 복사되었습니다');
+    showToast('링크가 복사되었습니다');
   };
 
   const handleEmbed = () => {
@@ -261,7 +267,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 <script async src="//www.instagram.com/embed.js"></script>`;
 
     navigator.clipboard.writeText(embedCode);
-    alert('퍼가기 코드가 복사되었습니다');
+    showToast('퍼가기 코드가 복사되었습니다');
   };
 
   const handleEditPost = async (updatedData: Partial<Post>) => {
@@ -314,11 +320,11 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       setShowDeleteModal(false);
       setShowOptionsModal(false);
       setSelectedPost(null);
-      alert('게시물이 삭제되었습니다.');
+      showToast('게시물이 삭제되었습니다.');
 
     } catch (error: any) {
       console.error('Error deleting post:', error);
-      alert(`게시물 삭제 실패: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
+      showToast(`게시물 삭제 실패: ${error.message || '알 수 없는 오류'}`);
     } finally {
       setDeleting(false);
     }
@@ -781,6 +787,12 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
             setSelectedPost(null);
           }}
         />
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9999] bg-black/85 text-white text-sm px-4 py-2 rounded-xl shadow-xl">
+          {toastMessage}
+        </div>
       )}
     </>
   );
