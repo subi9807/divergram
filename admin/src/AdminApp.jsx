@@ -132,6 +132,12 @@ export function AdminApp() {
     if (adminKey) refresh();
   }, []);
 
+  useEffect(() => {
+    if (!adminKey || section !== 'dashboard') return;
+    const t = setInterval(() => refresh(), 5000);
+    return () => clearInterval(t);
+  }, [adminKey, section]);
+
   const trendData = useMemo(() => {
     const mapify = (arr) => Object.fromEntries((arr || []).map((x) => [x.day, Number(x.count || 0)]));
     const s = mapify(growth?.series?.signups);
@@ -148,20 +154,6 @@ export function AdminApp() {
     return [{ name: '일반회원', value: personalUsers }, { name: '리조트회원', value: resortUsers }];
   }, [stats]);
 
-  const miniMetricCharts = useMemo(() => {
-    const inMb = Number(stats?.system?.network?.inMb || 0);
-    const outMb = Number(stats?.system?.network?.outMb || 0);
-    return [
-      { title: '총 사용자', value: Number(stats?.users || 0), suffix: '', color: '#2563eb', data: [{ name: '총', value: Number(stats?.users || 0) }] },
-      { title: '일반회원', value: Number(stats?.personalUsers || 0), suffix: '', color: '#3b82f6', data: [{ name: '일반', value: Number(stats?.personalUsers || 0) }] },
-      { title: '리조트회원', value: Number(stats?.resortUsers || 0), suffix: '', color: '#0ea5e9', data: [{ name: '리조트', value: Number(stats?.resortUsers || 0) }] },
-      { title: '차단 사용자', value: Number(stats?.blockedUsers || 0), suffix: '', color: '#ef4444', data: [{ name: '차단', value: Number(stats?.blockedUsers || 0) }] },
-      { title: 'CPU 사용률', value: Number(stats?.system?.cpuUsagePct || 0), suffix: '%', color: '#8b5cf6', data: [{ name: 'CPU', value: Number(stats?.system?.cpuUsagePct || 0) }] },
-      { title: '메모리 사용률', value: Number(stats?.system?.memoryUsagePct || 0), suffix: '%', color: '#22c55e', data: [{ name: 'MEM', value: Number(stats?.system?.memoryUsagePct || 0) }] },
-      { title: '디스크 사용률', value: Number(stats?.system?.disk?.usedPct || 0), suffix: '%', color: '#f59e0b', data: [{ name: 'DISK', value: Number(stats?.system?.disk?.usedPct || 0) }] },
-      { title: '네트워크 I/O', value: Number((inMb + outMb).toFixed(1)), suffix: 'MB', color: '#14b8a6', data: [{ name: 'I/O', value: Number((inMb + outMb).toFixed(1)) }] },
-    ];
-  }, [stats]);
 
   const blockData = useMemo(() => {
     const blocked = Number(stats?.blockedUsers || 0);
@@ -219,21 +211,12 @@ export function AdminApp() {
 
         {section === 'dashboard' && (
           <>
-            <div className="grid">
-              {miniMetricCharts.map((m) => (
-                <div className="card stat" key={m.title} style={{ height: 170 }}>
-                  <h3>{m.title}</h3>
-                  <strong>{m.value}{m.suffix}</strong>
-                  <div style={{ height: 78, marginTop: 6 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={m.data}>
-                        <Tooltip />
-                        <Bar dataKey="value" fill={m.color} radius={[8, 8, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              ))}
+            <div className="monitor-strip card">
+              <div className="monitor-item"><span>CPU</span><strong>{stats?.system?.cpuUsagePct ?? '-'}%</strong></div>
+              <div className="monitor-item"><span>MEM</span><strong>{stats?.system?.memoryUsagePct ?? '-'}%</strong></div>
+              <div className="monitor-item"><span>DISK</span><strong>{stats?.system?.disk?.usedPct ?? '-'}%</strong></div>
+              <div className="monitor-item"><span>NET IN</span><strong>{stats?.system?.network?.inMb ?? '-'}MB</strong></div>
+              <div className="monitor-item"><span>NET OUT</span><strong>{stats?.system?.network?.outMb ?? '-'}MB</strong></div>
             </div>
 
             <div className="card" style={{ height: 340 }}>
