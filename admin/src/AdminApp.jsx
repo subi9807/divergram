@@ -148,6 +148,21 @@ export function AdminApp() {
     return [{ name: '일반회원', value: personalUsers }, { name: '리조트회원', value: resortUsers }];
   }, [stats]);
 
+  const miniMetricCharts = useMemo(() => {
+    const inMb = Number(stats?.system?.network?.inMb || 0);
+    const outMb = Number(stats?.system?.network?.outMb || 0);
+    return [
+      { title: '총 사용자', value: Number(stats?.users || 0), suffix: '', color: '#2563eb', data: [{ name: '총', value: Number(stats?.users || 0) }] },
+      { title: '일반회원', value: Number(stats?.personalUsers || 0), suffix: '', color: '#3b82f6', data: [{ name: '일반', value: Number(stats?.personalUsers || 0) }] },
+      { title: '리조트회원', value: Number(stats?.resortUsers || 0), suffix: '', color: '#0ea5e9', data: [{ name: '리조트', value: Number(stats?.resortUsers || 0) }] },
+      { title: '차단 사용자', value: Number(stats?.blockedUsers || 0), suffix: '', color: '#ef4444', data: [{ name: '차단', value: Number(stats?.blockedUsers || 0) }] },
+      { title: 'CPU 사용률', value: Number(stats?.system?.cpuUsagePct || 0), suffix: '%', color: '#8b5cf6', data: [{ name: 'CPU', value: Number(stats?.system?.cpuUsagePct || 0) }] },
+      { title: '메모리 사용률', value: Number(stats?.system?.memoryUsagePct || 0), suffix: '%', color: '#22c55e', data: [{ name: 'MEM', value: Number(stats?.system?.memoryUsagePct || 0) }] },
+      { title: '디스크 사용률', value: Number(stats?.system?.disk?.usedPct || 0), suffix: '%', color: '#f59e0b', data: [{ name: 'DISK', value: Number(stats?.system?.disk?.usedPct || 0) }] },
+      { title: '네트워크 I/O', value: Number((inMb + outMb).toFixed(1)), suffix: 'MB', color: '#14b8a6', data: [{ name: 'I/O', value: Number((inMb + outMb).toFixed(1)) }] },
+    ];
+  }, [stats]);
+
   const blockData = useMemo(() => {
     const blocked = Number(stats?.blockedUsers || 0);
     const users = Number(stats?.users || 0);
@@ -205,17 +220,20 @@ export function AdminApp() {
         {section === 'dashboard' && (
           <>
             <div className="grid">
-              <div className="card stat"><h3>총 사용자</h3><strong>{stats?.users ?? '-'}</strong></div>
-              <div className="card stat"><h3>일반회원</h3><strong>{stats?.personalUsers ?? '-'}</strong></div>
-              <div className="card stat"><h3>리조트회원</h3><strong>{stats?.resortUsers ?? '-'}</strong></div>
-              <div className="card stat"><h3>차단 사용자</h3><strong>{stats?.blockedUsers ?? '-'}</strong></div>
-            </div>
-
-            <div className="grid">
-              <div className="card stat"><h3>CPU 사용률</h3><strong>{stats?.system?.cpuUsagePct ?? '-'}%</strong></div>
-              <div className="card stat"><h3>메모리 사용률</h3><strong>{stats?.system?.memoryUsagePct ?? '-'}%</strong></div>
-              <div className="card stat"><h3>디스크 사용률</h3><strong>{stats?.system?.disk?.usedPct ?? '-'}%</strong></div>
-              <div className="card stat"><h3>네트워크 I/O(MB)</h3><strong>{stats?.system ? `${stats.system.network?.inMb ?? 0} / ${stats.system.network?.outMb ?? 0}` : '-'}</strong></div>
+              {miniMetricCharts.map((m) => (
+                <div className="card stat" key={m.title} style={{ height: 170 }}>
+                  <h3>{m.title}</h3>
+                  <strong>{m.value}{m.suffix}</strong>
+                  <div style={{ height: 78, marginTop: 6 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={m.data}>
+                        <Tooltip />
+                        <Bar dataKey="value" fill={m.color} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="card" style={{ height: 340 }}>
