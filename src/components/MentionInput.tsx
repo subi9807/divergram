@@ -186,9 +186,10 @@ export default function MentionInput({
 
 export function renderTextWithMentions(
   text: string,
-  onUserClick: (username: string) => void
+  onUserClick: (username: string) => void,
+  onTagClick?: (tag: string) => void
 ): React.ReactNode {
-  const parts = text.split(/(@\w+)/g);
+  const parts = text.split(/(@\w+|#\w+)/g);
 
   return parts.map((part, index) => {
     if (part.match(/^@\w+$/)) {
@@ -198,6 +199,18 @@ export function renderTextWithMentions(
           key={index}
           onClick={() => onUserClick(username)}
           className="text-blue-600 hover:underline font-semibold"
+        >
+          {part}
+        </button>
+      );
+    }
+    if (part.match(/^#\w+$/)) {
+      const tag = part.substring(1);
+      return (
+        <button
+          key={index}
+          onClick={() => onTagClick?.(tag)}
+          className="text-sky-600 hover:underline font-semibold"
         >
           {part}
         </button>

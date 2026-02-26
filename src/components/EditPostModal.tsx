@@ -65,6 +65,8 @@ export default function EditPostModal({
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentionList, setShowMentionList] = useState(false);
   const [mentionPopupPos, setMentionPopupPos] = useState({ top: 0, left: 0 });
+  const [suggestionMode, setSuggestionMode] = useState<'mention' | 'hashtag'>('mention');
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -104,16 +106,25 @@ export default function EditPostModal({
     setExistingMedia(prev => prev.filter(m => m.id !== mediaId));
   };
 
+  const hashtagSuggestions = [
+    '다이빙', '프리다이빙', '스쿠버', '바다기록', '오늘의다이브', '수중사진', '다이브로그', '오션'
+  ];
+
+  const filteredMentions = followingUsers.filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 8);
+  const filteredHashtags = hashtagSuggestions.filter((t) => t.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 8);
+
   const handleCaptionChange = (value: string) => {
     setCaption(value);
     const el = captionRef.current;
     if (!el) return;
     const caret = el.selectionStart ?? value.length;
     const textUntilCaret = value.slice(0, caret);
-    const m = textUntilCaret.match(/(^|\s)@([a-zA-Z0-9_]*)$/);
+    const m = textUntilCaret.match(/(^|\s)([@#])([a-zA-Z0-9_가-힣]*)$/);
     if (m) {
-      setMentionQuery(m[2] || '');
+      setSuggestionMode(m[2] === '@' ? 'mention' : 'hashtag');
+      setMentionQuery(m[3] || '');
       setShowMentionList(true);
+      setSelectedSuggestionIndex(0);
 
       const pos = getCaretCoordinates(el, caret);
       setMentionPopupPos({
@@ -126,11 +137,13 @@ export default function EditPostModal({
     }
   };
 
-  const insertMention = (username: string) => {
+  const insertToken = (token: string, mode: 'mention' | 'hashtag') => {
     const el = captionRef.current;
     const current = caption;
+    const prefix = mode === 'mention' ? '@' : '#';
+
     if (!el) {
-      setCaption(`${current} @${username} `);
+      setCaption(`${current} ${prefix}${token} `);
       setShowMentionList(false);
       return;
     }
@@ -138,7 +151,7 @@ export default function EditPostModal({
     const caret = el.selectionStart ?? current.length;
     const before = current.slice(0, caret);
     const after = current.slice(caret);
-    const replaced = before.replace(/(^|\s)@([a-zA-Z0-9_]*)$/, `$1@${username} `);
+    const replaced = before.replace(/(^|\s)([@#])([a-zA-Z0-9_가-힣]*)$/, `$1${prefix}${token} `);
     const next = replaced + after;
     setCaption(next);
     setShowMentionList(false);
@@ -324,6 +337,30 @@ export default function EditPostModal({
               ref={captionRef}
               value={caption}
               onChange={(e) => handleCaptionChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (!showMentionList) return;
+                const list = suggestionMode === 'mention' ? filteredMentions : filteredHashtags;
+                if (!list.length) return;
+
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSelectedSuggestionIndex((prev) => (prev + 1) % list.length);
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSelectedSuggestionIndex((prev) => (prev - 1 + list.length) % list.length);
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                  e.preventDefault();
+                  const item = list[selectedSuggestionIndex];
+                  if (!item) return;
+                  if (suggestionMode === 'mention') {
+                    insertToken((item as any).username, 'mention');
+                  } else {
+                    insertToken(String(item), 'hashtag');
+                  }
+                } else if (e.key === 'Escape') {
+                  setShowMentionList(false);
+                }
+              }}
               className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="문구를 입력하세요..."
             />
@@ -333,21 +370,32 @@ export default function EditPostModal({
                 className="absolute z-20 w-44 max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg"
                 style={{ top: mentionPopupPos.top, left: mentionPopupPos.left }}
               >
-                {followingUsers
-                  .filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase()))
-                  .slice(0, 8)
-                  .map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => insertMention(u.username)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
-                    >
-                      @{u.username}
-                    </button>
-                  ))}
-                {followingUsers.filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
-                  <div className="px-3 py-2 text-xs text-gray-500">표시할 팔로우가 없습니다.</div>
+                {suggestionMode === 'mention' && filteredMentions.map((u, idx) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertToken(u.username, 'mention')}
+                    className={`w-full text-left px-3 py-2 text-sm dark:text-white ${idx === selectedSuggestionIndex ? 'bg-gray-100 dark:bg-[#262626]' : 'hover:bg-gray-100 dark:hover:bg-[#262626]'}`}
+                  >
+                    @{u.username}
+                  </button>
+                ))}
+
+                {suggestionMode === 'hashtag' && filteredHashtags.map((t, idx) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertToken(t, 'hashtag')}
+                    className={`w-full text-left px-3 py-2 text-sm dark:text-white ${idx === selectedSuggestionIndex ? 'bg-gray-100 dark:bg-[#262626]' : 'hover:bg-gray-100 dark:hover:bg-[#262626]'}`}
+                  >
+                    #{t}
+                  </button>
+                ))}
+
+                {((suggestionMode === 'mention' && filteredMentions.length === 0) || (suggestionMode === 'hashtag' && filteredHashtags.length === 0)) && (
+                  <div className="px-3 py-2 text-xs text-gray-500">추천 항목이 없습니다.</div>
                 )}
               </div>
             )}
