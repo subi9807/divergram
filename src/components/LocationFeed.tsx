@@ -437,7 +437,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
             <div className="p-3">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-4">
-                  <button onClick={() => toggleLike(post.id)}>
+                  <button onClick={() => toggleLike(post.id)} className="inline-flex items-center gap-1">
                     <Heart
                       className={`h-7 w-7 ${
                         post.likes?.some((like: any) => like.user_id === user?.id)
@@ -445,9 +445,11 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
                           : ''
                       }`}
                     />
+                    <span className="text-xs font-medium">{post.likes?.length || 0}</span>
                   </button>
-                  <button onClick={() => setViewPost(post)}>
+                  <button onClick={() => setViewPost(post)} className="inline-flex items-center gap-1">
                     <MessageCircle className="h-7 w-7" />
+                    <span className="text-xs font-medium">{post.comments?.length || 0}</span>
                   </button>
                   <button onClick={() => { setSelectedPost(post); setShowShareModal(true); }}>
                     <Send className="h-7 w-7" />
@@ -460,11 +462,6 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
                 </button>
               </div>
 
-              {post.likes && post.likes.length > 0 && (
-                <p className="font-semibold text-sm mb-2">
-                  좋아요 {post.likes.length}개
-                </p>
-              )}
 
               {post.caption && (
                 <p className="text-sm mb-2">
@@ -523,14 +520,6 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
                 </div>
               )}
 
-              {post.comments && post.comments.length > 0 && (
-                <button
-                  onClick={() => setViewPost(post)}
-                  className="text-sm text-gray-500 mb-2"
-                >
-                  댓글 {post.comments.length}개 모두 보기
-                </button>
-              )}
 
               <p className="text-xs text-gray-500 mb-2">
                 {getRelativeTime(post.created_at)}

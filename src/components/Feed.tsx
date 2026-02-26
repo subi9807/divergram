@@ -537,18 +537,20 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   <div className="flex items-center space-x-4">
                     <button
                       onClick={() => toggleLike(post.id)}
-                      className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 transition-colors"
+                      className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 transition-colors inline-flex items-center gap-1"
                     >
                       <Heart
                         className={`h-6 w-6 ${isLiked ? 'fill-red-500 text-red-500' : ''}`}
                         strokeWidth={2.1}
                       />
+                      <span className="text-xs font-medium">{likeCount}</span>
                     </button>
                     <button
                       onClick={() => setViewPost(post)}
-                      className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300"
+                      className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 inline-flex items-center gap-1"
                     >
                       <MessageCircle className="h-6 w-6" strokeWidth={2.1} />
+                      <span className="text-xs font-medium">{commentCount}</span>
                     </button>
                     <button
                       onClick={() => handleShare(post)}
@@ -570,9 +572,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   </button>
                 </div>
 
-                {likeCount > 0 && (
-                  <button className="font-semibold text-sm hover:text-gray-600 dark:text-white dark:hover:text-gray-300">좋아요 {likeCount}개</button>
-                )}
 
                 {(() => {
                   const hasDiveData = Boolean(
@@ -653,23 +652,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   </p>
                 </div>
 
-                {commentCount > 3 && (
-                  <button
-                    onClick={() => setViewPost(post)}
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                  >
-                    댓글 {commentCount}개 모두 보기
-                  </button>
-                )}
 
-                {commentCount <= 3 && (
-                  <button
-                    onClick={() => setViewPost(post)}
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-normal -mt-1"
-                  >
-                    댓글
-                  </button>
-                )}
               </div>
             </div>
           );
