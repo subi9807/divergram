@@ -141,7 +141,7 @@ export default function Stories({ onUserSelect }: StoriesProps) {
 
   return (
     <div className="px-4 md:px-0 py-4 bg-white dark:bg-black transition-colors">
-      <div className="mx-auto max-w-[560px] flex items-center gap-2">
+      <div className="mx-auto max-w-[620px] flex items-center justify-center gap-2">
         <button
           type="button"
           onClick={() => scrollByAmount('left')}
@@ -150,8 +150,8 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         >
           ‹
         </button>
-        <div ref={scrollerRef} className="flex-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex w-max space-x-5 pr-2">
+        <div ref={scrollerRef} className="w-[484px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex w-max space-x-5">
             {users.map((user) => (
               <button
                 key={user.id}
