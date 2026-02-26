@@ -131,7 +131,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 D
               </h1>
             </div>
-            <div>
+            <div className="flex-1 flex flex-col justify-center">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
