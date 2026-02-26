@@ -417,7 +417,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         <Stories onUserSelect={onViewProfile} />
       </div>
 
-      <div className="space-y-0 md:space-y-6 max-w-[630px] mx-auto">
+      <div className="space-y-0 md:space-y-6 max-w-[470px] mx-auto">
         {displayedPosts.map((post) => {
           const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
           const likeCount = post.likes.length;
