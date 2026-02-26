@@ -54,7 +54,13 @@ export default function EditPostModal({
   const [diveDuration, setDiveDuration] = useState(post.dive_duration?.toString() || '');
   const [diveSite, setDiveSite] = useState(post.dive_site || '');
   const [visibility, setVisibility] = useState(post.visibility?.toString() || '');
-  const [buddyName, setBuddyName] = useState(post.buddy_name || '');
+  const [selectedBuddies, setSelectedBuddies] = useState<string[]>(
+    (post.buddy_name || '')
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean)
+  );
+  const [buddyQuery, setBuddyQuery] = useState('');
   const [existingMedia, setExistingMedia] = useState<PostMedia[]>(post.post_media || []);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [deletedMediaIds, setDeletedMediaIds] = useState<string[]>([]);
@@ -257,7 +263,7 @@ export default function EditPostModal({
         dive_duration: diveDuration ? parseInt(diveDuration) : undefined,
         dive_site: diveSite || undefined,
         visibility: visibility ? parseFloat(visibility) : undefined,
-        buddy_name: buddyName || undefined,
+        buddy_name: selectedBuddies.length ? selectedBuddies.join(', ') : undefined,
       };
 
       onSave(updatedData);
@@ -530,26 +536,48 @@ export default function EditPostModal({
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  버디 이름
+                  버디 이름 (여러 명 선택 가능)
                 </label>
+
+                {selectedBuddies.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedBuddies.map((name) => (
+                      <span
+                        key={name}
+                        className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-3 py-1 text-sm"
+                      >
+                        @{name}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBuddies((prev) => prev.filter((v) => v !== name))}
+                          className="hover:opacity-80"
+                          aria-label={`${name} 제거`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <input
                   type="text"
-                  value={buddyName}
+                  value={buddyQuery}
                   onChange={(e) => {
-                    const v = e.target.value;
-                    setBuddyName(v);
+                    setBuddyQuery(e.target.value);
                     setShowBuddyList(true);
                   }}
                   onFocus={() => setShowBuddyList(true)}
                   onBlur={() => setTimeout(() => setShowBuddyList(false), 120)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="버디 이름"
+                  placeholder="버디 이름을 검색해서 여러 명 추가"
                 />
 
                 {showBuddyList && (
                   <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
                     {buddySuggestions
-                      .filter((u) => u.username?.toLowerCase().includes(buddyName.toLowerCase()))
+                      .filter((u) => u.username?.toLowerCase().includes(buddyQuery.toLowerCase()))
+                      .filter((u) => !selectedBuddies.includes(u.username))
                       .slice(0, 8)
                       .map((u) => (
                         <button
@@ -557,16 +585,19 @@ export default function EditPostModal({
                           type="button"
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            setBuddyName(u.username);
-                            setShowBuddyList(false);
+                            setSelectedBuddies((prev) => [...prev, u.username]);
+                            setBuddyQuery('');
+                            setShowBuddyList(true);
                           }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
                         >
-                          {u.username}
+                          @{u.username}
                         </button>
                       ))}
-                    {buddySuggestions.filter((u) => u.username?.toLowerCase().includes(buddyName.toLowerCase())).length === 0 && (
-                      <div className="px-3 py-2 text-xs text-gray-500">표시할 팔로우/팔로워가 없습니다.</div>
+                    {buddySuggestions
+                      .filter((u) => u.username?.toLowerCase().includes(buddyQuery.toLowerCase()))
+                      .filter((u) => !selectedBuddies.includes(u.username)).length === 0 && (
+                      <div className="px-3 py-2 text-xs text-gray-500">추가할 버디가 없습니다.</div>
                     )}
                   </div>
                 )}
