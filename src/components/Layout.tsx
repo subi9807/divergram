@@ -16,6 +16,7 @@ import {
   ExclamationTriangleIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
+  CameraIcon,
 } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -145,9 +146,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         <aside className="hidden xl:block fixed left-0 top-0 w-[84px] h-screen bg-white dark:bg-black overflow-visible transition-colors">
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
-              <h1 className="text-2xl cursor-pointer text-gray-900 dark:text-white" style={{ fontFamily: "'Dancing Script', cursive", fontWeight: 700 }} onClick={() => onNavigate('home')}>
-                D
-              </h1>
+              <button onClick={() => onNavigate('home')} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
+                <CameraIcon className="h-7 w-7 text-gray-900 dark:text-white" />
+              </button>
             </div>
             <div className="flex-1 flex flex-col justify-center">
               {navItems.map((item) => {
@@ -162,7 +163,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     }`}
                   >
                     <Icon className={`h-6 w-6 ${isActive ? 'text-black dark:text-white' : ''}`} />
-                    <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                    <span className="pointer-events-none absolute left-[78px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#262626] text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
                       {item.label}
                     </span>
                   </button>
@@ -176,7 +177,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 className="group relative w-full flex items-center justify-center px-2 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
               >
                 <Bars3Icon className="h-6 w-6" />
-                <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                <span className="pointer-events-none absolute left-[78px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#262626] text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
                   더보기
                 </span>
               </button>
