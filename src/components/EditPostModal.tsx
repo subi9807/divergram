@@ -67,21 +67,36 @@ export default function EditPostModal({
   const [mentionPopupPos, setMentionPopupPos] = useState({ top: 0, left: 0 });
   const [suggestionMode, setSuggestionMode] = useState<'mention' | 'hashtag'>('mention');
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
+  const [buddySuggestions, setBuddySuggestions] = useState<Array<{ id: string; username: string }>>([]);
+  const [showBuddyList, setShowBuddyList] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
-    const loadFollowing = async () => {
+    const loadRelations = async () => {
       if (!user) return;
-      const { data: follows } = await db.from('follows').select('following_id').eq('follower_id', user.id);
-      const ids = (follows || []).map((f: any) => String(f.following_id));
+
+      const [{ data: follows }, { data: followers }] = await Promise.all([
+        db.from('follows').select('following_id').eq('follower_id', user.id),
+        db.from('follows').select('follower_id').eq('following_id', user.id),
+      ]);
+
+      const ids = Array.from(new Set([
+        ...(follows || []).map((f: any) => String(f.following_id)),
+        ...(followers || []).map((f: any) => String(f.follower_id)),
+      ]));
+
       if (!ids.length) {
         setFollowingUsers([]);
+        setBuddySuggestions([]);
         return;
       }
+
       const { data: profiles } = await db.from('profiles').select('id, username').in('id', ids);
-      setFollowingUsers((profiles || []).map((p: any) => ({ id: String(p.id), username: p.username })));
+      const list = (profiles || []).map((p: any) => ({ id: String(p.id), username: p.username }));
+      setFollowingUsers(list);
+      setBuddySuggestions(list);
     };
-    if (isOpen) loadFollowing();
+    if (isOpen) loadRelations();
   }, [isOpen, user]);
 
   if (!isOpen) return null;
@@ -513,17 +528,48 @@ export default function EditPostModal({
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   버디 이름
                 </label>
                 <input
                   type="text"
                   value={buddyName}
-                  onChange={(e) => setBuddyName(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBuddyName(v);
+                    setShowBuddyList(true);
+                  }}
+                  onFocus={() => setShowBuddyList(true)}
+                  onBlur={() => setTimeout(() => setShowBuddyList(false), 120)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="버디 이름"
                 />
+
+                {showBuddyList && (
+                  <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
+                    {buddySuggestions
+                      .filter((u) => u.username?.toLowerCase().includes(buddyName.toLowerCase()))
+                      .slice(0, 8)
+                      .map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setBuddyName(u.username);
+                            setShowBuddyList(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
+                        >
+                          {u.username}
+                        </button>
+                      ))}
+                    {buddySuggestions.filter((u) => u.username?.toLowerCase().includes(buddyName.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-xs text-gray-500">표시할 팔로우/팔로워가 없습니다.</div>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}
