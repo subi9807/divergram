@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
 const API_BASE = import.meta.env.VITE_ADMIN_API_BASE || 'http://127.0.0.1:4000';
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || '';
@@ -131,6 +132,29 @@ export function AdminApp() {
     if (adminKey) refresh();
   }, []);
 
+  const trendData = useMemo(() => {
+    const mapify = (arr) => Object.fromEntries((arr || []).map((x) => [x.day, Number(x.count || 0)]));
+    const s = mapify(growth?.series?.signups);
+    const p = mapify(growth?.series?.posts);
+    const i = mapify(growth?.series?.interactions);
+    const d = mapify(growth?.series?.dauApprox);
+    const days = Array.from(new Set([...Object.keys(s), ...Object.keys(p), ...Object.keys(i), ...Object.keys(d)])).sort();
+    return days.map((day) => ({ day: day.slice(5), signups: s[day] || 0, posts: p[day] || 0, interactions: i[day] || 0, dau: d[day] || 0 }));
+  }, [growth]);
+
+  const roleData = useMemo(() => {
+    const adminUsers = Number(stats?.adminUsers || 0);
+    const users = Number(stats?.users || 0);
+    const normalUsers = Math.max(0, users - adminUsers);
+    return [{ name: '일반', value: normalUsers }, { name: '관리자', value: adminUsers }];
+  }, [stats]);
+
+  const blockData = useMemo(() => {
+    const blocked = Number(stats?.blockedUsers || 0);
+    const users = Number(stats?.users || 0);
+    return [{ name: '정상', value: Math.max(0, users - blocked) }, { name: '차단', value: blocked }];
+  }, [stats]);
+
   const Icon = ({ kind }) => {
     const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
     if (kind === 'dashboard') return <svg {...common}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>;
@@ -200,41 +224,51 @@ export function AdminApp() {
               <div className="card stat"><h3>차단 사용자</h3><strong>{stats?.blockedUsers ?? '-'}</strong></div>
               <div className="card stat"><h3>API 업타임(초)</h3><strong>{stats?.uptimeSec ?? '-'}</strong></div>
             </div>
-            <div className="grid">
-              <div className="card stat"><h3>14일 가입자</h3><strong>{growth?.series?.signups?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
-              <div className="card stat"><h3>14일 게시물</h3><strong>{growth?.series?.posts?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
-              <div className="card stat"><h3>14일 인터랙션</h3><strong>{growth?.series?.interactions?.reduce((a, b) => a + Number(b.count || 0), 0) ?? '-'}</strong></div>
-              <div className="card stat"><h3>최근 DAU(근사)</h3><strong>{growth?.series?.dauApprox?.at(-1)?.count ?? 0}</strong></div>
-            </div>
-            <div className="card">
+
+            <div className="card" style={{ height: 340 }}>
               <h2>최근 14일 유입/활동 추이</h2>
-              <table>
-                <thead><tr><th>일자</th><th>가입자</th><th>게시물</th><th>인터랙션</th><th>DAU(근사)</th></tr></thead>
-                <tbody>
-                  {(() => {
-                    const days = new Set([
-                      ...(growth?.series?.signups || []).map((x) => x.day),
-                      ...(growth?.series?.posts || []).map((x) => x.day),
-                      ...(growth?.series?.interactions || []).map((x) => x.day),
-                      ...(growth?.series?.dauApprox || []).map((x) => x.day),
-                    ]);
-                    const mapify = (arr) => Object.fromEntries((arr || []).map((x) => [x.day, x.count]));
-                    const s = mapify(growth?.series?.signups);
-                    const p = mapify(growth?.series?.posts);
-                    const i = mapify(growth?.series?.interactions);
-                    const d = mapify(growth?.series?.dauApprox);
-                    return [...days].sort().map((day) => (
-                      <tr key={day}>
-                        <td>{day}</td>
-                        <td>{s[day] || 0}</td>
-                        <td>{p[day] || 0}</td>
-                        <td>{i[day] || 0}</td>
-                        <td>{d[day] || 0}</td>
-                      </tr>
-                    ));
-                  })()}
-                </tbody>
-              </table>
+              <ResponsiveContainer width="100%" height="88%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="signups" name="가입자" stroke="#2563eb" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="posts" name="게시물" stroke="#16a34a" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="interactions" name="인터랙션" stroke="#ea580c" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="dau" name="DAU" stroke="#7c3aed" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid">
+              <div className="card" style={{ height: 300 }}>
+                <h2>권한 비중</h2>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    <Pie data={roleData} dataKey="value" nameKey="name" outerRadius={88} innerRadius={52}>
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#111827" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="card" style={{ height: 300 }}>
+                <h2>계정 상태 비중</h2>
+                <ResponsiveContainer width="100%" height="85%">
+                  <BarChart data={blockData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </>
         )}
