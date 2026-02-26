@@ -565,6 +565,15 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   }
 });
 
+app.get('/api/admin/map-points', requireAdmin, async (_req, res) => {
+  try {
+    const r = await pool.query(`SELECT id, location, dive_site, created_at FROM app_posts ORDER BY created_at DESC LIMIT 1000`);
+    res.json({ ok: true, points: r.rows || [] });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_map_points_failed' });
+  }
+});
+
 app.get('/api/admin/growth', requireAdmin, async (req, res) => {
   const days = Math.min(Math.max(Number(req.query.days || 14), 3), 90);
   try {

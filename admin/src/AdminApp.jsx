@@ -1,8 +1,26 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
 const API_BASE = import.meta.env.VITE_ADMIN_API_BASE || 'http://127.0.0.1:4000';
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || '';
+const GOOGLE_MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDD4AiXYr5ugA9Ul0o1r0FAKatDJ6XJV-Q';
+
+let mapsPromise;
+async function loadGoogleMaps() {
+  if ((window).google?.maps) return;
+  if (mapsPromise) return mapsPromise;
+  mapsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}`;
+    s.async = true;
+    s.defer = true;
+    s.onload = () => resolve(true);
+    s.onerror = () => reject(new Error('google_maps_load_failed'));
+    document.head.appendChild(s);
+  });
+  return mapsPromise;
+}
 
 async function api(path, { adminKey, method = 'GET', body } = {}) {
   const r = await fetch(`${API_BASE}${path}`, {
@@ -33,6 +51,7 @@ export function AdminApp() {
   const [tableRows, setTableRows] = useState([]);
   const [authCheck, setAuthCheck] = useState(null);
   const [growth, setGrowth] = useState(null);
+  const mapRef = useRef(null);
 
   const refresh = async () => {
     if (!adminKey) {
@@ -136,6 +155,70 @@ export function AdminApp() {
     if (!adminKey || section !== 'dashboard') return;
     const t = setInterval(() => refresh(), 5000);
     return () => clearInterval(t);
+  }, [adminKey, section]);
+
+  useEffect(() => {
+    if (!adminKey || section !== 'map' || !mapRef.current) return;
+    let cancelled = false;
+
+    const parseCoord = (v) => {
+      const m = String(v || '').match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (!m) return null;
+      return { lat: Number(m[1]), lng: Number(m[2]) };
+    };
+
+    (async () => {
+      try {
+        await loadGoogleMaps();
+        if (cancelled || !(window).google) return;
+
+        const google = (window).google;
+        const map = new google.maps.Map(mapRef.current, {
+          center: { lat: 36.5, lng: 127.8 },
+          zoom: 6,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+        });
+
+        const { points } = await api('/api/admin/map-points', { adminKey });
+        const geocoder = new google.maps.Geocoder();
+        const markers = [];
+        const bounds = new google.maps.LatLngBounds();
+
+        const unique = Array.from(new Set((points || []).flatMap((p) => [p.location, p.dive_site]).map((v) => String(v || '').trim()).filter(Boolean)));
+        for (const name of unique.slice(0, 300)) {
+          const coord = parseCoord(name);
+          if (coord) {
+            const marker = new google.maps.Marker({ position: coord, title: name });
+            markers.push(marker);
+            bounds.extend(coord);
+            continue;
+          }
+
+          await new Promise((resolve) => {
+            geocoder.geocode({ address: name }, (results, status) => {
+              if (status === 'OK' && results?.[0]) {
+                const loc = results[0].geometry.location;
+                const marker = new google.maps.Marker({ position: { lat: loc.lat(), lng: loc.lng() }, title: name });
+                markers.push(marker);
+                bounds.extend(loc);
+              }
+              resolve(true);
+            });
+          });
+        }
+
+        new MarkerClusterer({ map, markers });
+        if (markers.length) map.fitBounds(bounds);
+      } catch (e) {
+        setError('지도 로딩 실패');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [adminKey, section]);
 
   const trendData = useMemo(() => {
@@ -271,12 +354,8 @@ export function AdminApp() {
 
         {section === 'map' && (
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', fontWeight: 600 }}>포인트 지도</div>
-            <iframe
-              title="admin-point-map"
-              src="http://127.0.0.1:5173/location"
-              style={{ width: '100%', height: 'calc(100vh - 180px)', border: 'none', display: 'block' }}
-            />
+            <div style={{ padding: '12px 14px', borderBottom: '1px solid #e5e7eb', fontWeight: 600 }}>포인트 지도 (줌아웃 시 그룹화)</div>
+            <div ref={mapRef} style={{ width: '100%', height: 'calc(100vh - 180px)' }} />
           </div>
         )}
 
