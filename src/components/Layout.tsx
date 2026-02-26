@@ -139,11 +139,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.id}
                     onClick={() => onNavigate(item.id)}
-                    className={`group relative w-full flex items-center justify-center px-2 py-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                    className={`group relative w-full flex items-center justify-center px-2 py-4 rounded-xl dark:text-white transition-colors ${
                       isActive ? 'font-bold' : 'font-medium'
                     }`}
                   >
-                    <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} strokeWidth={2.1} />
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all ${isActive ? 'bg-gray-900 text-white shadow-sm dark:bg-white dark:text-black' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'}`}>
+                      <Icon className={`h-5 w-5 ${isActive ? 'fill-current' : ''}`} strokeWidth={2.2} />
+                    </span>
                     <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                       {item.label}
                     </span>
@@ -155,9 +157,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <div className="mt-auto relative px-2 mb-4" ref={moreMenuRef}>
               <button
                 onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className="group relative w-full flex items-center justify-center px-2 py-4 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors rounded-lg"
+                className="group relative w-full flex items-center justify-center px-2 py-4 dark:text-white transition-colors rounded-xl"
               >
-                <Menu className="h-6 w-6" />
+                <span className={`flex h-11 w-11 items-center justify-center rounded-2xl transition-all ${showMoreMenu ? 'bg-gray-900 text-white shadow-sm dark:bg-white dark:text-black' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'}`}>
+                  <Menu className="h-5 w-5" strokeWidth={2.2} />
+                </span>
                 <span className="pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black text-white text-xs px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                   더보기
                 </span>
