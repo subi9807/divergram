@@ -176,10 +176,10 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
 
   return (
     <>
-    <div className="w-full px-4 md:px-6 lg:px-0 py-4 md:py-8">
+    <div className="w-full px-4 md:px-2 lg:px-0 py-4 md:py-8">
       <div className="mb-8 md:mb-12">
-        <div className="flex flex-col md:flex-row items-center md:items-center space-y-6 md:space-y-0 md:space-x-8 mb-6 md:mb-8">
-          <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 flex-shrink-0">
+        <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-20 mb-6 md:mb-8">
+          <div className="w-24 h-24 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 flex-shrink-0">
             <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
               {profile.avatar_url ? (
                 <img
@@ -196,20 +196,20 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
           </div>
 
           <div className="flex-1 w-full text-center md:text-left">
-            <div className="flex flex-col md:flex-row items-center md:items-center space-y-3 md:space-y-0 md:space-x-4 mb-4 md:mb-6">
-              <h2 className="text-xl md:text-2xl font-light">{profile.username}</h2>
+            <div className="flex flex-col md:flex-row items-center md:items-center space-y-3 md:space-y-0 md:space-x-4 mb-4 md:mb-5">
+              <h2 className="text-xl md:text-[20px] font-normal">{profile.username}</h2>
               {isOwnProfile ? (
                 <div className="flex space-x-2">
                   <button
                     onClick={onEditProfile}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
+                    className="px-4 h-8 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
                   >
                     <Settings className="h-4 w-4 inline mr-1" />
                     프로필 편집
                   </button>
                   <button
                     onClick={signOut}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
+                    className="px-4 h-8 border border-gray-300 dark:border-gray-600 rounded-lg font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200"
                   >
                     <LogOut className="h-4 w-4 inline mr-1" />
                     로그아웃
@@ -229,7 +229,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
               )}
             </div>
 
-            <div className="flex justify-center md:justify-start space-x-6 md:space-x-8 mb-4 md:mb-6 text-sm md:text-base">
+            <div className="flex justify-center md:justify-start space-x-6 md:space-x-10 mb-4 md:mb-4 text-sm md:text-base">
               <div>
                 <span className="font-semibold">{posts.length}</span> 게시물
               </div>
