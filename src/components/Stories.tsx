@@ -150,8 +150,8 @@ export default function Stories({ onUserSelect }: StoriesProps) {
         >
           ‹
         </button>
-        <div ref={scrollerRef} className="w-[484px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex w-max space-x-5">
+        <div ref={scrollerRef} className="w-[400px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex w-max space-x-6">
             {users.map((user) => (
               <button
                 key={user.id}
