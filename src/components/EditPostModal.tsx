@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import { Post, db, PostMedia } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
+import MapLocationPickerModal from './MapLocationPickerModal';
+import { extractGpsFromImage } from '../utils/exifGps';
 
 interface EditPostModalProps {
   isOpen: boolean;
@@ -76,6 +78,7 @@ export default function EditPostModal({
   const [buddySuggestions, setBuddySuggestions] = useState<Array<{ id: string; username: string }>>([]);
   const [showBuddyList, setShowBuddyList] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -126,6 +129,41 @@ export default function EditPostModal({
       loadLocationSuggestions();
     }
   }, [isOpen, user]);
+
+  const applyGpsFromPhoto = async () => {
+    const firstImage = newFiles.find((f) => f.type.startsWith('image/'));
+    if (!firstImage) {
+      alert('GPS를 읽을 새 이미지(JPEG)를 먼저 추가해주세요.');
+      return;
+    }
+
+    const gps = await extractGpsFromImage(firstImage);
+    if (!gps) {
+      alert('선택한 이미지에서 GPS 정보를 찾지 못했습니다.');
+      return;
+    }
+
+    try {
+      if (!(window as any).google?.maps) {
+        const { loadGoogleMaps } = await import('../utils/googleMaps');
+        await loadGoogleMaps();
+      }
+      const google = (window as any).google;
+      if (google?.maps?.Geocoder) {
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: gps.lat, lng: gps.lng } }, (results: any, status: string) => {
+          const address = status === 'OK' && results?.[0]?.formatted_address
+            ? results[0].formatted_address
+            : `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
+          setLocation(address);
+        });
+      } else {
+        setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
+      }
+    } catch {
+      setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -448,13 +486,21 @@ export default function EditPostModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               위치
             </label>
+            <div className="flex gap-2 mb-2">
+              <button type="button" onClick={() => setShowMapPicker(true)} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
+                지도에서 핀 찍기
+              </button>
+              <button type="button" onClick={applyGpsFromPhoto} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
+                사진 GPS 불러오기
+              </button>
+            </div>
             <input
               type="text"
               list="edit-location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="위치를 선택하거나 입력하세요"
+              placeholder="지도 선택 또는 위치 입력"
             />
             <datalist id="edit-location-options">
               {locationSuggestions.map((loc) => (
@@ -653,6 +699,16 @@ export default function EditPostModal({
           </div>
         </div>
       </div>
+
+      <MapLocationPickerModal
+        isOpen={showMapPicker}
+        initialLocation={location}
+        onClose={() => setShowMapPicker(false)}
+        onSelect={({ locationText }) => {
+          setLocation(locationText);
+          setShowMapPicker(false);
+        }}
+      />
     </div>
   );
 }

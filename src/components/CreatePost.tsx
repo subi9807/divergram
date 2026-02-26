@@ -3,6 +3,8 @@ import { X, Upload, Waves, Film, Trash2, GripVertical } from 'lucide-react';
 import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import MentionInput from './MentionInput';
+import MapLocationPickerModal from './MapLocationPickerModal';
+import { extractGpsFromImage } from '../utils/exifGps';
 
 interface CreatePostProps {
   onClose: () => void;
@@ -30,6 +32,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
   const [buddyName, setBuddyName] = useState('');
   const [location, setLocation] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +58,43 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
     loadLocationSuggestions();
   }, []);
+
+  const applyGpsFromPhoto = async () => {
+    const firstImage = files.find((f) => f.type === 'image');
+    if (!firstImage) {
+      setError('GPS를 읽을 사진(JPEG)을 먼저 추가해줘요.');
+      return;
+    }
+
+    const gps = await extractGpsFromImage(firstImage.file);
+    if (!gps) {
+      setError('사진에서 GPS 정보를 찾지 못했어요.');
+      return;
+    }
+
+    try {
+      if (!(window as any).google?.maps) {
+        const { loadGoogleMaps } = await import('../utils/googleMaps');
+        await loadGoogleMaps();
+      }
+      const google = (window as any).google;
+      if (google?.maps?.Geocoder) {
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ location: { lat: gps.lat, lng: gps.lng } }, (results: any, status: string) => {
+          const address = status === 'OK' && results?.[0]?.formatted_address
+            ? results[0].formatted_address
+            : `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
+          setLocation(address);
+        });
+      } else {
+        setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
+      }
+      setError('');
+    } catch {
+      setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
+      setError('');
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -486,12 +526,20 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               위치
             </label>
+            <div className="flex gap-2 mb-2">
+              <button type="button" onClick={() => setShowMapPicker(true)} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
+                지도에서 핀 찍기
+              </button>
+              <button type="button" onClick={applyGpsFromPhoto} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
+                사진 GPS 불러오기
+              </button>
+            </div>
             <input
               type="text"
               list="create-location-options"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="예: 제주도"
+              placeholder="지도 선택 또는 주소 입력"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <datalist id="create-location-options">
@@ -545,6 +593,16 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
           </div>
         </form>
       </div>
+
+      <MapLocationPickerModal
+        isOpen={showMapPicker}
+        initialLocation={location}
+        onClose={() => setShowMapPicker(false)}
+        onSelect={({ locationText }) => {
+          setLocation(locationText);
+          setShowMapPicker(false);
+        }}
+      />
     </div>
   );
 }
