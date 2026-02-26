@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { db, Profile } from '../lib/internal-db';
+import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 
 interface StoriesProps {
@@ -16,29 +15,13 @@ interface UserWithRecentPost {
 
 export default function Stories({ onUserSelect }: StoriesProps) {
   const [users, setUsers] = useState<UserWithRecentPost[]>([]);
-  const [myProfile, setMyProfile] = useState<Profile | null>(null);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      loadMyProfile();
       loadSuggestedUsers();
     }
   }, [user]);
-
-  const loadMyProfile = async () => {
-    if (!user) return;
-
-    const { data } = await db
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (data) {
-      setMyProfile(data);
-    }
-  };
 
   const loadSuggestedUsers = async () => {
     if (!user) return;
@@ -149,62 +132,37 @@ export default function Stories({ onUserSelect }: StoriesProps) {
   };
 
   return (
-      <div className="px-4 md:px-0 py-4 flex w-full space-x-4 overflow-x-scroll scrollbar-hide bg-white dark:bg-black transition-colors">
-        <button
-          onClick={() => user && onUserSelect(user.id)}
-          className="flex flex-col items-center space-y-2 flex-shrink-0"
-        >
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 p-0.5">
-              <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
-                {myProfile?.avatar_url ? (
-                  <img
-                    src={myProfile.avatar_url}
-                    alt={myProfile.username}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
-                    <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
-                      {myProfile?.username?.[0]?.toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                )}
+    <div className="px-4 md:px-0 py-4 bg-white dark:bg-black transition-colors">
+      <div className="mx-auto max-w-[400px] overflow-x-auto scrollbar-hide">
+        <div className="flex w-max space-x-4">
+          {users.map((user) => (
+            <button
+              key={user.id}
+              onClick={() => onUserSelect(user.id)}
+              className="flex flex-col items-center space-y-2 flex-shrink-0"
+            >
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
+                <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
+                      <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
+                        {user.username[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="absolute bottom-0 right-0 w-5 h-5 bg-blue-500 rounded-full border-2 border-white dark:border-black flex items-center justify-center transition-colors">
-              <Plus className="h-3 w-3 text-white" />
-            </div>
-          </div>
-          <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">내 스토리</span>
-        </button>
-
-        {users.map((user) => (
-          <button
-            key={user.id}
-            onClick={() => onUserSelect(user.id)}
-            className="flex flex-col items-center space-y-2 flex-shrink-0"
-          >
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
-              <div className="w-full h-full rounded-full bg-white dark:bg-black p-0.5 flex items-center justify-center transition-colors">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.username}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors">
-                    <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
-                      {user.username[0].toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">{user.username}</span>
-          </button>
-        ))}
+              <span className="text-xs text-gray-900 dark:text-white max-w-[72px] truncate">{user.username}</span>
+            </button>
+          ))}
+        </div>
       </div>
+    </div>
   );
 }
