@@ -13,7 +13,6 @@ import Notifications from './components/Notifications';
 import LocationMapPage from './components/LocationMapPage';
 import ProfileEdit from './components/ProfileEdit';
 import PersonalInfoEdit from './components/PersonalInfoEdit';
-import AdminConsole from './components/AdminConsole';
 import { db } from './lib/internal-db';
 
 function MainApp() {
@@ -122,7 +121,10 @@ function MainApp() {
         setSettingsTab('account');
       }
       else if (pathname === '/report') setCurrentPage('report');
-      else if (pathname === '/admin') setCurrentPage('admin');
+      else if (pathname === '/admin') {
+        window.location.replace('http://127.0.0.1:5175');
+        setCurrentPage('home');
+      }
       else setCurrentPage('home');
 
       setSelectedUserId(q.get('user') || undefined);
@@ -189,9 +191,11 @@ function MainApp() {
       setSelectedUserId(undefined);
     } else if (page === 'location' || page === 'post') {
       setCurrentPage(page);
-    } else if (page === 'report' || page === 'admin') {
+    } else if (page === 'report') {
       setCurrentPage(page);
       setSelectedUserId(undefined);
+    } else if (page === 'admin') {
+      window.open('http://127.0.0.1:5175', '_blank');
     } else {
       setCurrentPage(page);
       setSelectedUserId(undefined);
@@ -326,8 +330,6 @@ function MainApp() {
             </div>
           </div>
         );
-      case 'admin':
-        return <AdminConsole />;
       default:
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
     }
