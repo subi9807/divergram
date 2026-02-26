@@ -10,6 +10,35 @@ interface EditPostModalProps {
   post: Post;
 }
 
+function getCaretCoordinates(el: HTMLTextAreaElement, position: number) {
+  const div = document.createElement('div');
+  const style = window.getComputedStyle(el);
+  const props = [
+    'boxSizing', 'width', 'height', 'overflowX', 'overflowY', 'borderTopWidth', 'borderRightWidth',
+    'borderBottomWidth', 'borderLeftWidth', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize', 'fontSizeAdjust', 'lineHeight',
+    'fontFamily', 'textAlign', 'textTransform', 'textIndent', 'textDecoration', 'letterSpacing', 'wordSpacing',
+  ] as const;
+
+  div.style.position = 'absolute';
+  div.style.visibility = 'hidden';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.wordWrap = 'break-word';
+  props.forEach((p) => { (div.style as any)[p] = style[p]; });
+  div.textContent = el.value.substring(0, position);
+
+  const span = document.createElement('span');
+  span.textContent = el.value.substring(position) || '.';
+  div.appendChild(span);
+
+  document.body.appendChild(div);
+  const top = span.offsetTop - el.scrollTop;
+  const left = span.offsetLeft - el.scrollLeft;
+  document.body.removeChild(div);
+
+  return { top, left };
+}
+
 export default function EditPostModal({
   isOpen,
   onClose,
@@ -35,6 +64,7 @@ export default function EditPostModal({
   const [followingUsers, setFollowingUsers] = useState<Array<{ id: string; username: string }>>([]);
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentionList, setShowMentionList] = useState(false);
+  const [mentionPopupPos, setMentionPopupPos] = useState({ top: 0, left: 0 });
   const { user } = useAuth();
 
   useEffect(() => {
@@ -84,6 +114,12 @@ export default function EditPostModal({
     if (m) {
       setMentionQuery(m[2] || '');
       setShowMentionList(true);
+
+      const pos = getCaretCoordinates(el, caret);
+      setMentionPopupPos({
+        top: Math.min(el.clientHeight - 8, pos.top + 26),
+        left: Math.min(el.clientWidth - 180, Math.max(8, pos.left)),
+      });
     } else {
       setShowMentionList(false);
       setMentionQuery('');
@@ -293,7 +329,10 @@ export default function EditPostModal({
             />
 
             {showMentionList && (
-              <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
+              <div
+                className="absolute z-20 w-44 max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg"
+                style={{ top: mentionPopupPos.top, left: mentionPopupPos.left }}
+              >
                 {followingUsers
                   .filter((u) => u.username?.toLowerCase().includes(mentionQuery.toLowerCase()))
                   .slice(0, 8)
