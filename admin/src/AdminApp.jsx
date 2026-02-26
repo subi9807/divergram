@@ -130,18 +130,31 @@ export function AdminApp() {
     if (adminKey) refresh();
   }, []);
 
+  const menus = [
+    { key: 'dashboard', icon: '🏠', label: '대시보드' },
+    { key: 'users', icon: '👥', label: '사용자 관리' },
+    { key: 'tables', icon: '🗂️', label: '테이블 조회' },
+    { key: 'logs', icon: '🧾', label: '감사 로그' },
+    { key: 'settings', icon: '⚙️', label: '설정' },
+  ];
+
   return (
     <div className="layout">
       <aside className="sidebar">
-        <h1>Divergram Admin</h1>
-        <p>기본 운영 기능(사용자/권한/차단/감사로그)</p>
+        <div className="brand" title="Divergram Admin">🛡️</div>
 
         <nav className="side-menu">
-          <button className={section === 'dashboard' ? 'active' : ''} onClick={() => setSection('dashboard')}>대시보드</button>
-          <button className={section === 'users' ? 'active' : ''} onClick={() => setSection('users')}>사용자 관리</button>
-          <button className={section === 'tables' ? 'active' : ''} onClick={() => setSection('tables')}>테이블 조회</button>
-          <button className={section === 'logs' ? 'active' : ''} onClick={() => setSection('logs')}>감사 로그</button>
-          <button className={section === 'settings' ? 'active' : ''} onClick={() => setSection('settings')}>설정</button>
+          {menus.map((m) => (
+            <button
+              key={m.key}
+              className={section === m.key ? 'active' : ''}
+              onClick={() => setSection(m.key)}
+              title={m.label}
+              aria-label={m.label}
+            >
+              <span className="menu-icon" aria-hidden>{m.icon}</span>
+            </button>
+          ))}
         </nav>
       </aside>
 
