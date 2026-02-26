@@ -30,6 +30,7 @@ function MainApp() {
   const [activityCounts, setActivityCounts] = useState({ likes: 0, comments: 0, saved: 0 });
   const [reportText, setReportText] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'profile' | 'account' | 'activity'>('profile');
 
   const urlState = useMemo(() => {
     const modal = showCreatePost
@@ -50,9 +51,11 @@ function MainApp() {
     else if (currentPage === 'profile') pathname = '/profile';
     else if (currentPage === 'profile-saved') pathname = '/profile/saved';
     else if (currentPage === 'location') pathname = '/location';
-    else if (currentPage === 'settings') pathname = '/settings';
-    else if (currentPage === 'activity') pathname = '/activity';
-    else if (currentPage === 'account') pathname = '/account';
+    else if (currentPage === 'settings') {
+      if (settingsTab === 'account') pathname = '/account';
+      else if (settingsTab === 'activity') pathname = '/activity';
+      else pathname = '/settings';
+    }
     else if (currentPage === 'report') pathname = '/report';
 
     const params = new URLSearchParams();
@@ -72,6 +75,7 @@ function MainApp() {
     showNotifications,
     showMessages,
     showProfileEdit,
+    settingsTab,
   ]);
 
   useEffect(() => {
@@ -100,9 +104,18 @@ function MainApp() {
       else if (pathname === '/profile') setCurrentPage('profile');
       else if (pathname === '/profile/saved') setCurrentPage('profile-saved');
       else if (pathname === '/location') setCurrentPage('location');
-      else if (pathname === '/settings') setCurrentPage('settings');
-      else if (pathname === '/activity') setCurrentPage('activity');
-      else if (pathname === '/account') setCurrentPage('account');
+      else if (pathname === '/settings') {
+        setCurrentPage('settings');
+        setSettingsTab('profile');
+      }
+      else if (pathname === '/activity') {
+        setCurrentPage('settings');
+        setSettingsTab('activity');
+      }
+      else if (pathname === '/account') {
+        setCurrentPage('settings');
+        setSettingsTab('account');
+      }
       else if (pathname === '/report') setCurrentPage('report');
       else if (pathname === '/admin') setCurrentPage('admin');
       else setCurrentPage('home');
@@ -156,7 +169,19 @@ function MainApp() {
     } else if (page === 'saved') {
       setSelectedUserId(user?.id);
       setCurrentPage('profile-saved');
-    } else if (page === 'settings' || page === 'activity' || page === 'report' || page === 'admin') {
+    } else if (page === 'settings') {
+      setCurrentPage('settings');
+      setSettingsTab('profile');
+      setSelectedUserId(undefined);
+    } else if (page === 'activity') {
+      setCurrentPage('settings');
+      setSettingsTab('activity');
+      setSelectedUserId(undefined);
+    } else if (page === 'account') {
+      setCurrentPage('settings');
+      setSettingsTab('account');
+      setSelectedUserId(undefined);
+    } else if (page === 'report' || page === 'admin') {
       setCurrentPage(page);
       setSelectedUserId(undefined);
     } else {
@@ -226,30 +251,50 @@ function MainApp() {
         ) : <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
       case 'settings':
         return (
-          <div className="p-6 md:p-8 max-w-3xl">
+          <div className="p-6 md:p-8 max-w-4xl">
             <h1 className="text-2xl font-bold mb-6">설정</h1>
-            <div className="space-y-3">
-              <button onClick={handleEditProfile} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">프로필 수정</button>
-              <button onClick={() => setCurrentPage('account')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">개인정보 수정</button>
-              <button onClick={() => setCurrentPage('activity')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">내 활동 보기</button>
-              <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">문제 신고</button>
-              <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">로그아웃</button>
+
+            <div className="flex gap-2 mb-6 border-b">
+              <button
+                onClick={() => setSettingsTab('profile')}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'profile' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+              >
+                프로필 수정
+              </button>
+              <button
+                onClick={() => setSettingsTab('account')}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'account' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+              >
+                개인정보 수정
+              </button>
+              <button
+                onClick={() => setSettingsTab('activity')}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'activity' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+              >
+                내 활동 보기
+              </button>
             </div>
+
+            {settingsTab === 'profile' && (
+              <div className="space-y-3">
+                <p className="text-gray-600">프로필 사진/이름/소개 등 공개 프로필을 수정합니다.</p>
+                <button onClick={handleEditProfile} className="px-4 py-2 rounded-lg border hover:bg-gray-50">프로필 편집 열기</button>
+                <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">문제 신고</button>
+                <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">로그아웃</button>
+              </div>
+            )}
+
+            {settingsTab === 'account' && <PersonalInfoEdit />}
+
+            {settingsTab === 'activity' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">{activityCounts.likes}</p></div>
+                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">{activityCounts.comments}</p></div>
+                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">{activityCounts.saved}</p></div>
+              </div>
+            )}
           </div>
         );
-      case 'activity':
-        return (
-          <div className="p-6 md:p-8 max-w-3xl">
-            <h1 className="text-2xl font-bold mb-6">내 활동</h1>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">{activityCounts.likes}</p></div>
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">{activityCounts.comments}</p></div>
-              <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">{activityCounts.saved}</p></div>
-            </div>
-          </div>
-        );
-      case 'account':
-        return <PersonalInfoEdit />;
       case 'report':
         return (
           <div className="p-6 md:p-8 max-w-3xl">
