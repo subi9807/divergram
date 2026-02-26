@@ -314,6 +314,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       setShowDeleteModal(false);
       setShowOptionsModal(false);
       setSelectedPost(null);
+      alert('게시물이 삭제되었습니다.');
 
     } catch (error: any) {
       console.error('Error deleting post:', error);
