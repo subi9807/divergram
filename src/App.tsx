@@ -10,7 +10,7 @@ import Messages from './components/Messages';
 import Explore from './components/Explore';
 import Reels from './components/Reels';
 import Notifications from './components/Notifications';
-import LocationFeed from './components/LocationFeed';
+import LocationMapPage from './components/LocationMapPage';
 import ProfileEdit from './components/ProfileEdit';
 import PersonalInfoEdit from './components/PersonalInfoEdit';
 import AdminConsole from './components/AdminConsole';
@@ -51,6 +51,7 @@ function MainApp() {
     else if (currentPage === 'profile') pathname = '/profile';
     else if (currentPage === 'profile-saved') pathname = '/profile/saved';
     else if (currentPage === 'location') pathname = '/location';
+    else if (currentPage === 'post') pathname = '/post';
     else if (currentPage === 'settings') {
       if (settingsTab === 'account') pathname = '/account';
       else if (settingsTab === 'activity') pathname = '/activity';
@@ -104,6 +105,7 @@ function MainApp() {
       else if (pathname === '/profile') setCurrentPage('profile');
       else if (pathname === '/profile/saved') setCurrentPage('profile-saved');
       else if (pathname === '/location') setCurrentPage('location');
+      else if (pathname === '/post') setCurrentPage('post');
       else if (pathname === '/settings') {
         setCurrentPage('settings');
         setSettingsTab('profile');
@@ -181,6 +183,8 @@ function MainApp() {
       setCurrentPage('settings');
       setSettingsTab('account');
       setSelectedUserId(undefined);
+    } else if (page === 'location' || page === 'post') {
+      setCurrentPage(page);
     } else if (page === 'report' || page === 'admin') {
       setCurrentPage(page);
       setSelectedUserId(undefined);
@@ -243,12 +247,13 @@ function MainApp() {
         return <Profile userId={selectedUserId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} initialTab="saved" />;
       case 'location':
         return selectedLocation ? (
-          <LocationFeed
+          <LocationMapPage
             location={selectedLocation}
             onBack={() => setCurrentPage('home')}
-            onViewProfile={handleViewProfile}
           />
         ) : <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
+      case 'post':
+        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} singlePostMode />;
       case 'settings':
         return (
           <div className="p-6 md:p-8 max-w-4xl">

@@ -17,9 +17,10 @@ interface FeedProps {
   onViewProfile: (userId: string) => void;
   onViewLocation?: (location: string) => void;
   selectedPostId?: string;
+  singlePostMode?: boolean;
 }
 
-export default function Feed({ onViewProfile, onViewLocation, selectedPostId: initialSelectedPostId }: FeedProps) {
+export default function Feed({ onViewProfile, onViewLocation, selectedPostId: initialSelectedPostId, singlePostMode = false }: FeedProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,13 +62,10 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   }, [posts, displayedPosts, page, loadingMore]);
 
   useEffect(() => {
-    if (initialSelectedPostId && posts.length > 0) {
-      const post = posts.find(p => p.id === initialSelectedPostId);
-      if (post) {
-        setViewPost(post);
-      }
+    if (singlePostMode) {
+      setViewPost(null);
     }
-  }, [initialSelectedPostId, posts]);
+  }, [singlePostMode]);
 
   const loadFollowingUsers = async () => {
     if (!user) return;
@@ -387,6 +385,10 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     );
   }
 
+  const postsToRender = singlePostMode && initialSelectedPostId
+    ? posts.filter((p) => p.id === initialSelectedPostId)
+    : displayedPosts;
+
   return (
     <>
     <div
@@ -418,7 +420,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       </div>
 
       <div className="space-y-0 md:space-y-6 max-w-[470px] mx-auto">
-        {displayedPosts.map((post) => {
+        {postsToRender.map((post) => {
           const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
           const likeCount = post.likes.length;
           const commentCount = post.comments.length;
@@ -665,19 +667,19 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           );
         })}
 
-        {loadingMore && (
+        {!singlePostMode && loadingMore && (
           <div className="flex justify-center items-center py-6">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
           </div>
         )}
 
-        {!loadingMore && displayedPosts.length < posts.length && (
+        {!singlePostMode && !loadingMore && displayedPosts.length < posts.length && (
           <div className="flex justify-center items-center py-6">
             <p className="text-sm text-gray-500 dark:text-gray-400">스크롤하여 더 보기 ({displayedPosts.length}/{posts.length})</p>
           </div>
         )}
 
-        {!loadingMore && displayedPosts.length === posts.length && posts.length > POSTS_PER_PAGE && (
+        {!singlePostMode && !loadingMore && displayedPosts.length === posts.length && posts.length > POSTS_PER_PAGE && (
           <div className="flex justify-center items-center py-6">
             <p className="text-sm text-gray-500">모든 게시물을 확인했습니다</p>
           </div>
@@ -700,7 +702,9 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           }}
           onReport={() => alert('신고 기능은 준비중입니다')}
           onFollow={handleFollowAction}
-          onFavorite={() => {}}
+          onFavorite={() => {
+            if (selectedPost) toggleSave(selectedPost.id);
+          }}
           onShare={() => {
             setShowShareModal(true);
             setShowOptionsModal(false);
@@ -708,7 +712,9 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           onCopyLink={handleCopyLink}
           onEmbed={handleEmbed}
           onGoToPost={() => {
-            setViewPost(selectedPost);
+            if (!selectedPost) return;
+            window.history.pushState({}, '', `/post?post=${selectedPost.id}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
             setShowOptionsModal(false);
           }}
           onAboutAccount={() => {
@@ -765,6 +771,8 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         <ShareModal
           post={selectedPost}
           isOpen={showShareModal}
+          onCopyLink={handleCopyLink}
+          onEmbed={handleEmbed}
           onClose={() => {
             setShowShareModal(false);
             setSelectedPost(null);

@@ -8,6 +8,8 @@ interface ShareModalProps {
   post: Post;
   isOpen: boolean;
   onClose: () => void;
+  onCopyLink?: () => void;
+  onEmbed?: () => void;
 }
 
 interface Follower {
@@ -21,7 +23,7 @@ interface Follower {
   };
 }
 
-export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
+export default function ShareModal({ post, isOpen, onClose, onCopyLink, onEmbed }: ShareModalProps) {
   const [followers, setFollowers] = useState<Follower[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -145,7 +147,12 @@ export default function ShareModal({ post, isOpen, onClose }: ShareModalProps) {
           </button>
         </div>
 
-        <div className="p-4 border-b border-gray-300 dark:border-[#262626]">
+        <div className="p-4 border-b border-gray-300 dark:border-[#262626] space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={onCopyLink} className="text-xs px-2 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white">링크 복사</button>
+            <button onClick={onEmbed} className="text-xs px-2 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white">퍼가기</button>
+            <button onClick={() => { onCopyLink?.(); }} className="text-xs px-2 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white">공유 링크</button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
             <input

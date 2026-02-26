@@ -559,7 +559,9 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
           }}
           onReport={() => alert('신고 기능은 준비중입니다')}
           onFollow={handleFollowAction}
-          onFavorite={() => {}}
+          onFavorite={() => {
+            if (selectedPost) toggleSave(selectedPost.id);
+          }}
           onShare={() => {
             setShowShareModal(true);
             setShowOptionsModal(false);
@@ -567,7 +569,9 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
           onCopyLink={handleCopyLink}
           onEmbed={handleEmbed}
           onGoToPost={() => {
-            setViewPost(selectedPost);
+            if (!selectedPost) return;
+            window.history.pushState({}, '', `/post?post=${selectedPost.id}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
             setShowOptionsModal(false);
           }}
           onAboutAccount={() => {
@@ -610,6 +614,8 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
         <ShareModal
           post={selectedPost}
           isOpen={showShareModal}
+          onCopyLink={handleCopyLink}
+          onEmbed={handleEmbed}
           onClose={() => {
             setShowShareModal(false);
             setSelectedPost(null);

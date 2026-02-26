@@ -11,7 +11,7 @@ export const loadGoogleMaps = (): Promise<void> => {
   }
 
   googleMapsPromise = new Promise((resolve, reject) => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyDD4AiXYr5ugA9Ul0o1r0FAKatDJ6XJV-Q';
 
     if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
       console.warn('Google Maps API key not configured');
