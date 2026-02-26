@@ -252,37 +252,37 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
           <div className="flex justify-center space-x-12">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`flex items-center space-x-2 py-4 -mt-px ${
+              className={`flex flex-col items-center gap-1 py-3 -mt-px ${
                 activeTab === 'posts'
                   ? 'border-t border-black dark:border-white text-black dark:text-white'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <Grid className="h-4 w-4" />
-              <span className="text-xs font-semibold tracking-widest">게시물</span>
+              <span className="text-[10px] font-semibold tracking-widest">게시물</span>
             </button>
             <button
               onClick={() => setActiveTab('reels')}
-              className={`flex items-center space-x-2 py-4 -mt-px ${
+              className={`flex flex-col items-center gap-1 py-3 -mt-px ${
                 activeTab === 'reels'
                   ? 'border-t border-black dark:border-white text-black dark:text-white'
                   : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
               <Film className="h-4 w-4" />
-              <span className="text-xs font-semibold tracking-widest">릴스</span>
+              <span className="text-[10px] font-semibold tracking-widest">릴스</span>
             </button>
             {isOwnProfile && (
               <button
                 onClick={() => setActiveTab('saved')}
-                className={`flex items-center space-x-2 py-4 -mt-px ${
+                className={`flex flex-col items-center gap-1 py-3 -mt-px ${
                   activeTab === 'saved'
                     ? 'border-t border-black dark:border-white text-black dark:text-white'
                     : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
                 }`}
               >
                 <Bookmark className="h-4 w-4" />
-                <span className="text-xs font-semibold tracking-widest">저장됨</span>
+                <span className="text-[10px] font-semibold tracking-widest">저장됨</span>
               </button>
             )}
           </div>
