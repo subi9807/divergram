@@ -142,11 +142,10 @@ export function AdminApp() {
     return days.map((day) => ({ day: day.slice(5), signups: s[day] || 0, posts: p[day] || 0, interactions: i[day] || 0, dau: d[day] || 0 }));
   }, [growth]);
 
-  const roleData = useMemo(() => {
-    const adminUsers = Number(stats?.adminUsers || 0);
-    const users = Number(stats?.users || 0);
-    const normalUsers = Math.max(0, users - adminUsers);
-    return [{ name: '일반', value: normalUsers }, { name: '관리자', value: adminUsers }];
+  const memberTypeData = useMemo(() => {
+    const personalUsers = Number(stats?.personalUsers || 0);
+    const resortUsers = Number(stats?.resortUsers || 0);
+    return [{ name: '일반회원', value: personalUsers }, { name: '리조트회원', value: resortUsers }];
   }, [stats]);
 
   const blockData = useMemo(() => {
@@ -193,36 +192,30 @@ export function AdminApp() {
       </aside>
 
       <main className="content">
-        <div className="card">
-          <h2>연결 설정</h2>
-          <form
-            className="row"
-            onSubmit={(e) => {
-              e.preventDefault();
-              refresh();
-            }}
-          >
-            <input type="text" autoComplete="username" value="admin" readOnly style={{ display: 'none' }} />
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              placeholder="ADMIN_API_KEY"
-            />
-            <button type="submit" disabled={loading}>{loading ? '로딩...' : '새로고침'}</button>
-            <button type="button" onClick={seedBulk} disabled={loading}>대량 샘플 생성</button>
-          </form>
-          {error && <p className="error">{error}</p>}
+        <div className="topbar">
+          <div className="status-pill">
+            <span className={`dot ${stats ? 'ok' : 'bad'}`} />
+            {stats ? 'API 연결됨' : 'API 미연결'}
+          </div>
+          <button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button>
         </div>
+
+        {error && <p className="error">{error}</p>}
 
         {section === 'dashboard' && (
           <>
             <div className="grid">
               <div className="card stat"><h3>총 사용자</h3><strong>{stats?.users ?? '-'}</strong></div>
-              <div className="card stat"><h3>관리자 수</h3><strong>{stats?.adminUsers ?? '-'}</strong></div>
+              <div className="card stat"><h3>일반회원</h3><strong>{stats?.personalUsers ?? '-'}</strong></div>
+              <div className="card stat"><h3>리조트회원</h3><strong>{stats?.resortUsers ?? '-'}</strong></div>
               <div className="card stat"><h3>차단 사용자</h3><strong>{stats?.blockedUsers ?? '-'}</strong></div>
-              <div className="card stat"><h3>API 업타임(초)</h3><strong>{stats?.uptimeSec ?? '-'}</strong></div>
+            </div>
+
+            <div className="grid">
+              <div className="card stat"><h3>CPU 사용률</h3><strong>{stats?.system?.cpuUsagePct ?? '-'}%</strong></div>
+              <div className="card stat"><h3>메모리 사용률</h3><strong>{stats?.system?.memoryUsagePct ?? '-'}%</strong></div>
+              <div className="card stat"><h3>디스크 사용률</h3><strong>{stats?.system?.disk?.usedPct ?? '-'}%</strong></div>
+              <div className="card stat"><h3>네트워크 I/O(MB)</h3><strong>{stats?.system ? `${stats.system.network?.inMb ?? 0} / ${stats.system.network?.outMb ?? 0}` : '-'}</strong></div>
             </div>
 
             <div className="card" style={{ height: 340 }}>
@@ -244,12 +237,12 @@ export function AdminApp() {
 
             <div className="grid">
               <div className="card" style={{ height: 300 }}>
-                <h2>권한 비중</h2>
+                <h2>회원 구분 비중</h2>
                 <ResponsiveContainer width="100%" height="85%">
                   <PieChart>
-                    <Pie data={roleData} dataKey="value" nameKey="name" outerRadius={88} innerRadius={52}>
+                    <Pie data={memberTypeData} dataKey="value" nameKey="name" outerRadius={88} innerRadius={52}>
                       <Cell fill="#3b82f6" />
-                      <Cell fill="#111827" />
+                      <Cell fill="#0ea5e9" />
                     </Pie>
                     <Tooltip />
                     <Legend />
@@ -340,6 +333,26 @@ export function AdminApp() {
         {section === 'settings' && (
           <div className="card">
             <h2>설정/점검</h2>
+            <form
+              className="row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                refresh();
+              }}
+              style={{ marginBottom: 12 }}
+            >
+              <input type="text" autoComplete="username" value="admin" readOnly style={{ display: 'none' }} />
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                placeholder="ADMIN_API_KEY"
+              />
+              <button type="submit" disabled={loading}>{loading ? '로딩...' : '연결 저장'}</button>
+              <button type="button" onClick={seedBulk} disabled={loading}>대량 샘플 생성</button>
+            </form>
+
             <p>사용자/관리자 로그인 체크를 실행할 수 있어.</p>
             <div className="row">
               <button onClick={checkUserAdminAuth}>사용자+관리자 로그인 체크</button>

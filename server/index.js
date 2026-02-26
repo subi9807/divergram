@@ -494,17 +494,69 @@ app.get('/api/admin/health', requireAdmin, async (_req, res) => {
 
 app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   try {
+    const os = await import('node:os');
+    const { execSync } = await import('node:child_process');
+
     const totalUsers = await pool.query('SELECT COUNT(*)::int AS count FROM app_users');
     const blockedUsers = await pool.query('SELECT COUNT(*)::int AS count FROM app_users WHERE is_blocked = true');
-    const adminUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_users WHERE role = 'admin'");
+    const personalUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_profiles WHERE account_type = 'personal'");
+    const resortUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_profiles WHERE account_type = 'resort'");
     const latest = await pool.query('SELECT id, email, username, role, is_blocked, created_at FROM app_users ORDER BY created_at DESC LIMIT 5');
+
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const cpuLoad = os.loadavg?.()[0] || 0;
+    const cpuCores = os.cpus?.().length || 1;
+    const cpuUsagePct = Math.min(100, Math.max(0, (cpuLoad / cpuCores) * 100));
+
+    let disk = { usedGb: 0, totalGb: 0, usedPct: 0 };
+    try {
+      const df = execSync("df -k / | tail -1", { encoding: 'utf8' }).trim().split(/\s+/);
+      const totalKb = Number(df[1] || 0);
+      const usedKb = Number(df[2] || 0);
+      disk = {
+        usedGb: Number((usedKb / 1024 / 1024).toFixed(2)),
+        totalGb: Number((totalKb / 1024 / 1024).toFixed(2)),
+        usedPct: totalKb ? Number(((usedKb / totalKb) * 100).toFixed(1)) : 0,
+      };
+    } catch {}
+
+    let network = { inMb: 0, outMb: 0 };
+    try {
+      const net = execSync("netstat -ib", { encoding: 'utf8' }).split('\n');
+      let inBytes = 0;
+      let outBytes = 0;
+      for (const line of net) {
+        if (!line || line.startsWith('Name')) continue;
+        const parts = line.trim().split(/\s+/);
+        const i = Number(parts[6]);
+        const o = Number(parts[9]);
+        if (Number.isFinite(i)) inBytes += i;
+        if (Number.isFinite(o)) outBytes += o;
+      }
+      network = {
+        inMb: Number((inBytes / 1024 / 1024).toFixed(1)),
+        outMb: Number((outBytes / 1024 / 1024).toFixed(1)),
+      };
+    } catch {}
+
     res.json({
       ok: true,
       stats: {
         users: totalUsers.rows[0]?.count || 0,
         blockedUsers: blockedUsers.rows[0]?.count || 0,
-        adminUsers: adminUsers.rows[0]?.count || 0,
+        personalUsers: personalUsers.rows[0]?.count || 0,
+        resortUsers: resortUsers.rows[0]?.count || 0,
         uptimeSec: Math.round(process.uptime()),
+        system: {
+          cpuUsagePct: Number(cpuUsagePct.toFixed(1)),
+          memoryUsedGb: Number((usedMem / 1024 / 1024 / 1024).toFixed(2)),
+          memoryTotalGb: Number((totalMem / 1024 / 1024 / 1024).toFixed(2)),
+          memoryUsagePct: Number(((usedMem / totalMem) * 100).toFixed(1)),
+          disk,
+          network,
+        },
       },
       latestUsers: latest.rows,
     });
