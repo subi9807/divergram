@@ -424,7 +424,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           const commentCount = post.comments.length;
 
           return (
-            <div key={post.id} className="bg-white dark:bg-black border-t md:border border-gray-300 dark:border-gray-800 md:rounded-none transition-colors">
+            <div key={post.id} className="bg-white dark:bg-black transition-colors">
               <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center space-x-3">
                   <button
@@ -478,47 +478,47 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 </button>
               </div>
 
-              {post.post_media && post.post_media.length > 0 ? (
-                <MediaCarousel
-                  media={post.post_media}
-                  className="w-full rounded-lg md:rounded-none"
-                  style={{ maxHeight: '600px' }}
-                />
-              ) : post.video_url ? (
-                (() => {
-                  const videoInfo = getVideoInfo(post.video_url);
-                  if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
+              <div className="w-full rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '4 / 6' }}>
+                {post.post_media && post.post_media.length > 0 ? (
+                  <MediaCarousel
+                    media={post.post_media}
+                    className="w-full h-full"
+                    style={{ height: '100%' }}
+                  />
+                ) : post.video_url ? (
+                  (() => {
+                    const videoInfo = getVideoInfo(post.video_url);
+                    if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
+                      return (
+                        <div className="relative w-full h-full">
+                          <iframe
+                            src={videoInfo.embedUrl}
+                            className="absolute top-0 left-0 w-full h-full"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            title="Video player"
+                          />
+                        </div>
+                      );
+                    }
                     return (
-                      <div className="relative w-full" style={{ paddingBottom: '56.25%', maxHeight: '600px' }}>
-                        <iframe
-                          src={videoInfo.embedUrl}
-                          className="absolute top-0 left-0 w-full h-full rounded-lg md:rounded-none"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          title="Video player"
-                        />
-                      </div>
+                      <video
+                        src={post.video_url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
                     );
-                  }
-                  return (
-                    <video
-                      src={post.video_url}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="w-full object-cover rounded-lg md:rounded-none"
-                      style={{ maxHeight: '600px' }}
-                    />
-                  );
-                })()
-              ) : post.image_url ? (
-                <img
-                  src={post.image_url}
-                  alt="Post"
-                  className="w-full object-cover rounded-lg md:rounded-none"
-                  style={{ maxHeight: '600px' }}
-                />
-              ) : null}
+                  })()
+                ) : post.image_url ? (
+                  <img
+                    src={post.image_url}
+                    alt="Post"
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
 
               <div className="px-3 py-2.5 space-y-2.5">
                 <div className="flex items-center justify-between mb-2">
