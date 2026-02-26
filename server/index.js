@@ -84,11 +84,20 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
+function isStrongPassword(password) {
+  if (!password || password.length < 8 || password.length > 128) return false;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  return hasUpper && hasLower && hasDigit && hasSpecial;
+}
+
 function validateSignupInput(email, password, username) {
   if (!email || !password || !username) return 'email/password/username required';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '유효한 이메일을 입력해주세요.';
-  if (password.length < 8 || password.length > 128) return '비밀번호는 8~128자여야 합니다.';
-  if (username.length < 2 || username.length > 32) return '사용자명은 2~32자여야 합니다.';
+  if (!isStrongPassword(password)) return '비밀번호는 8~128자이며 대문자/소문자/숫자/특수문자를 포함해야 합니다.';
+  if (username.length < 4 || username.length > 32) return '사용자명은 4~32자여야 합니다.';
   if (!/^[a-zA-Z0-9_]+$/.test(username)) return '사용자명은 영문/숫자/언더스코어만 가능합니다.';
   return null;
 }
@@ -112,6 +121,9 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN NOT NULL DEFAULT false;`);
   await pool.query(`ALTER TABLE app_users ALTER COLUMN password_sha256 DROP NOT NULL;`);
   await pool.query(`ALTER TABLE app_users ALTER COLUMN password_hash DROP NOT NULL;`);
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_pending TEXT;`);
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verify_code TEXT;`);
+  await pool.query(`ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verify_expires TIMESTAMPTZ;`);
   await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS app_users_email_lower_uniq ON app_users ((lower(email)));`);
 
   await pool.query(`
@@ -380,13 +392,12 @@ app.patch('/api/auth/me', authRateLimit(20, 60_000), async (req, res) => {
     const password = req.body?.password ? String(req.body.password) : undefined;
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'invalid_email' });
-    if (username && (username.length < 2 || username.length > 32 || !/^[a-zA-Z0-9_]+$/.test(username))) return res.status(400).json({ error: 'invalid_username' });
-    if (password && (password.length < 8 || password.length > 128)) return res.status(400).json({ error: 'invalid_password' });
+    if (username && (username.length < 4 || username.length > 32 || !/^[a-zA-Z0-9_]+$/.test(username))) return res.status(400).json({ error: 'invalid_username' });
+    if (password && !isStrongPassword(password)) return res.status(400).json({ error: 'invalid_password' });
 
     const fields = [];
     const vals = [];
 
-    if (email !== undefined) { vals.push(email); fields.push(`email=$${vals.length}`); }
     if (username !== undefined) { vals.push(username); fields.push(`username=$${vals.length}`); }
     if (password !== undefined) {
       const hash = await bcrypt.hash(password, 12);
@@ -395,23 +406,77 @@ app.patch('/api/auth/me', authRateLimit(20, 60_000), async (req, res) => {
       vals.push(sha); fields.push(`password_sha256=$${vals.length}`);
     }
 
-    if (!fields.length) return res.status(400).json({ error: 'no_changes' });
-    vals.push(userId);
+    let emailVerificationRequested = false;
+    if (email !== undefined) {
+      const existing = await pool.query('SELECT id FROM app_users WHERE lower(email)=lower($1) AND id::text <> $2', [email, userId]);
+      if (existing.rows.length) return res.status(409).json({ error: 'email_already_exists' });
 
-    const q = await pool.query(
-      `UPDATE app_users SET ${fields.join(', ')} WHERE id=$${vals.length} RETURNING id,email,username`,
-      vals
-    );
-
-    if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
-
-    if (username !== undefined) {
-      await pool.query('UPDATE app_profiles SET username=$1, full_name=COALESCE(NULLIF(full_name,\'\'), $1) WHERE id=$2', [username, userId]);
+      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      await pool.query(
+        'UPDATE app_users SET email_pending=$1, email_verify_code=$2, email_verify_expires=$3 WHERE id=$4',
+        [email, code, expires, userId]
+      );
+      // TODO: SMTP 연동 시 실제 이메일 발송으로 교체
+      console.log(`[EMAIL_VERIFY] user=${userId} target=${email} code=${code}`);
+      emailVerificationRequested = true;
     }
 
-    return res.json({ ok: true, user: { id: String(q.rows[0].id), email: q.rows[0].email, username: q.rows[0].username } });
+    if (!fields.length && !emailVerificationRequested) return res.status(400).json({ error: 'no_changes' });
+
+    let q = { rows: [] };
+    if (fields.length) {
+      vals.push(userId);
+      q = await pool.query(
+        `UPDATE app_users SET ${fields.join(', ')} WHERE id=$${vals.length} RETURNING id,email,username`,
+        vals
+      );
+      if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+      if (username !== undefined) {
+        await pool.query('UPDATE app_profiles SET username=$1, full_name=COALESCE(NULLIF(full_name,\'\'), $1) WHERE id=$2', [username, userId]);
+      }
+    } else {
+      const current = await pool.query('SELECT id,email,username FROM app_users WHERE id=$1', [userId]);
+      q = { rows: current.rows };
+    }
+
+    return res.json({
+      ok: true,
+      emailVerificationRequested,
+      user: { id: String(q.rows[0].id), email: q.rows[0].email, username: q.rows[0].username },
+    });
   } catch {
     return res.status(500).json({ error: 'update_me_failed' });
+  }
+});
+
+app.post('/api/auth/email/verify/confirm', authRateLimit(20, 60_000), async (req, res) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const code = String(req.body?.code || '').trim();
+  if (!token) return res.status(401).json({ error: 'unauthorized' });
+  if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'invalid_code' });
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    const userId = String(payload.sub || '');
+    const q = await pool.query('SELECT id,email_pending,email_verify_code,email_verify_expires FROM app_users WHERE id=$1', [userId]);
+    if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+    const row = q.rows[0];
+    if (!row.email_pending || !row.email_verify_code) return res.status(400).json({ error: 'no_pending_email' });
+    if (new Date(row.email_verify_expires).getTime() < Date.now()) return res.status(400).json({ error: 'code_expired' });
+    if (row.email_verify_code !== code) return res.status(400).json({ error: 'invalid_code' });
+
+    await pool.query(
+      'UPDATE app_users SET email=$1, email_pending=NULL, email_verify_code=NULL, email_verify_expires=NULL WHERE id=$2',
+      [normalizeEmail(row.email_pending), userId]
+    );
+
+    return res.json({ ok: true, email: normalizeEmail(row.email_pending) });
+  } catch {
+    return res.status(500).json({ error: 'email_verify_failed' });
   }
 });
 

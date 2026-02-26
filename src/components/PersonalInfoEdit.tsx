@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
 
+const strongPassword = (v: string) => /[A-Z]/.test(v) && /[a-z]/.test(v) && /\d/.test(v) && /[^A-Za-z0-9]/.test(v);
+
 export default function PersonalInfoEdit() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -12,7 +14,10 @@ export default function PersonalInfoEdit() {
   const [bio, setBio] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
+  const [emailNeedsVerify, setEmailNeedsVerify] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [initial, setInitial] = useState({ email: '', username: '', fullName: '', bio: '' });
@@ -38,8 +43,8 @@ export default function PersonalInfoEdit() {
   }, [user]);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const usernameValid = /^[a-zA-Z0-9_]{2,32}$/.test(username);
-  const passwordValid = password.length === 0 || (password.length >= 8 && password.length <= 128);
+  const usernameValid = /^[a-zA-Z0-9_]{4,32}$/.test(username);
+  const passwordValid = password.length === 0 || (password.length >= 8 && password.length <= 128 && strongPassword(password));
   const passwordMatch = password === passwordConfirm;
   const bioCount = bio.length;
 
@@ -63,7 +68,8 @@ export default function PersonalInfoEdit() {
     setError('');
     try {
       const token = localStorage.getItem('dg_token') || '';
-      const payload: any = { email, username };
+      const payload: any = { username };
+      if (email !== initial.email) payload.email = email;
       if (password.trim()) payload.password = password.trim();
 
       const r = await fetch(`${API_BASE}/api/auth/me`, {
@@ -79,14 +85,55 @@ export default function PersonalInfoEdit() {
 
       await db.from('profiles').update({ username, full_name: fullName, bio }).eq('id', user.id);
 
-      setInitial({ email, username, fullName, bio });
+      setInitial((prev) => ({ ...prev, username, fullName, bio, email: j.emailVerificationRequested ? prev.email : email }));
       setPassword('');
       setPasswordConfirm('');
-      setMessage('개인정보가 수정되었습니다.');
+
+      if (j.emailVerificationRequested) {
+        setEmailNeedsVerify(true);
+        setMessage('인증 메일을 전송했습니다. 받은 코드 6자리를 입력해 인증을 완료하세요.');
+      } else {
+        setEmailNeedsVerify(false);
+        setMessage('개인정보가 수정되었습니다.');
+      }
     } catch (e: any) {
       setError(e.message || '수정 실패');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onConfirmEmail = async () => {
+    const token = localStorage.getItem('dg_token') || '';
+    if (!/^\d{6}$/.test(verifyCode)) {
+      setError('인증코드는 6자리 숫자입니다.');
+      return;
+    }
+
+    setVerifying(true);
+    setError('');
+    setMessage('');
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/email/verify/confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code: verifyCode }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'verify_failed');
+
+      setInitial((prev) => ({ ...prev, email: j.email || email }));
+      setEmail(j.email || email);
+      setVerifyCode('');
+      setEmailNeedsVerify(false);
+      setMessage('이메일 인증이 완료되었습니다.');
+    } catch (e: any) {
+      setError(e.message || '이메일 인증 실패');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -106,26 +153,44 @@ export default function PersonalInfoEdit() {
         </div>
 
         <div>
-          <input autoComplete="username" className="w-full border rounded-md p-3" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="사용자명 (2~32자, 영문/숫자/_)" />
-          {!usernameValid && <p className="text-xs text-red-500 mt-1">사용자명 규칙을 확인해주세요.</p>}
+          <input autoComplete="username" className="w-full border rounded-md p-3" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="사용자명 (4~32자, 영문/숫자/_)" />
+          {!usernameValid && <p className="text-xs text-red-500 mt-1">사용자명은 4~32자, 영문/숫자/_만 가능합니다.</p>}
         </div>
 
         <input autoComplete="name" className="w-full border rounded-md p-3" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="이름" />
 
         <div>
-          <textarea className="w-full border rounded-md p-3 min-h-24" maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="자기소개" />
-          <p className="text-xs text-gray-500 mt-1">{bioCount}/150</p>
+          <textarea className="w-full border rounded-md p-3 min-h-24" maxLength={300} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="자기소개" />
+          <p className="text-xs text-gray-500 mt-1">{bioCount}/300</p>
         </div>
 
         <div>
           <input type="password" autoComplete="new-password" className="w-full border rounded-md p-3" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="새 비밀번호(선택, 8~128자)" />
-          {!passwordValid && <p className="text-xs text-red-500 mt-1">비밀번호는 8~128자여야 합니다.</p>}
+          {!passwordValid && <p className="text-xs text-red-500 mt-1">비밀번호는 8~128자 + 대문자/소문자/숫자/특수문자를 포함해야 합니다.</p>}
         </div>
 
         <div>
           <input type="password" autoComplete="new-password" className="w-full border rounded-md p-3" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="새 비밀번호 확인" />
           {!passwordMatch && <p className="text-xs text-red-500 mt-1">비밀번호 확인이 일치하지 않습니다.</p>}
         </div>
+
+        {emailNeedsVerify && (
+          <div className="rounded-md border p-3 bg-yellow-50">
+            <p className="text-sm mb-2">이메일 인증이 필요합니다. 메일로 받은 6자리 코드를 입력하세요.</p>
+            <div className="flex gap-2">
+              <input
+                className="flex-1 border rounded-md p-2"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+                maxLength={6}
+                placeholder="인증코드 6자리"
+              />
+              <button type="button" onClick={onConfirmEmail} disabled={verifying} className="px-3 py-2 rounded-md bg-gray-900 text-white disabled:opacity-50">
+                {verifying ? '확인 중...' : '인증 확인'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {message && <p className="text-sm text-green-600">{message}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
