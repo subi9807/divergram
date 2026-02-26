@@ -331,8 +331,9 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
                 const firstMedia = reel.post_media && reel.post_media.length > 0
                   ? reel.post_media.sort((a, b) => a.order_index - b.order_index)[0]
                   : null;
-                const displayUrl = firstMedia?.media_url || reel.video_url || '';
-                const aspectRatio = 0.6 + Math.random() * 0.8;
+                // 릴스는 세로형(9:16) 고정 비율로 노출
+                const displayUrl = firstMedia?.media_url || reel.image_url || reel.video_url || '';
+                const aspectRatio = 9 / 16;
 
                 return {
                   id: reel.id,
