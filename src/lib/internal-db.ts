@@ -22,7 +22,7 @@ export interface PostMedia { id: string; post_id: string; media_url: string; med
 export interface Post {
   id: string; user_id: string; image_url: string; video_url?: string; caption: string; created_at: string;
   profiles: Profile; likes: { id: string }[]; comments: { id: string }[]; post_media?: PostMedia[];
-  dive_type?: 'scuba' | 'freediving'; dive_date?: string; max_depth?: number; water_temperature?: number;
+  dive_type?: 'scuba' | 'freediving' | 'technical'; dive_date?: string; max_depth?: number; water_temperature?: number;
   dive_duration?: number; dive_site?: string; visibility?: number; buddy?: string; buddy_name?: string; location?: string;
 }
 export interface Comment { id: string; post_id: string; user_id: string; content: string; created_at: string; profiles: Profile; }

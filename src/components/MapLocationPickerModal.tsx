@@ -35,16 +35,27 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
         mapInstanceRef.current = map;
 
         if (initialLocation) {
-          const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ address: initialLocation }, (results: any, status: string) => {
-            if (status === 'OK' && results && results[0]) {
-              const loc = results[0].geometry.location;
-              map.setCenter(loc);
-              map.setZoom(13);
-              markerRef.current = new google.maps.Marker({ map, position: loc });
-              setSelected({ lat: loc.lat(), lng: loc.lng(), locationText: results[0].formatted_address || initialLocation });
-            }
-          });
+          const coordMatch = initialLocation.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+          if (coordMatch) {
+            const lat = Number(coordMatch[1]);
+            const lng = Number(coordMatch[2]);
+            const pos = { lat, lng };
+            map.setCenter(pos);
+            map.setZoom(13);
+            markerRef.current = new google.maps.Marker({ map, position: pos });
+            setSelected({ lat, lng, locationText: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+          } else {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: initialLocation }, (results: any, status: string) => {
+              if (status === 'OK' && results && results[0]) {
+                const loc = results[0].geometry.location;
+                map.setCenter(loc);
+                map.setZoom(13);
+                markerRef.current = new google.maps.Marker({ map, position: loc });
+                setSelected({ lat: loc.lat(), lng: loc.lng(), locationText: `${loc.lat().toFixed(6)}, ${loc.lng().toFixed(6)}` });
+              }
+            });
+          }
         }
 
         map.addListener('click', (e: any) => {
@@ -55,12 +66,8 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
           markerRef.current = new google.maps.Marker({ map, position: { lat, lng } });
 
           const geocoder = new google.maps.Geocoder();
-          geocoder.geocode({ location: { lat, lng } }, (results: any, status: string) => {
-            const address = status === 'OK' && results?.[0]?.formatted_address
-              ? results[0].formatted_address
-              : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            setSelected({ lat, lng, locationText: address });
-          });
+          const coordText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          setSelected({ lat, lng, locationText: coordText });
         });
       } catch (e) {
         console.error('Map picker init failed:', e);

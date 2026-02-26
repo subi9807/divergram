@@ -15,12 +15,18 @@ function dmsToDecimal(d: number, m: number, s: number, ref: string) {
   return sign * (d + m / 60 + s / 3600);
 }
 
-export async function extractGpsFromImage(file: File): Promise<{ lat: number; lng: number } | null> {
+function exifDateToInput(raw?: string): string | null {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{4}):(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}-${m[3]}`;
+}
+
+export async function extractExifMetadata(file: File): Promise<{ lat?: number; lng?: number; date?: string } | null> {
   if (!file.type.includes('jpeg') && !file.type.includes('jpg')) return null;
 
   const buffer = await file.arrayBuffer();
   const view = new DataView(buffer);
-
   if (view.getUint16(0) !== 0xffd8) return null;
 
   let offset = 2;
@@ -42,55 +48,71 @@ export async function extractGpsFromImage(file: File): Promise<{ lat: number; ln
       const entries = view.getUint16(ifd0, little);
 
       let gpsIfdRel = 0;
+      let exifIfdRel = 0;
+
       for (let i = 0; i < entries; i++) {
         const e = ifd0 + 2 + i * 12;
         const tag = view.getUint16(e, little);
-        if (tag === 0x8825) {
-          gpsIfdRel = view.getUint32(e + 8, little);
-          break;
-        }
-      }
-      if (!gpsIfdRel) return null;
-
-      const gpsIfd = tiff + gpsIfdRel;
-      const gpsEntries = view.getUint16(gpsIfd, little);
-
-      let latRef = '';
-      let lngRef = '';
-      let latVals: number[] | null = null;
-      let lngVals: number[] | null = null;
-
-      for (let i = 0; i < gpsEntries; i++) {
-        const e = gpsIfd + 2 + i * 12;
-        const tag = view.getUint16(e, little);
-        const type = view.getUint16(e + 2, little);
-        const count = view.getUint32(e + 4, little);
-        const valueOffset = view.getUint32(e + 8, little);
-
-        if (tag === 0x0001 && type === 2) {
-          latRef = readAscii(view, count <= 4 ? e + 8 : tiff + valueOffset, 1);
-        }
-        if (tag === 0x0003 && type === 2) {
-          lngRef = readAscii(view, count <= 4 ? e + 8 : tiff + valueOffset, 1);
-        }
-        if (tag === 0x0002 && type === 5 && count === 3) {
-          const base = tiff + valueOffset;
-          latVals = [rational(view, base, little), rational(view, base + 8, little), rational(view, base + 16, little)];
-        }
-        if (tag === 0x0004 && type === 5 && count === 3) {
-          const base = tiff + valueOffset;
-          lngVals = [rational(view, base, little), rational(view, base + 8, little), rational(view, base + 16, little)];
-        }
+        if (tag === 0x8825) gpsIfdRel = view.getUint32(e + 8, little);
+        if (tag === 0x8769) exifIfdRel = view.getUint32(e + 8, little);
       }
 
-      if (latVals && lngVals && latRef && lngRef) {
-        return {
-          lat: dmsToDecimal(latVals[0], latVals[1], latVals[2], latRef),
-          lng: dmsToDecimal(lngVals[0], lngVals[1], lngVals[2], lngRef),
-        };
+      let lat: number | undefined;
+      let lng: number | undefined;
+      let date: string | undefined;
+
+      if (gpsIfdRel) {
+        const gpsIfd = tiff + gpsIfdRel;
+        const gpsEntries = view.getUint16(gpsIfd, little);
+
+        let latRef = '';
+        let lngRef = '';
+        let latVals: number[] | null = null;
+        let lngVals: number[] | null = null;
+
+        for (let i = 0; i < gpsEntries; i++) {
+          const e = gpsIfd + 2 + i * 12;
+          const tag = view.getUint16(e, little);
+          const type = view.getUint16(e + 2, little);
+          const count = view.getUint32(e + 4, little);
+          const valueOffset = view.getUint32(e + 8, little);
+
+          if (tag === 0x0001 && type === 2) latRef = readAscii(view, count <= 4 ? e + 8 : tiff + valueOffset, 1);
+          if (tag === 0x0003 && type === 2) lngRef = readAscii(view, count <= 4 ? e + 8 : tiff + valueOffset, 1);
+          if (tag === 0x0002 && type === 5 && count === 3) {
+            const base = tiff + valueOffset;
+            latVals = [rational(view, base, little), rational(view, base + 8, little), rational(view, base + 16, little)];
+          }
+          if (tag === 0x0004 && type === 5 && count === 3) {
+            const base = tiff + valueOffset;
+            lngVals = [rational(view, base, little), rational(view, base + 8, little), rational(view, base + 16, little)];
+          }
+        }
+
+        if (latVals && lngVals && latRef && lngRef) {
+          lat = dmsToDecimal(latVals[0], latVals[1], latVals[2], latRef);
+          lng = dmsToDecimal(lngVals[0], lngVals[1], lngVals[2], lngRef);
+        }
       }
 
-      return null;
+      if (exifIfdRel) {
+        const exifIfd = tiff + exifIfdRel;
+        const exifEntries = view.getUint16(exifIfd, little);
+        for (let i = 0; i < exifEntries; i++) {
+          const e = exifIfd + 2 + i * 12;
+          const tag = view.getUint16(e, little);
+          const type = view.getUint16(e + 2, little);
+          const count = view.getUint32(e + 4, little);
+          const valueOffset = view.getUint32(e + 8, little);
+          if (tag === 0x9003 && type === 2) {
+            const raw = readAscii(view, tiff + valueOffset, Math.max(1, count - 1));
+            const parsed = exifDateToInput(raw);
+            if (parsed) date = parsed;
+          }
+        }
+      }
+
+      return lat != null && lng != null ? { lat, lng, date } : (date ? { date } : null);
     }
 
     offset = segmentStart + size - 2;

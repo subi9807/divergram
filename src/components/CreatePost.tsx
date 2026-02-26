@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { X, Upload, Waves, Film, Trash2, GripVertical } from 'lucide-react';
+import { X, Upload, Waves, Film, Trash2, GripVertical, MapPin } from 'lucide-react';
 import { db } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import MentionInput from './MentionInput';
 import MapLocationPickerModal from './MapLocationPickerModal';
-import { extractGpsFromImage } from '../utils/exifGps';
+import { extractExifMetadata } from '../utils/exifGps';
 
 interface CreatePostProps {
   onClose: () => void;
@@ -22,7 +22,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [caption, setCaption] = useState('');
-  const [diveType, setDiveType] = useState<'scuba' | 'freediving'>('scuba');
+  const [diveType, setDiveType] = useState<'scuba' | 'freediving' | 'technical'>('scuba');
   const [diveDate, setDiveDate] = useState('');
   const [maxDepth, setMaxDepth] = useState('');
   const [waterTemperature, setWaterTemperature] = useState('');
@@ -32,6 +32,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
   const [buddyName, setBuddyName] = useState('');
   const [location, setLocation] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [resortSuggestions, setResortSuggestions] = useState<string[]>([]);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -54,47 +55,40 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
       ));
 
       setLocationSuggestions(merged);
+      setResortSuggestions(Array.from(new Set((data || []).map((item: any) => String(item.dive_site || '').trim()).filter(Boolean))));
     };
 
     loadLocationSuggestions();
   }, []);
 
-  const applyGpsFromPhoto = async () => {
-    const firstImage = files.find((f) => f.type === 'image');
-    if (!firstImage) {
-      setError('GPS를 읽을 사진(JPEG)을 먼저 추가해줘요.');
-      return;
-    }
+  useEffect(() => {
+    const fillFromExif = async () => {
+      const images = files.filter((f) => f.type === 'image');
+      if (!images.length) return;
 
-    const gps = await extractGpsFromImage(firstImage.file);
-    if (!gps) {
-      setError('사진에서 GPS 정보를 찾지 못했어요.');
-      return;
-    }
+      for (const img of images) {
+        const meta = await extractExifMetadata(img.file);
+        if (!meta) continue;
 
-    try {
-      if (!(window as any).google?.maps) {
-        const { loadGoogleMaps } = await import('../utils/googleMaps');
-        await loadGoogleMaps();
+        if (meta.lat != null && meta.lng != null) {
+          setLocation(`${meta.lat.toFixed(6)}, ${meta.lng.toFixed(6)}`);
+          break;
+        }
       }
-      const google = (window as any).google;
-      if (google?.maps?.Geocoder) {
-        const geocoder = new google.maps.Geocoder();
-        geocoder.geocode({ location: { lat: gps.lat, lng: gps.lng } }, (results: any, status: string) => {
-          const address = status === 'OK' && results?.[0]?.formatted_address
-            ? results[0].formatted_address
-            : `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
-          setLocation(address);
-        });
-      } else {
-        setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
+
+      if (!diveDate) {
+        for (const img of images) {
+          const meta = await extractExifMetadata(img.file);
+          if (meta?.date) {
+            setDiveDate(meta.date);
+            break;
+          }
+        }
       }
-      setError('');
-    } catch {
-      setLocation(`${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`);
-      setError('');
-    }
-  };
+    };
+
+    fillFromExif();
+  }, [files]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -414,26 +408,18 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               다이빙 타입 *
             </label>
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
               <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  value="scuba"
-                  checked={diveType === 'scuba'}
-                  onChange={(e) => setDiveType(e.target.value as 'scuba')}
-                  className="mr-2"
-                />
+                <input type="radio" value="freediving" checked={diveType === 'freediving'} onChange={() => setDiveType('freediving')} className="mr-2" />
+                <span className="text-sm dark:text-gray-300">프리다이빙</span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input type="radio" value="scuba" checked={diveType === 'scuba'} onChange={() => setDiveType('scuba')} className="mr-2" />
                 <span className="text-sm dark:text-gray-300">스쿠버다이빙</span>
               </label>
               <label className="flex items-center cursor-pointer">
-                <input
-                  type="radio"
-                  value="freediving"
-                  checked={diveType === 'freediving'}
-                  onChange={(e) => setDiveType(e.target.value as 'freediving')}
-                  className="mr-2"
-                />
-                <span className="text-sm dark:text-gray-300">프리다이빙</span>
+                <input type="radio" value="technical" checked={diveType === 'technical'} onChange={() => setDiveType('technical')} className="mr-2" />
+                <span className="text-sm dark:text-gray-300">테크니컬다이빙</span>
               </label>
             </div>
           </div>
@@ -511,15 +497,21 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              다이빙 사이트
+              다이빙 리조트
             </label>
             <input
               type="text"
+              list="create-resort-options"
               value={diveSite}
               onChange={(e) => setDiveSite(e.target.value)}
-              placeholder="예: 제주 문섬"
+              placeholder="리조트 검색 또는 입력"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <datalist id="create-resort-options">
+              {resortSuggestions.map((item) => (
+                <option key={item} value={item} />
+              ))}
+            </datalist>
           </div>
 
           <div>
@@ -527,19 +519,17 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               위치
             </label>
             <div className="flex gap-2 mb-2">
-              <button type="button" onClick={() => setShowMapPicker(true)} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
+              <button type="button" onClick={() => setShowMapPicker(true)} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200 inline-flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
                 지도에서 핀 찍기
-              </button>
-              <button type="button" onClick={applyGpsFromPhoto} className="px-3 py-2 text-sm rounded border border-gray-300 dark:border-gray-700 dark:text-gray-200">
-                사진 GPS 불러오기
               </button>
             </div>
             <input
               type="text"
               list="create-location-options"
               value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="지도 선택 또는 주소 입력"
+              readOnly
+              placeholder="사진 GPS 또는 지도 핀 좌표"
               className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <datalist id="create-location-options">

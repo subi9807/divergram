@@ -616,7 +616,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                     <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 -mt-1 transition-colors">
                       <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
                         <Waves className="h-4 w-4" />
-                        {post.dive_type ? (post.dive_type === 'scuba' ? '스쿠버다이빙' : '프리다이빙') : '다이빙 로그'}
+                        {post.dive_type ? (post.dive_type === 'scuba' ? '스쿠버다이빙' : post.dive_type === 'technical' ? '테크니컬다이빙' : '프리다이빙') : '다이빙 로그'}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-xs">
