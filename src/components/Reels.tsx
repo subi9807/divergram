@@ -27,6 +27,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const isWheelLockedRef = useRef(false);
   const snapTimerRef = useRef<number | null>(null);
   const isPointerDownRef = useRef(false);
+  const dragStartYRef = useRef<number | null>(null);
+  const dragDeltaYRef = useRef(0);
 
   useEffect(() => {
     loadPosts();
@@ -78,26 +80,54 @@ export default function Reels({ onViewProfile }: ReelsProps) {
       scheduleSnap(160);
     };
 
-    const handlePointerDown = () => {
+    const handlePointerDown = (e: PointerEvent) => {
       isPointerDownRef.current = true;
       if (snapTimerRef.current) {
         window.clearTimeout(snapTimerRef.current);
       }
+
+      if (e.pointerType === 'mouse') {
+        dragStartYRef.current = e.clientY;
+        dragDeltaYRef.current = 0;
+      }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (dragStartYRef.current === null || e.pointerType !== 'mouse') return;
+      dragDeltaYRef.current = e.clientY - dragStartYRef.current;
+    };
+
+    const handlePointerUp = (e: PointerEvent) => {
       isPointerDownRef.current = false;
+
+      if (e.pointerType === 'mouse' && dragStartYRef.current !== null) {
+        const deltaY = dragDeltaYRef.current;
+        const threshold = 60;
+
+        if (Math.abs(deltaY) > threshold) {
+          const direction = deltaY < 0 ? 1 : -1;
+          const nextIndex = Math.max(0, Math.min(posts.length - 1, currentIndex + direction));
+          if (nextIndex !== currentIndex) {
+            goToIndex(nextIndex);
+          }
+        }
+      }
+
+      dragStartYRef.current = null;
+      dragDeltaYRef.current = 0;
       scheduleSnap(120);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerup', handlePointerUp, { passive: true });
     window.addEventListener('pointercancel', handlePointerUp, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
       if (snapTimerRef.current) {
