@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getVideoInfo } from '../utils/videoUtils';
 
 interface MediaItem {
@@ -26,14 +25,6 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
   const currentMedia = sortedMedia[currentIndex];
   const currentMediaKey = useMemo(() => `${currentMedia?.id || 'none'}:${currentMedia?.media_url || ''}`, [currentMedia]);
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
-  };
 
   const renderMedia = () => {
     if (currentMedia.media_type === 'image') {
@@ -90,21 +81,16 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
 
       {sortedMedia.length > 1 && (
         <>
-          <button
-            onClick={goToPrevious}
-            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md transition-all z-10"
-            aria-label="Previous"
-          >
-            <ChevronLeft className="h-4 w-4 text-gray-800" />
-          </button>
-
-          <button
-            onClick={goToNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-1.5 shadow-md transition-all z-10"
-            aria-label="Next"
-          >
-            <ChevronRight className="h-4 w-4 text-gray-800" />
-          </button>
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/35 rounded-full px-2 py-1 z-10">
+            {sortedMedia.map((m, idx) => (
+              <button
+                key={m.id}
+                onClick={() => setCurrentIndex(idx)}
+                aria-label={`Go to media ${idx + 1}`}
+                className={`h-1.5 rounded-full transition-all ${idx === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/55 hover:bg-white/80'}`}
+              />
+            ))}
+          </div>
 
           <div className="absolute top-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full z-10">
             {currentIndex + 1} / {sortedMedia.length}
