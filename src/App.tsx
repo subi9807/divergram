@@ -264,25 +264,25 @@ function MainApp() {
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} singlePostMode />;
       case 'settings':
         return (
-          <div className="p-6 md:p-8 max-w-4xl">
+          <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100">
             <h1 className="text-2xl font-bold mb-6">설정</h1>
 
             <div className="flex gap-2 mb-6 border-b">
               <button
                 onClick={() => setSettingsTab('profile')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'profile' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'profile' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 프로필 수정
               </button>
               <button
                 onClick={() => setSettingsTab('account')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'account' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'account' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 개인정보 수정
               </button>
               <button
                 onClick={() => setSettingsTab('activity')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'activity' ? 'border-b-2 border-black' : 'text-gray-500'}`}
+                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'activity' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
               >
                 내 활동 보기
               </button>
@@ -291,9 +291,9 @@ function MainApp() {
             {settingsTab === 'profile' && (
               <div className="space-y-3">
                 <p className="text-gray-600">프로필 사진/이름/소개 등 공개 프로필을 수정합니다.</p>
-                <button onClick={handleEditProfile} className="px-4 py-2 rounded-lg border hover:bg-gray-50">프로필 편집 열기</button>
-                <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border hover:bg-gray-50">문제 신고</button>
-                <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">로그아웃</button>
+                <button onClick={handleEditProfile} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">프로필 편집 열기</button>
+                <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border border-gray-300 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">문제 신고</button>
+                <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">로그아웃</button>
               </div>
             )}
 
@@ -310,7 +310,7 @@ function MainApp() {
         );
       case 'report':
         return (
-          <div className="p-6 md:p-8 max-w-3xl">
+          <div className="p-6 md:p-8 max-w-3xl text-gray-900 dark:text-gray-100">
             <h1 className="text-2xl font-bold mb-6">문제 신고</h1>
             <div className="rounded-lg border p-4">
               <p className="text-gray-700 mb-3">서비스 문제를 남겨주세요.</p>

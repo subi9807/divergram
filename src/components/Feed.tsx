@@ -432,7 +432,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   return (
     <>
     <div
-      className="w-full max-w-full px-2.5 md:px-4 py-0 md:py-8 box-border max-w-[630px] mx-auto"
+      className="w-full max-w-full px-2.5 md:px-4 py-0 md:py-8 box-border max-w-[630px] mx-auto text-gray-900 dark:text-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

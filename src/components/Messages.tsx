@@ -166,10 +166,10 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white rounded-lg w-full max-w-4xl mx-4 h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-300">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg w-full max-w-4xl mx-4 h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold">메시지</h2>
-          <button onClick={onClose} className="hover:bg-gray-100 p-2 rounded-full">
+          <button onClick={onClose} className="hover:bg-gray-100 dark:hover:bg-[#262626] p-2 rounded-full">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -180,7 +180,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
           </div>
         ) : (
           <div className="flex-1 flex overflow-hidden">
-            <div className={`${selectedRoom ? 'hidden md:block' : 'block'} w-full md:w-1/3 border-r border-gray-300 flex flex-col overflow-hidden`}>
+            <div className={`${selectedRoom ? 'hidden md:block' : 'block'} w-full md:w-1/3 border-r border-gray-300 dark:border-[#262626] flex flex-col overflow-hidden`}>
               <div className="flex-1 overflow-y-auto">
                 {rooms.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
@@ -191,8 +191,8 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
                     <button
                       key={room.id}
                       onClick={() => setSelectedRoom(room)}
-                      className={`w-full p-4 flex items-center space-x-3 hover:bg-gray-50 border-b border-gray-100 ${
-                        selectedRoom?.id === room.id ? 'bg-gray-100' : ''
+                      className={`w-full p-4 flex items-center space-x-3 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] border-b border-gray-100 dark:border-[#262626] ${
+                        selectedRoom?.id === room.id ? 'bg-gray-100 dark:bg-[#1f1f1f]' : ''
                       }`}
                     >
                       <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5 flex-shrink-0">

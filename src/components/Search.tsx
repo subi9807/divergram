@@ -66,9 +66,9 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
   const displayPosts = activeTab === 'users' ? [] : filteredPosts;
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 z-50 overflow-y-auto">
       <div className="max-w-2xl mx-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-300">
+        <div className="sticky top-0 bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626]">
           <div className="p-4">
             <div className="flex items-center space-x-4">
               <button
@@ -85,7 +85,7 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="사용자, 게시물 검색"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -96,8 +96,8 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                 onClick={() => setActiveTab('all')}
                 className={`flex-1 py-3 text-sm font-medium ${
                   activeTab === 'all'
-                    ? 'text-black border-b-2 border-black'
-                    : 'text-gray-500'
+                    ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 전체
@@ -106,8 +106,8 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                 onClick={() => setActiveTab('users')}
                 className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1 ${
                   activeTab === 'users'
-                    ? 'text-black border-b-2 border-black'
-                    : 'text-gray-500'
+                    ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 <User className="h-4 w-4" />
@@ -117,8 +117,8 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                 onClick={() => setActiveTab('posts')}
                 className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-1 ${
                   activeTab === 'posts'
-                    ? 'text-black border-b-2 border-black'
-                    : 'text-gray-500'
+                    ? 'text-black dark:text-white border-b-2 border-black dark:border-white'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
                 <Image className="h-4 w-4" />

@@ -54,7 +54,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   }
 
   return (
-    <div className="w-full px-2 md:px-4 py-0 md:py-8">
+    <div className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
       {filteredPosts.length > 0 ? (
         <>
           {tagFilter && (
