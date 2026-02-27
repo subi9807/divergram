@@ -383,48 +383,58 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-20 right-3 md:right-[-64px] flex flex-col items-center space-y-5 z-20">
-                <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center">
-                  <Heart
-                    className={`h-8 w-8 drop-shadow-lg ${
-                      isLiked ? 'fill-red-500 text-red-500' : 'text-white'
-                    }`}
-                  />
-                  <span className="text-white text-xs font-semibold mt-1 drop-shadow-lg">
+              <div className="absolute bottom-20 right-3 md:right-[-64px] flex flex-col items-center space-y-4 z-20">
+                <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
+                  <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center ring-1 ring-black/10">
+                    <Heart
+                      className={`h-8 w-8 drop-shadow ${
+                        isLiked ? 'fill-red-500 text-red-500' : 'text-black'
+                      }`}
+                    />
+                  </span>
+                  <span className="text-black text-xs font-semibold mt-1">
                     {likeCount}
                   </span>
                 </button>
 
                 <button
                   onClick={(e) => handleCommentClick(post, e)}
-                  className="flex flex-col items-center"
+                  className="flex flex-col items-center text-black"
                 >
-                  <MessageCircle className="h-8 w-8 text-white drop-shadow-lg" />
-                  <span className="text-white text-xs font-semibold mt-1 drop-shadow-lg">
+                  <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center ring-1 ring-black/10">
+                    <MessageCircle className="h-8 w-8 text-black drop-shadow" />
+                  </span>
+                  <span className="text-black text-xs font-semibold mt-1">
                     {commentCount}
                   </span>
                 </button>
 
                 <button
                   onClick={(e) => handleShare(post, e)}
-                  className="flex flex-col items-center"
+                  className="flex flex-col items-center text-black"
                 >
-                  <Send className="h-8 w-8 text-white drop-shadow-lg" />
+                  <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center ring-1 ring-black/10">
+                    <Send className="h-8 w-8 text-black drop-shadow" />
+                  </span>
                 </button>
 
                 <button
                   onClick={(e) => toggleSave(post.id, e)}
-                  className="flex flex-col items-center"
+                  className="flex flex-col items-center text-black"
                 >
-                  <Bookmark
-                    className={`h-8 w-8 drop-shadow-lg ${
-                      isSaved ? 'fill-yellow-400 text-yellow-400' : 'text-white'
-                    }`}
-                  />
+                  <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center ring-1 ring-black/10">
+                    <Bookmark
+                      className={`h-8 w-8 drop-shadow ${
+                        isSaved ? 'fill-yellow-400 text-yellow-500' : 'text-black'
+                      }`}
+                    />
+                  </span>
                 </button>
 
-                <button onClick={(e) => handleMoreClick(post, e)} className="flex flex-col items-center">
-                  <MoreHorizontal className="h-8 w-8 text-white drop-shadow-lg" />
+                <button onClick={(e) => handleMoreClick(post, e)} className="flex flex-col items-center text-black">
+                  <span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center ring-1 ring-black/10">
+                    <MoreHorizontal className="h-8 w-8 text-black drop-shadow" />
+                  </span>
                 </button>
 
                 <button onClick={() => onViewProfile(post.user_id)} className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/80">
