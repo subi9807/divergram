@@ -47,7 +47,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
         post_media(id, media_url, media_type, order_index)
       `)
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(500);
 
     if (data) {
       setPosts(data as Post[]);
