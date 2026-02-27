@@ -211,7 +211,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
       </button>
 
       <div
-        className="bg-white dark:bg-[#121212] w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
+        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-1 max-h-[90vh] bg-black dark:bg-gray-950 flex items-center justify-center">

@@ -8,6 +8,13 @@
 
 body {
   overflow-x: hidden;
+  background: #ffffff;
+  color: #111827;
+}
+
+.dark body {
+  background: #121212;
+  color: #f3f4f6;
 }
 
 .scrollbar-hide {

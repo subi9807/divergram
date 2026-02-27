@@ -341,7 +341,7 @@ export default function EditPostModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#121212] rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold dark:text-white">게시물 수정</h2>
           <button

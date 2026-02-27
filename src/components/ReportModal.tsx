@@ -86,7 +86,7 @@ export default function ReportModal({ onClose }: ReportModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#121212] border dark:border-[#262626] rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 border dark:border-[#262626] rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white dark:bg-[#121212] border-b dark:border-[#262626] px-4 py-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold dark:text-white">문제 신고</h2>
           <button

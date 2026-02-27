@@ -84,7 +84,7 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white dark:bg-[#121212] rounded-xl overflow-hidden border border-gray-200 dark:border-[#262626]">
+      <div className="w-full max-w-3xl bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-xl overflow-hidden border border-gray-200 dark:border-[#262626]">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-[#262626] flex items-center justify-between">
           <h3 className="font-semibold dark:text-white flex items-center gap-2"><MapPin className="h-4 w-4" /> 지도에서 위치 선택</h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5 dark:text-white" /></button>
