@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
-import { db, Post } from '../lib/internal-db';
+import { db, Post, Profile } from '../lib/internal-db';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
 
@@ -11,10 +11,12 @@ interface ExploreProps {
 
 export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps) {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tagFilter, setTagFilter] = useState(initialTag);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'posts' | 'reels' | 'people' | 'resorts'>('posts');
   const [visibleCount, setVisibleCount] = useState(18);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,22 +57,51 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
     if (data) {
       setPosts(data as Post[]);
     }
+
+    const { data: profileData } = await db
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, account_type')
+      .limit(500);
+    if (profileData) setProfiles(profileData as Profile[]);
+
     setLoading(false);
   };
 
+  const isReelPost = (p: Post) => {
+    const firstMedia = p.post_media && p.post_media.length > 0
+      ? [...p.post_media].sort((a, b) => a.order_index - b.order_index)[0]
+      : null;
+    return firstMedia?.media_type === 'video' || (!firstMedia && !!p.video_url);
+  };
+
   const filteredPosts = useMemo(() => {
-    const byTag = tagFilter
+    let base = tagFilter
       ? posts.filter((p) => String(p.caption || '').toLowerCase().includes(`#${tagFilter.toLowerCase()}`))
       : posts;
 
-    if (!searchQuery.trim()) return byTag;
+    if (searchType === 'posts') base = base.filter((p) => !isReelPost(p));
+    if (searchType === 'reels') base = base.filter((p) => isReelPost(p));
+
+    if (!searchQuery.trim()) return base;
     const q = searchQuery.toLowerCase();
-    return byTag.filter((p) =>
+    return base.filter((p) =>
       String(p.caption || '').toLowerCase().includes(q) ||
       String(p.profiles?.username || '').toLowerCase().includes(q) ||
       String(p.location || '').toLowerCase().includes(q)
     );
-  }, [posts, tagFilter, searchQuery]);
+  }, [posts, tagFilter, searchQuery, searchType]);
+
+  const filteredProfiles = useMemo(() => {
+    const typeFiltered = profiles.filter((pr) =>
+      searchType === 'people' ? (pr.account_type || 'personal') !== 'resort' : (pr.account_type || 'personal') === 'resort'
+    );
+    if (!searchQuery.trim()) return typeFiltered;
+    const q = searchQuery.toLowerCase();
+    return typeFiltered.filter((pr) =>
+      String(pr.username || '').toLowerCase().includes(q) ||
+      String(pr.full_name || '').toLowerCase().includes(q)
+    );
+  }, [profiles, searchType, searchQuery]);
 
   const displayedPosts = filteredPosts.slice(0, visibleCount);
 
@@ -133,8 +164,25 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+
+        <div className="flex gap-2 pb-2">
+          {[
+            { key: 'posts', label: '게시물' },
+            { key: 'reels', label: '릴스' },
+            { key: 'people', label: '사람' },
+            { key: 'resorts', label: '리조트' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setSearchType(t.key as any); setVisibleCount(getPageSize()); }}
+              className={`px-3 py-1.5 text-sm rounded-full border ${searchType === t.key ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-gray-300 dark:border-[#262626] text-gray-600 dark:text-gray-300'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
-      {filteredPosts.length > 0 ? (
+      {(searchType === 'posts' || searchType === 'reels') ? (filteredPosts.length > 0 ? (
         <>
           {tagFilter && (
             <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">#{tagFilter} 검색 결과</div>
@@ -169,9 +217,25 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
           )}
         </>
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <p>탐색할 게시물이 없습니다</p>
-        </div>
+        <div className="text-center py-12 text-gray-500"><p>탐색할 게시물이 없습니다</p></div>
+      )) : (
+        filteredProfiles.length > 0 ? (
+          <div className="bg-white dark:bg-[#121212] rounded-xl border border-gray-200 dark:border-[#262626] divide-y divide-gray-100 dark:divide-[#262626]">
+            {filteredProfiles.map((pr) => (
+              <button key={pr.id} onClick={() => onViewProfile?.(pr.id)} className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] text-left">
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#262626] overflow-hidden">
+                  {pr.avatar_url ? <img src={pr.avatar_url} alt={pr.username} className="w-full h-full object-cover" /> : null}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">@{pr.username}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{pr.full_name || ''}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500"><p>검색 결과가 없습니다</p></div>
+        )
       )}
 
       {selectedPost && (
