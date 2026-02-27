@@ -363,11 +363,11 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                       <span className="ml-1">{post.visibility}m</span>
                     </div>
                   )}
-                  {post.buddy && (
+                  {post.buddy_name && (
                     <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                       <Users className="h-3.5 w-3.5 mr-2 text-orange-500" />
                       <span className="font-medium">버디:</span>
-                      <span className="ml-1">{post.buddy}</span>
+                      <span className="ml-1">{post.buddy_name}</span>
                     </div>
                   )}
                 </div>
