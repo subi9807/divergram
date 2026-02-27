@@ -267,8 +267,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             </button>
           </div>
 
-          <div className="md:hidden border-b border-gray-300 dark:border-[#262626]">
-            <div className="w-full bg-black flex items-center justify-center">
+          <div className="border-b border-gray-300 dark:border-[#262626]">
+            <div className="md:hidden w-full bg-black flex items-center justify-center">
               {post.post_media && post.post_media.length > 0 ? (
                 <MediaCarousel
                   media={post.post_media}
