@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
 import { db, Post } from '../lib/internal-db';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
@@ -13,6 +14,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tagFilter, setTagFilter] = useState(initialTag);
+  const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(18);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -56,11 +58,19 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
     setLoading(false);
   };
 
-  const filteredPosts = useMemo(() => (
-    tagFilter
+  const filteredPosts = useMemo(() => {
+    const byTag = tagFilter
       ? posts.filter((p) => String(p.caption || '').toLowerCase().includes(`#${tagFilter.toLowerCase()}`))
-      : posts
-  ), [posts, tagFilter]);
+      : posts;
+
+    if (!searchQuery.trim()) return byTag;
+    const q = searchQuery.toLowerCase();
+    return byTag.filter((p) =>
+      String(p.caption || '').toLowerCase().includes(q) ||
+      String(p.profiles?.username || '').toLowerCase().includes(q) ||
+      String(p.location || '').toLowerCase().includes(q)
+    );
+  }, [posts, tagFilter, searchQuery]);
 
   const displayedPosts = filteredPosts.slice(0, visibleCount);
 
@@ -111,6 +121,19 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
 
   return (
     <div ref={containerRef} className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
+
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#121212]/95 backdrop-blur border-b border-gray-200 dark:border-[#262626] mb-3 md:mb-4">
+        <div className="relative py-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="탐색 검색"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
       {filteredPosts.length > 0 ? (
         <>
           {tagFilter && (
