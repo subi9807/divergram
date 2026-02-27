@@ -327,7 +327,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
               </p>
 
               {(post.dive_type || post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy_name || post.gas_type || post.gas_percent || post.dive_date || post.location) && (
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 -mt-1 transition-colors">
+                <div className="mt-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 transition-colors">
                   {post.dive_type && (
                     <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
                       <Waves className="h-4 w-4" />
