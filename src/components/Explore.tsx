@@ -15,6 +15,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   const [tagFilter, setTagFilter] = useState(initialTag);
   const [visibleCount, setVisibleCount] = useState(18);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadPosts();
@@ -66,26 +67,38 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
+
+    const scrollRoot = containerRef.current?.closest('main.overflow-y-auto') as HTMLElement | null;
     const observer = new IntersectionObserver((entries) => {
       const entry = entries[0];
       if (!entry?.isIntersecting) return;
       setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
-    }, { rootMargin: '300px' });
+    }, { root: scrollRoot || null, rootMargin: '300px' });
 
     observer.observe(el);
     return () => observer.disconnect();
   }, [filteredPosts.length]);
 
   useEffect(() => {
+    const scrollRoot = containerRef.current?.closest('main.overflow-y-auto') as HTMLElement | null;
+
     const onScrollBottom = () => {
-      const doc = document.documentElement;
-      const total = Math.max(1, doc.scrollHeight - window.innerHeight);
-      const ratio = window.scrollY / total;
-      if (ratio < 0.8) return; // 80% 지점에서 다음 묶음 미리 로드
+      if (scrollRoot) {
+        const total = Math.max(1, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+        const ratio = scrollRoot.scrollTop / total;
+        if (ratio < 0.8) return;
+      } else {
+        const doc = document.documentElement;
+        const total = Math.max(1, doc.scrollHeight - window.innerHeight);
+        const ratio = window.scrollY / total;
+        if (ratio < 0.8) return;
+      }
       setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
     };
-    window.addEventListener('scroll', onScrollBottom, { passive: true });
-    return () => window.removeEventListener('scroll', onScrollBottom);
+
+    const target: any = scrollRoot || window;
+    target.addEventListener('scroll', onScrollBottom, { passive: true });
+    return () => target.removeEventListener('scroll', onScrollBottom);
   }, [filteredPosts.length]);
 
   if (loading) {
@@ -97,7 +110,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   }
 
   return (
-    <div className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
+    <div ref={containerRef} className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
       {filteredPosts.length > 0 ? (
         <>
           {tagFilter && (
