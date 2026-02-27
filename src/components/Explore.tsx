@@ -76,6 +76,16 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
     return () => observer.disconnect();
   }, [filteredPosts.length]);
 
+  useEffect(() => {
+    const onScrollBottom = () => {
+      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 220;
+      if (!nearBottom) return;
+      setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
+    };
+    window.addEventListener('scroll', onScrollBottom, { passive: true });
+    return () => window.removeEventListener('scroll', onScrollBottom);
+  }, [filteredPosts.length]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
