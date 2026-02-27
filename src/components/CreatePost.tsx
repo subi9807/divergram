@@ -282,7 +282,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-2xl w-full max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold flex items-center gap-2 dark:text-white">
             <Waves className="h-6 w-6 text-blue-500" />
@@ -296,9 +296,9 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">
               {error}
             </div>
           )}
@@ -313,7 +313,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               </p>
             )}
 
-            <div className="grid grid-cols-3 gap-3 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-2">
               {files.map((filePreview, index) => (
                 <div
                   key={index}
@@ -414,7 +414,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 다이빙 날짜
@@ -423,7 +423,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 type="date"
                 value={diveDate}
                 onChange={(e) => setDiveDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -437,7 +437,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={maxDepth}
                 onChange={(e) => setMaxDepth(e.target.value)}
                 placeholder="예: 18.5"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -452,7 +452,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   value={waterTemperature}
                   onChange={(e) => setWaterTemperature(e.target.value)}
                   placeholder="예: 24.0"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -467,7 +467,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                   value={diveDuration}
                   onChange={(e) => setDiveDuration(e.target.value)}
                   placeholder="예: 45"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             )}
@@ -482,7 +482,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value)}
                 placeholder="예: 15.0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -511,7 +511,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                       value={gasPercent}
                       onChange={(e) => setGasPercent(e.target.value)}
                       placeholder="예: 32"
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 )}
@@ -535,7 +535,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               onFocus={() => setShowResortList((resortQuery || diveSite).includes('@'))}
               onBlur={() => setTimeout(() => setShowResortList(false), 120)}
               placeholder="@ 입력 후 리조트 계정 검색"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             {showResortList && (
@@ -589,7 +589,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={location}
               readOnly
               placeholder="사진 GPS 또는 지도 핀 좌표"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <datalist id="create-location-options">
               {locationSuggestions.map((loc) => (
@@ -606,7 +606,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               value={buddyName}
               onChange={setBuddyName}
               placeholder="@를 입력하여 버디 태그하기"
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -619,23 +619,23 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               onChange={setCaption}
               placeholder="이번 다이빙에 대한 메모나 경험을 적어주세요... (@를 입력하면 사용자를 태그할 수 있습니다)"
               multiline={true}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
           </div>
 
-          <div className="flex space-x-3">
+          <div className="flex space-x-2">
             <button
               type="button"
               onClick={onClose}
               disabled={loading || uploading}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 dark:text-white rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:text-white rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               취소
             </button>
             <button
               type="submit"
               disabled={loading || uploading || files.length === 0}
-              className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? '업로드 중...' : loading ? '게시 중...' : '다이빙 로그 공유'}
             </button>

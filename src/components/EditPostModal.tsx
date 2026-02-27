@@ -345,7 +345,7 @@ export default function EditPostModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-2xl w-full max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold flex items-center gap-2 dark:text-white"><Waves className="h-6 w-6 text-blue-500" />다이빙 로그 수정</h2>
           <button
@@ -356,13 +356,13 @@ export default function EditPostModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               사진 또는 영상 업로드
             </label>
 
-            <div className="grid grid-cols-3 gap-2 mb-3 w-full">
+            <div className="grid grid-cols-3 gap-2 mb-2 w-full">
               {existingMedia.map((media) => (
                 <div key={media.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
                   {media.media_type === 'image' ? (
@@ -400,7 +400,7 @@ export default function EditPostModal({
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="col-span-3 w-full h-16 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-row items-center justify-center gap-2 transition-colors"
+                className="col-span-3 w-full h-12 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 flex flex-row items-center justify-center gap-2 transition-colors"
               >
                 <Upload className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 <span className="text-sm text-gray-500 dark:text-gray-400">미디어 추가</span>
@@ -449,7 +449,7 @@ export default function EditPostModal({
                   setShowMentionList(false);
                 }
               }}
-              className="w-full h-24 px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full h-24 px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="다이빙 컨디션을 입력하세요..."
             />
 
@@ -504,7 +504,7 @@ export default function EditPostModal({
               list="edit-location-options"
               value={location}
               readOnly
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="사진 GPS 또는 지도 핀 좌표"
             />
             <datalist id="edit-location-options">
@@ -536,7 +536,7 @@ export default function EditPostModal({
 
           {diveType && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     다이빙 날짜
@@ -545,7 +545,7 @@ export default function EditPostModal({
                     type="date"
                     value={diveDate}
                     onChange={(e) => setDiveDate(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -564,7 +564,7 @@ export default function EditPostModal({
                     }}
                     onFocus={() => setShowResortList((resortQuery || diveSite).includes('@'))}
                     onBlur={() => setTimeout(() => setShowResortList(false), 120)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="@ 입력 후 리조트 계정 검색"
                   />
 
@@ -611,7 +611,7 @@ export default function EditPostModal({
                     type="number"
                     value={maxDepth}
                     onChange={(e) => setMaxDepth(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -626,7 +626,7 @@ export default function EditPostModal({
                       type="number"
                       value={waterTemp}
                       onChange={(e) => setWaterTemp(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0"
                       step="0.1"
                     />
@@ -642,7 +642,7 @@ export default function EditPostModal({
                       type="number"
                       value={diveDuration}
                       onChange={(e) => setDiveDuration(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0"
                     />
                   </div>
@@ -656,7 +656,7 @@ export default function EditPostModal({
                     type="number"
                     value={visibility}
                     onChange={(e) => setVisibility(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -682,7 +682,7 @@ export default function EditPostModal({
                           step="0.1"
                           value={gasPercent}
                           onChange={(e) => setGasPercent(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="예: 32"
                         />
                       </div>
@@ -726,7 +726,7 @@ export default function EditPostModal({
                   }}
                   onFocus={() => setShowBuddyList(true)}
                   onBlur={() => setTimeout(() => setShowBuddyList(false), 120)}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="버디 이름을 검색해서 여러 명 추가"
                 />
 
@@ -766,7 +766,7 @@ export default function EditPostModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-50 dark:hover:bg-gray-900"
               disabled={uploading}
             >
               취소
@@ -774,7 +774,7 @@ export default function EditPostModal({
             <button
               type="button"
               onClick={handleSave}
-              className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={uploading}
             >
               {uploading ? '저장 중...' : '저장'}
