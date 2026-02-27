@@ -29,6 +29,8 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
   const [diveDuration, setDiveDuration] = useState('');
   const [diveSite, setDiveSite] = useState('');
   const [visibility, setVisibility] = useState('');
+  const [gasType, setGasType] = useState<'air' | 'nitrox' | 'heliox'>('air');
+  const [gasPercent, setGasPercent] = useState('');
   const [buddyName, setBuddyName] = useState('');
   const [location, setLocation] = useState('');
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
@@ -245,6 +247,8 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
         dive_duration: diveDuration ? parseInt(diveDuration) : null,
         dive_site: (diveSite || '').replace(/^@/, '').trim() || null,
         visibility: visibility ? parseFloat(visibility) : null,
+        gas_type: (diveType === 'scuba' || diveType === 'technical') ? gasType : null,
+        gas_percent: (diveType === 'scuba' || diveType === 'technical') && gasType !== 'air' && gasPercent ? parseFloat(gasPercent) : null,
         buddy_name: buddyName || null,
         location: location || null,
       }).select().single();
@@ -437,21 +441,23 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                수온 (°C)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={waterTemperature}
-                onChange={(e) => setWaterTemperature(e.target.value)}
-                placeholder="예: 24.0"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+            {diveType !== 'technical' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  수온 (°C)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={waterTemperature}
+                  onChange={(e) => setWaterTemperature(e.target.value)}
+                  placeholder="예: 24.0"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
 
-            {diveType === 'scuba' && (
+            {(diveType === 'scuba' || diveType === 'technical') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   다이빙 시간 (분)
@@ -479,6 +485,38 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {(diveType === 'scuba' || diveType === 'technical') && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    기체 선택
+                  </label>
+                  <div className="flex gap-4 flex-wrap">
+                    <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'air'} onChange={() => setGasType('air')} />공기</label>
+                    <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'nitrox'} onChange={() => setGasType('nitrox')} />나이트록스</label>
+                    <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'heliox'} onChange={() => setGasType('heliox')} />헬리옥스</label>
+                  </div>
+                </div>
+                {gasType !== 'air' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      농도 (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="100"
+                      value={gasPercent}
+                      onChange={(e) => setGasPercent(e.target.value)}
+                      placeholder="예: 32"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="relative">

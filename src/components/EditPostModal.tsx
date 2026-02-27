@@ -56,6 +56,8 @@ export default function EditPostModal({
   const [diveDuration, setDiveDuration] = useState(post.dive_duration?.toString() || '');
   const [diveSite, setDiveSite] = useState(post.dive_site || '');
   const [visibility, setVisibility] = useState(post.visibility?.toString() || '');
+  const [gasType, setGasType] = useState<'air' | 'nitrox' | 'heliox'>((post.gas_type as any) || 'air');
+  const [gasPercent, setGasPercent] = useState(post.gas_percent?.toString() || '');
   const [selectedBuddies, setSelectedBuddies] = useState<string[]>(
     (post.buddy_name || '')
       .split(',')
@@ -326,6 +328,8 @@ export default function EditPostModal({
         dive_duration: diveDuration ? parseInt(diveDuration) : undefined,
         dive_site: (diveSite || '').replace(/^@/, '').trim() || undefined,
         visibility: visibility ? parseFloat(visibility) : undefined,
+        gas_type: (diveType === 'scuba' || diveType === 'technical') ? gasType : undefined,
+        gas_percent: (diveType === 'scuba' || diveType === 'technical') && gasType !== 'air' && gasPercent ? parseFloat(gasPercent) : undefined,
         buddy_name: selectedBuddies.length ? selectedBuddies.join(', ') : undefined,
       };
 
@@ -613,32 +617,36 @@ export default function EditPostModal({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    수온 (°C)
-                  </label>
-                  <input
-                    type="number"
-                    value={waterTemp}
-                    onChange={(e) => setWaterTemp(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                    step="0.1"
-                  />
-                </div>
+                {diveType !== 'technical' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      수온 (°C)
+                    </label>
+                    <input
+                      type="number"
+                      value={waterTemp}
+                      onChange={(e) => setWaterTemp(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0"
+                      step="0.1"
+                    />
+                  </div>
+                )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    다이빙 시간 (분)
-                  </label>
-                  <input
-                    type="number"
-                    value={diveDuration}
-                    onChange={(e) => setDiveDuration(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
+                {(diveType === 'scuba' || diveType === 'technical') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      다이빙 시간 (분)
+                    </label>
+                    <input
+                      type="number"
+                      value={diveDuration}
+                      onChange={(e) => setDiveDuration(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -653,6 +661,34 @@ export default function EditPostModal({
                     step="0.1"
                   />
                 </div>
+
+                {(diveType === 'scuba' || diveType === 'technical') && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">기체 선택</label>
+                      <div className="flex gap-4 flex-wrap dark:text-gray-300">
+                        <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'air'} onChange={() => setGasType('air')} />공기</label>
+                        <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'nitrox'} onChange={() => setGasType('nitrox')} />나이트록스</label>
+                        <label className="flex items-center cursor-pointer"><input type="radio" className="mr-2" checked={gasType === 'heliox'} onChange={() => setGasType('heliox')} />헬리옥스</label>
+                      </div>
+                    </div>
+                    {gasType !== 'air' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">농도 (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          value={gasPercent}
+                          onChange={(e) => setGasPercent(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="예: 32"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="relative">

@@ -24,7 +24,7 @@ export interface Post {
   id: string; user_id: string; image_url: string; video_url?: string; caption: string; created_at: string;
   profiles: Profile; likes: { id: string }[]; comments: { id: string }[]; post_media?: PostMedia[];
   dive_type?: 'scuba' | 'freediving' | 'technical'; dive_date?: string; max_depth?: number; water_temperature?: number;
-  dive_duration?: number; dive_site?: string; visibility?: number; buddy?: string; buddy_name?: string; location?: string;
+  dive_duration?: number; dive_site?: string; visibility?: number; gas_type?: 'air' | 'nitrox' | 'heliox'; gas_percent?: number; buddy?: string; buddy_name?: string; location?: string;
 }
 export interface Comment { id: string; post_id: string; user_id: string; content: string; created_at: string; profiles: Profile; }
 export interface Room { id: string; type: 'direct' | 'group'; created_at: string; }
