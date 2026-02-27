@@ -329,14 +329,14 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     <button
                       onClick={(e) => handleFollow(post.user_id, e)}
                       className={`px-3 py-1 border rounded-lg text-xs font-semibold transition ${
-                        isFollowing ? 'bg-gray-200 border-gray-300 text-gray-800 hover:bg-gray-300' : 'bg-transparent border-white text-white hover:bg-white hover:text-black'
+                        isFollowing ? 'bg-gray-200/95 dark:bg-gray-200 border-gray-300 text-gray-800 hover:bg-gray-300' : 'bg-white/15 dark:bg-transparent border-white text-white hover:bg-white hover:text-black'
                       }`}
                     >
                       {isFollowing ? '팔로잉' : '팔로우'}
                     </button>
                   )}
                 </div>
-                <button onClick={(e) => toggleMute(e)} className="text-white bg-black/45 dark:bg-black/40 rounded-full p-2">
+                <button onClick={(e) => toggleMute(e)} className="text-white bg-black/45 dark:bg-black/40 rounded-full p-2 ring-1 ring-white/20">
                   {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 </button>
               </div>
@@ -360,7 +360,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                 )}
               </div>
 
-              <div className="absolute bottom-20 right-3 flex flex-col items-center space-y-5 z-10">
+              <div className="absolute bottom-20 right-3 flex flex-col items-center space-y-5 z-10 bg-black/25 dark:bg-black/20 rounded-2xl px-2 py-3 backdrop-blur-sm">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center">
                   <Heart
                     className={`h-8 w-8 drop-shadow-lg ${
