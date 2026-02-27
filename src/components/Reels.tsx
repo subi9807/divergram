@@ -49,7 +49,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      const newIndex = Math.round(window.scrollY / window.innerHeight);
+      const newIndex = Math.floor((window.scrollY + window.innerHeight * 0.15) / window.innerHeight);
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < posts.length) {
         setCurrentIndex(newIndex);
       }
@@ -326,6 +326,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     loop
                     muted={isMuted}
                     playsInline
+                    preload="auto"
                   />
                 );
               })()}
