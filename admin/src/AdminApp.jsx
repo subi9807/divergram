@@ -43,8 +43,9 @@ export function AdminApp() {
   const [logs, setLogs] = useState([]);
   const [query, setQuery] = useState('');
   const [error, setError] = useState('');
+  const [mapError, setMapError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [section, setSection] = useState('dashboard');
+  const [section, setSection] = useState(() => new URLSearchParams(window.location.search).get('section') || 'dashboard');
 
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState('app_users');
@@ -152,6 +153,12 @@ export function AdminApp() {
   }, []);
 
   useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', section);
+    window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+  }, [section]);
+
+  useEffect(() => {
     if (!adminKey || section !== 'dashboard') return;
     const t = setInterval(() => refresh(), 5000);
     return () => clearInterval(t);
@@ -169,6 +176,7 @@ export function AdminApp() {
 
     (async () => {
       try {
+        setMapError('');
         await loadGoogleMaps();
         if (cancelled || !(window).google) return;
 
@@ -186,42 +194,34 @@ export function AdminApp() {
         const markers = [];
         const bounds = new google.maps.LatLngBounds();
 
-        const unique = Array.from(new Set((points || []).flatMap((p) => [p.location, p.dive_site]).map((v) => String(v || '').trim()).filter(Boolean)));
-        for (const name of unique.slice(0, 300)) {
-          const coord = parseCoord(name);
-          if (coord) {
-            const marker = new google.maps.Marker({
-              position: coord,
-              title: name,
-              icon: {
-                path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-                scale: 6,
-                fillColor: '#ef4444',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 1.5,
-              },
-            });
-            markers.push(marker);
-            bounds.extend(coord);
-            continue;
-          }
+        const pinIcon = {
+          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+          scale: 6,
+          fillColor: '#ef4444',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 1.5,
+        };
 
+        const unique = Array.from(new Set((points || []).flatMap((p) => [p.location, p.dive_site]).map((v) => String(v || '').trim()).filter(Boolean)));
+
+        const coordFirst = unique.map((name) => ({ name, coord: parseCoord(name) }));
+        coordFirst.filter((x) => x.coord).forEach(({ name, coord }) => {
+          const marker = new google.maps.Marker({ position: coord, title: name, icon: pinIcon });
+          markers.push(marker);
+          bounds.extend(coord);
+        });
+
+        const needGeocode = coordFirst.filter((x) => !x.coord).slice(0, 60);
+        for (const item of needGeocode) {
           await new Promise((resolve) => {
-            geocoder.geocode({ address: name }, (results, status) => {
+            geocoder.geocode({ address: item.name }, (results, status) => {
               if (status === 'OK' && results?.[0]) {
                 const loc = results[0].geometry.location;
                 const marker = new google.maps.Marker({
                   position: { lat: loc.lat(), lng: loc.lng() },
-                  title: name,
-                  icon: {
-                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-                    scale: 6,
-                    fillColor: '#ef4444',
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 1.5,
-                  },
+                  title: item.name,
+                  icon: pinIcon,
                 });
                 markers.push(marker);
                 bounds.extend(loc);
@@ -231,10 +231,16 @@ export function AdminApp() {
           });
         }
 
+        const hasBounds = !bounds.isEmpty?.() ? true : false;
+        if (markers.length === 0) {
+          const fallback = new google.maps.Marker({ map, position: { lat: 36.5, lng: 127.8 }, title: '포인트 없음', icon: pinIcon });
+          markers.push(fallback);
+        }
+
         new MarkerClusterer({ map, markers });
-        if (markers.length) map.fitBounds(bounds);
+        if (hasBounds) map.fitBounds(bounds);
       } catch (e) {
-        setError('지도 로딩 실패');
+        setMapError('지도 로딩 실패');
       }
     })();
 
