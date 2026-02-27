@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
 
 const API_BASE = import.meta.env.VITE_ADMIN_API_BASE || 'http://127.0.0.1:4000';
 const DEFAULT_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || '';
@@ -191,63 +190,49 @@ export function AdminApp() {
 
         const { points } = await api('/api/admin/map-points', { adminKey });
         const geocoder = new google.maps.Geocoder();
-        const markers = [];
         const bounds = new google.maps.LatLngBounds();
+        let hasMarker = false;
 
-        const pinIcon = {
-          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          scale: 6,
-          fillColor: '#ef4444',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 1.5,
+        const addMarker = (pos, title) => {
+          hasMarker = true;
+          bounds.extend(pos);
+          new google.maps.Marker({
+            map,
+            position: pos,
+            title,
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 8,
+              fillColor: '#ef4444',
+              fillOpacity: 1,
+              strokeColor: '#ffffff',
+              strokeWeight: 2,
+            },
+          });
         };
 
         const unique = Array.from(new Set((points || []).flatMap((p) => [p.location, p.dive_site]).map((v) => String(v || '').trim()).filter(Boolean)));
 
-        const coordFirst = unique.map((name) => ({ name, coord: parseCoord(name) }));
-        coordFirst.filter((x) => x.coord).forEach(({ name, coord }) => {
-          const marker = new google.maps.Marker({ position: coord, title: name, icon: pinIcon });
-          markers.push(marker);
-          bounds.extend(coord);
-        });
+        for (const name of unique.slice(0, 120)) {
+          const c = parseCoord(name);
+          if (c) {
+            addMarker(c, name);
+            continue;
+          }
 
-        const needGeocode = coordFirst.filter((x) => !x.coord).slice(0, 60);
-        for (const item of needGeocode) {
           await new Promise((resolve) => {
-            geocoder.geocode({ address: item.name }, (results, status) => {
+            geocoder.geocode({ address: name }, (results, status) => {
               if (status === 'OK' && results?.[0]) {
                 const loc = results[0].geometry.location;
-                const marker = new google.maps.Marker({
-                  position: { lat: loc.lat(), lng: loc.lng() },
-                  title: item.name,
-                  icon: pinIcon,
-                });
-                markers.push(marker);
-                bounds.extend(loc);
+                addMarker({ lat: loc.lat(), lng: loc.lng() }, name);
               }
               resolve(true);
             });
           });
         }
 
-        const hasBounds = !bounds.isEmpty?.() ? true : false;
-        if (markers.length === 0) {
-          const fallback = new google.maps.Marker({ map, position: { lat: 36.5, lng: 127.8 }, title: '포인트 없음', icon: pinIcon });
-          markers.push(fallback);
-        }
-
-        try {
-          new MarkerClusterer({ map, markers });
-        } catch {
-          markers.forEach((m) => m.setMap(map));
-        }
-        if (hasBounds) map.fitBounds(bounds);
-        else if (markers[0]?.getPosition) {
-          const p = markers[0].getPosition();
-          map.setCenter(p);
-          map.setZoom(10);
-        }
+        if (hasMarker) map.fitBounds(bounds);
+        else setMapError('등록된 포인트가 없습니다.');
       } catch (e) {
         setMapError('지도 로딩 실패');
       }
