@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { getVideoInfo } from '../utils/videoUtils';
 
 interface MediaItem {
@@ -19,26 +19,14 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  if (!media || media.length === 0) {
-    return null;
-  }
+  if (!media || media.length === 0) return null;
 
   const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
-  const currentMedia = sortedMedia[currentIndex];
-  const currentMediaKey = useMemo(() => `${currentMedia?.id || 'none'}:${currentMedia?.media_url || ''}`, [currentMedia]);
 
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
-  };
+  const goToPrevious = () => setCurrentIndex((prev) => Math.max(0, prev - 1));
+  const goToNext = () => setCurrentIndex((prev) => Math.min(sortedMedia.length - 1, prev + 1));
 
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
-  };
-
-  const onTouchStart = (e: any) => {
-    setTouchStartX(e.changedTouches[0].clientX);
-  };
-
+  const onTouchStart = (e: any) => setTouchStartX(e.changedTouches[0].clientX);
   const onTouchEnd = (e: any) => {
     if (touchStartX == null) return;
     const diff = e.changedTouches[0].clientX - touchStartX;
@@ -48,58 +36,60 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
     setTouchStartX(null);
   };
 
-  const renderMedia = () => {
-    if (currentMedia.media_type === 'image') {
-      return (
-        <img
-          src={currentMedia.media_url}
-          alt="Post"
-          className="w-full h-full object-cover"
-        />
-      );
-    }
-
-    const videoInfo = getVideoInfo(currentMedia.media_url);
-
-    if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
-      return (
-        <div className="relative w-full h-full bg-black">
-          <iframe
-            src={videoInfo.embedUrl}
-            className="absolute top-0 left-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="Video player"
-          />
-        </div>
-      );
-    }
-
-    if (videoErrorMap[currentMediaKey]) {
-      return (
-        <div className="w-full h-full bg-black flex items-center justify-center text-center px-4">
-          <div className="text-white/80 text-sm">영상을 불러오지 못했어요. 다른 미디어를 확인해 주세요.</div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-full h-full bg-gradient-to-b from-black/70 via-black/85 to-black/70">
-        <video
-          src={currentMedia.media_url}
-          controls
-          playsInline
-          preload="metadata"
-          className="w-full h-full object-contain"
-          onError={() => setVideoErrorMap((prev) => ({ ...prev, [currentMediaKey]: true }))}
-        />
-      </div>
-    );
-  };
-
   return (
     <div className={`relative ${className}`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {renderMedia()}
+      <div className="w-full h-full overflow-hidden">
+        <div
+          className="flex h-full transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {sortedMedia.map((m) => {
+            const key = `${m.id}:${m.media_url}`;
+
+            if (m.media_type === 'image') {
+              return (
+                <div key={key} className="w-full h-full shrink-0">
+                  <img src={m.media_url} alt="Post" className="w-full h-full object-cover" />
+                </div>
+              );
+            }
+
+            const info = getVideoInfo(m.media_url);
+            if (info.type === 'youtube' || info.type === 'vimeo') {
+              return (
+                <div key={key} className="w-full h-full shrink-0 bg-black relative">
+                  <iframe
+                    src={info.embedUrl}
+                    className="absolute top-0 left-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title="Video player"
+                  />
+                </div>
+              );
+            }
+
+            return (
+              <div key={key} className="w-full h-full shrink-0 bg-gradient-to-b from-black/70 via-black/85 to-black/70">
+                {videoErrorMap[key] ? (
+                  <div className="w-full h-full bg-black flex items-center justify-center text-center px-4">
+                    <div className="text-white/80 text-sm">영상을 불러오지 못했어요. 다른 미디어를 확인해 주세요.</div>
+                  </div>
+                ) : (
+                  <video
+                    src={m.media_url}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-full object-contain"
+                    onError={() => setVideoErrorMap((prev) => ({ ...prev, [key]: true }))}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {sortedMedia.length > 1 && (
         <>
