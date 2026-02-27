@@ -386,29 +386,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
               )}
             </div>
 
-            {files.length === 0 && (
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-[#262626] hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-12 h-12 mb-3 text-gray-400 dark:text-gray-500" />
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">클릭하여 업로드</span> 또는 드래그 앤 드롭
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    이미지: JPG, PNG, GIF, WEBP (최대 50MB)
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    비디오: MP4, MOV, WEBM (최대 50MB)
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm"
-                  onChange={handleFileChange}
-                />
-              </label>
-            )}
+            
           </div>
 
 
