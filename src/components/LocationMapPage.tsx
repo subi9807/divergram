@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, MapPin } from 'lucide-react';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import { loadGoogleMaps } from '../utils/googleMaps';
 import { db } from '../lib/internal-db';
 
@@ -54,12 +55,12 @@ export default function LocationMapPage({ location, onBack }: Props) {
 
         const bounds = new google.maps.LatLngBounds();
         let hasMarker = false;
+        const markers: any[] = [];
 
         const addMarker = (pos: { lat: number; lng: number }, title: string, highlight = false) => {
           hasMarker = true;
           bounds.extend(pos);
-          new google.maps.Marker({
-            map,
+          markers.push(new google.maps.Marker({
             position: pos,
             title,
             icon: {
@@ -70,7 +71,7 @@ export default function LocationMapPage({ location, onBack }: Props) {
               strokeColor: '#ffffff',
               strokeWeight: 2,
             },
-          });
+          }));
         };
 
         const targetCoord = parseCoord(location);
@@ -95,6 +96,10 @@ export default function LocationMapPage({ location, onBack }: Props) {
 
         if (targetCoord) {
           addMarker(targetCoord, location, true);
+        }
+
+        if (markers.length) {
+          new MarkerClusterer({ map, markers });
         }
 
         if (hasMarker) {
