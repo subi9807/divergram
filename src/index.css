@@ -30,3 +30,24 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+
+.dg-surface {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 231 235);
+  background: #fff;
+}
+.dark .dg-surface {
+  border-color: #262626;
+  background: #18181b;
+}
+.dg-input {
+  border-radius: 0.5rem;
+  border: 1px solid rgb(209 213 219);
+  padding: 0.5rem 0.75rem;
+}
+.dark .dg-input {
+  border-color: #3f3f46;
+  background: #262626;
+  color: #f3f4f6;
+}

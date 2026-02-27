@@ -308,7 +308,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
               ) : null}
             </div>
 
-            <div className="p-4">
+            <div className="p-4 space-y-2">
               <p className="text-sm dark:text-white">
                 <span className="font-semibold mr-2">{post.profiles.username}</span>
                 {renderTextWithMentions(post.caption || '', async (username) => {
@@ -327,7 +327,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
               </p>
 
               {(post.dive_type || post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy_name || post.gas_type || post.gas_percent || post.dive_date || post.location) && (
-                <div className="mt-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 transition-colors">
+                <div className="mt-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 transition-colors">
                   {post.dive_type && (
                     <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
                       <Waves className="h-4 w-4" />
