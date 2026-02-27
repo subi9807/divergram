@@ -48,7 +48,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   };
 
   return (
-    <div className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
+    <div className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDragStart={(e) => e.preventDefault()}>
       <div className="w-full h-full overflow-hidden">
         <div
           className="flex h-full transition-transform duration-300 ease-out"
@@ -60,7 +60,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
             if (m.media_type === 'image') {
               return (
                 <div key={key} className="w-full h-full shrink-0">
-                  <img src={m.media_url} alt="Post" className="w-full h-full object-cover" />
+                  <img src={m.media_url} alt="Post" draggable={false} className="w-full h-full object-cover" />
                 </div>
               );
             }
