@@ -237,8 +237,17 @@ export function AdminApp() {
           markers.push(fallback);
         }
 
-        new MarkerClusterer({ map, markers });
+        try {
+          new MarkerClusterer({ map, markers });
+        } catch {
+          markers.forEach((m) => m.setMap(map));
+        }
         if (hasBounds) map.fitBounds(bounds);
+        else if (markers[0]?.getPosition) {
+          const p = markers[0].getPosition();
+          map.setCenter(p);
+          map.setZoom(10);
+        }
       } catch (e) {
         setMapError('지도 로딩 실패');
       }
