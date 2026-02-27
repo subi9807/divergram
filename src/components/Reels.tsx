@@ -24,7 +24,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const snapTimerRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const isWheelLockedRef = useRef(false);
 
   useEffect(() => {
     loadPosts();
@@ -48,28 +49,39 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   }, [currentIndex]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const newIndex = Math.round(scrollPosition / windowHeight);
+    const container = containerRef.current;
+    if (!container) return;
 
+    const handleScroll = () => {
+      const newIndex = Math.round(container.scrollTop / window.innerHeight);
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < posts.length) {
         setCurrentIndex(newIndex);
       }
-
-      if (snapTimerRef.current) {
-        window.clearTimeout(snapTimerRef.current);
-      }
-      snapTimerRef.current = window.setTimeout(() => {
-        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
-        window.scrollTo({ top: targetIndex * window.innerHeight, behavior: 'smooth' });
-      }, 120);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const handleWheel = (e: WheelEvent) => {
+      if (posts.length <= 1 || isWheelLockedRef.current || e.deltaY === 0) return;
+      e.preventDefault();
+
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const nextIndex = Math.max(0, Math.min(posts.length - 1, currentIndex + direction));
+      if (nextIndex === currentIndex) return;
+
+      isWheelLockedRef.current = true;
+      setCurrentIndex(nextIndex);
+      container.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
+
+      window.setTimeout(() => {
+        isWheelLockedRef.current = false;
+      }, 380);
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (snapTimerRef.current) window.clearTimeout(snapTimerRef.current);
+      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('wheel', handleWheel);
     };
   }, [currentIndex, posts.length]);
 
@@ -259,7 +271,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   return (
     <>
-      <div className="snap-y snap-mandatory h-screen bg-gray-50 dark:bg-black">
+      <div ref={containerRef} className="snap-y snap-mandatory h-screen overflow-y-auto overscroll-y-contain scroll-smooth">
         {posts.map((post, index) => {
           const likes = Array.isArray(post.likes) ? post.likes : [];
           const comments = Array.isArray(post.comments) ? post.comments : [];
@@ -280,9 +292,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-screen w-full relative items-center justify-center py-2"
+              className="snap-start snap-always h-screen w-full relative"
             >
-              <div className="w-full max-w-[420px] h-[calc(100vh-16px)] relative flex items-center justify-center mx-auto bg-white dark:bg-black rounded-xl overflow-hidden ring-1 ring-black/10 dark:ring-white/10">
+              <div className="w-full h-full relative overflow-hidden">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
