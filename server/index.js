@@ -1040,11 +1040,43 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
         created_at: new Date(Date.now() - i * 60000).toISOString(),
       };
       postIds.push(id);
+      const diveTypes = ['freediving', 'scuba', 'technical'];
+      const diveType = diveTypes[i % diveTypes.length];
+      const gasType = diveType === 'freediving' ? null : (i % 3 === 0 ? 'air' : (i % 2 === 0 ? 'nitrox' : 'heliox'));
+      const gasPercent = gasType && gasType !== 'air' ? (gasType === 'nitrox' ? 32 : 21) : null;
+
       await pool.query(
-        `INSERT INTO app_posts(id,user_id,image_url,caption,location,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6)
-         ON CONFLICT (id) DO UPDATE SET caption=EXCLUDED.caption,location=EXCLUDED.location`,
-        [row.id,row.user_id,row.image_url,row.caption,row.location,row.created_at]
+        `INSERT INTO app_posts(
+            id,user_id,image_url,caption,location,created_at,
+            dive_type,dive_date,max_depth,water_temperature,dive_duration,dive_site,visibility,gas_type,gas_percent,buddy_name
+          )
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         ON CONFLICT (id) DO UPDATE SET
+            caption=EXCLUDED.caption,
+            location=EXCLUDED.location,
+            dive_type=EXCLUDED.dive_type,
+            dive_date=EXCLUDED.dive_date,
+            max_depth=EXCLUDED.max_depth,
+            water_temperature=EXCLUDED.water_temperature,
+            dive_duration=EXCLUDED.dive_duration,
+            dive_site=EXCLUDED.dive_site,
+            visibility=EXCLUDED.visibility,
+            gas_type=EXCLUDED.gas_type,
+            gas_percent=EXCLUDED.gas_percent,
+            buddy_name=EXCLUDED.buddy_name`,
+        [
+          row.id,row.user_id,row.image_url,row.caption,row.location,row.created_at,
+          diveType,
+          new Date(Date.now() - i * 86400000).toISOString().slice(0,10),
+          12 + (i % 24),
+          18 + (i % 10),
+          30 + (i % 40),
+          ['Jeju Dive Base','Blue Fin Bali','Cebu Ocean Club','Okinawa Reef Lab'][i % 4],
+          5 + (i % 20),
+          gasType,
+          gasPercent,
+          ['@minji.kim1','@taehyun.yoon2','@bluefinbali_1','@jejudivebase_2'][i % 4]
+        ]
       );
     }
 
