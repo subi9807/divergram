@@ -37,6 +37,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   const { user } = useAuth();
 
   useEffect(() => {
+    loadPost();
     loadComments();
     checkFollowing();
     checkSaved();
@@ -325,7 +326,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
                 })}
               </p>
 
-              {(post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy) && (
+              {(post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy_name || post.gas_type || post.gas_percent) && (
                 <div className="mt-3 space-y-2">
                   {post.dive_site && (
                     <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
