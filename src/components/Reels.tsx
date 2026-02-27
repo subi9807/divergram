@@ -26,6 +26,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const isWheelLockedRef = useRef(false);
   const snapTimerRef = useRef<number | null>(null);
+  const isPointerDownRef = useRef(false);
 
   useEffect(() => {
     loadPosts();
@@ -49,6 +50,23 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   }, [currentIndex]);
 
   useEffect(() => {
+    const scheduleSnap = (delay = 140) => {
+      if (isPointerDownRef.current) return;
+
+      if (snapTimerRef.current) {
+        window.clearTimeout(snapTimerRef.current);
+      }
+
+      snapTimerRef.current = window.setTimeout(() => {
+        if (isPointerDownRef.current) return;
+        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
+        const targetTop = targetIndex * window.innerHeight;
+        if (Math.abs(window.scrollY - targetTop) > 2) {
+          window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+      }, delay);
+    };
+
     const handleScroll = () => {
       const nearestIndex = Math.round(window.scrollY / window.innerHeight);
       const clampedIndex = Math.max(0, Math.min(posts.length - 1, nearestIndex));
@@ -57,23 +75,31 @@ export default function Reels({ onViewProfile }: ReelsProps) {
         setCurrentIndex(clampedIndex);
       }
 
+      scheduleSnap(160);
+    };
+
+    const handlePointerDown = () => {
+      isPointerDownRef.current = true;
       if (snapTimerRef.current) {
         window.clearTimeout(snapTimerRef.current);
       }
+    };
 
-      snapTimerRef.current = window.setTimeout(() => {
-        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
-        const targetTop = targetIndex * window.innerHeight;
-        if (Math.abs(window.scrollY - targetTop) > 2) {
-          window.scrollTo({ top: targetTop, behavior: 'smooth' });
-        }
-      }, 140);
+    const handlePointerUp = () => {
+      isPointerDownRef.current = false;
+      scheduleSnap(120);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true });
+    window.addEventListener('pointercancel', handlePointerUp, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
       if (snapTimerRef.current) {
         window.clearTimeout(snapTimerRef.current);
       }
