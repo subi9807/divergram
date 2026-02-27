@@ -228,7 +228,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen bg-black">
+      <div className="flex justify-center items-center h-screen bg-zinc-900">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     );
@@ -236,7 +236,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   if (posts.length === 0) {
     return (
-      <div className="flex justify-center w-full items-center h-screen bg-black">
+      <div className="flex justify-center w-full items-center h-screen bg-zinc-900">
         <div className="text-center text-white">
           <p className="text-lg">릴스가 없습니다</p>
           <p className="text-sm text-gray-400 mt-2">비디오 콘텐츠를 올려보세요</p>
@@ -247,7 +247,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   return (
     <>
-      <div className="snap-y snap-mandatory h-screen">
+      <div className="snap-y snap-mandatory h-screen bg-zinc-900">
         {posts.map((post, index) => {
           const likes = Array.isArray(post.likes) ? post.likes : [];
           const comments = Array.isArray(post.comments) ? post.comments : [];
@@ -270,7 +270,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               key={post.id}
               className="snap-start snap-always h-screen w-full relative items-center justify-center"
             >
-              <div className="w-full max-w-[630px] h-full relative flex items-center justify-center mx-auto">
+              <div className="w-full max-w-[630px] h-full relative flex items-center justify-center mx-auto bg-zinc-900 ring-1 ring-white/10">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {

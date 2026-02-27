@@ -15,6 +15,16 @@ const parseCoord = (v: string) => {
   return { lat: Number(m[1]), lng: Number(m[2]) };
 };
 
+const darkMapStyle = [
+  { elementType: 'geometry', stylers: [{ color: '#1f2937' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#111827' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#374151' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f172a' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#334155' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#475569' }] },
+];
+
 export default function LocationMapPage({ location, onBack }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
@@ -28,12 +38,14 @@ export default function LocationMapPage({ location, onBack }: Props) {
         if (cancelled || !mapRef.current || !(window as any).google) return;
         const google = (window as any).google;
 
+        const isDark = document.documentElement.classList.contains('dark');
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: 36.5, lng: 127.8 },
           zoom: 7,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          styles: isDark ? darkMapStyle as any : undefined,
         });
 
         const geocoder = new google.maps.Geocoder();
