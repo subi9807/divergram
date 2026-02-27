@@ -16,7 +16,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tagFilter, setTagFilter] = useState(initialTag);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState<'posts' | 'reels' | 'people' | 'resorts'>('posts');
+  const [searchType, setSearchType] = useState<'posts' | 'reels' | 'resorts'>('posts');
   const [visibleCount, setVisibleCount] = useState(18);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,9 +92,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   }, [posts, tagFilter, searchQuery, searchType]);
 
   const filteredProfiles = useMemo(() => {
-    const typeFiltered = profiles.filter((pr) =>
-      searchType === 'people' ? (pr.account_type || 'personal') !== 'resort' : (pr.account_type || 'personal') === 'resort'
-    );
+    const typeFiltered = profiles.filter((pr) => (pr.account_type || 'personal') === 'resort');
     if (!searchQuery.trim()) return typeFiltered;
     const q = searchQuery.toLowerCase();
     return typeFiltered.filter((pr) =>
@@ -160,7 +158,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="탐색 검색"
+            placeholder={searchType === 'resorts' ? '리조트 검색' : '탐색 검색'}
             className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -169,7 +167,6 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
           {[
             { key: 'posts', label: '게시물' },
             { key: 'reels', label: '릴스' },
-            { key: 'people', label: '사람' },
             { key: 'resorts', label: '리조트' },
           ].map((t) => (
             <button
@@ -234,7 +231,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 text-gray-500"><p>검색 결과가 없습니다</p></div>
+          <div className="text-center py-12 text-gray-500"><p>리조트 검색 결과가 없습니다</p></div>
         )
       )}
 

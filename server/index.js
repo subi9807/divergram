@@ -995,10 +995,21 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
     const hash = await bcrypt.hash(pass, 10);
     const sha = crypto.createHash('sha256').update(pass).digest('hex');
 
+    const firstNames = ['Minji','Jiwon','Seoyeon','Yuna','Haerin','Sujin','Jisoo','Eunji','Mina','Doyeon','Hyunwoo','Joon','Taehyun','Minho','Jiho','Seungwoo','Dongha','Yejun'];
+    const lastNames = ['Kim','Lee','Park','Choi','Jung','Kang','Yoon','Lim','Han','Shin'];
+    const resorts = ['BlueFinBali','JejuDiveBase','CebuOceanClub','OkinawaReefLab','SipadanDeepHub','PhuketCoralResort','AnilaoDiveHouse','MoalboalSeaCamp'];
+
     const profileIds = [];
     for (let i = 1; i <= usersN; i++) {
-      const username = `sample_user_${i}`;
-      const email = `sample${i}@divergram.local`;
+      const isResort = (i % 4 === 0);
+      const baseName = isResort
+        ? resorts[(i / 4) % resorts.length | 0]
+        : `${firstNames[i % firstNames.length]} ${lastNames[i % lastNames.length]}`;
+      const username = isResort
+        ? `${resorts[(i / 4) % resorts.length | 0].toLowerCase()}_${i}`
+        : `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}${i}`;
+      const email = `${username}@divergram.local`;
+
       await pool.query(
         `INSERT INTO app_users(email,password_hash,password_sha256,username,role,is_blocked)
          VALUES ($1,$2,$3,$4,'user',false)
@@ -1009,10 +1020,10 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
       const id = String((await pool.query('SELECT id::text FROM app_users WHERE email=$1', [email])).rows[0].id);
       profileIds.push(id);
       await pool.query(
-        `INSERT INTO app_profiles(id,username,full_name,bio,avatar_url)
-         VALUES ($1,$2,$3,$4,'')
-         ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,full_name=EXCLUDED.full_name,bio=EXCLUDED.bio`,
-        [id, username, `Sample User ${i}`, `Auto-generated profile #${i}`]
+        `INSERT INTO app_profiles(id,username,full_name,bio,avatar_url,account_type)
+         VALUES ($1,$2,$3,$4,'',$5)
+         ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username,full_name=EXCLUDED.full_name,bio=EXCLUDED.bio,account_type=EXCLUDED.account_type`,
+        [id, username, baseName, isResort ? 'Certified dive center' : 'Ocean lover and diver', isResort ? 'resort' : 'personal']
       );
     }
 
