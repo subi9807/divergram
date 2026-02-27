@@ -17,6 +17,7 @@ interface MediaCarouselProps {
 export default function MediaCarousel({ media, className = '', style }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   if (!media || media.length === 0) {
     return null;
@@ -25,6 +26,27 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
   const currentMedia = sortedMedia[currentIndex];
   const currentMediaKey = useMemo(() => `${currentMedia?.id || 'none'}:${currentMedia?.media_url || ''}`, [currentMedia]);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
+  };
+
+  const onTouchStart = (e: any) => {
+    setTouchStartX(e.changedTouches[0].clientX);
+  };
+
+  const onTouchEnd = (e: any) => {
+    if (touchStartX == null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(diff) < 40) return;
+    if (diff > 0) goToPrevious();
+    else goToNext();
+    setTouchStartX(null);
+  };
 
   const renderMedia = () => {
     if (currentMedia.media_type === 'image') {
@@ -76,7 +98,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   };
 
   return (
-    <div className={`relative ${className}`} style={style}>
+    <div className={`relative ${className}`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {renderMedia()}
 
       {sortedMedia.length > 1 && (
