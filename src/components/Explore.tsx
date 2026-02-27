@@ -78,8 +78,10 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
 
   useEffect(() => {
     const onScrollBottom = () => {
-      const nearBottom = window.innerHeight + window.scrollY >= document.body.offsetHeight - 220;
-      if (!nearBottom) return;
+      const doc = document.documentElement;
+      const total = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const ratio = window.scrollY / total;
+      if (ratio < 0.8) return; // 80% 지점에서 다음 묶음 미리 로드
       setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
     };
     window.addEventListener('scroll', onScrollBottom, { passive: true });
