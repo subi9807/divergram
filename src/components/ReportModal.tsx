@@ -107,7 +107,7 @@ export default function ReportModal({ onClose }: ReportModalProps) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="신고하실 내용을 상세히 작성해주세요."
               rows={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               required
             />
           </div>

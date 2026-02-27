@@ -137,7 +137,7 @@ export default function ShareModal({ post, isOpen, onClose, onCopyLink, onEmbed 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 dg-surface rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
@@ -160,7 +160,7 @@ export default function ShareModal({ post, isOpen, onClose, onCopyLink, onEmbed 
               placeholder="검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#262626] dark:text-white rounded-lg outline-none focus:bg-gray-200 dark:focus:bg-gray-800"
+              className="w-full pl-10 pr-4 py-2 dg-input rounded-lg bg-gray-100 dark:bg-[#262626] outline-none focus:bg-gray-200 dark:focus:bg-gray-800"
             />
           </div>
         </div>

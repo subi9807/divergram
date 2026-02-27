@@ -345,7 +345,7 @@ export default function EditPostModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 rounded-lg max-w-2xl w-full max-h-[88vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 dg-surface rounded-lg max-w-2xl w-full max-h-[88vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
           <h2 className="text-xl font-semibold flex items-center gap-2 dark:text-white"><Waves className="h-6 w-6 text-blue-500" />다이빙 로그 수정</h2>
           <button
@@ -504,7 +504,7 @@ export default function EditPostModal({
               list="edit-location-options"
               value={location}
               readOnly
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="사진 GPS 또는 지도 핀 좌표"
             />
             <datalist id="edit-location-options">
@@ -545,7 +545,7 @@ export default function EditPostModal({
                     type="date"
                     value={diveDate}
                     onChange={(e) => setDiveDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -564,7 +564,7 @@ export default function EditPostModal({
                     }}
                     onFocus={() => setShowResortList((resortQuery || diveSite).includes('@'))}
                     onBlur={() => setTimeout(() => setShowResortList(false), 120)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="@ 입력 후 리조트 계정 검색"
                   />
 
@@ -611,7 +611,7 @@ export default function EditPostModal({
                     type="number"
                     value={maxDepth}
                     onChange={(e) => setMaxDepth(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -626,7 +626,7 @@ export default function EditPostModal({
                       type="number"
                       value={waterTemp}
                       onChange={(e) => setWaterTemp(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0"
                       step="0.1"
                     />
@@ -642,7 +642,7 @@ export default function EditPostModal({
                       type="number"
                       value={diveDuration}
                       onChange={(e) => setDiveDuration(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="0"
                     />
                   </div>
@@ -656,7 +656,7 @@ export default function EditPostModal({
                     type="number"
                     value={visibility}
                     onChange={(e) => setVisibility(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="0"
                     step="0.1"
                   />
@@ -682,7 +682,7 @@ export default function EditPostModal({
                           step="0.1"
                           value={gasPercent}
                           onChange={(e) => setGasPercent(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="예: 32"
                         />
                       </div>
@@ -726,7 +726,7 @@ export default function EditPostModal({
                   }}
                   onFocus={() => setShowBuddyList(true)}
                   onBlur={() => setTimeout(() => setShowBuddyList(false), 120)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 dg-input rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="버디 이름을 검색해서 여러 명 추가"
                 />
 
