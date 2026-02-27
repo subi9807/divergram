@@ -327,61 +327,65 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
               </p>
 
               {(post.dive_type || post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy_name || post.gas_type || post.gas_percent || post.dive_date || post.location) && (
-                <div className="mt-3 space-y-2 text-sm">
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 -mt-1 transition-colors">
                   {post.dive_type && (
-                    <div className="flex items-center gap-1 text-gray-800 dark:text-gray-200 font-medium">
-                      <Waves className="h-3.5 w-3.5" />
-                      <span>{post.dive_type === 'scuba' ? '스쿠버다이빙' : post.dive_type === 'technical' ? '테크니컬다이빙' : '프리다이빙'}</span>
+                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
+                      <Waves className="h-4 w-4" />
+                      {post.dive_type === 'scuba' ? '스쿠버다이빙' : post.dive_type === 'technical' ? '테크니컬다이빙' : '프리다이빙'}
                     </div>
                   )}
 
-                  <div className="space-y-1.5 text-gray-700 dark:text-gray-300">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     {post.dive_site && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <MapPin className="h-3 w-3" />
                         <span>{post.dive_site}</span>
                       </div>
                     )}
                     {post.max_depth && (
-                      <div className="flex items-center gap-1">
-                        <Gauge className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Gauge className="h-3 w-3" />
                         <span>{post.max_depth}m</span>
                       </div>
                     )}
                     {post.water_temperature && (
-                      <div className="flex items-center gap-1">
-                        <Thermometer className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Thermometer className="h-3 w-3" />
                         <span>{post.water_temperature}°C</span>
                       </div>
                     )}
                     {post.dive_duration && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Clock className="h-3 w-3" />
                         <span>{post.dive_duration}분</span>
                       </div>
                     )}
                     {post.visibility && (
-                      <div className="flex items-center gap-1">
-                        <Eye className="h-3.5 w-3.5" />
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Eye className="h-3 w-3" />
                         <span>{post.visibility}m</span>
                       </div>
                     )}
-                    {post.gas_type && (
-                      <div className="flex items-center gap-1">
-                        <Gauge className="h-3.5 w-3.5" />
-                        <span>{post.gas_type}{post.gas_type !== 'air' && post.gas_percent ? ` ${post.gas_percent}%` : ''}</span>
+                    {post.buddy_name && (
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Users className="h-3 w-3" />
+                        <span>@{post.buddy_name}</span>
                       </div>
                     )}
-                    {post.buddy_name && (
-                      <div className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
-                        <span>@{post.buddy_name}</span>
+                    {post.gas_type && (
+                      <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                        <Gauge className="h-3 w-3" />
+                        <span>{post.gas_type}{post.gas_type !== 'air' && post.gas_percent ? ` ${post.gas_percent}%` : ''}</span>
                       </div>
                     )}
                   </div>
 
-                  {post.dive_date && <div className="text-xs text-gray-500 dark:text-gray-400">다이빙 날짜: {new Date(post.dive_date).toLocaleDateString('ko-KR')}</div>}
-                  {post.location && <div className="text-xs text-gray-500 dark:text-gray-400">기록 위치: {post.location}</div>}
+                  {(post.dive_date || post.location) && (
+                    <div className="text-xs text-gray-600 dark:text-gray-400 pt-1 border-t border-blue-200 dark:border-blue-900 space-y-0.5">
+                      {post.dive_date && <div>다이빙 날짜: {new Date(post.dive_date).toLocaleDateString('ko-KR')}</div>}
+                      {post.location && <div>기록 위치: {post.location}</div>}
+                    </div>
+                  )}
                 </div>
               )}
 
