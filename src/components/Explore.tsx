@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { db, Post } from '../lib/internal-db';
 import MasonryGrid from './MasonryGrid';
 import PostDetail from './PostDetail';
@@ -13,6 +13,8 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [tagFilter, setTagFilter] = useState(initialTag);
+  const [visibleCount, setVisibleCount] = useState(18);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadPosts();
@@ -20,7 +22,19 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
 
   useEffect(() => {
     setTagFilter(initialTag || '');
+    setVisibleCount(getPageSize());
   }, [initialTag]);
+
+  const getPageSize = () => {
+    if (typeof window === 'undefined') return 18;
+    return window.innerWidth < 768 ? 12 : 18;
+  };
+
+  useEffect(() => {
+    const onResize = () => setVisibleCount((prev) => Math.max(prev, getPageSize()));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const loadPosts = async () => {
     const { data } = await db
@@ -41,9 +55,26 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
     setLoading(false);
   };
 
-  const filteredPosts = tagFilter
-    ? posts.filter((p) => String(p.caption || '').toLowerCase().includes(`#${tagFilter.toLowerCase()}`))
-    : posts;
+  const filteredPosts = useMemo(() => (
+    tagFilter
+      ? posts.filter((p) => String(p.caption || '').toLowerCase().includes(`#${tagFilter.toLowerCase()}`))
+      : posts
+  ), [posts, tagFilter]);
+
+  const displayedPosts = filteredPosts.slice(0, visibleCount);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry?.isIntersecting) return;
+      setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
+    }, { rootMargin: '300px' });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filteredPosts.length]);
 
   if (loading) {
     return (
@@ -61,13 +92,13 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">#{tagFilter} 검색 결과</div>
           )}
           <MasonryGrid
-            items={filteredPosts.map((post) => {
+            items={displayedPosts.map((post) => {
               const firstMedia = post.post_media && post.post_media.length > 0
                 ? post.post_media.sort((a, b) => a.order_index - b.order_index)[0]
                 : null;
               const displayUrl = firstMedia?.media_url || post.image_url || post.video_url || '';
               const isVideo = firstMedia?.media_type === 'video' || (!firstMedia && !!post.video_url);
-              const aspectRatio = 0.6 + Math.random() * 0.8;
+              const aspectRatio = isVideo ? 9 / 16 : 0.8;
 
               return {
                 id: post.id,
@@ -83,6 +114,11 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
               setSelectedPost(found);
             }}
           />
+
+          <div ref={loadMoreRef} className="h-10" />
+          {displayedPosts.length < filteredPosts.length && (
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 py-2">스크롤하면 더 불러와요</p>
+          )}
         </>
       ) : (
         <div className="text-center py-12 text-gray-500">
