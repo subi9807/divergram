@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart, MessageCircle, Image as ImageIcon, Play } from 'lucide-react';
 
 interface MasonryItem {
   id: string;
@@ -18,6 +18,7 @@ interface MasonryGridProps {
 export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
   const [columns, setColumns] = useState(3);
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   useEffect(() => {
     const updateColumns = () => {
@@ -58,13 +59,34 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
               key={item.id}
               className="relative group cursor-pointer rounded-lg overflow-hidden bg-gray-100"
               onClick={() => onItemClick?.(item.id)}
+              onMouseEnter={() => {
+                if (!item.isVideo) return;
+                const v = videoRefs.current[item.id];
+                if (v) {
+                  v.currentTime = 0;
+                  v.play().catch(() => {});
+                }
+              }}
+              onMouseLeave={() => {
+                if (!item.isVideo) return;
+                const v = videoRefs.current[item.id];
+                if (v) {
+                  v.pause();
+                  v.currentTime = 0;
+                }
+              }}
               style={item.aspectRatio ? { aspectRatio: String(item.aspectRatio) } : undefined}
             >
               {item.isVideo ? (
                 <div className="w-full h-full bg-black/70">
                   <video
+                    ref={(el) => { videoRefs.current[item.id] = el; }}
                     src={item.url}
                     className="w-full h-full object-contain"
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
                     style={{ display: 'block' }}
                   />
                 </div>
@@ -76,6 +98,10 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
                   style={{ display: 'block' }}
                 />
               )}
+              <div className="absolute top-2 right-2 z-10 bg-black/55 text-white rounded-full p-1.5">
+                {item.isVideo ? <Play className="h-3.5 w-3.5 fill-white" /> : <ImageIcon className="h-3.5 w-3.5" />}
+              </div>
+
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <div className="text-white flex space-x-6">
                   <div className="flex items-center space-x-2">
