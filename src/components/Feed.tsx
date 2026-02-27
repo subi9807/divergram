@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, MapPin, Waves, Gauge, Thermometer, Clock, Eye, Users } from 'lucide-react';
 import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
-import { getRelativeTime } from '../utils/timeFormat';
+
 import { getVideoInfo } from '../utils/videoUtils';
 import PostOptionsModal from './PostOptionsModal';
 import PostDetail from './PostDetail';
@@ -40,6 +40,16 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const [page, setPage] = useState(1);
   const POSTS_PER_PAGE = 12;
   const { user } = useAuth();
+
+  const formatFeedTime = (createdAt: string) => {
+    const diffMs = Date.now() - new Date(createdAt).getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 60) return '방금작성';
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `${diffHour}시간전`;
+    const diffDay = Math.floor(diffHour / 24);
+    return `${diffDay}일전`;
+  };
   const moreButtonRefs = useRef<Record<string, HTMLButtonElement>>({});
   const [toastMessage, setToastMessage] = useState('');
   const [buddyProfileMap, setBuddyProfileMap] = useState<Record<string, string>>({});
@@ -134,6 +144,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         post_media(id, media_url, media_type, order_index)
       `)
       .in('user_id', userIds)
+      .is('video_url', null)
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -495,8 +506,13 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                       >
                         {post.profiles.username}
                       </button>
+                      {((post.buddy_name || '').split(',').map((v) => v.trim()).filter(Boolean).length > 0) && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          외 {(post.buddy_name || '').split(',').map((v) => v.trim()).filter(Boolean).length}명
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500 dark:text-gray-400">•</span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{getRelativeTime(post.created_at)}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatFeedTime(post.created_at)}</p>
                     </div>
                     {post.location && (
                       <button
