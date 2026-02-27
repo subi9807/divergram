@@ -24,6 +24,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const snapTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -55,10 +56,21 @@ export default function Reels({ onViewProfile }: ReelsProps) {
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < posts.length) {
         setCurrentIndex(newIndex);
       }
+
+      if (snapTimerRef.current) {
+        window.clearTimeout(snapTimerRef.current);
+      }
+      snapTimerRef.current = window.setTimeout(() => {
+        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
+        window.scrollTo({ top: targetIndex * window.innerHeight, behavior: 'smooth' });
+      }, 120);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (snapTimerRef.current) window.clearTimeout(snapTimerRef.current);
+    };
   }, [currentIndex, posts.length]);
 
   const loadPosts = async () => {
@@ -268,9 +280,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-screen w-full relative items-center justify-center"
+              className="snap-start snap-always h-screen w-full relative items-center justify-center py-2"
             >
-              <div className="w-full max-w-[420px] h-full relative flex items-center justify-center mx-auto bg-black">
+              <div className="w-full max-w-[420px] h-[calc(100vh-16px)] relative flex items-center justify-center mx-auto bg-black rounded-xl overflow-hidden">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
