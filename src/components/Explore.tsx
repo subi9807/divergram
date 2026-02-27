@@ -123,7 +123,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
                 : null;
               const displayUrl = firstMedia?.media_url || post.image_url || post.video_url || '';
               const isVideo = firstMedia?.media_type === 'video' || (!firstMedia && !!post.video_url);
-              const aspectRatio = isVideo ? 9 / 16 : 0.8;
+              const aspectRatio = 4 / 5;
 
               return {
                 id: post.id,
