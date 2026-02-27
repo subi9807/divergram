@@ -383,7 +383,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-24 right-2 md:right-[-56px] flex flex-col items-center space-y-3 z-20">
+              <div className="absolute bottom-14 right-2 md:right-[-56px] flex flex-col items-center space-y-3 z-20">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
                   <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
                     <Heart
