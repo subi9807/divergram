@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getVideoInfo } from '../utils/videoUtils';
 
@@ -17,6 +17,7 @@ interface MediaCarouselProps {
 
 export default function MediaCarousel({ media, className = '', style }: MediaCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
 
   if (!media || media.length === 0) {
     return null;
@@ -24,6 +25,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
 
   const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
   const currentMedia = sortedMedia[currentIndex];
+  const currentMediaKey = useMemo(() => `${currentMedia?.id || 'none'}:${currentMedia?.media_url || ''}`, [currentMedia]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
@@ -60,6 +62,14 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
       );
     }
 
+    if (videoErrorMap[currentMediaKey]) {
+      return (
+        <div className="w-full h-full bg-black flex items-center justify-center text-center px-4">
+          <div className="text-white/80 text-sm">영상을 불러오지 못했어요. 다른 미디어를 확인해 주세요.</div>
+        </div>
+      );
+    }
+
     return (
       <div className="w-full h-full bg-gradient-to-b from-black/70 via-black/85 to-black/70">
         <video
@@ -68,6 +78,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
           playsInline
           preload="metadata"
           className="w-full h-full object-contain"
+          onError={() => setVideoErrorMap((prev) => ({ ...prev, [currentMediaKey]: true }))}
         />
       </div>
     );

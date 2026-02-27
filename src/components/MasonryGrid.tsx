@@ -19,6 +19,7 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
   const [columns, setColumns] = useState(3);
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+  const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const updateColumns = () => {
@@ -60,7 +61,7 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
               className="relative group cursor-pointer rounded-lg overflow-hidden bg-gray-100"
               onClick={() => onItemClick?.(item.id)}
               onMouseEnter={() => {
-                if (!item.isVideo) return;
+                if (!item.isVideo || videoErrorMap[item.id]) return;
                 const v = videoRefs.current[item.id];
                 if (v) {
                   v.currentTime = 0;
@@ -68,7 +69,7 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
                 }
               }}
               onMouseLeave={() => {
-                if (!item.isVideo) return;
+                if (!item.isVideo || videoErrorMap[item.id]) return;
                 const v = videoRefs.current[item.id];
                 if (v) {
                   v.pause();
@@ -79,16 +80,21 @@ export default function MasonryGrid({ items, onItemClick }: MasonryGridProps) {
             >
               {item.isVideo ? (
                 <div className="w-full h-full bg-black/70">
-                  <video
-                    ref={(el) => { videoRefs.current[item.id] = el; }}
-                    src={item.url}
-                    className="w-full h-full object-contain"
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    style={{ display: 'block' }}
-                  />
+                  {videoErrorMap[item.id] ? (
+                    <div className="w-full h-full flex items-center justify-center text-white/80 text-xs px-2 text-center">영상 미리보기를 불러올 수 없어요</div>
+                  ) : (
+                    <video
+                      ref={(el) => { videoRefs.current[item.id] = el; }}
+                      src={item.url}
+                      className="w-full h-full object-contain"
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onError={() => setVideoErrorMap((prev) => ({ ...prev, [item.id]: true }))}
+                      style={{ display: 'block' }}
+                    />
+                  )}
                 </div>
               ) : (
                 <img
