@@ -324,7 +324,7 @@ export default function EditPostModal({
         max_depth: maxDepth ? parseFloat(maxDepth) : undefined,
         water_temperature: waterTemp ? parseFloat(waterTemp) : undefined,
         dive_duration: diveDuration ? parseInt(diveDuration) : undefined,
-        dive_site: diveSite || undefined,
+        dive_site: (diveSite || '').replace(/^@/, '').trim() || undefined,
         visibility: visibility ? parseFloat(visibility) : undefined,
         buddy_name: selectedBuddies.length ? selectedBuddies.join(', ') : undefined,
       };
@@ -553,20 +553,25 @@ export default function EditPostModal({
                     type="text"
                     value={resortQuery || diveSite}
                     onChange={(e) => {
-                      setResortQuery(e.target.value);
-                      setDiveSite(e.target.value);
-                      setShowResortList(true);
+                      const v = e.target.value;
+                      setResortQuery(v);
+                      setDiveSite(v);
+                      setShowResortList(v.includes('@'));
                     }}
-                    onFocus={() => setShowResortList(true)}
+                    onFocus={() => setShowResortList((resortQuery || diveSite).includes('@'))}
                     onBlur={() => setTimeout(() => setShowResortList(false), 120)}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="리조트 계정 검색"
+                    placeholder="@ 입력 후 리조트 계정 검색"
                   />
 
                   {showResortList && (
                     <div className="absolute z-20 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] shadow-lg">
                       {resortSuggestions
-                        .filter((r) => r.username.toLowerCase().includes((resortQuery || diveSite).toLowerCase()))
+                        .filter((r) => {
+                          const q = (resortQuery || diveSite);
+                          const token = q.includes('@') ? q.split('@').pop() || '' : '';
+                          return r.username.toLowerCase().includes(token.toLowerCase());
+                        })
                         .slice(0, 8)
                         .map((r) => (
                           <button
@@ -575,7 +580,7 @@ export default function EditPostModal({
                             onMouseDown={(e) => e.preventDefault()}
                             onClick={() => {
                               setDiveSite(r.username);
-                              setResortQuery(r.username);
+                              setResortQuery(`@${r.username}`);
                               setShowResortList(false);
                             }}
                             className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#262626] dark:text-white"
@@ -583,7 +588,11 @@ export default function EditPostModal({
                             @{r.username}
                           </button>
                         ))}
-                      {resortSuggestions.filter((r) => r.username.toLowerCase().includes((resortQuery || diveSite).toLowerCase())).length === 0 && (
+                      {resortSuggestions.filter((r) => {
+                        const q = (resortQuery || diveSite);
+                        const token = q.includes('@') ? q.split('@').pop() || '' : '';
+                        return r.username.toLowerCase().includes(token.toLowerCase());
+                      }).length === 0 && (
                         <div className="px-3 py-2 text-xs text-gray-500">리조트 계정을 찾을 수 없습니다.</div>
                       )}
                     </div>
