@@ -300,6 +300,7 @@ export function AdminApp() {
               aria-label={m.label}
             >
               <span className="menu-icon" aria-hidden><Icon kind={m.key} /></span>
+              <span className="menu-tip">{m.label}</span>
             </button>
           ))}
         </nav>
