@@ -25,6 +25,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const { user } = useAuth();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const isWheelLockedRef = useRef(false);
+  const snapTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -49,35 +50,33 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      const newIndex = Math.floor((window.scrollY + window.innerHeight * 0.15) / window.innerHeight);
-      if (newIndex !== currentIndex && newIndex >= 0 && newIndex < posts.length) {
-        setCurrentIndex(newIndex);
+      const nearestIndex = Math.round(window.scrollY / window.innerHeight);
+      const clampedIndex = Math.max(0, Math.min(posts.length - 1, nearestIndex));
+
+      if (clampedIndex !== currentIndex) {
+        setCurrentIndex(clampedIndex);
       }
-    };
 
-    const handleWheel = (e: WheelEvent) => {
-      if (posts.length <= 1 || isWheelLockedRef.current || e.deltaY === 0) return;
-      e.preventDefault();
+      if (snapTimerRef.current) {
+        window.clearTimeout(snapTimerRef.current);
+      }
 
-      const direction = e.deltaY > 0 ? 1 : -1;
-      const nextIndex = Math.max(0, Math.min(posts.length - 1, currentIndex + direction));
-      if (nextIndex === currentIndex) return;
-
-      isWheelLockedRef.current = true;
-      setCurrentIndex(nextIndex);
-      window.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
-
-      window.setTimeout(() => {
-        isWheelLockedRef.current = false;
-      }, 380);
+      snapTimerRef.current = window.setTimeout(() => {
+        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
+        const targetTop = targetIndex * window.innerHeight;
+        if (Math.abs(window.scrollY - targetTop) > 2) {
+          window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+      }, 140);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('wheel', handleWheel);
+      if (snapTimerRef.current) {
+        window.clearTimeout(snapTimerRef.current);
+      }
     };
   }, [currentIndex, posts.length]);
 
@@ -326,7 +325,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     loop
                     muted={isMuted}
                     playsInline
-                    preload="auto"
+                    preload={index <= currentIndex + 1 ? "auto" : "metadata"}
                   />
                 );
               })()}
