@@ -18,6 +18,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const [currentIndex, setCurrentIndex] = useState(0);
   const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [mouseStartX, setMouseStartX] = useState<number | null>(null);
 
   if (!media || media.length === 0) return null;
 
@@ -36,8 +37,18 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
     setTouchStartX(null);
   };
 
+  const onMouseDown = (e: any) => setMouseStartX(e.clientX);
+  const onMouseUp = (e: any) => {
+    if (mouseStartX == null) return;
+    const diff = e.clientX - mouseStartX;
+    if (Math.abs(diff) < 40) return;
+    if (diff > 0) goToPrevious();
+    else goToNext();
+    setMouseStartX(null);
+  };
+
   return (
-    <div className={`relative ${className}`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
       <div className="w-full h-full overflow-hidden">
         <div
           className="flex h-full transition-transform duration-300 ease-out"
