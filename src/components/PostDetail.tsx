@@ -214,41 +214,22 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
         className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex-1 max-h-[90vh] bg-black dark:bg-gray-950 flex items-center justify-center">
-          {post.video_url ? (
-            (() => {
-              const videoInfo = getVideoInfo(post.video_url);
-              if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
-                return (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <iframe
-                      src={videoInfo.embedUrl}
-                      className="w-full h-[90vh]"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title="Video player"
-                    />
-                  </div>
-                );
-              }
-              return (
-                <video
-                  src={post.video_url}
-                  controls
-                  className="w-full h-auto max-h-[90vh] object-contain"
-                />
-              );
-            })()
-          ) : post.image_url ? (
-            <img
-              src={post.image_url}
-              alt="Post"
-              className="w-full h-auto max-h-[90vh] object-contain"
-            />
-          ) : null}
+        <div className="hidden md:flex flex-1 max-h-[90vh] bg-black dark:bg-gray-950 items-center justify-center">
+          <MediaCarousel
+            media={
+              post.post_media && post.post_media.length > 0
+                ? post.post_media
+                : (post.video_url
+                    ? [{ id: `${post.id}-video`, media_url: post.video_url, media_type: 'video', order_index: 0 }]
+                    : post.image_url
+                      ? [{ id: `${post.id}-image`, media_url: post.image_url, media_type: 'image', order_index: 0 }]
+                      : [])
+            }
+            className="w-full h-full"
+          />
         </div>
 
-        <div className="w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto">
+        <div className="w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
@@ -285,7 +266,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
             </button>
           </div>
 
-          <div className="border-b border-gray-300 dark:border-[#262626]">
+          <div className="md:hidden border-b border-gray-300 dark:border-[#262626]">
             <div className="w-full bg-black flex items-center justify-center">
               {post.post_media && post.post_media.length > 0 ? (
                 <MediaCarousel

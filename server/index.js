@@ -1082,14 +1082,30 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
     }
 
     // sample rows for remaining tables
-    for (let i = 1; i <= Math.min(120, postsN); i++) {
-      const id = `bulk_media_${i}`;
-      await pool.query(
-        `INSERT INTO app_post_media(id,post_id,media_url,media_type,order_index,created_at)
-         VALUES ($1,$2,$3,'image',0,$4)
-         ON CONFLICT (id) DO NOTHING`,
-        [id, postIds[i % postIds.length], `https://picsum.photos/seed/media-${i}/1200/900`, new Date().toISOString()]
-      );
+    const sampleVideos = [
+      'https://samplelib.com/lib/preview/mp4/sample-5s.mp4',
+      'https://samplelib.com/lib/preview/mp4/sample-10s.mp4',
+      'https://samplelib.com/lib/preview/mp4/sample-15s.mp4',
+    ];
+
+    for (let i = 1; i <= postsN; i++) {
+      const postId = postIds[i % postIds.length];
+      const mediaCount = 2 + (i % 4); // 2~5장
+      for (let m = 0; m < mediaCount; m++) {
+        const id = `bulk_media_${i}_${m}`;
+        const useVideo = (m === 0 && i % 12 === 0) || (m > 0 && i % 5 === 0);
+        const mediaUrl = useVideo
+          ? sampleVideos[(i + m) % sampleVideos.length]
+          : `https://picsum.photos/seed/media-${i}-${m}/1200/1500`;
+        const mediaType = useVideo ? 'video' : 'image';
+
+        await pool.query(
+          `INSERT INTO app_post_media(id,post_id,media_url,media_type,order_index,created_at)
+           VALUES ($1,$2,$3,$4,$5,$6)
+           ON CONFLICT (id) DO NOTHING`,
+          [id, postId, mediaUrl, mediaType, m, new Date().toISOString()]
+        );
+      }
     }
 
     for (let i = 1; i <= Math.min(300, usersN * 2); i++) {
