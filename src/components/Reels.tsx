@@ -24,7 +24,6 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const isWheelLockedRef = useRef(false);
 
   useEffect(() => {
@@ -49,11 +48,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   }, [currentIndex]);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
     const handleScroll = () => {
-      const newIndex = Math.round(container.scrollTop / window.innerHeight);
+      const newIndex = Math.round(window.scrollY / window.innerHeight);
       if (newIndex !== currentIndex && newIndex >= 0 && newIndex < posts.length) {
         setCurrentIndex(newIndex);
       }
@@ -69,19 +65,19 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
       isWheelLockedRef.current = true;
       setCurrentIndex(nextIndex);
-      container.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
+      window.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
 
       window.setTimeout(() => {
         isWheelLockedRef.current = false;
       }, 380);
     };
 
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
-      container.removeEventListener('scroll', handleScroll);
-      container.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('wheel', handleWheel);
     };
   }, [currentIndex, posts.length]);
 
@@ -271,7 +267,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
   return (
     <>
-      <div ref={containerRef} className="snap-y snap-mandatory h-screen overflow-y-auto overscroll-y-contain scroll-smooth">
+      <div className="snap-y snap-mandatory">
         {posts.map((post, index) => {
           const likes = Array.isArray(post.likes) ? post.likes : [];
           const comments = Array.isArray(post.comments) ? post.comments : [];
