@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Volume2, VolumeX } from 'lucide-react';
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
 import { db, Post } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getVideoInfo } from '../utils/videoUtils';
@@ -246,6 +246,19 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     });
   };
 
+  const goToIndex = (targetIndex: number) => {
+    const nextIndex = Math.max(0, Math.min(posts.length - 1, targetIndex));
+    if (nextIndex === currentIndex) return;
+
+    isWheelLockedRef.current = true;
+    setCurrentIndex(nextIndex);
+    window.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
+
+    window.setTimeout(() => {
+      isWheelLockedRef.current = false;
+    }, 380);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50 dark:bg-black">
@@ -290,7 +303,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               key={post.id}
               className="snap-start snap-always h-screen w-full relative flex items-center justify-center py-2"
             >
-              <div className="w-full max-w-[420px] h-[calc(100vh-16px)] relative flex items-center justify-center mx-auto overflow-hidden rounded-2xl">
+              <div className="w-full max-w-[492px] h-[calc(100vh-34px)] relative mx-auto">
+              <div className="w-full h-full relative overflow-hidden rounded-2xl">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
@@ -349,7 +363,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                 </button>
               </div>
 
-              <div className="absolute bottom-20 left-4 right-20 z-10">
+              <div className="absolute bottom-20 left-4 right-4 z-10">
                 <button
                   onClick={() => onViewProfile(post.user_id)}
                   className="text-white font-semibold text-sm mb-2 drop-shadow-lg hover:underline"
@@ -367,8 +381,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   </p>
                 )}
               </div>
+              </div>
 
-              <div className="absolute bottom-20 right-3 flex flex-col items-center space-y-5 z-10 bg-black/25 dark:bg-black/20 rounded-2xl px-2 py-3 backdrop-blur-sm">
+              <div className="absolute bottom-20 right-3 md:right-[-64px] flex flex-col items-center space-y-5 z-20">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center">
                   <Heart
                     className={`h-8 w-8 drop-shadow-lg ${
@@ -420,10 +435,29 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   )}
                 </button>
               </div>
-              </div>
+            </div>
             </div>
           );
         })}
+      </div>
+
+      <div className="hidden lg:flex fixed right-8 top-1/2 -translate-y-1/2 z-30 flex-col gap-3">
+        <button
+          onClick={() => goToIndex(currentIndex - 1)}
+          disabled={currentIndex <= 0}
+          className="w-10 h-10 rounded-full bg-black/60 text-white ring-1 ring-white/30 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+          aria-label="이전 릴스로 이동"
+        >
+          <ChevronUp className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => goToIndex(currentIndex + 1)}
+          disabled={currentIndex >= posts.length - 1}
+          className="w-10 h-10 rounded-full bg-black/60 text-white ring-1 ring-white/30 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+          aria-label="다음 릴스로 이동"
+        >
+          <ChevronDown className="h-5 w-5" />
+        </button>
       </div>
 
       {showOptionsModal && selectedPost && (
