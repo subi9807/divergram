@@ -228,6 +228,11 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
     e.preventDefault();
     if (!user || files.length === 0) return;
 
+    if ((diveType === 'scuba' || diveType === 'technical') && gasType !== 'air' && !gasPercent) {
+      setError('기체 농도(%)를 입력해주세요.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
