@@ -327,7 +327,7 @@ export function AdminApp() {
         </div>
       </aside>
 
-      <main className={`content ${section === 'map' ? 'map-mode' : ''}`}>
+      <main className={`content section-${section} ${section === 'map' ? 'map-mode' : ''}`}>
         <div className="topbar">
           <button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button>
         </div>

@@ -65,3 +65,32 @@ code { white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 900px) {
   .topbar { padding: 8px 10px; border-radius: 10px; }
 }
+
+/* Keep page section heights stable across tabs */
+.content.section-users .card,
+.content.section-tables .card,
+.content.section-logs .card,
+.content.section-settings .card {
+  min-height: calc(100vh - 128px);
+}
+
+.content.section-users table,
+.content.section-tables table,
+.content.section-logs table {
+  display: block;
+  max-height: calc(100vh - 280px);
+  overflow: auto;
+}
+
+.content.section-tables pre {
+  max-height: calc(100vh - 430px) !important;
+}
+
+@media (max-width: 900px) {
+  .content.section-users .card,
+  .content.section-tables .card,
+  .content.section-logs .card,
+  .content.section-settings .card {
+    min-height: calc(100dvh - 108px);
+  }
+}
