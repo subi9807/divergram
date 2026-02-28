@@ -31,7 +31,12 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const dragDeltaYRef = useRef(0);
 
   const getViewportHeight = () => window.visualViewport?.height || window.innerHeight;
-  const getPageHeight = () => getViewportHeight();
+  const getPageHeight = () => {
+    const vh = getViewportHeight();
+    const width = window.innerWidth;
+    const reserved = width < 768 ? 128 : width < 1280 ? 80 : 0;
+    return Math.max(320, vh - reserved);
+  };
 
   useEffect(() => {
     loadPosts();
@@ -359,9 +364,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-[100dvh] w-full relative flex items-center justify-center"
+              className="snap-start snap-always h-[calc(100dvh-8rem)] md:h-[calc(100dvh-5rem)] xl:h-screen w-full relative flex items-center justify-center"
             >
-              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto px-2 py-2">
+              <div className="w-full h-[calc(100dvh-8rem)] md:h-[calc(100dvh-5rem)] xl:h-screen lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto px-2 py-2">
               <div className="w-full h-full relative overflow-hidden rounded-2xl bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
