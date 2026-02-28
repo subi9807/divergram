@@ -243,6 +243,21 @@ export function AdminApp() {
     };
   }, [adminKey, section]);
 
+
+  useEffect(() => {
+    if (!adminKey) return;
+    if (section !== 'feeds' && section !== 'reels') return;
+
+    (async () => {
+      try {
+        const r = await api('/api/admin/table/app_posts?limit=500', { adminKey });
+        setTableRows(r.rows || []);
+      } catch (e) {
+        setError(e.message || '게시물 조회 실패');
+      }
+    })();
+  }, [adminKey, section]);
+
   const trendData = useMemo(() => {
     const mapify = (arr) => Object.fromEntries((arr || []).map((x) => [x.day, Number(x.count || 0)]));
     const s = mapify(growth?.series?.signups);
@@ -260,6 +275,9 @@ export function AdminApp() {
   }, [stats]);
 
 
+  const feedRows = useMemo(() => (tableRows || []).filter((r) => !r.video_url), [tableRows]);
+  const reelRows = useMemo(() => (tableRows || []).filter((r) => !!r.video_url), [tableRows]);
+
   const blockData = useMemo(() => {
     const blocked = Number(stats?.blockedUsers || 0);
     const users = Number(stats?.users || 0);
@@ -270,6 +288,8 @@ export function AdminApp() {
     const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
     if (kind === 'dashboard') return <svg {...common}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/></svg>;
     if (kind === 'users') return <svg {...common}><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1"/><circle cx="9" cy="7" r="3"/><path d="M22 19v-1a4 4 0 0 0-3-3.87"/><path d="M16 3.13a3 3 0 0 1 0 5.74"/></svg>;
+    if (kind === 'feeds') return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h6"/></svg>;
+    if (kind === 'reels') return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m9 9 6 3-6 3z"/></svg>;
     if (kind === 'map') return <svg {...common}><path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>;
     if (kind === 'tables') return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/></svg>;
     if (kind === 'logs') return <svg {...common}><path d="M14 2H6a2 2 0 0 0-2 2v16l4-3 4 3 4-3 4 3V8z"/><path d="M14 2v6h6"/></svg>;
@@ -280,6 +300,8 @@ export function AdminApp() {
     { key: 'dashboard', label: '대시보드' },
     { key: 'map', label: '포인트 지도' },
     { key: 'users', label: '사용자 관리' },
+    { key: 'feeds', label: '피드 관리' },
+    { key: 'reels', label: '릴스 관리' },
     { key: 'tables', label: '테이블 조회' },
     { key: 'logs', label: '감사 로그' },
     { key: 'settings', label: '설정' },
@@ -420,6 +442,40 @@ export function AdminApp() {
                       <button className="sm" onClick={() => updateUser(u.id, { is_blocked: !u.is_blocked })}>{u.is_blocked ? '차단해제' : '차단'}</button>
                       <button className="sm danger" onClick={() => deleteUser(u.id)}>삭제</button>
                     </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {section === 'feeds' && (
+          <div className="card">
+            <h2>피드 관리</h2>
+            <p style={{ marginTop: 0, color: '#6b7280' }}>이미지 기반 피드 게시물 목록 ({feedRows.length}건)</p>
+            <table>
+              <thead><tr><th>ID</th><th>USER</th><th>CAPTION</th><th>LOCATION</th><th>CREATED</th></tr></thead>
+              <tbody>
+                {feedRows.slice(0, 200).map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td>{p.location || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {section === 'reels' && (
+          <div className="card">
+            <h2>릴스 관리</h2>
+            <p style={{ marginTop: 0, color: '#6b7280' }}>비디오 기반 릴스 게시물 목록 ({reelRows.length}건)</p>
+            <table>
+              <thead><tr><th>ID</th><th>USER</th><th>CAPTION</th><th>VIDEO URL</th><th>CREATED</th></tr></thead>
+              <tbody>
+                {reelRows.slice(0, 200).map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td style={{ maxWidth: 300, wordBreak: 'break-all' }}>{p.video_url || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>

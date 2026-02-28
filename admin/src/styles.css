@@ -68,6 +68,8 @@ code { white-space: pre-wrap; word-break: break-word; }
 
 /* Keep page section heights stable across tabs */
 .content.section-users .card,
+.content.section-feeds .card,
+.content.section-reels .card,
 .content.section-tables .card,
 .content.section-logs .card,
 .content.section-settings .card {
@@ -88,6 +90,8 @@ code { white-space: pre-wrap; word-break: break-word; }
 
 @media (max-width: 900px) {
   .content.section-users .card,
+  .content.section-feeds .card,
+  .content.section-reels .card,
   .content.section-tables .card,
   .content.section-logs .card,
   .content.section-settings .card {
