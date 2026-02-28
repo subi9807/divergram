@@ -361,8 +361,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               key={post.id}
               className="snap-start snap-always h-[100dvh] w-full relative flex items-center justify-center"
             >
-              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
-              <div className="w-full h-full relative overflow-hidden lg:rounded-2xl">
+              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto px-2 py-2">
+              <div className="w-full h-full relative overflow-hidden rounded-2xl bg-white dark:bg-black ring-1 ring-black/10 dark:ring-white/10">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
