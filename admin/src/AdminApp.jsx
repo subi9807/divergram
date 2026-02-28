@@ -166,6 +166,14 @@ export function AdminApp() {
     return () => clearInterval(t);
   }, [adminKey, section]);
 
+
+  useEffect(() => {
+    if (!adminKey) return;
+    if (section === 'users' && users.length === 0) {
+      refresh();
+    }
+  }, [adminKey, section]);
+
   useEffect(() => {
     if (!adminKey || section !== 'map' || !mapRef.current) return;
     let cancelled = false;
@@ -461,6 +469,9 @@ export function AdminApp() {
               <button onClick={refresh}>검색</button>
             </div>
 
+            {users.length === 0 ? (
+              <p style={{ color: '#6b7280' }}>사용자 데이터가 없습니다. 상단 검색/동기화를 눌러 새로고침 해주세요.</p>
+            ) : (
             <div className="users-grid">
               {users.map((u) => (
                 <div key={u.id} className="user-card">
@@ -490,6 +501,7 @@ export function AdminApp() {
                 </div>
               ))}
             </div>
+            )}
           </div>
         )}
 
