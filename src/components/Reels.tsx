@@ -442,16 +442,16 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20 bg-black/45 backdrop-blur-sm rounded-2xl px-2 py-3">
+              <div className="absolute bottom-[max(7.5rem,calc(env(safe-area-inset-bottom)+6.5rem))] right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20 bg-black/55 backdrop-blur-sm rounded-2xl px-2 py-3">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
-                  <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
+                  <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
                     <Heart
                       className={`h-6 w-6 drop-shadow-sm ${
-                        isLiked ? 'fill-red-500 text-red-500' : 'text-black'
+                        isLiked ? 'fill-red-500 text-red-500' : 'text-white'
                       }`}
                     />
                   </span>
-                  <span className="text-black text-[11px] font-medium mt-0.5">
+                  <span className="text-white text-[11px] font-medium mt-0.5">
                     {likeCount}
                   </span>
                 </button>
@@ -460,10 +460,10 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   onClick={(e) => handleCommentClick(post, e)}
                   className="flex flex-col items-center text-black"
                 >
-                  <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
-                    <MessageCircle className="h-6 w-6 text-black drop-shadow-sm" />
+                  <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
+                    <MessageCircle className="h-6 w-6 text-white drop-shadow-sm" />
                   </span>
-                  <span className="text-black text-[11px] font-medium mt-0.5">
+                  <span className="text-white text-[11px] font-medium mt-0.5">
                     {commentCount}
                   </span>
                 </button>
@@ -472,8 +472,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   onClick={(e) => handleShare(post, e)}
                   className="flex flex-col items-center text-black"
                 >
-                  <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
-                    <Send className="h-6 w-6 text-black drop-shadow-sm" />
+                  <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
+                    <Send className="h-6 w-6 text-white drop-shadow-sm" />
                   </span>
                 </button>
 
@@ -481,22 +481,22 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                   onClick={(e) => toggleSave(post.id, e)}
                   className="flex flex-col items-center text-black"
                 >
-                  <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
+                  <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
                     <Bookmark
                       className={`h-6 w-6 drop-shadow-sm ${
-                        isSaved ? 'fill-yellow-400 text-yellow-500' : 'text-black'
+                        isSaved ? 'fill-yellow-400 text-yellow-400' : 'text-white'
                       }`}
                     />
                   </span>
                 </button>
 
                 <button onClick={(e) => handleMoreClick(post, e)} className="flex flex-col items-center text-black">
-                  <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
-                    <MoreHorizontal className="h-6 w-6 text-black drop-shadow-sm" />
+                  <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
+                    <MoreHorizontal className="h-6 w-6 text-white drop-shadow-sm" />
                   </span>
                 </button>
 
-                <button onClick={() => onViewProfile(post.user_id)} className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-black/10">
+                <button onClick={() => onViewProfile(post.user_id)} className="w-7 h-7 rounded-full overflow-hidden ring-1 ring-white/40">
                   {author.avatar_url ? (
                     <img src={author.avatar_url} alt={author.username} className="w-full h-full object-cover" />
                   ) : (
