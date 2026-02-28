@@ -287,8 +287,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           </nav>
         </aside>
 
-        <main className="flex-1 pt-16 xl:pt-0 pb-20 md:pb-4 xl:ml-[84px] overflow-x-hidden">
-          <div className={`w-full ${currentPage === 'location' ? '' : 'md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto'}`}>
+        <main className={`flex-1 ${currentPage === 'reels' ? 'pt-0 pb-0' : 'pt-16 xl:pt-0 pb-20 md:pb-4'} xl:ml-[84px] overflow-x-hidden`}>
+          <div className={`w-full ${currentPage === 'location' || currentPage === 'reels' ? '' : 'md:max-w-[630px] lg:max-w-[630px] xl:max-w-[935px] mx-auto'}`}>
             {children}
           </div>
         </main>

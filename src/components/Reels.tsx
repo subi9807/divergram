@@ -31,14 +31,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const dragDeltaYRef = useRef(0);
 
   const getViewportHeight = () => window.visualViewport?.height || window.innerHeight;
-  const getPageHeight = () => {
-    const vh = getViewportHeight();
-    const width = window.innerWidth;
-
-    // Layout.tsx main paddings: mobile(pt-16 + pb-20), md(pt-16 + pb-4), xl(0)
-    const reserved = width < 768 ? 144 : width < 1280 ? 80 : 0;
-    return Math.max(320, vh - reserved);
-  };
+  const getPageHeight = () => getViewportHeight();
 
   useEffect(() => {
     loadPosts();
@@ -366,9 +359,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-[calc(100dvh-9rem)] md:h-[calc(100dvh-5rem)] xl:h-screen w-full relative flex items-center justify-center"
+              className="snap-start snap-always h-[100dvh] w-full relative flex items-center justify-center"
             >
-              <div className="w-full h-[calc(100dvh-9rem)] md:h-[calc(100dvh-5rem)] xl:h-screen lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
+              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
               <div className="w-full h-full relative overflow-hidden lg:rounded-2xl">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
@@ -396,7 +389,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                 );
               })()}
 
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+              <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 right-4 flex items-center justify-between z-10">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => onViewProfile(post.user_id)}
@@ -429,7 +422,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                 </button>
               </div>
 
-              <div className="absolute bottom-20 left-4 right-4 z-10">
+              <div className="absolute bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] left-4 right-4 z-10">
                 <button
                   onClick={() => onViewProfile(post.user_id)}
                   className="text-white font-semibold text-sm mb-2 drop-shadow-lg hover:underline"
@@ -449,7 +442,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-16 right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20">
+              <div className="absolute bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
                   <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
                     <Heart
