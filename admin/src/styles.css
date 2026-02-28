@@ -29,7 +29,9 @@ body { margin: 0; font-family: Inter, -apple-system, sans-serif; background: #fa
 .monitor-item strong { font-size: 14px; }
 .grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
 .stat strong { font-size: 28px; }
-.row { display: flex; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > input, .row > select { min-width: 220px; }
+.row > button { white-space: nowrap; }
 input, select { flex: 1; border: 1px solid #dbe3ef; padding: 10px 12px; border-radius: 10px; }
 button { border: none; border-radius: 10px; background: #1f4b7a; color: #fff; padding: 10px 14px; cursor: pointer; }
 button:disabled { opacity: .6; cursor: not-allowed; }
@@ -47,4 +49,15 @@ code { white-space: pre-wrap; word-break: break-word; }
   .side-menu button { width: 42px; }
   .monitor-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid { grid-template-columns: 1fr; }
+}
+
+
+.settings-form input[type="password"] { min-width: 280px; }
+
+@media (max-width: 900px) {
+  .menu-tip { display: none; }
+  .content { padding: 12px; }
+  .settings-form { align-items: stretch; }
+  .settings-form input, .settings-form button, .settings-actions button { width: 100%; }
+  .settings-form input[type="password"] { min-width: 0; }
 }

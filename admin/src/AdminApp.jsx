@@ -466,7 +466,7 @@ export function AdminApp() {
           <div className="card">
             <h2>설정/점검</h2>
             <form
-              className="row"
+              className="row settings-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 refresh();
@@ -486,7 +486,7 @@ export function AdminApp() {
             </form>
 
             <p>사용자/관리자 로그인 체크를 실행할 수 있어.</p>
-            <div className="row">
+            <div className="row settings-actions">
               <button onClick={checkUserAdminAuth}>사용자+관리자 로그인 체크</button>
             </div>
             {authCheck && (
