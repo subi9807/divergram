@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
+  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
   MapIcon as MapIconSolid,
   FilmIcon as FilmIconSolid,
   PlusCircleIcon as PlusCircleIconSolid,
@@ -296,13 +297,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-50 xl:hidden transition-colors">
         <div className="flex items-center justify-around h-16">
-          {[navItems[0], navItems[1], navItems[2], navItems[3], navItems[6]].map((item) => {
+          {[navItems[0], navItems[3], navItems[1], navItems[4], navItems[7]].map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             const solidMap: Record<string, any> = {
               home: HomeIconSolid,
-              explore: MapIconSolid,
               reels: FilmIconSolid,
+              explore: MagnifyingGlassIconSolid,
               create: PlusCircleIconSolid,
               profile: UserCircleIconSolid,
             };
