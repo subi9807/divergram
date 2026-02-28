@@ -961,14 +961,28 @@ app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
 
     const result = {};
 
+    const defaultsByTable = {
+      profiles: { bio: '', avatar_url: '', account_type: 'personal' },
+      posts: { caption: '' },
+      post_media: { media_type: 'image', order_index: 0 },
+      comments: { content: '' },
+      notifications: { type: 'like', is_read: false },
+    };
+
     for (const [srcTable, dstTable, cols] of mapping) {
       const raw = await pool.query('SELECT data FROM app_records WHERE table_name=$1', [srcTable]);
       let count = 0;
       for (const row of raw.rows) {
         const d = row.data || {};
+        const tableDefaults = defaultsByTable[srcTable] || {};
         const values = cols.map((c) => {
           if (c === 'created_at') return d[c] || new Date().toISOString();
-          return d[c] ?? null;
+          const v = d[c];
+          if (v === null || v === undefined) {
+            if (Object.prototype.hasOwnProperty.call(tableDefaults, c)) return tableDefaults[c];
+            return null;
+          }
+          return v;
         });
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
         const updates = cols.filter((c) => c !== 'id').map((c) => `${c}=EXCLUDED.${c}`).join(', ');
@@ -983,8 +997,8 @@ app.post('/api/admin/migrate-normalized', requireAdmin, async (_req, res) => {
     }
 
     res.json({ ok: true, migrated: result });
-  } catch {
-    res.status(500).json({ ok: false, error: 'normalized_migration_failed' });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'normalized_migration_failed', detail: String(e?.message || e) });
   }
 });
 
