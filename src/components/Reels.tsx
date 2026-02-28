@@ -33,7 +33,10 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const getViewportHeight = () => window.visualViewport?.height || window.innerHeight;
   const getPageHeight = () => {
     const vh = getViewportHeight();
-    const reserved = window.innerWidth < 1280 ? 128 : 0; // top(64) + bottom(64) mobile/tablet nav bars
+    const width = window.innerWidth;
+
+    // Layout.tsx main paddings: mobile(pt-16 + pb-20), md(pt-16 + pb-4), xl(0)
+    const reserved = width < 768 ? 144 : width < 1280 ? 80 : 0;
     return Math.max(320, vh - reserved);
   };
 
@@ -363,9 +366,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-[calc(100dvh-8rem)] xl:h-screen w-full relative flex items-center justify-center"
+              className="snap-start snap-always h-[calc(100dvh-9rem)] md:h-[calc(100dvh-5rem)] xl:h-screen w-full relative flex items-center justify-center"
             >
-              <div className="w-full h-[calc(100dvh-8rem)] xl:h-screen lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
+              <div className="w-full h-[calc(100dvh-9rem)] md:h-[calc(100dvh-5rem)] xl:h-screen lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
               <div className="w-full h-full relative overflow-hidden lg:rounded-2xl">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
