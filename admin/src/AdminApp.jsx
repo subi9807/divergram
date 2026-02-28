@@ -53,7 +53,7 @@ export function AdminApp() {
   const [growth, setGrowth] = useState(null);
   const [feedPage, setFeedPage] = useState(1);
   const [reelPage, setReelPage] = useState(1);
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 10;
   const mapRef = useRef(null);
 
   const refresh = async () => {
@@ -475,13 +475,6 @@ export function AdminApp() {
                 ))}
               </tbody>
             </table>
-            <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
-              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {feedPage} / {feedTotalPages}</span>
-              <div className="row">
-                <button onClick={() => setFeedPage((p) => Math.max(1, p - 1))} disabled={feedPage <= 1}>이전</button>
-                <button onClick={() => setFeedPage((p) => Math.min(feedTotalPages, p + 1))} disabled={feedPage >= feedTotalPages}>다음</button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -500,10 +493,10 @@ export function AdminApp() {
               </tbody>
             </table>
             <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
-              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {reelPage} / {reelTotalPages}</span>
+              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {feedPage} / {feedTotalPages}</span>
               <div className="row">
-                <button onClick={() => setReelPage((p) => Math.max(1, p - 1))} disabled={reelPage <= 1}>이전</button>
-                <button onClick={() => setReelPage((p) => Math.min(reelTotalPages, p + 1))} disabled={reelPage >= reelTotalPages}>다음</button>
+                <button onClick={() => setFeedPage((p) => Math.max(1, p - 1))} disabled={feedPage <= 1}>이전</button>
+                <button onClick={() => setFeedPage((p) => Math.min(feedTotalPages, p + 1))} disabled={feedPage >= feedTotalPages}>다음</button>
               </div>
             </div>
           </div>
@@ -523,6 +516,13 @@ export function AdminApp() {
                 ))}
               </tbody>
             </table>
+            <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
+              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {reelPage} / {reelTotalPages}</span>
+              <div className="row">
+                <button onClick={() => setReelPage((p) => Math.max(1, p - 1))} disabled={reelPage <= 1}>이전</button>
+                <button onClick={() => setReelPage((p) => Math.min(reelTotalPages, p + 1))} disabled={reelPage >= reelTotalPages}>다음</button>
+              </div>
+            </div>
           </div>
         )}
 
