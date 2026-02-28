@@ -328,9 +328,11 @@ export function AdminApp() {
       </aside>
 
       <main className={`content section-${section} ${section === 'map' ? 'map-mode' : ''}`}>
-        <div className="topbar">
-          <button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button>
-        </div>
+        {section !== 'dashboard' && (
+          <div className="topbar">
+            <button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button>
+          </div>
+        )}
 
         {section !== 'map' && error && <p className="error">{error}</p>}
 
