@@ -278,6 +278,13 @@ export function AdminApp() {
   const feedRows = useMemo(() => (tableRows || []).filter((r) => !r.video_url), [tableRows]);
   const reelRows = useMemo(() => (tableRows || []).filter((r) => !!r.video_url), [tableRows]);
 
+  const getReelThumb = (row) => {
+    const v = String(row?.video_url || '');
+    const m = v.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+    if (m?.[1]) return `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg`;
+    return row?.image_url || '';
+  };
+
   const blockData = useMemo(() => {
     const blocked = Number(stats?.blockedUsers || 0);
     const users = Number(stats?.users || 0);
@@ -454,11 +461,11 @@ export function AdminApp() {
             <h2>피드 관리</h2>
             <p style={{ marginTop: 0, color: '#6b7280' }}>이미지 기반 피드 게시물 목록 ({feedRows.length}건)</p>
             <table>
-              <thead><tr><th>ID</th><th>USER</th><th>CAPTION</th><th>LOCATION</th><th>CREATED</th></tr></thead>
+              <thead><tr><th>THUMB</th><th>ID</th><th>USER</th><th>CAPTION</th><th>LOCATION</th><th>CREATED</th></tr></thead>
               <tbody>
                 {feedRows.slice(0, 200).map((p) => (
                   <tr key={p.id}>
-                    <td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td>{p.location || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
+                    <td>{p.image_url ? <img src={p.image_url} alt="thumb" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} /> : <span style={{ color: "#9ca3af" }}>-</span>}</td><td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td>{p.location || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -471,11 +478,11 @@ export function AdminApp() {
             <h2>릴스 관리</h2>
             <p style={{ marginTop: 0, color: '#6b7280' }}>비디오 기반 릴스 게시물 목록 ({reelRows.length}건)</p>
             <table>
-              <thead><tr><th>ID</th><th>USER</th><th>CAPTION</th><th>VIDEO URL</th><th>CREATED</th></tr></thead>
+              <thead><tr><th>THUMB</th><th>ID</th><th>USER</th><th>CAPTION</th><th>VIDEO URL</th><th>CREATED</th></tr></thead>
               <tbody>
                 {reelRows.slice(0, 200).map((p) => (
                   <tr key={p.id}>
-                    <td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td style={{ maxWidth: 300, wordBreak: 'break-all' }}>{p.video_url || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
+                    <td>{getReelThumb(p) ? <img src={getReelThumb(p)} alt="thumb" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} /> : <span style={{ color: "#9ca3af" }}>-</span>}</td><td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td style={{ maxWidth: 300, wordBreak: 'break-all' }}>{p.video_url || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
