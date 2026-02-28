@@ -1242,7 +1242,7 @@ app.get('/api/admin/table/:name', requireAdmin, async (req, res) => {
   }
 });
 
-const port = Number(process.env.API_PORT || 4000);
+const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 ensureSchema().then(() => {
-  app.listen(port, () => console.log(`API listening on http://127.0.0.1:${port}`));
+  app.listen(port, () => console.log(`API listening on port ${port}`));
 });
