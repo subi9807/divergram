@@ -117,3 +117,10 @@ code { white-space: pre-wrap; word-break: break-word; }
   .content.section-users .card { overflow-x: auto; }
   .content.section-users table { min-width: 980px; }
 }
+
+.content.section-users .card,
+.content.section-users .row,
+.content.section-users input,
+.content.section-users table {
+  width: 100%;
+}
