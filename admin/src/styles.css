@@ -98,3 +98,22 @@ code { white-space: pre-wrap; word-break: break-word; }
     min-height: calc(100dvh - 108px);
   }
 }
+
+
+/* Users table fit */
+.content.section-users .card { overflow: hidden; }
+.content.section-users table { table-layout: fixed; width: 100%; }
+.content.section-users th:nth-child(1), .content.section-users td:nth-child(1) { width: 7%; }
+.content.section-users th:nth-child(2), .content.section-users td:nth-child(2) { width: 25%; }
+.content.section-users th:nth-child(3), .content.section-users td:nth-child(3) { width: 17%; }
+.content.section-users th:nth-child(4), .content.section-users td:nth-child(4) { width: 9%; }
+.content.section-users th:nth-child(5), .content.section-users td:nth-child(5) { width: 8%; }
+.content.section-users th:nth-child(6), .content.section-users td:nth-child(6) { width: 34%; }
+.content.section-users td { overflow: hidden; text-overflow: ellipsis; }
+.content.section-users .actions { justify-content: flex-end; }
+.content.section-users .actions .sm { padding: 6px 7px; }
+
+@media (max-width: 1200px) {
+  .content.section-users .card { overflow-x: auto; }
+  .content.section-users table { min-width: 980px; }
+}
