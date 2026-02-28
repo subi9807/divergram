@@ -31,6 +31,11 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const dragDeltaYRef = useRef(0);
 
   const getViewportHeight = () => window.visualViewport?.height || window.innerHeight;
+  const getPageHeight = () => {
+    const vh = getViewportHeight();
+    const reserved = window.innerWidth < 1280 ? 128 : 0; // top(64) + bottom(64) mobile/tablet nav bars
+    return Math.max(320, vh - reserved);
+  };
 
   useEffect(() => {
     loadPosts();
@@ -63,8 +68,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
       snapTimerRef.current = window.setTimeout(() => {
         if (isPointerDownRef.current) return;
-        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / getViewportHeight())));
-        const targetTop = targetIndex * getViewportHeight();
+        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / getPageHeight())));
+        const targetTop = targetIndex * getPageHeight();
         if (Math.abs(window.scrollY - targetTop) > 2) {
           window.scrollTo({ top: targetTop, behavior: 'smooth' });
         }
@@ -72,7 +77,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     };
 
     const handleScroll = () => {
-      const nearestIndex = Math.round(window.scrollY / getViewportHeight());
+      const nearestIndex = Math.round(window.scrollY / getPageHeight());
       const clampedIndex = Math.max(0, Math.min(posts.length - 1, nearestIndex));
 
       if (clampedIndex !== currentIndex) {
@@ -309,7 +314,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
     isWheelLockedRef.current = true;
     setCurrentIndex(nextIndex);
-    window.scrollTo({ top: nextIndex * getViewportHeight(), behavior: 'smooth' });
+    window.scrollTo({ top: nextIndex * getPageHeight(), behavior: 'smooth' });
 
     window.setTimeout(() => {
       isWheelLockedRef.current = false;
@@ -358,9 +363,9 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-[100dvh] w-full relative flex items-center justify-center"
+              className="snap-start snap-always h-[calc(100dvh-8rem)] xl:h-screen w-full relative flex items-center justify-center"
             >
-              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
+              <div className="w-full h-[calc(100dvh-8rem)] xl:h-screen lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
               <div className="w-full h-full relative overflow-hidden lg:rounded-2xl">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
