@@ -132,33 +132,22 @@ export default function Stories({ onUserSelect }: StoriesProps) {
     setUsers(result.slice(0, 20));
   };
 
-  const scrollByAmount = (dir: 'left' | 'right') => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const amount = Math.round(el.clientWidth * 0.8);
-    el.scrollBy({ left: dir === 'right' ? amount : -amount, behavior: 'smooth' });
-  };
-
   return (
-    <div className="px-4 md:px-0 py-4 bg-white dark:bg-[#121212] transition-colors">
-      <div className="mx-auto max-w-[620px] flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => scrollByAmount('left')}
-          className="h-14 w-14 rounded-full border border-gray-300 text-gray-600 text-2xl hover:bg-gray-100"
-          aria-label="이전"
+    <div className="px-2 md:px-0 py-3 bg-white dark:bg-[#121212] transition-colors">
+      <div className="mx-auto max-w-[620px]">
+        <div
+          ref={scrollerRef}
+          className="w-full overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          ‹
-        </button>
-        <div ref={scrollerRef} className="w-[520px] overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
-          <div className="flex w-max space-x-8">
+          <div className="flex w-max min-w-full gap-1.5 px-1">
             {users.map((user) => (
               <button
                 key={user.id}
                 onClick={() => onUserSelect(user.id)}
-                className="flex flex-col items-center space-y-2 flex-shrink-0 snap-start"
+                className="flex flex-col items-center space-y-1 flex-shrink-0 snap-start w-[20%] min-w-[64px]"
               >
-                <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
+                <div className="w-[56px] h-[56px] md:w-[64px] md:h-[64px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                   <div className="w-full h-full rounded-full bg-white dark:bg-[#121212] p-0.5 flex items-center justify-center transition-colors">
                     {user.avatar_url ? (
                       <img
@@ -168,26 +157,18 @@ export default function Stories({ onUserSelect }: StoriesProps) {
                       />
                     ) : (
                       <div className="w-full h-full rounded-full bg-gray-100 dark:bg-[#262626] flex items-center justify-center transition-colors">
-                        <span className="text-gray-600 dark:text-gray-400 font-semibold text-lg">
+                        <span className="text-gray-600 dark:text-gray-400 font-semibold text-sm md:text-base">
                           {user.username[0].toUpperCase()}
                         </span>
                       </div>
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-gray-900 dark:text-white max-w-[80px] truncate">{user.username}</span>
+                <span className="text-[11px] md:text-xs text-gray-900 dark:text-white max-w-[64px] truncate">{user.username}</span>
               </button>
             ))}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => scrollByAmount('right')}
-          className="h-14 w-14 rounded-full border border-gray-300 text-gray-600 text-2xl hover:bg-gray-100"
-          aria-label="다음"
-        >
-          ›
-        </button>
       </div>
 
     </div>
