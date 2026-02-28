@@ -30,6 +30,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
   const dragStartYRef = useRef<number | null>(null);
   const dragDeltaYRef = useRef(0);
 
+  const getViewportHeight = () => window.visualViewport?.height || window.innerHeight;
+
   useEffect(() => {
     loadPosts();
     if (user) {
@@ -61,8 +63,8 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
       snapTimerRef.current = window.setTimeout(() => {
         if (isPointerDownRef.current) return;
-        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / window.innerHeight)));
-        const targetTop = targetIndex * window.innerHeight;
+        const targetIndex = Math.max(0, Math.min(posts.length - 1, Math.round(window.scrollY / getViewportHeight())));
+        const targetTop = targetIndex * getViewportHeight();
         if (Math.abs(window.scrollY - targetTop) > 2) {
           window.scrollTo({ top: targetTop, behavior: 'smooth' });
         }
@@ -70,7 +72,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     };
 
     const handleScroll = () => {
-      const nearestIndex = Math.round(window.scrollY / window.innerHeight);
+      const nearestIndex = Math.round(window.scrollY / getViewportHeight());
       const clampedIndex = Math.max(0, Math.min(posts.length - 1, nearestIndex));
 
       if (clampedIndex !== currentIndex) {
@@ -307,7 +309,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
 
     isWheelLockedRef.current = true;
     setCurrentIndex(nextIndex);
-    window.scrollTo({ top: nextIndex * window.innerHeight, behavior: 'smooth' });
+    window.scrollTo({ top: nextIndex * getViewportHeight(), behavior: 'smooth' });
 
     window.setTimeout(() => {
       isWheelLockedRef.current = false;
@@ -356,10 +358,10 @@ export default function Reels({ onViewProfile }: ReelsProps) {
           return (
             <div
               key={post.id}
-              className="snap-start snap-always h-screen w-full relative flex items-center justify-center py-2"
+              className="snap-start snap-always h-[100dvh] w-full relative flex items-center justify-center"
             >
-              <div className="w-full max-w-[492px] h-[calc(100vh-34px)] relative mx-auto">
-              <div className="w-full h-full relative overflow-hidden rounded-2xl">
+              <div className="w-full h-[100dvh] lg:max-w-[492px] lg:h-[calc(100vh-34px)] relative mx-auto">
+              <div className="w-full h-full relative overflow-hidden lg:rounded-2xl">
               {(() => {
                 const videoInfo = getVideoInfo(videoUrl);
                 if (videoInfo.type === 'youtube' || videoInfo.type === 'vimeo') {
@@ -439,7 +441,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-14 right-2 md:right-[-56px] flex flex-col items-center space-y-3 z-20">
+              <div className="absolute bottom-16 right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
                   <span className="w-9 h-9 rounded-full bg-white/92 flex items-center justify-center ring-1 ring-black/10">
                     <Heart
