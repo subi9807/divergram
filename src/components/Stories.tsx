@@ -140,12 +140,12 @@ export default function Stories({ onUserSelect }: StoriesProps) {
           className="w-full overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="flex w-max min-w-full gap-1.5 px-1">
+          <div className="grid grid-flow-col auto-cols-[20%] min-w-full gap-1.5 px-1">
             {users.map((user) => (
               <button
                 key={user.id}
                 onClick={() => onUserSelect(user.id)}
-                className="flex flex-col items-center space-y-1 flex-shrink-0 snap-start w-[20%] min-w-[64px]"
+                className="flex flex-col items-center space-y-1 snap-start min-w-0"
               >
                 <div className="w-[56px] h-[56px] md:w-[64px] md:h-[64px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                   <div className="w-full h-full rounded-full bg-white dark:bg-[#121212] p-0.5 flex items-center justify-center transition-colors">
