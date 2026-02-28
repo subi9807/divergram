@@ -442,7 +442,7 @@ export default function Reels({ onViewProfile }: ReelsProps) {
               </div>
               </div>
 
-              <div className="absolute bottom-[max(7.5rem,calc(env(safe-area-inset-bottom)+6.5rem))] right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20 bg-black/55 backdrop-blur-sm rounded-2xl px-2 py-3">
+              <div className="absolute bottom-[max(9.5rem,calc(env(safe-area-inset-bottom)+8.5rem))] right-3 lg:bottom-14 lg:right-[-56px] flex flex-col items-center space-y-3 z-20 bg-black/55 backdrop-blur-sm rounded-2xl px-2 py-3">
                 <button onClick={(e) => toggleLike(post.id, e)} className="flex flex-col items-center text-black">
                   <span className="w-9 h-9 rounded-full bg-black/45 flex items-center justify-center ring-1 ring-white/25">
                     <Heart
