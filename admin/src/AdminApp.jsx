@@ -51,6 +51,9 @@ export function AdminApp() {
   const [tableRows, setTableRows] = useState([]);
   const [authCheck, setAuthCheck] = useState(null);
   const [growth, setGrowth] = useState(null);
+  const [feedPage, setFeedPage] = useState(1);
+  const [reelPage, setReelPage] = useState(1);
+  const PAGE_SIZE = 20;
   const mapRef = useRef(null);
 
   const refresh = async () => {
@@ -285,6 +288,25 @@ export function AdminApp() {
     return row?.image_url || '';
   };
 
+  const feedTotalPages = Math.max(1, Math.ceil(feedRows.length / PAGE_SIZE));
+  const reelTotalPages = Math.max(1, Math.ceil(reelRows.length / PAGE_SIZE));
+  const feedPageRows = useMemo(() => {
+    const start = (feedPage - 1) * PAGE_SIZE;
+    return feedRows.slice(start, start + PAGE_SIZE);
+  }, [feedRows, feedPage]);
+  const reelPageRows = useMemo(() => {
+    const start = (reelPage - 1) * PAGE_SIZE;
+    return reelRows.slice(start, start + PAGE_SIZE);
+  }, [reelRows, reelPage]);
+
+  useEffect(() => {
+    if (feedPage > feedTotalPages) setFeedPage(feedTotalPages);
+  }, [feedPage, feedTotalPages]);
+
+  useEffect(() => {
+    if (reelPage > reelTotalPages) setReelPage(reelTotalPages);
+  }, [reelPage, reelTotalPages]);
+
   const blockData = useMemo(() => {
     const blocked = Number(stats?.blockedUsers || 0);
     const users = Number(stats?.users || 0);
@@ -453,6 +475,13 @@ export function AdminApp() {
                 ))}
               </tbody>
             </table>
+            <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
+              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {feedPage} / {feedTotalPages}</span>
+              <div className="row">
+                <button onClick={() => setFeedPage((p) => Math.max(1, p - 1))} disabled={feedPage <= 1}>이전</button>
+                <button onClick={() => setFeedPage((p) => Math.min(feedTotalPages, p + 1))} disabled={feedPage >= feedTotalPages}>다음</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -463,13 +492,20 @@ export function AdminApp() {
             <table>
               <thead><tr><th>THUMB</th><th>ID</th><th>USER</th><th>CAPTION</th><th>LOCATION</th><th>CREATED</th></tr></thead>
               <tbody>
-                {feedRows.slice(0, 200).map((p) => (
+                {feedPageRows.map((p) => (
                   <tr key={p.id}>
                     <td>{p.image_url ? <img src={p.image_url} alt="thumb" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} /> : <span style={{ color: "#9ca3af" }}>-</span>}</td><td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td>{p.location || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
+              <span style={{ color: '#6b7280', fontSize: 13 }}>페이지 {reelPage} / {reelTotalPages}</span>
+              <div className="row">
+                <button onClick={() => setReelPage((p) => Math.max(1, p - 1))} disabled={reelPage <= 1}>이전</button>
+                <button onClick={() => setReelPage((p) => Math.min(reelTotalPages, p + 1))} disabled={reelPage >= reelTotalPages}>다음</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -480,7 +516,7 @@ export function AdminApp() {
             <table>
               <thead><tr><th>THUMB</th><th>ID</th><th>USER</th><th>CAPTION</th><th>VIDEO URL</th><th>CREATED</th></tr></thead>
               <tbody>
-                {reelRows.slice(0, 200).map((p) => (
+                {reelPageRows.map((p) => (
                   <tr key={p.id}>
                     <td>{getReelThumb(p) ? <img src={getReelThumb(p)} alt="thumb" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} /> : <span style={{ color: "#9ca3af" }}>-</span>}</td><td>{p.id}</td><td>{p.user_id}</td><td>{p.caption || '-'}</td><td style={{ maxWidth: 300, wordBreak: 'break-all' }}>{p.video_url || '-'}</td><td>{p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</td>
                   </tr>
