@@ -322,6 +322,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </div>
       </nav>
 
+      {currentPage !== 'reels' && (
       <button
         onClick={() => onNavigate('messages')}
         className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
@@ -334,6 +335,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           )}
         </div>
       </button>
+      )}
 
       {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} />}
     </div>
