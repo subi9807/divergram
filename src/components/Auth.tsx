@@ -35,12 +35,12 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      await signIn('demo@instagram.com', 'demo1234');
+      await signIn('demo@instagram.com', 'Demo1234!');
     } catch (err: any) {
       setError('테스트 계정으로 로그인할 수 없습니다. 계정을 생성 중입니다...');
       try {
-        await signUp('demo@instagram.com', 'demo1234', 'demo_user', 'personal');
-        await signIn('demo@instagram.com', 'demo1234');
+        await signUp('demo@instagram.com', 'Demo1234!', 'demo_user', 'personal');
+        await signIn('demo@instagram.com', 'Demo1234!');
       } catch (signUpErr: any) {
         setError(signUpErr.message);
       }
