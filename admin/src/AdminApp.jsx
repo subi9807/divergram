@@ -454,27 +454,37 @@ export function AdminApp() {
         )}
 
         {section === 'users' && (
-          <div className="card">
+          <div className="card users-card-wrap">
             <h2>사용자 관리</h2>
             <div className="row" style={{ marginBottom: 12 }}>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="email/username 검색" />
               <button onClick={refresh}>검색</button>
             </div>
-            <table>
-              <thead><tr><th>ID</th><th>Email</th><th>Username</th><th>Role</th><th>Blocked</th><th>Action</th></tr></thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.id}</td><td>{u.email}</td><td>{u.username}</td><td>{u.role}</td><td>{u.is_blocked ? 'Y' : 'N'}</td>
-                    <td className="actions">
-                      <button className="sm" onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}>{u.role === 'admin' ? '관리자해제' : '관리자지정'}</button>
-                      <button className="sm" onClick={() => updateUser(u.id, { is_blocked: !u.is_blocked })}>{u.is_blocked ? '차단해제' : '차단'}</button>
-                      <button className="sm danger" onClick={() => deleteUser(u.id)}>삭제</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+            <div className="users-grid">
+              {users.map((u) => (
+                <div key={u.id} className="user-card">
+                  <div className="user-card-top">
+                    <div>
+                      <div className="user-name">{u.username}</div>
+                      <div className="user-email">{u.email}</div>
+                    </div>
+                    <div className="user-badges">
+                      <span className={`badge ${u.role === 'admin' ? 'admin' : 'user'}`}>{u.role}</span>
+                      <span className={`badge ${u.is_blocked ? 'blocked' : 'active'}`}>{u.is_blocked ? '차단' : '정상'}</span>
+                    </div>
+                  </div>
+
+                  <div className="user-meta">ID: {u.id}</div>
+
+                  <div className="actions">
+                    <button className="sm" onClick={() => updateUser(u.id, { role: u.role === 'admin' ? 'user' : 'admin' })}>{u.role === 'admin' ? '관리자해제' : '관리자지정'}</button>
+                    <button className="sm" onClick={() => updateUser(u.id, { is_blocked: !u.is_blocked })}>{u.is_blocked ? '차단해제' : '차단'}</button>
+                    <button className="sm danger" onClick={() => deleteUser(u.id)}>삭제</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
