@@ -15,6 +15,9 @@ import ProfileEdit from './components/ProfileEdit';
 import PersonalInfoEdit from './components/PersonalInfoEdit';
 import { db } from './lib/internal-db';
 
+const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
+const OPS_SECRET_KEY = 'm1na-ops-260301';
+
 function MainApp() {
   const { user, loading, signOut } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
@@ -31,6 +34,9 @@ function MainApp() {
   const [reportText, setReportText] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'profile' | 'account' | 'activity'>('profile');
+  const [opsAuthorized, setOpsAuthorized] = useState(false);
+  const [opsLoading, setOpsLoading] = useState(false);
+  const [opsInfo, setOpsInfo] = useState<{ apiOk: boolean; users: number; posts: number; reels: number; apiBase: string; ts: string } | null>(null);
 
   const urlState = useMemo(() => {
     const modal = showCreatePost
@@ -58,6 +64,7 @@ function MainApp() {
       else pathname = '/settings';
     }
     else if (currentPage === 'report') pathname = '/report';
+    else if (currentPage === 'ops') pathname = '/__ops';
 
     const params = new URLSearchParams();
     if (selectedUserId) params.set('user', selectedUserId);
@@ -65,6 +72,7 @@ function MainApp() {
     if (selectedLocation) params.set('loc', selectedLocation);
     if (currentPage === 'explore' && exploreTag) params.set('tag', exploreTag);
     if (modal) params.set('modal', modal);
+    if (currentPage === 'ops' && opsAuthorized) params.set('k', OPS_SECRET_KEY);
 
     return `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
   }, [
@@ -121,6 +129,11 @@ function MainApp() {
         setSettingsTab('account');
       }
       else if (pathname === '/report') setCurrentPage('report');
+      else if (pathname === '/__ops') {
+        const ok = q.get('k') === OPS_SECRET_KEY;
+        setOpsAuthorized(ok);
+        setCurrentPage(ok ? 'ops' : 'home');
+      }
       else if (pathname === '/admin') {
         window.location.replace('http://127.0.0.1:5175');
         setCurrentPage('home');
@@ -227,6 +240,31 @@ function MainApp() {
     }
   };
 
+
+  const loadOps = async () => {
+    setOpsLoading(true);
+    try {
+      const [healthRes, usersRes, postsRes] = await Promise.all([
+        fetch(`${OPS_API_BASE}/api/health`).then((r) => r.ok).catch(() => false),
+        db.from('profiles').select('*'),
+        db.from('posts').select('*'),
+      ]);
+
+      const posts = (postsRes as any)?.data || [];
+      const reels = posts.filter((p: any) => !!p.video_url).length;
+      setOpsInfo({
+        apiOk: !!healthRes,
+        users: ((usersRes as any)?.data || []).length,
+        posts: posts.length,
+        reels,
+        apiBase: OPS_API_BASE,
+        ts: new Date().toLocaleString(),
+      });
+    } finally {
+      setOpsLoading(false);
+    }
+  };
+
   const handleSubmitReport = async () => {
     if (!user || !reportText.trim() || reportLoading) return;
     setReportLoading(true);
@@ -306,6 +344,29 @@ function MainApp() {
                 <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">{activityCounts.saved}</p></div>
               </div>
             )}
+          </div>
+        );
+      case 'ops':
+        return (
+          <div className="p-6 md:p-8 max-w-3xl text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold mb-4">내부 점검 패널</h1>
+            <p className="text-sm text-gray-600 mb-4">이 페이지는 비공개 URL 전용이야.</p>
+            <div className="rounded-lg border p-4 space-y-3">
+              <button className="px-4 py-2 rounded-md bg-blue-500 text-white disabled:opacity-50" onClick={loadOps} disabled={opsLoading}>
+                {opsLoading ? '점검 중...' : '상태 점검'}
+              </button>
+              {opsInfo && (
+                <div className="text-sm space-y-1">
+                  <p>API 상태: <b>{opsInfo.apiOk ? '정상' : '실패'}</b></p>
+                  <p>API 주소: <code>{opsInfo.apiBase}</code></p>
+                  <p>사용자 수: <b>{opsInfo.users}</b></p>
+                  <p>게시물 수: <b>{opsInfo.posts}</b></p>
+                  <p>릴스 수: <b>{opsInfo.reels}</b></p>
+                  <p>점검 시각: {opsInfo.ts}</p>
+                </div>
+              )}
+            </div>
+            <p className="mt-4 text-xs text-gray-500">접속 URL: /__ops?k={OPS_SECRET_KEY}</p>
           </div>
         );
       case 'report':
