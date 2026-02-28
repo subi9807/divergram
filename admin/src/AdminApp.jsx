@@ -465,9 +465,14 @@ export function AdminApp() {
               {users.map((u) => (
                 <div key={u.id} className="user-card">
                   <div className="user-card-top">
-                    <div>
-                      <div className="user-name">{u.username}</div>
-                      <div className="user-email">{u.email}</div>
+                    <div className="user-head">
+                      <div className="user-avatar">
+                        {u.avatar_url ? <img src={u.avatar_url} alt={u.username} /> : <span>{(u.username || "?")[0]?.toUpperCase()}</span>}
+                      </div>
+                      <div>
+                        <div className="user-name">{u.full_name || u.username}</div>
+                        <div className="user-email">{u.email}</div>
+                      </div>
                     </div>
                     <div className="user-badges">
                       <span className={`badge ${u.role === 'admin' ? 'admin' : 'user'}`}>{u.role}</span>

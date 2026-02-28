@@ -675,10 +675,12 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
     params.push(offset);
 
     const list = await pool.query(
-      `SELECT id, email, username, role, is_blocked, created_at
-       FROM app_users
-       ${where}
-       ORDER BY created_at DESC
+      `SELECT u.id, u.email, u.username, u.role, u.is_blocked, u.created_at,
+              p.avatar_url, p.full_name
+       FROM app_users u
+       LEFT JOIN app_profiles p ON p.id = u.id::text
+       ${where ? where.replace(/email/g, 'u.email').replace(/username/g, 'u.username') : ''}
+       ORDER BY u.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
