@@ -507,6 +507,8 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
     const personalUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_profiles WHERE account_type = 'personal'");
     const resortUsers = await pool.query("SELECT COUNT(*)::int AS count FROM app_profiles WHERE account_type = 'resort'");
     const latest = await pool.query('SELECT id, email, username, role, is_blocked, created_at FROM app_users ORDER BY created_at DESC LIMIT 5');
+    const feedCount = await pool.query('SELECT COUNT(*)::int AS count FROM app_posts WHERE video_url IS NULL');
+    const reelsCount = await pool.query('SELECT COUNT(*)::int AS count FROM app_posts WHERE video_url IS NOT NULL');
 
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
@@ -553,6 +555,8 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
         blockedUsers: blockedUsers.rows[0]?.count || 0,
         personalUsers: personalUsers.rows[0]?.count || 0,
         resortUsers: resortUsers.rows[0]?.count || 0,
+        feedCount: feedCount.rows[0]?.count || 0,
+        reelsCount: reelsCount.rows[0]?.count || 0,
         uptimeSec: Math.round(process.uptime()),
         system: {
           cpuUsagePct: Number(cpuUsagePct.toFixed(1)),

@@ -344,6 +344,8 @@ export function AdminApp() {
               <div className="monitor-item"><span>DISK</span><strong>{stats?.system?.disk?.usedPct ?? '-'}%</strong></div>
               <div className="monitor-item"><span>NET IN</span><strong>{stats?.system?.network?.inMb ?? '-'}MB</strong></div>
               <div className="monitor-item"><span>NET OUT</span><strong>{stats?.system?.network?.outMb ?? '-'}MB</strong></div>
+              <div className="monitor-item"><span>FEED</span><strong>{stats?.feedCount ?? '-'}</strong></div>
+              <div className="monitor-item"><span>REELS</span><strong>{stats?.reelsCount ?? '-'}</strong></div>
             </div>
 
             <div className="card" style={{ height: 340 }}>
