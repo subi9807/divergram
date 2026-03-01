@@ -14,6 +14,7 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const [selected, setSelected] = useState<{ lat: number; lng: number; locationText: string } | null>(null);
+  const [mapError, setMapError] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -22,7 +23,12 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
     const init = async () => {
       try {
         await loadGoogleMaps();
-        if (cancelled || !mapRef.current || !(window as any).google) return;
+        if (cancelled || !mapRef.current) return;
+        if (!(window as any).google) {
+          setMapError('Google Maps 초기화에 실패했습니다. API 키/도메인 설정을 확인해주세요.');
+          return;
+        }
+        setMapError('');
 
         const google = (window as any).google;
         const map = new google.maps.Map(mapRef.current, {
@@ -69,8 +75,9 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
           const coordText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
           setSelected({ lat, lng, locationText: coordText });
         });
-      } catch (e) {
+      } catch (e: any) {
         console.error('Map picker init failed:', e);
+        setMapError(e?.message || '지도를 불러오지 못했습니다.');
       }
     };
 
@@ -90,7 +97,14 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5 dark:text-white" /></button>
         </div>
 
-        <div ref={mapRef} className="w-full h-[420px]" />
+        <div className="relative">
+          <div ref={mapRef} className="w-full h-[420px]" />
+          {mapError && (
+            <div className="absolute inset-x-3 top-3 z-10 bg-red-50 text-red-700 text-xs rounded-md px-3 py-2 border border-red-200">
+              {mapError}
+            </div>
+          )}
+        </div>
 
         <div className="px-4 py-3 border-t border-gray-200 dark:border-[#262626] space-y-3">
           <div className="text-sm text-gray-700 dark:text-gray-300">

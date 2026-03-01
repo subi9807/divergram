@@ -93,6 +93,7 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<any>(null);
+  const [mapError, setMapError] = useState('');
 
   useEffect(() => {
     loadPosts();
@@ -105,15 +106,20 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
   useEffect(() => {
     if (posts.length > 0) {
       loadGoogleMaps().then(() => {
+        setMapError('');
         initMap();
       }).catch(err => {
         console.error('Failed to load Google Maps:', err);
+        setMapError('지도를 불러오지 못했습니다. 지도 API 키/도메인 설정을 확인해주세요.');
       });
     }
   }, [posts]);
 
   const initMap = () => {
-    if (!mapRef.current || !(window as any).google) return;
+    if (!mapRef.current || !(window as any).google) {
+      setMapError('Google Maps 로딩이 완료되지 않았습니다.');
+      return;
+    }
 
     const coordinates = LOCATION_COORDINATES[location] || { lat: 33.4996, lng: 126.5312 };
     const google = (window as any).google;
@@ -363,7 +369,14 @@ export default function LocationFeed({ location, onBack, onViewProfile }: Locati
         </div>
       </div>
 
-      <div ref={mapRef} className="w-full h-64 bg-gray-200"></div>
+      <div className="relative">
+        <div ref={mapRef} className="w-full h-64 bg-gray-200"></div>
+        {mapError && (
+          <div className="absolute inset-x-3 top-3 z-10 bg-red-50 text-red-700 text-xs rounded-md px-3 py-2 border border-red-200">
+            {mapError}
+          </div>
+        )}
+      </div>
 
       <div className="divide-y divide-gray-300">
         {posts.map((post) => (

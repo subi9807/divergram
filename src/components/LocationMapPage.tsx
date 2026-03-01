@@ -35,7 +35,11 @@ export default function LocationMapPage({ location, onBack }: Props) {
     const init = async () => {
       try {
         await loadGoogleMaps();
-        if (cancelled || !mapRef.current || !(window as any).google) return;
+        if (cancelled || !mapRef.current) return;
+        if (!(window as any).google) {
+          setError('Google Maps 초기화에 실패했습니다. API 키/도메인 설정을 확인해주세요.');
+          return;
+        }
         const google = (window as any).google;
 
         const isDark = document.documentElement.classList.contains('dark');
@@ -119,8 +123,8 @@ export default function LocationMapPage({ location, onBack }: Props) {
         } else {
           setError('등록된 다이빙 포인트가 없습니다.');
         }
-      } catch {
-        setError('지도를 불러오지 못했습니다.');
+      } catch (e: any) {
+        setError(e?.message || '지도를 불러오지 못했습니다.');
       }
     };
 
