@@ -147,31 +147,47 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       .is('video_url', null)
       .order('created_at', { ascending: false });
 
-    if (data) {
-      const loadedPosts = data as Post[];
-      setPosts(loadedPosts);
-      setDisplayedPosts(loadedPosts.slice(0, POSTS_PER_PAGE));
-      setPage(1);
+    let loadedPosts = (data || []) as Post[];
 
-      const buddyNames = Array.from(new Set(
-        loadedPosts
-          .flatMap((p) => (p.buddy_name || '').split(',').map((v) => v.trim()).filter(Boolean))
-      ));
+    // 홈 피드 추천(팔로우/본인)이 비어있으면, 최신 게시물부터 fallback 노출
+    if (loadedPosts.length === 0) {
+      const { data: recentData } = await db
+        .from('posts')
+        .select(`
+          *,
+          profiles!posts_user_id_fkey(id, username, avatar_url, full_name),
+          likes(id, user_id),
+          comments(id),
+          post_media(id, media_url, media_type, order_index)
+        `)
+        .is('video_url', null)
+        .order('created_at', { ascending: false });
 
-      if (buddyNames.length) {
-        const { data: buddyProfiles } = await db
-          .from('profiles')
-          .select('id, username')
-          .in('username', buddyNames);
+      loadedPosts = (recentData || []) as Post[];
+    }
 
-        const nextMap: Record<string, string> = {};
-        (buddyProfiles || []).forEach((p: any) => {
-          nextMap[p.username] = String(p.id);
-        });
-        setBuddyProfileMap(nextMap);
-      } else {
-        setBuddyProfileMap({});
-      }
+    setPosts(loadedPosts);
+    setDisplayedPosts(loadedPosts.slice(0, POSTS_PER_PAGE));
+    setPage(1);
+
+    const buddyNames = Array.from(new Set(
+      loadedPosts
+        .flatMap((p) => (p.buddy_name || '').split(',').map((v) => v.trim()).filter(Boolean))
+    ));
+
+    if (buddyNames.length) {
+      const { data: buddyProfiles } = await db
+        .from('profiles')
+        .select('id, username')
+        .in('username', buddyNames);
+
+      const nextMap: Record<string, string> = {};
+      (buddyProfiles || []).forEach((p: any) => {
+        nextMap[p.username] = String(p.id);
+      });
+      setBuddyProfileMap(nextMap);
+    } else {
+      setBuddyProfileMap({});
     }
     setLoading(false);
   };
