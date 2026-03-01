@@ -301,6 +301,20 @@ async function ensureSchema() {
   await pool.query(`CREATE INDEX IF NOT EXISTS app_message_deliveries_msg_idx ON app_message_deliveries(message_id);`);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_jobs (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+      status TEXT NOT NULL DEFAULT 'queued',
+      attempts INT NOT NULL DEFAULT 0,
+      last_error TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS app_jobs_status_idx ON app_jobs(status, created_at);`);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS app_reports (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -1300,8 +1314,48 @@ function getAuthUserId(req) {
 }
 
 async function enqueueMessageCreated(message) {
-  // TODO: Queue(Pub/Sub/Cloud Tasks) 연동 지점
-  return { queued: true, messageId: message.id };
+  const jobId = crypto.randomUUID();
+  await pool.query(
+    `INSERT INTO app_jobs(id, type, payload, status, attempts, created_at, updated_at)
+     VALUES ($1,'message.created',$2::jsonb,'queued',0,now(),now())`,
+    [jobId, JSON.stringify({ messageId: message.id, roomId: message.room_id, senderId: message.sender_id })]
+  );
+  return { queued: true, jobId, messageId: message.id };
+}
+
+async function processQueuedJobs(limit = 50) {
+  const jobs = await pool.query(
+    `SELECT * FROM app_jobs WHERE status='queued' ORDER BY created_at ASC LIMIT $1`,
+    [limit]
+  );
+
+  let processed = 0;
+  for (const job of jobs.rows) {
+    const jobId = String(job.id);
+    try {
+      await pool.query(`UPDATE app_jobs SET status='processing', attempts=attempts+1, updated_at=now() WHERE id=$1`, [jobId]);
+
+      if (job.type === 'message.created') {
+        const messageId = String(job.payload?.messageId || '');
+        if (messageId) {
+          await pool.query(
+            `UPDATE app_message_deliveries SET status='sent', updated_at=now() WHERE message_id=$1 AND status='queued'`,
+            [messageId]
+          );
+        }
+      }
+
+      await pool.query(`UPDATE app_jobs SET status='done', updated_at=now() WHERE id=$1`, [jobId]);
+      processed += 1;
+    } catch (e) {
+      await pool.query(
+        `UPDATE app_jobs SET status='failed', last_error=$2, updated_at=now() WHERE id=$1`,
+        [jobId, String(e?.message || e)]
+      );
+    }
+  }
+
+  return { processed, queued: jobs.rows.length };
 }
 
 app.post('/api/push/tokens', authRateLimit(60, 60_000), async (req, res) => {
@@ -1457,6 +1511,27 @@ app.post('/api/chat/messages/:id/read', authRateLimit(180, 60_000), async (req, 
     return res.json({ ok: true });
   } catch {
     return res.status(500).json({ error: 'chat_read_failed' });
+  }
+});
+
+
+app.post('/api/admin/jobs/dispatch', requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.body?.limit || 50), 1), 200);
+  try {
+    const result = await processQueuedJobs(limit);
+    return res.json({ ok: true, ...result });
+  } catch {
+    return res.status(500).json({ ok: false, error: 'job_dispatch_failed' });
+  }
+});
+
+app.get('/api/admin/jobs', requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(Number(req.query.limit || 100), 1), 500);
+  try {
+    const rows = await pool.query('SELECT id,type,status,attempts,last_error,created_at,updated_at FROM app_jobs ORDER BY created_at DESC LIMIT $1', [limit]);
+    return res.json({ ok: true, jobs: rows.rows });
+  } catch {
+    return res.status(500).json({ ok: false, error: 'job_list_failed' });
   }
 });
 
