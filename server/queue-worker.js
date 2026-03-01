@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import pg from 'pg';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
 
 dotenv.config({ path: '.env.server' });
 
@@ -17,7 +19,9 @@ const pool = new pg.Pool({
 const POLL_MS = Math.max(500, Number(process.env.JOB_WORKER_POLL_MS || 2000));
 const BATCH_SIZE = Math.min(200, Math.max(1, Number(process.env.JOB_WORKER_BATCH || 25)));
 const MAX_ATTEMPTS = Math.min(20, Math.max(1, Number(process.env.JOB_WORKER_MAX_ATTEMPTS || 5)));
-const FCM_SERVER_KEY = String(process.env.FCM_SERVER_KEY || '').trim();
+const FCM_SERVICE_ACCOUNT_JSON = String(process.env.FCM_SERVICE_ACCOUNT_JSON || '').trim();
+const FCM_SERVICE_ACCOUNT_PATH = String(process.env.FCM_SERVICE_ACCOUNT_PATH || '').trim();
+let fcmAccessTokenCache = { token: '', exp: 0 };
 
 async function claimJobs(limit = BATCH_SIZE) {
   const q = await pool.query(
@@ -39,34 +43,102 @@ async function claimJobs(limit = BATCH_SIZE) {
   return q.rows || [];
 }
 
-async function sendFcmToToken(token, title, body, data = {}) {
-  if (!FCM_SERVER_KEY) return { ok: false, reason: 'missing_fcm_server_key' };
+function base64url(input) {
+  return Buffer.from(input).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
 
-  const resp = await fetch('https://fcm.googleapis.com/fcm/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `key=${FCM_SERVER_KEY}`,
-    },
-    body: JSON.stringify({
-      to: token,
-      notification: { title, body },
-      data,
-      priority: 'high',
-    }),
-  });
+function readServiceAccount() {
+  let raw = '';
+  if (FCM_SERVICE_ACCOUNT_JSON) {
+    raw = FCM_SERVICE_ACCOUNT_JSON;
+  } else if (FCM_SERVICE_ACCOUNT_PATH) {
+    raw = fs.readFileSync(FCM_SERVICE_ACCOUNT_PATH, 'utf8');
+  } else {
+    throw new Error('missing_fcm_service_account');
+  }
+  const sa = JSON.parse(raw);
+  if (!sa.client_email || !sa.private_key || !sa.project_id) {
+    throw new Error('invalid_service_account_json');
+  }
+  return sa;
+}
 
-  let json = null;
-  try { json = await resp.json(); } catch {}
-  if (!resp.ok) {
-    return { ok: false, reason: `http_${resp.status}`, detail: json };
+async function getGoogleAccessToken() {
+  const now = Math.floor(Date.now() / 1000);
+  if (fcmAccessTokenCache.token && fcmAccessTokenCache.exp - 60 > now) {
+    return fcmAccessTokenCache.token;
   }
 
-  const success = Number(json?.success || 0);
-  if (success > 0) return { ok: true };
+  const sa = readServiceAccount();
+  const iat = now;
+  const exp = now + 3600;
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claim = {
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat,
+    exp,
+  };
 
-  const err = json?.results?.[0]?.error || 'fcm_send_failed';
-  return { ok: false, reason: err, detail: json };
+  const unsigned = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(claim))}`;
+  const signer = crypto.createSign('RSA-SHA256');
+  signer.update(unsigned);
+  signer.end();
+  const signature = signer.sign(sa.private_key).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const jwt = `${unsigned}.${signature}`;
+
+  const form = new URLSearchParams({
+    grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+    assertion: jwt,
+  });
+
+  const resp = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form.toString(),
+  });
+  const json = await resp.json();
+  if (!resp.ok || !json.access_token) {
+    throw new Error(`oauth_token_failed:${json.error || resp.status}`);
+  }
+
+  fcmAccessTokenCache = { token: json.access_token, exp: now + Number(json.expires_in || 3600) };
+  return json.access_token;
+}
+
+async function sendFcmToToken(token, title, body, data = {}) {
+  try {
+    const sa = readServiceAccount();
+    const accessToken = await getGoogleAccessToken();
+
+    const resp = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        message: {
+          token,
+          notification: { title, body },
+          data,
+          android: { priority: 'high' },
+          apns: { headers: { 'apns-priority': '10' } },
+        },
+      }),
+    });
+
+    let json = null;
+    try { json = await resp.json(); } catch {}
+    if (!resp.ok) {
+      const msg = String(json?.error?.message || `http_${resp.status}`);
+      return { ok: false, reason: msg, detail: json };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: String(e?.message || e) };
+  }
 }
 
 async function processJob(job) {
