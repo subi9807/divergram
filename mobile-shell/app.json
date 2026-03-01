@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Divergram",
+    "slug": "divergram-mobile-shell",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "divergram",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.divergram.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "다이빙 위치 기록을 위해 위치 권한이 필요합니다.",
+        "NSBluetoothAlwaysUsageDescription": "웨어러블 장치 연결을 위해 블루투스 권한이 필요합니다.",
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.divergram.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-notifications",
+      "expo-location",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "webUrl": "https://divergram-260228.web.app"
+    }
+  }
+}
