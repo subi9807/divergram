@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getVideoInfo } from '../utils/videoUtils';
 
 interface MediaItem {
@@ -19,10 +19,51 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [mouseStartX, setMouseStartX] = useState<number | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   if (!media || media.length === 0) return null;
 
   const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = !!entry?.isIntersecting && entry.intersectionRatio >= 0.6;
+        setIsVisible(visible);
+        if (!visible) {
+          Object.values(videoRefs.current).forEach((v) => v?.pause());
+        }
+      },
+      { threshold: [0, 0.3, 0.6, 1] }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      Object.values(videoRefs.current).forEach((v) => v?.pause());
+    };
+  }, []);
+
+  useEffect(() => {
+    const current = sortedMedia[currentIndex];
+    Object.entries(videoRefs.current).forEach(([k, v]) => {
+      if (!v) return;
+      if (current && k === current.id && isVisible) {
+        document.querySelectorAll('video').forEach((el) => {
+          const video = el as HTMLVideoElement;
+          if (video !== v) video.pause();
+        });
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    });
+  }, [currentIndex, isVisible]);
 
   const goToPrevious = () => setCurrentIndex((prev) => Math.max(0, prev - 1));
   const goToNext = () => setCurrentIndex((prev) => Math.min(sortedMedia.length - 1, prev + 1));
@@ -48,7 +89,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   };
 
   return (
-    <div className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDragStart={(e) => e.preventDefault()}>
+    <div ref={containerRef} className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDragStart={(e) => e.preventDefault()}>
       <div className="w-full h-full overflow-hidden">
         <div
           className="flex h-full transition-transform duration-300 ease-out"
@@ -88,11 +129,20 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
                   </div>
                 ) : (
                   <video
+                    ref={(el) => { videoRefs.current[m.id] = el; }}
                     src={m.media_url}
                     controls
                     playsInline
                     preload="metadata"
                     className="w-full h-full object-contain"
+                    data-feed-video="true"
+                    onPlay={(e) => {
+                      const current = e.currentTarget as HTMLVideoElement;
+                      document.querySelectorAll('video').forEach((el) => {
+                        const v = el as HTMLVideoElement;
+                        if (v !== current) v.pause();
+                      });
+                    }}
                     onError={() => setVideoErrorMap((prev) => ({ ...prev, [key]: true }))}
                   />
                 )}

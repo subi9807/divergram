@@ -59,6 +59,23 @@ export default function Reels({ onViewProfile }: ReelsProps) {
     });
   }, [currentIndex]);
 
+
+  useEffect(() => {
+    const pauseAll = () => {
+      videoRefs.current.forEach((video) => video?.pause());
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) pauseAll();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      pauseAll();
+    };
+  }, []);
+
   useEffect(() => {
     const scheduleSnap = (delay = 140) => {
       if (isPointerDownRef.current) return;
@@ -390,6 +407,12 @@ export default function Reels({ onViewProfile }: ReelsProps) {
                     muted={isMuted}
                     playsInline
                     preload={index <= currentIndex + 1 ? "auto" : "metadata"}
+                    onPlay={(e) => {
+                      const current = e.currentTarget as HTMLVideoElement;
+                      videoRefs.current.forEach((video) => {
+                        if (video && video !== current) video.pause();
+                      });
+                    }}
                   />
                 );
               })()}

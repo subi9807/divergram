@@ -88,6 +88,39 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     return () => window.removeEventListener('scroll', handleWindowScroll);
   }, [posts, displayedPosts, page, loadingMore]);
 
+
+  useEffect(() => {
+    const pauseOtherVideos = (current: HTMLVideoElement) => {
+      document.querySelectorAll('video').forEach((el) => {
+        const v = el as HTMLVideoElement;
+        if (v !== current) v.pause();
+      });
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
+            pauseOtherVideos(video);
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: [0, 0.3, 0.7, 1] }
+    );
+
+    const videos = Array.from(document.querySelectorAll('video[data-feed-video="true"]')) as HTMLVideoElement[];
+    videos.forEach((v) => observer.observe(v));
+
+    return () => {
+      observer.disconnect();
+      videos.forEach((v) => v.pause());
+    };
+  }, [displayedPosts]);
+
   useEffect(() => {
     if (singlePostMode) {
       setViewPost(null);
@@ -583,6 +616,14 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                           playsInline
                           preload="metadata"
                           className="w-full h-full object-contain"
+                          data-feed-video="true"
+                          onPlay={(e) => {
+                            const current = e.currentTarget as HTMLVideoElement;
+                            document.querySelectorAll('video').forEach((el) => {
+                              const v = el as HTMLVideoElement;
+                              if (v !== current) v.pause();
+                            });
+                          }}
                         />
                       </div>
                     );
