@@ -447,45 +447,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
             </div>
           </div>
 
-          <div className="p-4 space-y-4 dark:bg-[#121212]">
-            <div className="flex space-x-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5 flex-shrink-0">
-                <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                  {post.profiles.avatar_url ? (
-                    <img
-                      src={post.profiles.avatar_url}
-                      alt={post.profiles.username}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-gray-600 dark:text-gray-300 font-semibold">
-                      {post.profiles.username[0].toUpperCase()}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm dark:text-white">
-                  <span className="font-semibold mr-2">{post.profiles.username}</span>
-                  {renderTextWithMentions(post.caption || '', async (username) => {
-                    const { data } = await db
-                      .from('profiles')
-                      .select('id')
-                      .eq('username', username)
-                      .maybeSingle();
-                    if (data) {
-                      onViewProfile(data.id);
-                    }
-                  }, (tag) => {
-                    window.history.pushState({}, '', `/explore?tag=${encodeURIComponent(tag)}`);
-                    window.dispatchEvent(new PopStateEvent('popstate'));
-                  })}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getRelativeTime(post.created_at)}</p>
-              </div>
-            </div>
-
-            {comments.map((comment) => (
+          <div className="p-4 space-y-4 dark:bg-[#121212]">            {comments.map((comment) => (
               <div
                 key={comment.id}
                 className="flex space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-2 px-2 py-1 rounded"
