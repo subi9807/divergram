@@ -908,6 +908,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
             }
           }}
           onViewProfile={onViewProfile}
+          inline={singlePostMode}
         />
       )}
 

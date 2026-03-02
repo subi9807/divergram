@@ -13,6 +13,7 @@ interface PostDetailProps {
   post: Post;
   onClose: () => void;
   onViewProfile: (userId: string) => void;
+  inline?: boolean;
 }
 
 interface Comment {
@@ -26,7 +27,7 @@ interface Comment {
   };
 }
 
-export default function PostDetail({ post: initialPost, onClose, onViewProfile }: PostDetailProps) {
+export default function PostDetail({ post: initialPost, onClose, onViewProfile, inline = false }: PostDetailProps) {
   const [post, setPost] = useState<Post>(initialPost);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentInput, setCommentInput] = useState('');
@@ -193,8 +194,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
 
   if (!post) {
     return (
-      <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      <div className={inline ? "min-h-[40vh] flex items-center justify-center" : "fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"}>
+        <div className={inline ? "animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 dark:border-white" : "animate-spin rounded-full h-12 w-12 border-b-2 border-white"}></div>
       </div>
     );
   }
@@ -203,16 +204,23 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
   const likeCount = post.likes.length;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center p-4" onClick={onClose}>
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 text-white hover:text-gray-300 z-10"
-      >
-        <X className="h-8 w-8" />
-      </button>
+    <div
+      className={inline ? "w-full max-w-5xl mx-auto p-2 md:p-4" : "fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center p-4"}
+      onClick={inline ? undefined : onClose}
+    >
+      {!inline && (
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 text-white hover:text-gray-300 z-10"
+        >
+          <X className="h-8 w-8" />
+        </button>
+      )}
 
       <div
-        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"
+        className={inline
+          ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full flex rounded-xl overflow-hidden shadow"
+          : "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="hidden md:flex flex-1 max-h-[90vh] bg-black dark:bg-gray-950 items-center justify-center">
@@ -551,6 +559,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile }
       )}
     </div>
   );
+
+  if (inline) return modalContent;
 
   const modalRoot = document.getElementById('modal-root');
   if (!modalRoot) return null;
