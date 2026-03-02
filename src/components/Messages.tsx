@@ -22,11 +22,13 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen && user) {
+      setError('');
       loadRooms();
     }
   }, [isOpen, user]);
@@ -116,6 +118,7 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
       setRooms(roomsWithDetails);
     } catch (e) {
       console.error('loadRooms failed', e);
+      setError('메시지 목록을 불러오지 못했어요. 다시 시도해 주세요.');
       setRooms([]);
     } finally {
       setLoading(false);
@@ -156,13 +159,49 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
     e.preventDefault();
     if (!user || !selectedRoom || !newMessage.trim()) return;
 
-    await db.from('messages').insert({
+    const content = newMessage.trim();
+    setNewMessage('');
+
+    const tempId = `tmp_${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
       room_id: selectedRoom.id,
       sender_id: user.id,
-      content: newMessage.trim(),
+      content,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    const { data, error } = await db.from('messages').insert({
+      room_id: selectedRoom.id,
+      sender_id: user.id,
+      content,
     });
 
-    setNewMessage('');
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      setError('메시지 전송에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      setNewMessage(content);
+      return;
+    }
+
+    const saved = Array.isArray(data) ? data[0] : null;
+    if (saved) {
+      setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, ...saved } : m)));
+    } else {
+      await loadMessages(selectedRoom.id);
+    }
+
+    setRooms((prev) =>
+      prev
+        .map((r) => (r.id === selectedRoom.id ? { ...r, lastMessage: { ...optimistic, id: saved?.id || tempId } } : r))
+        .sort((a, b) => {
+          const aTime = a.lastMessage?.created_at || a.created_at;
+          const bTime = b.lastMessage?.created_at || b.created_at;
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+        })
+    );
   };
 
   if (!isOpen) return null;
@@ -176,6 +215,8 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {error && <div className="px-4 py-2 text-sm text-red-500 border-b border-red-100 dark:border-red-900/40">{error}</div>}
 
         {loading ? (
           <div className="flex-1 flex justify-center items-center">
