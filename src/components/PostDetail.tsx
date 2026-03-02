@@ -428,18 +428,18 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
               <p className="font-semibold text-sm mb-2 dark:text-white">좋아요 {likeCount}개</p>
             )}
 
-            <div className="flex items-center gap-2.5 mt-2">
+            <div className="flex items-center gap-3 mt-2.5">
               <MentionInput
                 value={commentInput}
                 onChange={setCommentInput}
                 onSubmit={addComment}
                 placeholder="댓글 달기..."
-                className="flex-1 outline-none text-sm px-4 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-full focus:border-gray-400 dark:focus:border-gray-500"
+                className="flex-1 min-w-0 outline-none text-sm px-4 py-3 border border-gray-300 dark:border-gray-700 dark:bg-[#262626] dark:text-white rounded-full focus:border-gray-400 dark:focus:border-gray-500"
               />
               {commentInput.trim() && (
                 <button
                   onClick={addComment}
-                  className="shrink-0 text-blue-500 font-semibold text-sm hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500 px-3.5 py-1.5 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
+                  className="shrink-0 text-blue-500 font-semibold text-sm hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-500 px-4 py-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
                 >
                   게시
                 </button>
