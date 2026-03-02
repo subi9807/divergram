@@ -205,7 +205,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
 
   const modalContent = (
     <div
-      className={inline ? "w-full max-w-5xl mx-auto p-2 md:p-4" : "fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center p-4"}
+      className={inline ? "w-full max-w-[980px] mx-auto py-4 px-2 md:px-4" : "fixed inset-0 z-[9999] bg-black bg-opacity-75 flex items-center justify-center p-4"}
       onClick={inline ? undefined : onClose}
     >
       {!inline && (
@@ -219,11 +219,11 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
 
       <div
         className={inline
-          ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full flex rounded-xl overflow-hidden shadow"
+          ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full flex md:rounded-sm rounded-xl overflow-hidden border border-gray-200 dark:border-[#262626]"
           : "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="hidden md:flex flex-1 max-h-[90vh] bg-black dark:bg-gray-950 items-center justify-center">
+        <div className={inline ? "hidden md:flex flex-1 bg-black dark:bg-gray-950 items-center justify-center min-h-[70vh]" : "hidden md:flex flex-1 max-h-[90vh] bg-black dark:bg-gray-950 items-center justify-center"}>
           <MediaCarousel
             media={
               post.post_media && post.post_media.length > 0
@@ -238,8 +238,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
           />
         </div>
 
-        <div className="w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10">
+        <div className={inline ? "w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] md:max-h-none overflow-visible border-l border-gray-200 dark:border-[#262626]" : "w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto"}>
+          <div className={inline ? "flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] bg-white dark:bg-[#121212]" : "flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10"}>
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                 <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
