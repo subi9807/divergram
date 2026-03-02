@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 import { getVideoInfo } from '../utils/videoUtils';
 import PostOptionsModal from './PostOptionsModal';
+import PostDetail from './PostDetail';
 import ShareModal from './ShareModal';
 import Stories from './Stories';
 import { renderTextWithMentions } from './MentionInput';
@@ -32,6 +33,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const [deleting, setDeleting] = useState(false);
   const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const [viewPost, setViewPost] = useState<Post | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pullStartY, setPullStartY] = useState(0);
   const [pullDistance, setPullDistance] = useState(0);
@@ -74,6 +76,13 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       loadSavedPosts();
     }
   }, [user]);
+
+
+  useEffect(() => {
+    if (!singlePostMode || !initialSelectedPostId || posts.length === 0) return;
+    const target = posts.find((p) => p.id === initialSelectedPostId);
+    if (target) setViewPost(target);
+  }, [singlePostMode, initialSelectedPostId, posts]);
 
   useEffect(() => {
     const handleWindowScroll = () => {
@@ -882,6 +891,23 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
           }}
           onSave={handleEditPost}
           post={selectedPost}
+        />
+      )}
+
+
+      {viewPost && (
+        <PostDetail
+          post={viewPost}
+          onClose={() => {
+            setViewPost(null);
+            if (singlePostMode) {
+              window.history.pushState({}, '', '/');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            } else {
+              loadPosts();
+            }
+          }}
+          onViewProfile={onViewProfile}
         />
       )}
 
