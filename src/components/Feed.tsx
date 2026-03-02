@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 import { getVideoInfo } from '../utils/videoUtils';
 import PostOptionsModal from './PostOptionsModal';
-import PostDetail from './PostDetail';
 import ShareModal from './ShareModal';
 import Stories from './Stories';
 import { renderTextWithMentions } from './MentionInput';
@@ -33,7 +32,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   const [deleting, setDeleting] = useState(false);
   const [followingUsers, setFollowingUsers] = useState<Set<string>>(new Set());
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
-  const [viewPost, setViewPost] = useState<Post | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pullStartY, setPullStartY] = useState(0);
   const [pullDistance, setPullDistance] = useState(0);
@@ -120,12 +118,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
       videos.forEach((v) => v.pause());
     };
   }, [displayedPosts]);
-
-  useEffect(() => {
-    if (singlePostMode) {
-      setViewPost(null);
-    }
-  }, [singlePostMode]);
 
   const loadFollowingUsers = async () => {
     if (!user) return;
@@ -651,7 +643,10 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                       <span className="text-xs font-medium">{likeCount}</span>
                     </button>
                     <button
-                      onClick={() => setViewPost(post)}
+                      onClick={() => {
+                        window.history.pushState({}, '', `/post?post=${post.id}`);
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }}
                       className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300 inline-flex items-center gap-1"
                     >
                       <MessageCircle className="h-6 w-6" strokeWidth={2.1} />
@@ -890,16 +885,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         />
       )}
 
-      {viewPost && (
-        <PostDetail
-          post={viewPost}
-          onClose={() => {
-            setViewPost(null);
-            loadPosts();
-          }}
-          onViewProfile={onViewProfile}
-        />
-      )}
 
       {showDeleteModal && (
         <DeleteConfirmModal
