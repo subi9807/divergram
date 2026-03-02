@@ -415,7 +415,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
                 <button className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300">
                   <MessageCircle className="h-7 w-7" />
                 </button>
-                <button className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300">
+                <button className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300" aria-label="공유" title="공유">
                   <Send className="h-7 w-7" />
                 </button>
               </div>

@@ -685,6 +685,8 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                     <button
                       onClick={() => handleShare(post)}
                       className="hover:text-gray-600 dark:text-white dark:hover:text-gray-300"
+                      aria-label="공유"
+                      title="공유"
                     >
                       <Send className="h-6 w-6" strokeWidth={2.1} />
                     </button>

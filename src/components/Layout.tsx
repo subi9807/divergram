@@ -326,6 +326,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       {currentPage !== 'reels' && (
       <button
         onClick={() => onNavigate('messages')}
+        aria-label="메시지"
+        title="메시지"
         className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
       >
         <div className="bg-white dark:bg-[#121212] rounded-full p-3 transition-colors">
@@ -335,6 +337,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-gray-700" />
           )}
         </div>
+        <div className="mt-1 text-[10px] font-semibold text-white text-center drop-shadow">메시지</div>
       </button>
       )}
 
