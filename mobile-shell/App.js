@@ -6,7 +6,8 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { BleManager } from 'react-native-ble-plx';
 
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://divergram-260228.web.app';
+const DEFAULT_WEB_URL = __DEV__ ? 'http://localhost:5173' : 'https://divergram-260228.web.app';
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || DEFAULT_WEB_URL;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -132,6 +133,11 @@ export default function App() {
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
         />
+
+        <View style={{ position: 'absolute', left: 12, bottom: 16, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, maxWidth: '72%' }}>
+          <Text style={{ color: '#9CA3AF', fontSize: 10 }} numberOfLines={1}>WEB_URL</Text>
+          <Text style={{ color: '#fff', fontSize: 11 }} numberOfLines={1}>{WEB_URL}</Text>
+        </View>
 
         <View style={{ position: 'absolute', right: 12, bottom: 16, flexDirection: 'row', gap: 8 }}>
           {canGoBack && (
