@@ -490,6 +490,27 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
     ? posts.filter((p) => p.id === initialSelectedPostId)
     : displayedPosts;
 
+  if (singlePostMode) {
+    const targetPost = viewPost || postsToRender[0] || null;
+    if (!targetPost) {
+      return (
+        <div className="flex justify-center items-center h-96 text-gray-500">게시물을 찾을 수 없습니다.</div>
+      );
+    }
+
+    return (
+      <PostDetail
+        post={targetPost}
+        onClose={() => {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onViewProfile={onViewProfile}
+        inline={true}
+      />
+    );
+  }
+
   return (
     <>
     <div
@@ -908,7 +929,6 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
             }
           }}
           onViewProfile={onViewProfile}
-          inline={singlePostMode}
         />
       )}
 
