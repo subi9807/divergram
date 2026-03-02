@@ -458,12 +458,18 @@ export const db = {
     async getSession() {
       const token = getToken();
       if (!token) return { data: { session: null } };
+
+      const local = getSessionLocal();
+      const localSession = local ? { user: local.user, profile: local.profile } : null;
+
       try {
         const r = await fetch(`${API_BASE}/api/auth/session`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!r.ok) return { data: { session: localSession } };
         const j = await r.json();
-        return { data: { session: j.session || null } };
+        return { data: { session: j.session || localSession } };
       } catch {
-        return { data: { session: null } };
+        // 네트워크 이슈가 있어도 앱 재시작 시 세션이 유지되도록 로컬 세션으로 폴백
+        return { data: { session: localSession } };
       }
     },
     onAuthStateChange(cb: AuthCb) {

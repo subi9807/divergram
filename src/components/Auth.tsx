@@ -19,9 +19,9 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        await signIn(email, password);
+        await signIn(email.trim(), password);
       } else {
-        await signUp(email, password, username, accountType);
+        await signUp(email.trim(), password, username.trim(), accountType);
       }
     } catch (err: any) {
       setError(err.message);
@@ -34,15 +34,22 @@ export default function Auth() {
     setError('');
     setLoading(true);
 
+    const DEMO_EMAIL = 'demo@divergram.app';
+    const DEMO_PASSWORD = 'Demo1234!';
+
     try {
-      await signIn('demo@instagram.com', 'Demo1234!');
-    } catch (err: any) {
-      setError('테스트 계정으로 로그인할 수 없습니다. 계정을 생성 중입니다...');
+      await signIn(DEMO_EMAIL, DEMO_PASSWORD);
+    } catch (_err: any) {
       try {
-        await signUp('demo@instagram.com', 'Demo1234!', 'demo_user', 'personal');
-        await signIn('demo@instagram.com', 'Demo1234!');
-      } catch (signUpErr: any) {
-        setError(signUpErr.message);
+        await signUp(DEMO_EMAIL, DEMO_PASSWORD, 'demo_user', 'personal');
+      } catch {
+        // 이미 계정이 있거나 생성 경쟁 상태일 수 있어 무시하고 재로그인 시도
+      }
+
+      try {
+        await signIn(DEMO_EMAIL, DEMO_PASSWORD);
+      } catch (retryErr: any) {
+        setError(retryErr?.message || '테스트 계정 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
       }
     } finally {
       setLoading(false);
