@@ -73,50 +73,53 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
   const loadRooms = async () => {
     if (!user) return;
 
-    const { data: participantData } = await db
-      .from('participants')
-      .select('room_id, rooms(id, type, created_at)')
-      .eq('user_id', user.id);
+    setLoading(true);
+    try {
+      const { data: participantData } = await db
+        .from('participants')
+        .select('room_id, user_id')
+        .eq('user_id', user.id);
 
-    if (!participantData) {
+      const roomIds = (participantData || []).map((p: any) => p.room_id).filter(Boolean);
+      if (roomIds.length === 0) {
+        setRooms([]);
+        return;
+      }
+
+      const [{ data: roomRows }, { data: otherParticipants }, { data: lastMessages }] = await Promise.all([
+        db.from('rooms').select('*').in('id', roomIds),
+        db
+          .from('participants')
+          .select('room_id, user_id, profiles(id, username, avatar_url, full_name)')
+          .in('room_id', roomIds)
+          .neq('user_id', user.id),
+        db.from('messages').select('*').in('room_id', roomIds).order('created_at', { ascending: false }),
+      ]);
+
+      const roomsWithDetails: RoomWithDetails[] = (roomRows || []).map((room: any) => {
+        const otherParticipant = otherParticipants?.find((op: any) => op.room_id === room.id);
+        const lastMsg = lastMessages?.find((m: any) => m.room_id === room.id);
+
+        return {
+          ...room,
+          otherUser: otherParticipant?.profiles,
+          lastMessage: lastMsg,
+        };
+      });
+
+      roomsWithDetails.sort((a, b) => {
+        const aTime = a.lastMessage?.created_at || a.created_at;
+        const bTime = b.lastMessage?.created_at || b.created_at;
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      });
+
+      setRooms(roomsWithDetails);
+    } catch (e) {
+      console.error('loadRooms failed', e);
+      setRooms([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const roomIds = participantData.map((p: any) => p.rooms.id);
-
-    const { data: otherParticipants } = await db
-      .from('participants')
-      .select('room_id, user_id, profiles(id, username, avatar_url, full_name)')
-      .in('room_id', roomIds)
-      .neq('user_id', user.id);
-
-    const { data: lastMessages } = await db
-      .from('messages')
-      .select('*')
-      .in('room_id', roomIds)
-      .order('created_at', { ascending: false });
-
-    const roomsWithDetails: RoomWithDetails[] = participantData.map((p: any) => {
-      const room = p.rooms;
-      const otherParticipant = otherParticipants?.find((op: any) => op.room_id === room.id);
-      const lastMsg = lastMessages?.find((m: any) => m.room_id === room.id);
-
-      return {
-        ...room,
-        otherUser: otherParticipant?.profiles,
-        lastMessage: lastMsg,
-      };
-    });
-
-    roomsWithDetails.sort((a, b) => {
-      const aTime = a.lastMessage?.created_at || a.created_at;
-      const bTime = b.lastMessage?.created_at || b.created_at;
-      return new Date(bTime).getTime() - new Date(aTime).getTime();
-    });
-
-    setRooms(roomsWithDetails);
-    setLoading(false);
   };
 
   const loadMessages = async (roomId: string) => {
