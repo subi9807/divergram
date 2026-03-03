@@ -5,6 +5,7 @@ import Icon from './components/Icon';
 import DashboardSection from './sections/DashboardSection';
 import MapSection from './sections/MapSection';
 import UsersSection from './sections/UsersSection';
+import ResortsSection from './sections/ResortsSection';
 import FeedsSection from './sections/FeedsSection';
 import ReelsSection from './sections/ReelsSection';
 import TablesSection from './sections/TablesSection';
@@ -17,6 +18,8 @@ export function AdminApp() {
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [query, setQuery] = useState('');
+  const [resortQuery, setResortQuery] = useState('');
+  const [resorts, setResorts] = useState([]);
   const [error, setError] = useState('');
   const [mapError, setMapError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,14 +38,15 @@ export function AdminApp() {
     if (!adminKey) return setError('ADMIN API KEY를 입력해줘.');
     setLoading(true); setError(''); localStorage.setItem('dg_admin_key', adminKey);
     try {
-      const [s, u, l, t, g] = await Promise.all([
+      const [s, u, l, t, g, rr] = await Promise.all([
         api('/api/admin/stats', { adminKey }),
         api(`/api/admin/users?q=${encodeURIComponent(query)}&limit=50`, { adminKey }),
         api('/api/admin/audit-logs?limit=20', { adminKey }),
         api('/api/admin/tables', { adminKey }),
         api('/api/admin/growth?days=14', { adminKey }),
+        api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`, { adminKey }),
       ]);
-      setStats(s.stats); setUsers(u.users || []); setLogs(l.logs || []); setTables(t.tables || []); setGrowth(g);
+      setStats(s.stats); setUsers(u.users || []); setLogs(l.logs || []); setTables(t.tables || []); setGrowth(g); setResorts(rr.resorts || []);
     } catch (e) { setError(e.message || '요청 실패'); } finally { setLoading(false); }
   };
 
@@ -53,6 +57,16 @@ export function AdminApp() {
 
   const updateUser = async (id, payload) => { try { await api(`/api/admin/users/${id}`, { adminKey, method: 'PATCH', body: payload }); await refresh(); } catch (e) { setError(e.message || '수정 실패'); } };
   const deleteUser = async (id) => { if (!confirm('정말 이 사용자를 삭제할까?')) return; try { await api(`/api/admin/users/${id}`, { adminKey, method: 'DELETE' }); await refresh(); } catch (e) { setError(e.message || '삭제 실패'); } };
+
+  const refreshResorts = async () => {
+    try { const r = await api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`, { adminKey }); setResorts(r.resorts || []); }
+    catch (e) { setError(e.message || '리조트 조회 실패'); }
+  };
+
+  const updateResort = async (id, patch) => {
+    try { await api(`/api/admin/resorts/${id}`, { adminKey, method: 'PATCH', body: patch }); await refreshResorts(); }
+    catch (e) { setError(e.message || '리조트 수정 실패'); }
+  };
 
   const seedBulk = async () => {
     try { setLoading(true); await api('/api/admin/seed-bulk', { adminKey, method: 'POST', body: { users: 50, posts: 300, comments: 1000, likes: 2000 } }); await api('/api/admin/migrate-normalized', { adminKey, method: 'POST' }); await refresh(); if (section === 'tables') await refreshTableRows(); }
@@ -122,7 +136,7 @@ export function AdminApp() {
   const blockData = useMemo(() => { const blocked = Number(stats?.blockedUsers || 0), usersCount = Number(stats?.users || 0); return [{ name: '정상', value: Math.max(0, usersCount - blocked) }, { name: '차단', value: blocked }]; }, [stats]);
 
   const menus = [
-    { key: 'dashboard', label: '대시보드' }, { key: 'map', label: '포인트 지도' }, { key: 'users', label: '사용자 관리' },
+    { key: 'dashboard', label: '대시보드' }, { key: 'map', label: '포인트 지도' }, { key: 'users', label: '사용자 관리' }, { key: 'resorts', label: '리조트 관리' },
     { key: 'feeds', label: '피드 관리' }, { key: 'reels', label: '릴스 관리' }, { key: 'tables', label: '테이블 조회' },
     { key: 'logs', label: '감사 로그' }, { key: 'settings', label: '설정' },
   ];
@@ -151,6 +165,7 @@ export function AdminApp() {
         {section === 'dashboard' && <DashboardSection stats={stats} trendData={trendData} memberTypeData={memberTypeData} blockData={blockData} />}
         {section === 'map' && <MapSection mapRef={mapRef} mapError={mapError} />}
         {section === 'users' && <UsersSection users={users} query={query} setQuery={setQuery} refresh={refresh} updateUser={updateUser} deleteUser={deleteUser} />}
+        {section === 'resorts' && <ResortsSection resorts={resorts} resortQuery={resortQuery} setResortQuery={setResortQuery} refreshResorts={refreshResorts} updateResort={updateResort} />}
         {section === 'feeds' && <FeedsSection feedRows={feedRows} feedPageRows={feedPageRows} feedPage={feedPage} feedTotalPages={feedTotalPages} setFeedPage={setFeedPage} />}
         {section === 'reels' && <ReelsSection reelRows={reelRows} reelPageRows={reelPageRows} reelPage={reelPage} reelTotalPages={reelTotalPages} setReelPage={setReelPage} getReelThumb={getReelThumb} />}
         {section === 'tables' && <TablesSection tables={tables} selectedTable={selectedTable} setSelectedTable={setSelectedTable} refreshTableRows={refreshTableRows} tableRows={tableRows} />}

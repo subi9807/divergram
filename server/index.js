@@ -713,7 +713,7 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 
     const list = await pool.query(
       `SELECT u.id, u.email, u.username, u.role, u.is_blocked, u.created_at,
-              p.avatar_url, p.full_name
+              p.avatar_url, p.full_name, p.account_type
        FROM app_users u
        LEFT JOIN app_profiles p ON p.id = u.id::text
        ${where ? where.replace(/email/g, 'u.email').replace(/username/g, 'u.username') : ''}
@@ -732,6 +732,7 @@ app.patch('/api/admin/users/:id', requireAdmin, async (req, res) => {
   const id = Number(req.params.id);
   const role = req.body?.role;
   const isBlocked = req.body?.is_blocked;
+  const accountType = req.body?.account_type;
   if (!id) return res.status(400).json({ error: 'invalid_user_id' });
 
   const fields = [];
@@ -748,7 +749,11 @@ app.patch('/api/admin/users/:id', requireAdmin, async (req, res) => {
     fields.push(`is_blocked = $${values.length}`);
   }
 
-  if (!fields.length) return res.status(400).json({ error: 'no_changes' });
+  if (accountType !== undefined && !['personal', 'resort'].includes(accountType)) {
+    return res.status(400).json({ error: 'invalid_account_type' });
+  }
+
+  if (!fields.length && accountType === undefined) return res.status(400).json({ error: 'no_changes' });
 
   values.push(id);
 
@@ -763,9 +768,14 @@ app.patch('/api/admin/users/:id', requireAdmin, async (req, res) => {
 
     if (!updated.rows.length) return res.status(404).json({ error: 'user_not_found' });
 
+    if (accountType !== undefined) {
+      await pool.query('UPDATE app_profiles SET account_type=$1 WHERE id=$2', [accountType, String(id)]);
+      updated.rows[0].account_type = accountType;
+    }
+
     await pool.query(
       'INSERT INTO admin_audit_logs(action, target_user_id, detail) VALUES ($1, $2, $3::jsonb)',
-      ['user_update', id, JSON.stringify({ role, is_blocked: isBlocked })]
+      ['user_update', id, JSON.stringify({ role, is_blocked: isBlocked, account_type: accountType })]
     );
 
     res.json({ ok: true, user: updated.rows[0] });
@@ -790,6 +800,44 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
     res.json({ ok: true, deleted: deleted.rows[0] });
   } catch {
     res.status(500).json({ ok: false, error: 'admin_user_delete_failed' });
+  }
+});
+
+
+app.get('/api/admin/resorts', requireAdmin, async (req, res) => {
+  const q = String(req.query.q || '').trim().toLowerCase();
+  try {
+    const r = await pool.query(`SELECT id, username, full_name, account_type, resort_address, resort_region, resort_rating_avg, resort_review_count, website, bio
+                                FROM app_profiles
+                                WHERE account_type='resort'
+                                ORDER BY created_at DESC`);
+    let rows = r.rows;
+    if (q) {
+      rows = rows.filter((x) => [x.username, x.full_name, x.resort_address, x.resort_region, x.bio].some((v) => String(v || '').toLowerCase().includes(q)));
+    }
+    res.json({ ok: true, resorts: rows });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_resorts_failed' });
+  }
+});
+
+app.patch('/api/admin/resorts/:id', requireAdmin, async (req, res) => {
+  const id = String(req.params.id || '');
+  if (!id) return res.status(400).json({ error: 'invalid_resort_id' });
+  const patch = req.body || {};
+  const allowed = ['full_name','bio','website','resort_address','resort_region','resort_lat','resort_lng'];
+  const keys = allowed.filter((k) => patch[k] !== undefined);
+  if (!keys.length) return res.status(400).json({ error: 'no_changes' });
+  try {
+    const vals = keys.map((k) => patch[k]);
+    const set = keys.map((k, i) => `${k}=$${i+1}`).join(', ');
+    vals.push(id);
+    const u = await pool.query(`UPDATE app_profiles SET ${set} WHERE id=$${vals.length} RETURNING *`, vals);
+    if (!u.rows.length) return res.status(404).json({ error: 'resort_not_found' });
+    await pool.query('INSERT INTO admin_audit_logs(action, target_user_id, detail) VALUES ($1, $2, $3::jsonb)', ['resort_update', Number(id), JSON.stringify(patch)]);
+    res.json({ ok: true, resort: u.rows[0] });
+  } catch {
+    res.status(500).json({ ok: false, error: 'admin_resort_update_failed' });
   }
 });
 
