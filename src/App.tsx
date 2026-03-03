@@ -45,6 +45,7 @@ function MainApp() {
     active: false,
     fromTop: false,
     blocked: false,
+    edge: 'none' as 'left' | 'right' | 'none',
   });
 
 
@@ -191,12 +192,14 @@ function MainApp() {
       if (!t) return;
       const target = e.target as HTMLElement | null;
       const blocked = !!target?.closest('input, textarea, [contenteditable="true"], [data-no-gesture="true"]');
+      const edge = t.clientX <= 28 ? 'left' : (t.clientX >= window.innerWidth - 28 ? 'right' : 'none');
       gestureRef.current = {
         x: t.clientX,
         y: t.clientY,
         active: true,
         fromTop: window.scrollY <= 2,
         blocked,
+        edge,
       };
     };
 
@@ -225,7 +228,7 @@ function MainApp() {
       if (!t) return;
       const dx = t.clientX - state.x;
       const dy = t.clientY - state.y;
-      if (Math.abs(dx) > Math.abs(dy) * 1.1) {
+      if ((state.edge === 'left' || state.edge === 'right') && Math.abs(dx) > Math.abs(dy) * 1.1) {
         applyDragOffset(dx);
       }
     };
@@ -243,10 +246,10 @@ function MainApp() {
       resetDragOffset();
 
       if (absX > 90 && absX > absY * 1.25) {
-        if (dx > 0) {
+        if (dx > 0 && state.edge === 'left' && window.history.length > 1) {
           playNavMotion('back');
           window.history.back();
-        } else {
+        } else if (dx < 0 && state.edge === 'right') {
           playNavMotion('forward');
           window.history.forward();
         }
