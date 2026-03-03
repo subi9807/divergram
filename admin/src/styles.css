@@ -1,7 +1,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Inter, -apple-system, sans-serif; background: #fafafa; color: #111827; }
 .layout { display: grid; grid-template-columns: 80px 1fr; min-height: 100vh; }
-.sidebar { background: #fff; color: #111827; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #e5e7eb; }
+.sidebar { background: #fff; color: #111827; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 40; height: 100vh; }
 .brand { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 14px; font-weight: 700; background: #111827; color: #fff; }
 .side-menu { margin-top: 16px; display: grid; gap: 8px; width: 100%; }
 .side-menu button { width: 100%; text-align: center; background: #fff; border: 1px solid transparent; color: #6b7280; padding: 10px 0; position: relative; }
@@ -17,7 +17,7 @@ body { margin: 0; font-family: Inter, -apple-system, sans-serif; background: #fa
 .content.map-mode { padding: 0; gap: 0; height: 100vh; overflow: hidden; }
 .topbar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(250,250,250,0.9); backdrop-filter: blur(6px); border: 1px solid #e5e7eb; border-radius: 12px; }
 .content.map-mode .topbar { display: none; }
-.map-full { width: 100%; height: 100vh; }
+.map-full { width: 100%; height: 100vh; position: relative; z-index: 1; }
 .status-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 12px; background: #fff; font-size: 13px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
 .dot.ok { background: #22c55e; }
@@ -44,7 +44,7 @@ button.danger { background: #b91c1c; }
 code { white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; }
-  .sidebar { padding: 10px; flex-direction: row; justify-content: space-between; }
+  .sidebar { padding: 10px; flex-direction: row; justify-content: space-between; position: static; height: auto; }
   .side-menu { margin-top: 0; display: flex; gap: 8px; width: auto; }
   .side-menu button { width: 42px; }
   .monitor-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
