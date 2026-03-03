@@ -8,6 +8,7 @@ import Search from './components/Search';
 import Profile from './components/Profile';
 import Messages from './components/Messages';
 import Explore from './components/Explore';
+import Resorts from './components/Resorts';
 import Reels from './components/Reels';
 import Notifications from './components/Notifications';
 import LocationMapPage from './components/LocationMapPage';
@@ -54,6 +55,7 @@ function MainApp() {
 
     let pathname = '/';
     if (currentPage === 'explore') pathname = '/explore';
+    else if (currentPage === 'resorts') pathname = '/resorts';
     else if (currentPage === 'reels') pathname = '/reels';
     else if (currentPage === 'profile') pathname = '/profile';
     else if (currentPage === 'profile-saved') pathname = '/profile/saved';
@@ -113,6 +115,7 @@ function MainApp() {
       const q = new URLSearchParams(search);
 
       if (pathname === '/explore') setCurrentPage('explore');
+      else if (pathname === '/resorts') setCurrentPage('resorts');
       else if (pathname === '/reels') setCurrentPage('reels');
       else if (pathname === '/profile') setCurrentPage('profile');
       else if (pathname === '/profile/saved') setCurrentPage('profile-saved');
@@ -287,6 +290,8 @@ function MainApp() {
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
       case 'explore':
         return <Explore onViewProfile={handleViewProfile} initialTag={exploreTag} />;
+      case 'resorts':
+        return <Resorts onViewProfile={handleViewProfile} />;
       case 'reels':
         return <Reels onViewProfile={handleViewProfile} />;
       case 'profile':

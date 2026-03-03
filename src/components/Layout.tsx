@@ -4,6 +4,7 @@ import {
   ChatBubbleOvalLeftEllipsisIcon,
   UserCircleIcon,
   MapIcon,
+  BuildingStorefrontIcon,
   FilmIcon,
   BellIcon,
   Bars3Icon,
@@ -84,6 +85,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const navItems = [
     { id: 'home', icon: HomeIcon, label: '홈' },
     { id: 'explore', icon: MagnifyingGlassIcon, label: '탐색' },
+    { id: 'resorts', icon: BuildingStorefrontIcon, label: '리조트' },
     { id: 'location', icon: MapIcon, label: '포인트 지도' },
     { id: 'reels', icon: FilmIcon, label: '릴스' },
     { id: 'create', icon: PlusCircleIcon, label: '게시물 등록' },
