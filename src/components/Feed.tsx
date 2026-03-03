@@ -514,7 +514,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
   return (
     <>
     <div
-      className="w-full max-w-full px-2.5 md:px-4 py-0 md:py-8 box-border max-w-[630px] mx-auto text-gray-900 dark:text-gray-100"
+      className="w-full max-w-full px-2.5 md:px-4 py-2 md:py-10 box-border max-w-[630px] mx-auto text-gray-900 dark:text-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -537,11 +537,11 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="mb-6 md:mb-8">
         <Stories onUserSelect={onViewProfile} />
       </div>
 
-      <div className="space-y-0 md:space-y-6 max-w-[470px] mx-auto">
+      <div className="space-y-3 md:space-y-8 max-w-[470px] mx-auto">
         {postsToRender.map((post) => {
           const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
           const likeCount = post.likes.length;
@@ -549,7 +549,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
           return (
             <div key={post.id} className="bg-white dark:bg-[#121212] transition-colors">
-              <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center justify-between px-3 py-3.5">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => onViewProfile(post.user_id)}
@@ -659,7 +659,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 ) : null}
               </div>
 
-              <div className="px-3 py-2.5 space-y-2.5">
+              <div className="px-3 py-3.5 space-y-3.5">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-4">
                     <button
