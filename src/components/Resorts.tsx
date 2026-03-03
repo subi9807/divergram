@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { db } from '../lib/internal-db';
-import { useAuth } from '../contexts/AuthContext';
 
 interface ResortProfile {
   id: string;
@@ -44,14 +43,9 @@ function expandQuery(raw: string) {
 }
 
 export default function Resorts({ onViewProfile }: ResortsProps) {
-  const { user } = useAuth();
   const [items, setItems] = useState<ResortProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState('');
-  const [savingReview, setSavingReview] = useState(false);
 
   const loadResorts = async () => {
     setLoading(true);
@@ -103,42 +97,12 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
     return rows;
   }, [items, query]);
 
-  const submitReview = async () => {
-    if (!user || !selectedId || savingReview) return;
-    setSavingReview(true);
-
-    await db.from('resort_reviews').insert({
-      resort_id: selectedId,
-      user_id: user.id,
-      rating,
-      content: reviewText.trim() || null,
-      created_at: new Date().toISOString(),
-    });
-
-    const { data: reviews } = await db
-      .from('resort_reviews')
-      .select('rating')
-      .eq('resort_id', selectedId);
-
-    const count = (reviews || []).length;
-    const avg = count ? (reviews || []).reduce((s: number, r: any) => s + Number(r.rating || 0), 0) / count : 0;
-
-    await db.from('profiles').update({
-      resort_rating_avg: Number(avg.toFixed(2)),
-      resort_review_count: count,
-    }).eq('id', selectedId);
-
-    setReviewText('');
-    setSelectedId(null);
-    setSavingReview(false);
-    loadResorts();
-  };
 
   return (
     <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto text-gray-900 dark:text-gray-100">
       <div className="mb-5">
         <h1 className="text-2xl font-bold">리조트</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">가까운 리조트부터 확인하고, 리뷰를 남겨 신뢰도 높은 정보를 만들어보세요.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">원하는 리조트를 검색하고 세부페이지에서 자세한 정보를 확인해보세요.</p>
       </div>
 
       <div className="mb-5">
@@ -157,7 +121,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] overflow-hidden">
+            <div key={r.id} onClick={() => onViewProfile(r.id)} className="rounded-2xl border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
               <div className="relative h-36 md:h-40">
                 <img src={r.cover_url} alt={`${r.username} cover`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -175,48 +139,27 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
               <div className="p-4">
                 {r.bio ? <p className="text-sm line-clamp-3">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                  <div>📍 {r.resort_address || '주소 미등록'}</div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const loc = r.resort_address || r.resort_region || '';
+                      if (!loc) return;
+                      window.history.pushState({}, '', `/location?loc=${encodeURIComponent(loc)}`);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="hover:underline text-left"
+                  >📍 {r.resort_address || '주소 미등록'}</button>
                   <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰)</div>
                 </div>
 
-                <div className="mt-4 flex gap-2 flex-wrap items-center">
-                  <button
-                    onClick={() => onViewProfile(r.id)}
-                    className="px-3 py-2 rounded-lg border border-gray-300 dark:border-[#3a3a3a] text-sm hover:bg-gray-50 dark:hover:bg-[#1f1f1f]"
-                  >
-                    세부페이지 보기
-                  </button>
-                  <span className="text-xs text-gray-500">리뷰/웹사이트는 세부페이지에서 확인</span>
-                </div>
+                <div className="mt-4 text-xs text-gray-500">카드를 탭하면 세부페이지로 이동합니다.</div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {selectedId && (
-        <div className="fixed inset-0 z-[120] bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white dark:bg-[#121212] rounded-2xl border border-gray-200 dark:border-[#262626] p-4">
-            <h3 className="text-lg font-semibold mb-3">리뷰 남기기</h3>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-gray-500">별점</span>
-              <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="rounded-lg border px-2 py-1 bg-transparent">
-                {[5,4,3,2,1].map((n) => <option key={n} value={n}>{n}점</option>)}
-              </select>
-            </div>
-            <textarea
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-[#3a3a3a] bg-white dark:bg-[#1a1a1a] p-3 min-h-24"
-              placeholder="리조트 경험을 간단히 적어주세요"
-            />
-            <div className="mt-3 flex justify-end gap-2">
-              <button className="px-3 py-2 rounded-lg border" onClick={() => setSelectedId(null)}>취소</button>
-              <button className="px-3 py-2 rounded-lg bg-blue-600 text-white" onClick={submitReview} disabled={savingReview || !user}>{savingReview ? '저장중...' : '등록'}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
