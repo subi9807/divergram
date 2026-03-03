@@ -48,7 +48,8 @@ export default function Messages({ isOpen, onClose }: MessagesProps) {
             filter: `room_id=eq.${selectedRoom.id}`,
           },
           (payload) => {
-            const newMsg = payload.new as Message;
+            const newMsg = (payload as any)?.new as Message | undefined;
+            if (!newMsg) return;
             setMessages((prev) => [...prev, newMsg]);
             scrollToBottom();
             if (newMsg.sender_id !== user?.id) {

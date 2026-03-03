@@ -179,29 +179,14 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
                   <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰)</div>
                 </div>
 
-                <div className="mt-4 flex gap-2 flex-wrap">
+                <div className="mt-4 flex gap-2 flex-wrap items-center">
                   <button
                     onClick={() => onViewProfile(r.id)}
                     className="px-3 py-2 rounded-lg border border-gray-300 dark:border-[#3a3a3a] text-sm hover:bg-gray-50 dark:hover:bg-[#1f1f1f]"
                   >
-                    프로필 보기
+                    세부페이지 보기
                   </button>
-                  <button
-                    onClick={() => setSelectedId(r.id)}
-                    className="px-3 py-2 rounded-lg border border-amber-300 text-amber-700 dark:text-amber-400 text-sm hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                  >
-                    리뷰 남기기
-                  </button>
-                  {r.website ? (
-                    <a
-                      href={r.website.startsWith('http') ? r.website : `https://${r.website}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-                    >
-                      웹사이트
-                    </a>
-                  ) : null}
+                  <span className="text-xs text-gray-500">리뷰/웹사이트는 세부페이지에서 확인</span>
                 </div>
               </div>
             </div>
