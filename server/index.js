@@ -841,7 +841,7 @@ function applyJsonFilters(rows, filters = []) {
 }
 
 const DATA_TABLES = {
-  profiles: { table: 'app_profiles', columns: ['id','username','full_name','bio','avatar_url','website','account_type','created_at'] },
+  profiles: { table: 'app_profiles', columns: ['id','username','full_name','bio','avatar_url','website','account_type','resort_address','resort_region','resort_lat','resort_lng','resort_rating_avg','resort_review_count','created_at'] },
   posts: { table: 'app_posts', columns: ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','visibility','gas_type','gas_percent','buddy','buddy_name','created_at'] },
   post_media: { table: 'app_post_media', columns: ['id','post_id','media_url','media_type','order_index','created_at'] },
   likes: { table: 'app_likes', columns: ['id','post_id','user_id','created_at'] },
@@ -853,6 +853,7 @@ const DATA_TABLES = {
   participants: { table: 'app_participants', columns: ['id','room_id','user_id','joined_at'] },
   messages: { table: 'app_messages', columns: ['id','room_id','sender_id','content','created_at','read_at'] },
   reports: { table: 'app_reports', columns: ['id','user_id','reason','status','created_at'] },
+  resort_reviews: { table: 'app_resort_reviews', columns: ['id','resort_id','user_id','rating','content','created_at'] },
 };
 
 function resolveDataTable(name) {
