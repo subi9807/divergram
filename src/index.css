@@ -51,3 +51,12 @@ body {
   background: #262626;
   color: #f3f4f6;
 }
+
+@keyframes mobileMenuSlideIn {
+  from { transform: translateX(100%); opacity: 0.9; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-mobile-menu-slide-in {
+  animation: mobileMenuSlideIn 220ms ease-out;
+}

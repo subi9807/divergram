@@ -135,13 +135,22 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </header>
 
       {showMobileMenu && (
-        <>
+        <div className="fixed inset-0 z-50 md:hidden">
           <button
-            className="fixed inset-0 top-16 bg-black/30 z-40 md:hidden"
+            className="absolute inset-0 bg-black/50"
             aria-label="메뉴 닫기"
             onClick={() => setShowMobileMenu(false)}
           />
-          <div className="fixed top-16 right-0 w-[88vw] max-w-[380px] bg-white dark:bg-[#121212] border-l border-b border-gray-300 dark:border-[#262626] shadow-2xl z-50 md:hidden transition-colors rounded-bl-2xl">
+          <div className="absolute inset-0 bg-white dark:bg-[#121212] animate-mobile-menu-slide-in transition-colors">
+            <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#262626]">
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
+                aria-label="메뉴 닫기"
+              >
+                <Bars3Icon className="h-6 w-6 dark:text-white" />
+              </button>
+            </div>
             <div className="py-3">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -164,7 +173,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               })}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       <div className="flex">
