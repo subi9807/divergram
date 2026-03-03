@@ -135,29 +135,36 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </header>
 
       {showMobileMenu && (
-        <div className="fixed top-16 right-0 w-64 bg-white dark:bg-[#121212] border-l border-b border-gray-300 dark:border-[#262626] shadow-lg z-40 md:hidden transition-colors">
-          <div className="py-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onNavigate(item.id);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
-                    isActive ? 'bg-gray-100 dark:bg-gray-700 font-semibold' : ''
-                  }`}
-                >
-                  <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+        <>
+          <button
+            className="fixed inset-0 top-16 bg-black/30 z-40 md:hidden"
+            aria-label="메뉴 닫기"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="fixed top-16 right-0 w-[88vw] max-w-[380px] bg-white dark:bg-[#121212] border-l border-b border-gray-300 dark:border-[#262626] shadow-2xl z-50 md:hidden transition-colors rounded-bl-2xl">
+            <div className="py-3">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPage === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      onNavigate(item.id);
+                      setShowMobileMenu(false);
+                    }}
+                    className={`w-full flex items-center space-x-4 px-6 py-4 text-base hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                      isActive ? 'bg-gray-100 dark:bg-gray-700 font-semibold' : ''
+                    }`}
+                  >
+                    <Icon className={`h-7 w-7 ${isActive ? 'fill-current' : ''}`} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="flex">
