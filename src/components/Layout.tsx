@@ -200,7 +200,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
 
               {showMoreMenu && (
-                <div className="absolute bottom-full left-[76px] mb-2 w-56 bg-white dark:bg-[#121212] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#262626] py-2 z-50 transition-colors">
+                <div className="absolute bottom-full left-[68px] mb-3 w-56 bg-white dark:bg-[#121212] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#262626] py-2 z-50 transition-colors">
                   <button
                     onClick={() => {
                       onNavigate('settings');
