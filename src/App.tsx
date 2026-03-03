@@ -192,7 +192,7 @@ function MainApp() {
       if (!t) return;
       const target = e.target as HTMLElement | null;
       const blocked = !!target?.closest('input, textarea, [contenteditable="true"], [data-no-gesture="true"]');
-      const edge = t.clientX <= 28 ? 'left' : (t.clientX >= window.innerWidth - 28 ? 'right' : 'none');
+      const edge = t.clientX <= 80 ? 'left' : (t.clientX >= window.innerWidth - 80 ? 'right' : 'none');
       gestureRef.current = {
         x: t.clientX,
         y: t.clientY,
@@ -246,7 +246,7 @@ function MainApp() {
       resetDragOffset();
 
       if (absX > 90 && absX > absY * 1.25) {
-        if (dx > 0 && state.edge === 'left' && window.history.length > 1) {
+        if (dx > 0 && state.edge === 'left') {
           playNavMotion('back');
           window.history.back();
         } else if (dx < 0 && state.edge === 'right') {
