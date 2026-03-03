@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -39,6 +39,14 @@ function MainApp() {
   const [opsAuthorized, setOpsAuthorized] = useState(false);
   const [opsLoading, setOpsLoading] = useState(false);
   const [opsInfo, setOpsInfo] = useState<{ apiOk: boolean; users: number; posts: number; reels: number; apiBase: string; ts: string } | null>(null);
+  const gestureRef = useRef({
+    x: 0,
+    y: 0,
+    active: false,
+    fromTop: false,
+    blocked: false,
+  });
+
 
   const urlState = useMemo(() => {
     const modal = showCreatePost
@@ -161,6 +169,54 @@ function MainApp() {
     applyFromUrl();
     window.addEventListener('popstate', applyFromUrl);
     return () => window.removeEventListener('popstate', applyFromUrl);
+  }, []);
+
+
+  useEffect(() => {
+    const isMobile = () => window.matchMedia('(max-width: 1279px)').matches;
+
+    const onStart = (e: TouchEvent) => {
+      if (!isMobile()) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const target = e.target as HTMLElement | null;
+      const blocked = !!target?.closest('input, textarea, [contenteditable="true"], [data-no-gesture="true"]');
+      gestureRef.current = {
+        x: t.clientX,
+        y: t.clientY,
+        active: true,
+        fromTop: window.scrollY <= 2,
+        blocked,
+      };
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      const state = gestureRef.current;
+      if (!state.active || state.blocked || !isMobile()) return;
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - state.x;
+      const dy = t.clientY - state.y;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      if (absX > 90 && absX > absY * 1.25) {
+        if (dx > 0) window.history.back();
+        else window.history.forward();
+      } else if (state.fromTop && dy > 120 && absY > absX * 1.25) {
+        window.location.reload();
+      }
+
+      gestureRef.current.active = false;
+    };
+
+    window.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchend', onEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', onStart as any);
+      window.removeEventListener('touchend', onEnd as any);
+    };
   }, []);
 
   useEffect(() => {
