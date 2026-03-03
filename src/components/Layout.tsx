@@ -122,8 +122,17 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             <button
               onClick={() => onNavigate('notifications')}
               className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full relative transition-colors"
+              aria-label="알림"
             >
               <BellIcon className={`h-6 w-6 dark:text-white ${currentPage === 'notifications' ? 'text-black dark:text-white' : ''}`} />
+            </button>
+            <button
+              onClick={() => setShowMobileMenu((v) => !v)}
+              className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
+              aria-label="전체 메뉴"
+              title="전체 메뉴"
+            >
+              <Bars3Icon className="h-6 w-6 dark:text-white" />
             </button>
           </div>
         </div>
