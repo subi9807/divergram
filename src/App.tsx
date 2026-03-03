@@ -200,6 +200,36 @@ function MainApp() {
       };
     };
 
+    const applyDragOffset = (dx: number) => {
+      const el = document.getElementById('root');
+      if (!el) return;
+      const limited = Math.max(-26, Math.min(26, dx * 0.22));
+      el.style.transform = `translateX(${limited}px)`;
+      el.style.transition = 'transform 0ms';
+    };
+
+    const resetDragOffset = () => {
+      const el = document.getElementById('root');
+      if (!el) return;
+      el.style.transition = 'transform 180ms ease-out';
+      el.style.transform = 'translateX(0px)';
+      window.setTimeout(() => {
+        el.style.transition = '';
+      }, 190);
+    };
+
+    const onMove = (e: TouchEvent) => {
+      const state = gestureRef.current;
+      if (!state.active || state.blocked || !isMobile()) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const dx = t.clientX - state.x;
+      const dy = t.clientY - state.y;
+      if (Math.abs(dx) > Math.abs(dy) * 1.1) {
+        applyDragOffset(dx);
+      }
+    };
+
     const onEnd = (e: TouchEvent) => {
       const state = gestureRef.current;
       if (!state.active || state.blocked || !isMobile()) return;
@@ -209,6 +239,8 @@ function MainApp() {
       const dy = t.clientY - state.y;
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
+
+      resetDragOffset();
 
       if (absX > 90 && absX > absY * 1.25) {
         if (dx > 0) {
@@ -226,10 +258,12 @@ function MainApp() {
     };
 
     window.addEventListener('touchstart', onStart, { passive: true });
+    window.addEventListener('touchmove', onMove, { passive: true });
     window.addEventListener('touchend', onEnd, { passive: true });
 
     return () => {
       window.removeEventListener('touchstart', onStart as any);
+      window.removeEventListener('touchmove', onMove as any);
       window.removeEventListener('touchend', onEnd as any);
     };
   }, []);

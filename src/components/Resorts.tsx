@@ -153,7 +153,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
                   <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰)</div>
                 </div>
 
-                <div className="mt-4 text-xs text-gray-500">카드를 탭하면 세부페이지로 이동합니다.</div>
               </div>
             </div>
           ))}
