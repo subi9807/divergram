@@ -34,23 +34,37 @@ export default function Auth() {
     setError('');
     setLoading(true);
 
-    const DEMO_EMAIL = 'demo@divergram.app';
     const DEMO_PASSWORD = 'Demo1234!';
+    const candidateEmails = ['demo@divergram.app', 'demo@instagram.com'];
 
     try {
-      await signIn(DEMO_EMAIL, DEMO_PASSWORD);
-    } catch (_err: any) {
-      try {
-        await signUp(DEMO_EMAIL, DEMO_PASSWORD, 'demo_user', 'personal');
-      } catch {
-        // 이미 계정이 있거나 생성 경쟁 상태일 수 있어 무시하고 재로그인 시도
+      // 1) 기존 데모 계정 먼저 시도
+      for (const email of candidateEmails) {
+        try {
+          await signIn(email, DEMO_PASSWORD);
+          return;
+        } catch {
+          // 다음 후보로 진행
+        }
       }
 
+      // 2) 기본 데모 계정 생성 시도
       try {
-        await signIn(DEMO_EMAIL, DEMO_PASSWORD);
-      } catch (retryErr: any) {
-        setError(retryErr?.message || '테스트 계정 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        await signUp('demo@divergram.app', DEMO_PASSWORD, 'demo_user', 'personal');
+        await signIn('demo@divergram.app', DEMO_PASSWORD);
+        return;
+      } catch {
+        // 이미 존재/충돌 가능 -> 임시 데모 계정으로 폴백
       }
+
+      // 3) 항상 동작하도록 임시 데모 계정 생성 후 로그인
+      const stamp = Date.now().toString().slice(-6);
+      const tempEmail = `demo+${stamp}@divergram.app`;
+      const tempUsername = `demo_${stamp}`;
+      await signUp(tempEmail, DEMO_PASSWORD, tempUsername, 'personal');
+      await signIn(tempEmail, DEMO_PASSWORD);
+    } catch (err: any) {
+      setError(err?.message || '테스트 계정 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }
