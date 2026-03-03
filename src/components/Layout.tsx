@@ -98,11 +98,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <button onClick={() => onNavigate('home')} className="cursor-pointer" aria-label="Divergram 홈">
-              <img
-                src={isDarkMode ? '/assets/logo/divergram-logo-dark.png' : '/assets/logo/divergram-logo-light.png'}
-                alt="Divergram"
-                className="h-8 w-8 object-contain"
-              />
+              <div className="w-10 h-10 rounded-xl bg-[#111827] text-white text-sm font-bold flex items-center justify-center">DG</div>
             </button>
 
             <div className="hidden md:flex flex-1 max-w-md">
@@ -169,11 +165,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
               <button onClick={() => onNavigate('home')} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
-                <img
-                  src={isDarkMode ? '/assets/logo/divergram-logo-dark.png' : '/assets/logo/divergram-logo-light.png'}
-                  alt="Divergram"
-                  className="h-8 w-8 object-contain"
-                />
+                <div className="w-10 h-10 rounded-xl bg-[#111827] text-white text-sm font-bold flex items-center justify-center">DG</div>
               </button>
             </div>
             <div className="flex-1 flex flex-col justify-center">
