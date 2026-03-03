@@ -53,10 +53,11 @@ body {
 }
 
 @keyframes mobileMenuSlideIn {
-  from { transform: translateX(100%); opacity: 0.9; }
-  to { transform: translateX(0); opacity: 1; }
+  0% { transform: translateX(110%); opacity: 0.75; }
+  78% { transform: translateX(-2%); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
 }
 
 .animate-mobile-menu-slide-in {
-  animation: mobileMenuSlideIn 220ms ease-out;
+  animation: mobileMenuSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
