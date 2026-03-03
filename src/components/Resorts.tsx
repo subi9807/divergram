@@ -33,17 +33,6 @@ const REGION_ALIASES: Record<string, string[]> = {
   indonesia: ['인도네시아', 'indonesia'],
 };
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
-
 function expandQuery(raw: string) {
   const q = raw.trim().toLowerCase();
   if (!q) return [] as string[];
@@ -59,8 +48,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
   const [items, setItems] = useState<ResortProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [regionFilter, setRegionFilter] = useState('all');
-  const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
@@ -92,16 +79,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
       });
     }
 
-    if (myPos) {
-      resorts.forEach((r) => {
-        if (r.resort_lat != null && r.resort_lng != null) {
-          r.distanceKm = haversineKm(myPos.lat, myPos.lng, Number(r.resort_lat), Number(r.resort_lng));
-        } else {
-          r.distanceKm = null;
-        }
-      });
-    }
-
     setItems(resorts);
     setLoading(false);
   };
@@ -109,16 +86,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
   useEffect(() => {
     loadResorts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myPos]);
-
-  const requestMyLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setMyPos(null),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
+  }, []);
 
   const filtered = useMemo(() => {
     const keys = expandQuery(query);
@@ -130,31 +98,10 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
       return keys.some((k) => hay.includes(k));
     });
 
-    if (regionFilter !== 'all') {
-      rows = rows.filter((r) => String(r.resort_region || '').toLowerCase() === regionFilter);
-    }
-
-    if (myPos) {
-      rows = [...rows].sort((a, b) => {
-        const ad = a.distanceKm ?? Number.POSITIVE_INFINITY;
-        const bd = b.distanceKm ?? Number.POSITIVE_INFINITY;
-        return ad - bd;
-      });
-    } else {
-      rows = [...rows].sort((a, b) => (b.resort_review_count || 0) - (a.resort_review_count || 0));
-    }
+    rows = [...rows].sort((a, b) => (Number(b.resort_review_count || 0)) - (Number(a.resort_review_count || 0)));
 
     return rows;
-  }, [items, query, regionFilter, myPos]);
-
-  const regions = useMemo(() => {
-    const set = new Set<string>();
-    items.forEach((r) => {
-      const v = String(r.resort_region || '').trim().toLowerCase();
-      if (v) set.add(v);
-    });
-    return ['all', ...Array.from(set)];
-  }, [items]);
+  }, [items, query]);
 
   const submitReview = async () => {
     if (!user || !selectedId || savingReview) return;
@@ -194,28 +141,13 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">가까운 리조트부터 확인하고, 리뷰를 남겨 신뢰도 높은 정보를 만들어보세요.</p>
       </div>
 
-      <div className="mb-5 grid grid-cols-1 md:grid-cols-3 gap-2">
+      <div className="mb-5">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="필리핀, Pilipinas, Philippines 같이 다국어 검색"
-          className="md:col-span-2 w-full rounded-xl border border-gray-300 dark:border-[#262626] bg-white dark:bg-[#1a1a1a] px-4 py-3 text-sm"
+          placeholder="검색어를 입력하세요"
+          className="w-full rounded-xl border border-gray-300 dark:border-[#262626] bg-white dark:bg-[#1a1a1a] px-4 py-3 text-sm"
         />
-        <div className="flex gap-2">
-          <select
-            value={regionFilter}
-            onChange={(e) => setRegionFilter(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 dark:border-[#262626] bg-white dark:bg-[#1a1a1a] px-3 py-3 text-sm"
-          >
-            {regions.map((r) => <option key={r} value={r}>{r === 'all' ? '전체 지역' : r}</option>)}
-          </select>
-          <button
-            onClick={requestMyLocation}
-            className="px-3 rounded-xl bg-sky-600 text-white text-sm hover:bg-sky-700"
-          >
-            내 주변순
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -244,7 +176,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
                 {r.bio ? <p className="text-sm line-clamp-3">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <div>📍 {r.resort_address || '주소 미등록'}</div>
-                  <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰){r.distanceKm != null ? ` · ${r.distanceKm.toFixed(1)}km` : ''}</div>
+                  <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰)</div>
                 </div>
 
                 <div className="mt-4 flex gap-2 flex-wrap">
