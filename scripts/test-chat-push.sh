@@ -2,7 +2,7 @@
 set -euo pipefail
 
 API="${API:-http://127.0.0.1:4000}"
-EMAIL="${EMAIL:-sample1@divergram.local}"
+EMAIL="${EMAIL:-sample1@divergram.com}"
 PASS="${PASS:-Password123!}"
 ROOM_ID="${ROOM_ID:-}"
 PLATFORM="${PLATFORM:-android}"

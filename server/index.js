@@ -1065,7 +1065,7 @@ app.post('/api/admin/seed-bulk', requireAdmin, async (req, res) => {
       const username = isResort
         ? `${resorts[(i / 4) % resorts.length | 0].toLowerCase()}_${i}`
         : `${firstNames[i % firstNames.length].toLowerCase()}.${lastNames[i % lastNames.length].toLowerCase()}${i}`;
-      const email = `${username}@divergram.local`;
+      const email = `${username}@divergram.com`;
 
       await pool.query(
         `INSERT INTO app_users(email,password_hash,password_sha256,username,role,is_blocked)

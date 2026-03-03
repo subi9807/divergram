@@ -62,8 +62,8 @@ export function AdminApp() {
   const checkUserAdminAuth = async () => {
     try {
       const [adminRes, userRes] = await Promise.all([
-        fetch(`${API_BASE}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'admin@divergram.local', password: 'Password123!' }) }),
-        fetch(`${API_BASE}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'sample1@divergram.local', password: 'Password123!' }) }),
+        fetch(`${API_BASE}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'admin@divergram.com', password: 'Password123!' }) }),
+        fetch(`${API_BASE}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'sample1@divergram.com', password: 'Password123!' }) }),
       ]);
       setAuthCheck({ adminOk: adminRes.ok, userOk: userRes.ok });
     } catch { setAuthCheck({ adminOk: false, userOk: false }); }
