@@ -175,6 +175,16 @@ function MainApp() {
   useEffect(() => {
     const isMobile = () => window.matchMedia('(max-width: 1279px)').matches;
 
+    const playNavMotion = (dir: 'back' | 'forward') => {
+      const el = document.getElementById('root');
+      if (!el) return;
+      el.classList.remove('dg-nav-back', 'dg-nav-forward');
+      // reflow
+      void el.getBoundingClientRect();
+      el.classList.add(dir === 'back' ? 'dg-nav-back' : 'dg-nav-forward');
+      window.setTimeout(() => el.classList.remove('dg-nav-back', 'dg-nav-forward'), 240);
+    };
+
     const onStart = (e: TouchEvent) => {
       if (!isMobile()) return;
       const t = e.touches[0];
@@ -201,8 +211,13 @@ function MainApp() {
       const absY = Math.abs(dy);
 
       if (absX > 90 && absX > absY * 1.25) {
-        if (dx > 0) window.history.back();
-        else window.history.forward();
+        if (dx > 0) {
+          playNavMotion('back');
+          window.history.back();
+        } else {
+          playNavMotion('forward');
+          window.history.forward();
+        }
       } else if (state.fromTop && dy > 120 && absY > absX * 1.25) {
         window.location.reload();
       }

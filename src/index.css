@@ -61,3 +61,15 @@ body {
 .animate-mobile-menu-slide-in {
   animation: mobileMenuSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+@keyframes dgNavBack {
+  0% { transform: translateX(-14px); opacity: 0.92; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes dgNavForward {
+  0% { transform: translateX(14px); opacity: 0.92; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+#root.dg-nav-back { animation: dgNavBack 220ms ease-out; }
+#root.dg-nav-forward { animation: dgNavForward 220ms ease-out; }
