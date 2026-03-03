@@ -42,10 +42,36 @@ function expandQuery(raw: string) {
   return [...out];
 }
 
+function hashNum(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+function deriveTags(r: ResortProfile) {
+  const all = ['초보환영', '보트다이빙', '야간다이빙', '한국어가능', '장비렌탈'];
+  const h = hashNum(r.username);
+  return [all[h % all.length], all[(h + 2) % all.length], all[(h + 4) % all.length]];
+}
+
+function deriveFacilities(r: ResortProfile) {
+  const opts = ['🚿 샤워실', '🧰 장비렌탈', '🚐 픽업', '🏨 숙소연계', '🅿️ 주차'];
+  const h = hashNum(r.username + 'fac');
+  return [opts[h % opts.length], opts[(h + 1) % opts.length], opts[(h + 3) % opts.length]];
+}
+
+function derivePromo(r: ResortProfile) {
+  const promos = ['첫 방문 10% 할인', '체험다이빙 1+1', '주말 패키지 특가', '장비렌탈 무료'];
+  return promos[hashNum(r.username + 'promo') % promos.length];
+}
+
 export default function Resorts({ onViewProfile }: ResortsProps) {
   const [items, setItems] = useState<ResortProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('dg_resort_favorites') || '[]'); } catch { return []; }
+  });
 
   const loadResorts = async () => {
     setLoading(true);
@@ -81,6 +107,10 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
     loadResorts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('dg_resort_favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   const filtered = useMemo(() => {
     const keys = expandQuery(query);
@@ -125,6 +155,22 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
               <div className="relative h-36 md:h-40">
                 <img src={r.cover_url} alt={`${r.username} cover`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+
+                <div className="absolute right-3 top-3 flex items-center gap-2">
+                  <span className="text-[11px] px-2 py-1 rounded-full bg-amber-400/90 text-amber-900 font-semibold">{derivePromo(r)}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFavorites((prev) => prev.includes(r.id) ? prev.filter((id) => id !== r.id) : [...prev, r.id]);
+                    }}
+                    className="w-8 h-8 rounded-full bg-black/40 text-white text-lg flex items-center justify-center"
+                    aria-label="즐겨찾기"
+                  >
+                    {favorites.includes(r.id) ? '♥' : '♡'}
+                  </button>
+                </div>
+
                 <div className="absolute left-3 bottom-3 flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/80 shrink-0 border border-white/70">
                     {r.avatar_url ? <img src={r.avatar_url} alt={r.username} className="w-full h-full object-cover" /> : null}
@@ -137,7 +183,20 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
               </div>
 
               <div className="p-4">
-                {r.bio ? <p className="text-sm line-clamp-3">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {deriveTags(r).map((tag) => (
+                    <span key={tag} className="text-[11px] px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">{tag}</span>
+                  ))}
+                </div>
+
+                {r.bio ? <p className="text-sm line-clamp-5">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
+
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {deriveFacilities(r).map((f) => (
+                    <span key={f} className="text-[11px] px-2 py-1 rounded-md bg-gray-100 dark:bg-[#1f1f1f] text-gray-700 dark:text-gray-300">{f}</span>
+                  ))}
+                </div>
+
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <button
                     type="button"
