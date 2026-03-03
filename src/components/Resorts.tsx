@@ -152,7 +152,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((r) => (
             <div key={r.id} onClick={() => onViewProfile(r.id)} className="rounded-2xl border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-              <div className="relative h-36 md:h-40">
+              <div className="relative h-56 md:h-60">
                 <img src={r.cover_url} alt={`${r.username} cover`} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
 
@@ -182,22 +182,22 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
                 </div>
               </div>
 
-              <div className="p-4">
-                <div className="flex flex-wrap gap-1.5 mb-2">
+              <div className="p-5">
+                <div className="flex flex-wrap gap-2 mb-3">
                   {deriveTags(r).map((tag) => (
                     <span key={tag} className="text-[11px] px-2 py-1 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">{tag}</span>
                   ))}
                 </div>
 
-                {r.bio ? <p className="text-sm line-clamp-5">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
+                {r.bio ? <p className="text-sm leading-6 line-clamp-5">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
 
-                <div className="mt-3 flex flex-wrap gap-1.5">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {deriveFacilities(r).map((f) => (
                     <span key={f} className="text-[11px] px-2 py-1 rounded-md bg-gray-100 dark:bg-[#1f1f1f] text-gray-700 dark:text-gray-300">{f}</span>
                   ))}
                 </div>
 
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 space-y-1.5">
                   <button
                     type="button"
                     onClick={(e) => {
