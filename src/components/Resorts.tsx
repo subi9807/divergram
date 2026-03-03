@@ -85,7 +85,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
   });
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationPromptHidden, setLocationPromptHidden] = useState(() => localStorage.getItem('dg_resort_loc_prompt') === 'hidden');
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const loadResorts = async (position?: { lat: number; lng: number } | null) => {
@@ -129,6 +128,19 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
   useEffect(() => {
     localStorage.setItem('dg_resort_favorites', JSON.stringify(favorites));
   }, [favorites]);
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const asked = sessionStorage.getItem('dg_resort_geo_asked');
+    if (asked === '1') return;
+    sessionStorage.setItem('dg_resort_geo_asked', '1');
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, []);
+
 
   const filtered = useMemo(() => {
     const keys = expandQuery(query);
@@ -169,14 +181,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
     return () => io.disconnect();
   }, [filtered.length]);
 
-  const requestNearbySort = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setMyPos(null),
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  };
 
   return (
     <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto text-gray-900 dark:text-gray-100">
@@ -185,21 +189,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">원하는 리조트를 검색하고 세부페이지에서 자세한 정보를 확인해보세요.</p>
       </div>
 
-      {!locationPromptHidden && !myPos && (
-        <div className="mb-4 rounded-xl border border-sky-200 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-950/30 p-3 flex items-center justify-between gap-3">
-          <div className="text-sm text-sky-700 dark:text-sky-300">가까운 리조트 순으로 보려면 위치 접근을 허용하세요.</div>
-          <div className="flex gap-2 shrink-0">
-            <button className="px-3 py-1.5 rounded-lg bg-sky-600 text-white text-xs" onClick={requestNearbySort}>허용</button>
-            <button
-              className="px-3 py-1.5 rounded-lg border text-xs"
-              onClick={() => {
-                setLocationPromptHidden(true);
-                localStorage.setItem('dg_resort_loc_prompt', 'hidden');
-              }}
-            >나중에</button>
-          </div>
-        </div>
-      )}
 
       <div className="mb-5">
         <input
