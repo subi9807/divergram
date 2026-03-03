@@ -244,7 +244,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
                 {r.bio ? <p className="text-sm line-clamp-3">{r.bio}</p> : <p className="text-sm text-gray-500">소개가 아직 없습니다.</p>}
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 space-y-1">
                   <div>📍 {r.resort_address || '주소 미등록'}</div>
-                  <div>⭐ {(r.resort_rating_avg || 0).toFixed(1)} ({r.resort_review_count || 0}개 리뷰){r.distanceKm != null ? ` · ${r.distanceKm.toFixed(1)}km` : ''}</div>
+                  <div>⭐ {Number(r.resort_rating_avg || 0).toFixed(1)} ({Number(r.resort_review_count || 0)}개 리뷰){r.distanceKm != null ? ` · ${r.distanceKm.toFixed(1)}km` : ''}</div>
                 </div>
 
                 <div className="mt-4 flex gap-2 flex-wrap">
