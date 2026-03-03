@@ -39,6 +39,10 @@ function MainApp() {
   const [opsAuthorized, setOpsAuthorized] = useState(false);
   const [opsLoading, setOpsLoading] = useState(false);
   const [opsInfo, setOpsInfo] = useState<{ apiOk: boolean; users: number; posts: number; reels: number; apiBase: string; ts: string } | null>(null);
+  const navHistoryRef = useRef<string[]>([]);
+  const navFutureRef = useRef<string[]>([]);
+  const navMuteRef = useRef(false);
+
   const gestureRef = useRef({
     x: 0,
     y: 0,
@@ -247,11 +251,30 @@ function MainApp() {
 
       if (absX > 90 && absX > absY * 1.25) {
         if (dx > 0 && state.edge === 'left') {
-          playNavMotion('back');
-          window.history.back();
+          const h = navHistoryRef.current;
+          if (h.length > 1) {
+            const current = h.pop();
+            if (current) navFutureRef.current.push(current);
+            const prev = h[h.length - 1];
+            if (prev) {
+              playNavMotion('back');
+              navMuteRef.current = true;
+              window.history.pushState({}, '', prev);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+              window.setTimeout(() => { navMuteRef.current = false; }, 60);
+            }
+          }
         } else if (dx < 0 && state.edge === 'right') {
-          playNavMotion('forward');
-          window.history.forward();
+          const f = navFutureRef.current;
+          const next = f.pop();
+          if (next) {
+            playNavMotion('forward');
+            navHistoryRef.current.push(next);
+            navMuteRef.current = true;
+            window.history.pushState({}, '', next);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+            window.setTimeout(() => { navMuteRef.current = false; }, 60);
+          }
         }
       } else if (state.fromTop && dy > 120 && absY > absX * 1.25) {
         window.location.reload();
@@ -278,6 +301,17 @@ function MainApp() {
       window.history.replaceState({}, '', urlState);
     }
   }, [urlState, user]);
+
+  useEffect(() => {
+    const cur = `${window.location.pathname}${window.location.search}`;
+    if (navMuteRef.current) return;
+    const h = navHistoryRef.current;
+    if (h[h.length - 1] !== cur) {
+      h.push(cur);
+      if (h.length > 80) h.shift();
+      navFutureRef.current = [];
+    }
+  }, [urlState]);
 
   if (loading) {
     return (
