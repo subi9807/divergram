@@ -17,3 +17,7 @@ CREATE TABLE IF NOT EXISTS app_resort_reviews (
 
 CREATE INDEX IF NOT EXISTS idx_resort_reviews_resort ON app_resort_reviews(resort_id);
 CREATE INDEX IF NOT EXISTS idx_resort_reviews_user ON app_resort_reviews(user_id);
+
+ALTER TABLE app_resort_reviews OWNER TO divergram;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE app_resort_reviews TO divergram;
+GRANT SELECT, UPDATE ON TABLE app_profiles TO divergram;
