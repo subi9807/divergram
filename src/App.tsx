@@ -13,6 +13,7 @@ import Notifications from './components/Notifications';
 import LocationMapPage from './components/LocationMapPage';
 import ProfileEdit from './components/ProfileEdit';
 import PersonalInfoEdit from './components/PersonalInfoEdit';
+import AdminConsole from './components/AdminConsole';
 import { db } from './lib/internal-db';
 
 const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
@@ -64,6 +65,7 @@ function MainApp() {
       else pathname = '/settings';
     }
     else if (currentPage === 'report') pathname = '/report';
+    else if (currentPage === 'admin') pathname = '/admin';
     else if (currentPage === 'ops') pathname = '/__ops';
 
     const params = new URLSearchParams();
@@ -129,14 +131,14 @@ function MainApp() {
         setSettingsTab('account');
       }
       else if (pathname === '/report') setCurrentPage('report');
+      else if (pathname === '/admin') setCurrentPage('admin');
       else if (pathname === '/__ops') {
         const ok = q.get('k') === OPS_SECRET_KEY;
         setOpsAuthorized(ok);
         setCurrentPage(ok ? 'ops' : 'home');
       }
-      else if (pathname === '/admin') {
-        window.location.replace('http://127.0.0.1:5175');
-        setCurrentPage('home');
+      else if (window.location.hostname === 'manager.divergram.com' && pathname === '/') {
+        setCurrentPage('admin');
       }
       else setCurrentPage('home');
 
@@ -208,7 +210,7 @@ function MainApp() {
       setCurrentPage(page);
       setSelectedUserId(undefined);
     } else if (page === 'admin') {
-      window.open('http://127.0.0.1:5175', '_blank');
+      setCurrentPage('admin');
     } else {
       setCurrentPage(page);
       setSelectedUserId(undefined);
@@ -346,6 +348,8 @@ function MainApp() {
             )}
           </div>
         );
+      case 'admin':
+        return <AdminConsole />;
       case 'ops':
         return (
           <div className="p-6 md:p-8 max-w-3xl text-gray-900 dark:text-gray-100">
