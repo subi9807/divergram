@@ -17,7 +17,7 @@ import PersonalInfoEdit from './components/PersonalInfoEdit';
 import AdminConsole from './components/AdminConsole';
 import { db } from './lib/internal-db';
 
-const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
+const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://divergram.com');
 const OPS_SECRET_KEY = 'm1na-ops-260301';
 
 function MainApp() {
