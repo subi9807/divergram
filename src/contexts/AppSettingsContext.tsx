@@ -34,28 +34,28 @@ const dict: Record<Language, Record<string, string>> = {
     settings: '설정', activity: '내 활동', saved: '저장됨',
     settingsTitle: '설정', language: '언어', units: '단위', privacy: '게시물 공개 범위', wearable: '웨어러블 기기(BLE)', theme: '테마',
     public: '전체 공개', following: '팔로우만', followers: '팔로워만', private: '비공개',
-    scanBle: 'BLE 스캔 시작', stopBle: '스캔 중지',
+    scanBle: 'BLE 스캔 시작', stopBle: '스캔 중지', lightMode: '라이트 모드', darkMode: '다크 모드', reportIssue: '문제 신고', admin: '관리자', logout: '로그아웃',
   },
   en: {
     home: 'Home', explore: 'Explore', resorts: 'Resorts', location: 'Dive Map', reels: 'Reels', create: 'Create', messages: 'Messages', notifications: 'Notifications', profile: 'Profile',
     settings: 'Settings', activity: 'Activity', saved: 'Saved',
     settingsTitle: 'Settings', language: 'Language', units: 'Units', privacy: 'Post Visibility', wearable: 'Wearables (BLE)', theme: 'Theme',
     public: 'Public', following: 'Following only', followers: 'Followers only', private: 'Private',
-    scanBle: 'Start BLE Scan', stopBle: 'Stop Scan',
+    scanBle: 'Start BLE Scan', stopBle: 'Stop Scan', lightMode: 'Light mode', darkMode: 'Dark mode', reportIssue: 'Report issue', admin: 'Admin', logout: 'Log out',
   },
   ja: {
     home: 'ホーム', explore: '探索', resorts: 'リゾート', location: 'ポイント地図', reels: 'リール', create: '投稿作成', messages: 'メッセージ', notifications: '通知', profile: 'プロフィール',
     settings: '設定', activity: 'アクティビティ', saved: '保存済み',
     settingsTitle: '設定', language: '言語', units: '単位', privacy: '投稿公開範囲', wearable: 'ウェアラブル(BLE)', theme: 'テーマ',
     public: '全体公開', following: 'フォローのみ', followers: 'フォロワーのみ', private: '非公開',
-    scanBle: 'BLEスキャン開始', stopBle: 'スキャン停止',
+    scanBle: 'BLEスキャン開始', stopBle: 'スキャン停止', lightMode: 'ライトモード', darkMode: 'ダークモード', reportIssue: '問題を報告', admin: '管理者', logout: 'ログアウト',
   },
   zh: {
     home: '首页', explore: '探索', resorts: '度假村', location: '潜点地图', reels: '短视频', create: '发布', messages: '消息', notifications: '通知', profile: '个人主页',
     settings: '设置', activity: '我的活动', saved: '已收藏',
     settingsTitle: '设置', language: '语言', units: '单位', privacy: '帖子可见范围', wearable: '可穿戴设备(BLE)', theme: '主题',
     public: '公开', following: '仅关注', followers: '仅粉丝', private: '私密',
-    scanBle: '开始BLE扫描', stopBle: '停止扫描',
+    scanBle: '开始BLE扫描', stopBle: '停止扫描', lightMode: '浅色模式', darkMode: '深色模式', reportIssue: '问题反馈', admin: '管理员', logout: '退出登录',
   },
 };
 

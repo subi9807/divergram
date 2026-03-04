@@ -245,12 +245,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     {isDarkMode ? (
                       <>
                         <SunIcon className="h-5 w-5" />
-                        <span className="text-sm">라이트 모드</span>
+                        <span className="text-sm">{t('lightMode')}</span>
                       </>
                     ) : (
                       <>
                         <MoonIcon className="h-5 w-5" />
-                        <span className="text-sm">다크 모드</span>
+                        <span className="text-sm">{t('darkMode')}</span>
                       </>
                     )}
                   </button>
@@ -263,7 +263,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <ExclamationTriangleIcon className="h-5 w-5" />
-                    <span className="text-sm">문제 신고</span>
+                    <span className="text-sm">{t('reportIssue')}</span>
                   </button>
 
                   <button
@@ -274,7 +274,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <ShieldCheckIcon className="h-5 w-5" />
-                    <span className="text-sm">관리자</span>
+                    <span className="text-sm">{t('admin')}</span>
                   </button>
 
                   <div className="border-t border-gray-200 dark:border-[#262626] my-2"></div>
@@ -284,7 +284,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                    <span className="text-sm">로그아웃</span>
+                    <span className="text-sm">{t('logout')}</span>
                   </button>
                 </div>
               )}
