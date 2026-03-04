@@ -6,7 +6,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { BleManager } from 'react-native-ble-plx';
 
-const DEFAULT_WEB_URL = __DEV__ ? 'http://localhost:5173' : 'https://divergram-260228.web.app';
+const DEFAULT_WEB_URL = 'https://divergram.com';
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || DEFAULT_WEB_URL;
 
 Notifications.setNotificationHandler({

@@ -30,7 +30,7 @@ npx eas build --platform android --profile development
 ## Env
 
 ```bash
-EXPO_PUBLIC_WEB_URL=https://divergram-260228.web.app
+EXPO_PUBLIC_WEB_URL=https://divergram.com
 ```
 
 ## Web ↔ Native Bridge
