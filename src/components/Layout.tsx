@@ -42,7 +42,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const { mobileBarsHidden, setMobileBarsHidden } = useMobileBarsVisibility({ disabled: showMobileMenu });
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const { t } = useAppSettings();
 
   useEffect(() => {
@@ -291,10 +291,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </div>
 
       <MobileFooterNav
-        navItems={navItems}
         currentPage={currentPage}
         mobileBarsHidden={mobileBarsHidden}
         onNavigate={onNavigate}
+        profileAvatarUrl={profile?.avatar_url || undefined}
       />
 
       {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} />}

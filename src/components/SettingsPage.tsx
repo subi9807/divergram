@@ -127,10 +127,14 @@ export default function SettingsPage() {
 
         {wizardStep === 1 && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="text-sm text-gray-600 dark:text-gray-300">등록하기를 누르면 자동으로 BLE 스캔을 시작해. 아래 목록에서 기기를 선택해줘.</p>
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+              {bleScanning && <span className="inline-block h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />}
+              <span>{bleScanning ? 'BLE 스캔 중... 기기가 보이면 바로 선택할 수 있어.' : '스캔 준비 중...'}</span>
+            </div>
+
             <div className="space-y-2 max-h-72 overflow-auto">
               {bleDevices.map((d) => (
-                <button key={d.id} onClick={() => { setSelectedBle(d); setWizardStep(2); stopBle(); }} className="w-full flex items-center justify-between border rounded-md px-3 py-2 text-left">
+                <button key={d.id} onClick={() => { setSelectedBle(d); setWizardStep(2); stopBle(); }} className="w-full flex items-center justify-between border rounded-md px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#252a31] transition-colors">
                   <div>
                     <p className="font-medium">{d.name}</p>
                     <p className="text-xs text-gray-500">{d.id} {typeof d.rssi === 'number' ? `| RSSI ${d.rssi}` : ''}</p>
@@ -138,6 +142,9 @@ export default function SettingsPage() {
                   <span className="text-xs">선택</span>
                 </button>
               ))}
+              {bleDevices.length === 0 && (
+                <div className="text-sm text-gray-500 py-6 text-center">검색된 기기가 아직 없어. 잠시만 기다려줘.</div>
+              )}
             </div>
           </section>
         )}

@@ -1,28 +1,28 @@
-import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleOvalLeftEllipsisIcon, HomeIcon, FilmIcon, PlusCircleIcon, MapIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
   FilmIcon as FilmIconSolid,
   PlusCircleIcon as PlusCircleIconSolid,
-  UserCircleIcon as UserCircleIconSolid,
+  MapIcon as MapIconSolid,
   ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisIconSolid,
 } from '@heroicons/react/24/solid';
-import { MapIcon, BellIcon } from '@heroicons/react/24/outline';
-
-interface NavItem {
-  id: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  label: string;
-}
 
 interface MobileFooterNavProps {
-  navItems: NavItem[];
   currentPage: string;
   mobileBarsHidden: boolean;
   onNavigate: (page: string) => void;
+  profileAvatarUrl?: string;
 }
 
-export default function MobileFooterNav({ navItems, currentPage, mobileBarsHidden, onNavigate }: MobileFooterNavProps) {
+export default function MobileFooterNav({ currentPage, mobileBarsHidden, onNavigate, profileAvatarUrl }: MobileFooterNavProps) {
+  const items = [
+    { id: 'home', icon: HomeIcon, activeIcon: HomeIconSolid },
+    { id: 'reels', icon: FilmIcon, activeIcon: FilmIconSolid },
+    { id: 'create', icon: PlusCircleIcon, activeIcon: PlusCircleIconSolid },
+    { id: 'location', icon: MapIcon, activeIcon: MapIconSolid },
+    { id: 'profile', icon: UserCircleIcon, activeIcon: UserCircleIcon },
+  ];
+
   return (
     <>
       <nav
@@ -35,19 +35,10 @@ export default function MobileFooterNav({ navItems, currentPage, mobileBarsHidde
         }}
       >
         <div className="flex items-center justify-around h-16">
-          {[navItems[0], navItems[3], navItems[1], navItems[4], navItems[7]].map((item) => {
-            const Icon = item.icon;
+          {items.map((item) => {
             const isActive = currentPage === item.id;
-            const solidMap: Record<string, any> = {
-              home: HomeIconSolid,
-              reels: FilmIconSolid,
-              explore: MagnifyingGlassIconSolid,
-              create: PlusCircleIconSolid,
-              profile: UserCircleIconSolid,
-              location: MapIcon,
-              notifications: BellIcon,
-            };
-            const ActiveIcon = solidMap[item.id] || Icon;
+            const Icon = isActive ? item.activeIcon : item.icon;
+
             return (
               <button
                 key={item.id}
@@ -56,7 +47,15 @@ export default function MobileFooterNav({ navItems, currentPage, mobileBarsHidde
                   isActive ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                {isActive ? <ActiveIcon className="h-7 w-7" /> : <Icon className="h-7 w-7" />}
+                {item.id === 'profile' && profileAvatarUrl ? (
+                  <img
+                    src={profileAvatarUrl}
+                    alt="profile"
+                    className={`h-7 w-7 rounded-full object-cover border ${isActive ? 'border-black dark:border-white' : 'border-gray-300 dark:border-gray-500'}`}
+                  />
+                ) : (
+                  <Icon className="h-7 w-7" />
+                )}
               </button>
             );
           })}
