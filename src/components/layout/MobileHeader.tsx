@@ -9,7 +9,7 @@ interface MobileHeaderProps {
 
 export default function MobileHeader({ currentPage, mobileBarsHidden, onNavigate, onToggleMenu }: MobileHeaderProps) {
   return (
-    <header className={`fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626] z-50 transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+    <header className={`fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#1b1d21] border-b border-gray-300 dark:border-[#2f333a] z-50 transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <button onClick={() => onNavigate('home')} className="cursor-pointer" aria-label="Divergram 홈">

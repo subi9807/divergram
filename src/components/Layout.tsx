@@ -25,7 +25,6 @@ import ReportModal from './ReportModal';
 import MobileHeader from './layout/MobileHeader';
 import MobileFooterNav from './layout/MobileFooterNav';
 import { useMobileBarsVisibility } from '../hooks/useMobileBarsVisibility';
-import { useAppSettings } from '../contexts/AppSettingsContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -105,7 +104,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 transition-colors">
+    <div className="min-h-screen bg-white dark:bg-[#1b1d21] text-gray-900 dark:text-gray-100 transition-colors">
       <MobileHeader
         currentPage={currentPage}
         mobileBarsHidden={mobileBarsHidden}
@@ -120,8 +119,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             aria-label="메뉴 닫기"
             onClick={() => setShowMobileMenu(false)}
           />
-          <div className="absolute inset-0 bg-white dark:bg-[#121212] animate-mobile-menu-slide-in transition-colors flex flex-col">
-            <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#262626] shrink-0">
+          <div className="absolute inset-0 bg-white dark:bg-[#1b1d21] animate-mobile-menu-slide-in transition-colors flex flex-col">
+            <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#2f333a] shrink-0">
               <button
                 onClick={() => setShowMobileMenu(false)}
                 className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
@@ -156,7 +155,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       )}
 
       <div className="flex">
-        <aside className={`hidden xl:block fixed left-0 top-0 z-40 w-[84px] h-screen overflow-visible transition-colors ${currentPage === 'location' ? 'bg-white/60 dark:bg-[#121212]/60 backdrop-blur-md' : 'bg-white dark:bg-[#121212]'}`}>
+        <aside className={`hidden xl:block fixed left-0 top-0 z-40 w-[84px] h-screen overflow-visible transition-colors ${currentPage === 'location' ? 'bg-white/60 dark:bg-[#1b1d21]/60 backdrop-blur-md' : 'bg-white dark:bg-[#1b1d21]'}`}>
           <nav className="py-6 flex flex-col h-full">
             <div className="px-4 pb-6 flex justify-center">
               <button onClick={() => onNavigate('home')} className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="홈">
@@ -196,7 +195,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
 
               {showMoreMenu && (
-                <div className="absolute bottom-full left-[68px] mb-3 w-56 bg-white dark:bg-[#121212] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#262626] py-2 z-50 transition-colors">
+                <div className="absolute bottom-full left-[68px] mb-3 w-56 bg-white dark:bg-[#1b1d21] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#2f333a] py-2 z-50 transition-colors">
                   <button
                     onClick={() => {
                       onNavigate('settings');
@@ -269,7 +268,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     <span className="text-sm">{t('admin')}</span>
                   </button>
 
-                  <div className="border-t border-gray-200 dark:border-[#262626] my-2"></div>
+                  <div className="border-t border-gray-200 dark:border-[#2f333a] my-2"></div>
 
                   <button
                     onClick={handleLogout}

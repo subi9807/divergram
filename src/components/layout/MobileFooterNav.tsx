@@ -26,7 +26,7 @@ export default function MobileFooterNav({ navItems, currentPage, mobileBarsHidde
   return (
     <>
       <nav
-        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
+        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1b1d21] border-t border-gray-300 dark:border-[#2f333a] z-[60] xl:hidden transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
           backfaceVisibility: 'hidden',
@@ -70,7 +70,7 @@ export default function MobileFooterNav({ navItems, currentPage, mobileBarsHidde
           title="메시지"
           className={`fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-out z-40 ${mobileBarsHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
         >
-          <div className="bg-white dark:bg-[#121212] rounded-full p-3 transition-colors">
+          <div className="bg-white dark:bg-[#1b1d21] rounded-full p-3 transition-colors">
             {currentPage === 'messages' ? (
               <ChatBubbleOvalLeftEllipsisIconSolid className="h-6 w-6 text-purple-600" />
             ) : (
