@@ -313,7 +313,10 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-colors pb-[env(safe-area-inset-bottom)]">
+      <nav
+        className="fixed left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-colors"
+        style={{ bottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="flex items-center justify-around h-16">
           {[navItems[0], navItems[3], navItems[1], navItems[4], navItems[7]].map((item) => {
             const Icon = item.icon;
