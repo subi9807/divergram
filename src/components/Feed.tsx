@@ -537,9 +537,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
         </div>
       )}
 
-      <div className="mb-8 md:mb-8">
-        <Stories onUserSelect={onViewProfile} />
-      </div>
+      <Stories onUserSelect={onViewProfile} />
 
       <div className="space-y-5 md:space-y-8 max-w-[470px] mx-auto">
         {postsToRender.map((post) => {

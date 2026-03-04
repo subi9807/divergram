@@ -132,8 +132,12 @@ export default function Stories({ onUserSelect }: StoriesProps) {
     setUsers(result.slice(0, 20));
   };
 
+  if (users.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="px-2 md:px-0 py-3 bg-white dark:bg-[#121212] transition-colors">
+    <div className="px-2 md:px-0 py-2 mb-8 md:mb-8 bg-white dark:bg-[#121212] transition-colors">
       <div className="mx-auto max-w-[620px]">
         <div
           ref={scrollerRef}
