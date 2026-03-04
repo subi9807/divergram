@@ -3,11 +3,36 @@ import { useAppSettings } from '../contexts/AppSettingsContext';
 
 type BleDevice = { id: string; name: string; rssi?: number };
 
-const TOP_LANGUAGES = [
+const FALLBACK_LANGUAGES = [
   'ko', 'en', 'ja', 'zh', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'ar', 'hi', 'th', 'vi', 'id', 'tr', 'nl', 'pl', 'sv', 'uk', 'cs', 'ro', 'hu', 'fi', 'da', 'no', 'el', 'he'
 ];
 
-const COUNTRIES = ['KR', 'US', 'JP', 'CN', 'TW', 'HK', 'SG', 'TH', 'VN', 'ID', 'PH', 'MY', 'GB', 'FR', 'DE', 'IT', 'ES', 'PT', 'CA', 'AU', 'NZ', 'BR', 'MX', 'AR', 'TR', 'IN', 'SA', 'AE'];
+function getAllCountries(locale: string) {
+  const dn = new Intl.DisplayNames([locale], { type: 'region' });
+  const out: Array<{ code: string; label: string }> = [];
+  for (let i = 65; i <= 90; i++) {
+    for (let j = 65; j <= 90; j++) {
+      const code = String.fromCharCode(i) + String.fromCharCode(j);
+      const label = dn.of(code);
+      if (label && label !== code) out.push({ code, label });
+    }
+  }
+  return out.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function getAllLanguages(locale: string) {
+  const dn = new Intl.DisplayNames([locale], { type: 'language' });
+  const source = (Intl as any).supportedValuesOf?.('language') || FALLBACK_LANGUAGES;
+  const out: Array<{ code: string; label: string }> = [];
+  for (const code of source) {
+    const short = String(code).toLowerCase();
+    if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
+    const label = dn.of(short);
+    if (label && label !== short) out.push({ code: short, label });
+  }
+  const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
+  return uniq.sort((a, b) => a.label.localeCompare(b.label));
+}
 
 export default function SettingsPage() {
   const {
@@ -72,15 +97,9 @@ export default function SettingsPage() {
     sendNative('stop_ble_scan');
   };
 
-  const languageOptions = useMemo(() => TOP_LANGUAGES.map((code) => ({
-    code,
-    label: new Intl.DisplayNames([language || 'en'], { type: 'language' }).of(code) || code,
-  })), [language]);
+  const languageOptions = useMemo(() => getAllLanguages(language || 'en'), [language]);
 
-  const countryOptions = useMemo(() => COUNTRIES.map((code) => ({
-    code,
-    label: new Intl.DisplayNames([language || 'en'], { type: 'region' }).of(code) || code,
-  })), [language]);
+  const countryOptions = useMemo(() => getAllCountries(language || 'en'), [language]);
 
   const filteredLanguages = languageOptions.filter((x) => `${x.label} ${x.code}`.toLowerCase().includes(languageQuery.toLowerCase()));
   const filteredCountries = countryOptions.filter((x) => `${x.label} ${x.code}`.toLowerCase().includes(countryQuery.toLowerCase()));
@@ -127,7 +146,7 @@ export default function SettingsPage() {
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
             <p className="font-medium">선택된 기기: {selectedBle.name}</p>
             <p className="text-sm text-gray-600 dark:text-gray-300">다음 버튼을 누르면 페어링 단계로 진행해.</p>
-            <button onClick={() => setWizardStep(3)} className="px-3 py-2 rounded-md bg-blue-500 text-white">페어링 완료하고 다음</button>
+            <button onClick={() => setWizardStep(3)} className="btn btn-primary">페어링 완료하고 다음</button>
           </section>
         )}
 
@@ -140,7 +159,7 @@ export default function SettingsPage() {
                 addWearable({ ...selectedBle, name: deviceAlias.trim() || selectedBle.name });
                 setWizardStep(4);
               }}
-              className="px-3 py-2 rounded-md bg-blue-500 text-white"
+              className="btn btn-primary"
             >
               다음
             </button>
@@ -151,7 +170,7 @@ export default function SettingsPage() {
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
             <h2 className="font-semibold">등록 완료</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300">기기 등록이 완료됐어.</p>
-            <button onClick={() => setView('wearables')} className="px-3 py-2 rounded-md bg-blue-500 text-white">기기 목록으로 이동</button>
+            <button onClick={() => setView('wearables')} className="btn btn-primary">기기 목록으로 이동</button>
           </section>
         )}
       </div>
@@ -165,7 +184,7 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-bold">웨어러블 기기 관리</h1>
 
         <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-          <button onClick={beginWizard} className="px-3 py-2 rounded-md bg-blue-500 text-white">등록하기</button>
+          <button onClick={beginWizard} className="btn btn-primary">등록하기</button>
           {!isNativeWebView && <p className="text-sm text-amber-600">앱(WebView)에서 BLE 스캔이 동작해.</p>}
           <div className="space-y-2">
             {wearables.length === 0 && <p className="text-sm text-gray-500">등록된 기기가 없어.</p>}
@@ -175,7 +194,7 @@ export default function SettingsPage() {
                   <p className="font-medium">{w.name}</p>
                   <p className="text-xs text-gray-500">{w.id}</p>
                 </div>
-                <button className="px-3 py-1.5 rounded-md border border-red-300 text-red-600" onClick={() => confirmDeleteWearable(w.id, w.name)}>삭제</button>
+                <button className="btn btn-sm btn-outline-danger" onClick={() => confirmDeleteWearable(w.id, w.name)}>삭제</button>
               </div>
             ))}
           </div>
@@ -200,9 +219,9 @@ export default function SettingsPage() {
               value={countryQuery}
               onChange={(e) => setCountryQuery(e.target.value)}
               placeholder="국가 검색"
-              className="w-full border rounded-md px-3 py-2 bg-transparent"
+              className="form-control"
             />
-            <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={country} onChange={(e) => setCountry(e.target.value)}>
+            <select className="form-select" value={country} onChange={(e) => setCountry(e.target.value)}>
               {filteredCountries.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
             </select>
           </div>
@@ -213,9 +232,9 @@ export default function SettingsPage() {
               value={languageQuery}
               onChange={(e) => setLanguageQuery(e.target.value)}
               placeholder="언어 검색"
-              className="w-full border rounded-md px-3 py-2 bg-transparent"
+              className="form-control"
             />
-            <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={language} onChange={(e) => setLanguage(e.target.value)}>
+            <select className="form-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
               {filteredLanguages.map((l) => <option key={l.code} value={l.code}>{l.label} ({l.code})</option>)}
             </select>
           </div>
@@ -229,29 +248,29 @@ export default function SettingsPage() {
           <div>
             <p className="text-sm mb-2">Time</p>
             <div className="flex gap-2">
-              <button className={`px-3 py-1.5 rounded-md border ${units.time === '24h' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, time: '24h' })}>24h</button>
-              <button className={`px-3 py-1.5 rounded-md border ${units.time === '12h' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, time: '12h' })}>12h</button>
+              <button className={`btn btn-sm ${units.time === '24h' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, time: '24h' })}>24h</button>
+              <button className={`btn btn-sm ${units.time === '12h' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, time: '12h' })}>12h</button>
             </div>
           </div>
           <div>
             <p className="text-sm mb-2">Length/Depth</p>
             <div className="flex gap-2">
-              <button className={`px-3 py-1.5 rounded-md border ${units.length === 'metric' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, length: 'metric' })}>m</button>
-              <button className={`px-3 py-1.5 rounded-md border ${units.length === 'imperial' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, length: 'imperial' })}>ft</button>
+              <button className={`btn btn-sm ${units.length === 'metric' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, length: 'metric' })}>m</button>
+              <button className={`btn btn-sm ${units.length === 'imperial' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, length: 'imperial' })}>ft</button>
             </div>
           </div>
           <div>
             <p className="text-sm mb-2">압력</p>
             <div className="flex gap-2">
-              <button className={`px-3 py-1.5 rounded-md border ${units.pressure === 'bar' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, pressure: 'bar' })}>bar</button>
-              <button className={`px-3 py-1.5 rounded-md border ${units.pressure === 'psi' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, pressure: 'psi' })}>psi</button>
+              <button className={`btn btn-sm ${units.pressure === 'bar' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'bar' })}>bar</button>
+              <button className={`btn btn-sm ${units.pressure === 'psi' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'psi' })}>psi</button>
             </div>
           </div>
           <div>
             <p className="text-sm mb-2">온도</p>
             <div className="flex gap-2">
-              <button className={`px-3 py-1.5 rounded-md border ${units.temperature === 'c' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, temperature: 'c' })}>°C</button>
-              <button className={`px-3 py-1.5 rounded-md border ${units.temperature === 'f' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, temperature: 'f' })}>°F</button>
+              <button className={`btn btn-sm ${units.temperature === 'c' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'c' })}>°C</button>
+              <button className={`btn btn-sm ${units.temperature === 'f' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'f' })}>°F</button>
             </div>
           </div>
         </div>
@@ -259,7 +278,7 @@ export default function SettingsPage() {
 
       <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
         <h2 className="font-semibold">{t('privacy')}</h2>
-        <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={privacyScope} onChange={(e) => setPrivacyScope(e.target.value as any)}>
+        <select className="form-select" value={privacyScope} onChange={(e) => setPrivacyScope(e.target.value as any)}>
           <option value="public">{t('public')}</option>
           <option value="friends">{t('friends')}</option>
           <option value="private">{t('private')}</option>
@@ -269,15 +288,15 @@ export default function SettingsPage() {
       <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
         <h2 className="font-semibold">{t('theme')}</h2>
         <div className="flex gap-2">
-          <button className={`px-3 py-2 rounded-md border ${theme === 'light' ? 'bg-gray-100' : ''}`} onClick={() => setTheme('light')}>{t('lightMode')}</button>
-          <button className={`px-3 py-2 rounded-md border ${theme === 'dark' ? 'bg-gray-100 dark:bg-[#2b3038]' : ''}`} onClick={() => setTheme('dark')}>{t('darkMode')}</button>
+          <button className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setTheme('light')}>{t('lightMode')}</button>
+          <button className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setTheme('dark')}>{t('darkMode')}</button>
         </div>
       </section>
 
       <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
         <h2 className="font-semibold">{t('wearable')}</h2>
         <p className="text-sm text-gray-500">등록된 기기: {wearables.length ? wearables.map((w) => w.name).join(', ') : '없음'}</p>
-        <button onClick={() => setView('wearables')} className="px-3 py-2 rounded-md border">웨어러블 기기 관리로 이동</button>
+        <button onClick={() => setView('wearables')} className="btn btn-outline-secondary">웨어러블 기기 관리로 이동</button>
       </section>
     </div>
   );
