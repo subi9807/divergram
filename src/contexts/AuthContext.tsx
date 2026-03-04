@@ -18,14 +18,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    db.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
+    db.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        setUser(null);
+        setProfile(null);
         setLoading(false);
-      }
-    });
+      });
 
     const { data: { subscription } } = db.auth.onAuthStateChange((_event, session) => {
       (async () => {
@@ -43,14 +49,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProfile = async (userId: string) => {
-    const { data } = await db
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
+    try {
+      const { data } = await db
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    setProfile(data);
-    setLoading(false);
+      setProfile(data);
+    } catch {
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signUp = async (email: string, password: string, username: string, accountType: 'personal' | 'resort') => {
