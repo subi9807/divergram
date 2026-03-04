@@ -71,7 +71,6 @@ export default function MapLocationPickerModal({ isOpen, initialLocation, onClos
           if (markerRef.current) markerRef.current.setMap(null);
           markerRef.current = new google.maps.Marker({ map, position: { lat, lng } });
 
-          const geocoder = new google.maps.Geocoder();
           const coordText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
           setSelected({ lat, lng, locationText: coordText });
         });

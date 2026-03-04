@@ -168,7 +168,7 @@ export default function EditPostModal({
     };
 
     fillFromExif();
-  }, [newFiles]);
+  }, [newFiles, diveDate]);
 
   if (!isOpen) return null;
 

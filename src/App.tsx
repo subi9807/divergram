@@ -104,6 +104,7 @@ function MainApp() {
     showProfileEdit,
     settingsTab,
     exploreTag,
+    opsAuthorized,
   ]);
 
   useEffect(() => {

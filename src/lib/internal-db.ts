@@ -4,7 +4,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:4000';
 const TOKEN_KEY = 'dg_token';
 const USER_KEY = 'dg_user';
 const PROFILE_KEY = 'dg_profile';
-const DB_KEY = 'dg_mockdb_v3_legacy';
+const _DB_KEY = 'dg_mockdb_v3_legacy';
 const STORAGE_KEY = 'dg_mock_storage_v1';
 let seedPromise: Promise<void> | null = null;
 
@@ -256,16 +256,16 @@ function seedDb() {
   };
 }
 
-function loadDb() {
-  const raw = localStorage.getItem(DB_KEY);
+function _loadDb() {
+  const raw = localStorage.getItem(_DB_KEY);
   if (!raw) {
     const seeded = seedDb();
-    localStorage.setItem(DB_KEY, JSON.stringify(seeded));
+    localStorage.setItem(_DB_KEY, JSON.stringify(seeded));
     return seeded;
   }
   return JSON.parse(raw);
 }
-function saveDb(db: AnyObj) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function _saveDb(db: AnyObj) { localStorage.setItem(_DB_KEY, JSON.stringify(db)); }
 
 function loadStorageMap(): Record<string, string> {
   try {
@@ -288,7 +288,7 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-function applyFilters(rows: any[], filters: AnyObj[]) {
+function _applyFilters(rows: any[], filters: AnyObj[]) {
   const get = (obj: any, key: string) => obj?.[key];
 
   return rows.filter((r) => filters.every((f) => {
@@ -335,7 +335,7 @@ function applyFilters(rows: any[], filters: AnyObj[]) {
   }));
 }
 
-function normalizePost(post: any, db: any) {
+function _normalizePost(post: any, db: any) {
   const profile = db.profiles.find((p: any) => p.id === post.user_id) || post.profiles || null;
   return {
     ...post,
@@ -430,19 +430,19 @@ class LocalQueryBuilder {
   }
 
   delete() {
-    const qb = this;
+    const table = this.table;
     const runtimeFilters: AnyObj[] = [...this.filters];
     const api = {
       eq(column: string, value: any) { runtimeFilters.push({ op: 'eq', column, value }); return api; },
       neq(column: string, value: any) { runtimeFilters.push({ op: 'neq', column, value }); return api; },
       in(column: string, value: any[]) { runtimeFilters.push({ op: 'in', column, value }); return api; },
       async select() {
-        const before = await fetchTable(qb.table, { filters: runtimeFilters });
-        await deleteTable(qb.table, runtimeFilters);
+        const before = await fetchTable(table, { filters: runtimeFilters });
+        await deleteTable(table, runtimeFilters);
         return { data: before || [], error: null };
       },
       then(resolve: (value: any) => any, reject?: (reason: any) => any) {
-        return deleteTable(qb.table, runtimeFilters).then(() => ({ data: null, error: null })).then(resolve, reject);
+        return deleteTable(table, runtimeFilters).then(() => ({ data: null, error: null })).then(resolve, reject);
       },
     } as any;
     return api;

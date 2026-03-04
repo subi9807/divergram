@@ -98,7 +98,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
     };
 
     fillFromExif();
-  }, [files]);
+  }, [files, diveDate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
