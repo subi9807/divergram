@@ -8,50 +8,30 @@ const FALLBACK_LANGUAGES = [
 ];
 
 function getAllCountries(locale: string) {
-  try {
-    const dn = new Intl.DisplayNames([locale], { type: 'region' });
-    const out: Array<{ code: string; label: string }> = [];
-    for (let i = 65; i <= 90; i++) {
-      for (let j = 65; j <= 90; j++) {
-        const code = String.fromCharCode(i) + String.fromCharCode(j);
-        const label = dn.of(code);
-        if (label && label !== code) out.push({ code, label });
-      }
+  const dn = new Intl.DisplayNames([locale], { type: 'region' });
+  const out: Array<{ code: string; label: string }> = [];
+  for (let i = 65; i <= 90; i++) {
+    for (let j = 65; j <= 90; j++) {
+      const code = String.fromCharCode(i) + String.fromCharCode(j);
+      const label = dn.of(code);
+      if (label && label !== code) out.push({ code, label });
     }
-    return out.sort((a, b) => a.label.localeCompare(b.label));
-  } catch {
-    return [
-      { code: 'KR', label: 'Korea' },
-      { code: 'US', label: 'United States' },
-      { code: 'JP', label: 'Japan' },
-      { code: 'CN', label: 'China' },
-    ];
   }
+  return out.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function getAllLanguages(locale: string) {
-  try {
-    const dn = new Intl.DisplayNames([locale], { type: 'language' });
-    let source: string[] = FALLBACK_LANGUAGES;
-    try {
-      const maybe = (Intl as any).supportedValuesOf?.('language');
-      if (Array.isArray(maybe) && maybe.length) source = maybe;
-    } catch {
-      source = FALLBACK_LANGUAGES;
-    }
-
-    const out: Array<{ code: string; label: string }> = [];
-    for (const code of source) {
-      const short = String(code).toLowerCase();
-      if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
-      const label = dn.of(short);
-      if (label && label !== short) out.push({ code: short, label });
-    }
-    const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
-    return uniq.sort((a, b) => a.label.localeCompare(b.label));
-  } catch {
-    return FALLBACK_LANGUAGES.map((code) => ({ code, label: code }));
+  const dn = new Intl.DisplayNames([locale], { type: 'language' });
+  const source = (Intl as any).supportedValuesOf?.('language') || FALLBACK_LANGUAGES;
+  const out: Array<{ code: string; label: string }> = [];
+  for (const code of source) {
+    const short = String(code).toLowerCase();
+    if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
+    const label = dn.of(short);
+    if (label && label !== short) out.push({ code: short, label });
   }
+  const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
+  return uniq.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export default function SettingsPage() {
@@ -134,7 +114,7 @@ export default function SettingsPage() {
   };
 
   const confirmDeleteWearable = (id: string, name: string) => {
-    if (window.confirm(`${name} ${t('deleteConfirmSuffix')}`)) {
+    if (window.confirm(`${name} 기기를 삭제할까요?`)) {
       removeWearable(id);
     }
   };
@@ -142,14 +122,14 @@ export default function SettingsPage() {
   if (view === 'wizard') {
     return (
       <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-6">
-        <button className="text-sm underline" onClick={() => { stopBle(); setView('wearables'); }}>← {t('wearableManageBack')}</button>
-        <h1 className="text-2xl font-bold">{t('wearableRegisterTitle')} ({wizardStep}/4)</h1>
+        <button className="text-sm underline" onClick={() => { stopBle(); setView('wearables'); }}>← 웨어러블 관리로 돌아가기</button>
+        <h1 className="text-2xl font-bold">웨어러블 등록 ({wizardStep}/4)</h1>
 
         {wizardStep === 1 && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               {bleScanning && <span className="inline-block h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />}
-              <span>{bleScanning ? t('scanning') : t('scanPreparing')}</span>
+              <span>{bleScanning ? 'BLE 스캔 중... 기기가 보이면 바로 선택할 수 있어.' : '스캔 준비 중...'}</span>
             </div>
 
             <div className="space-y-2 max-h-72 overflow-auto">
@@ -159,11 +139,11 @@ export default function SettingsPage() {
                     <p className="font-medium">{d.name}</p>
                     <p className="text-xs text-gray-500">{d.id} {typeof d.rssi === 'number' ? `| RSSI ${d.rssi}` : ''}</p>
                   </div>
-                  <span className="text-xs">{t('select')}</span>
+                  <span className="text-xs">선택</span>
                 </button>
               ))}
               {bleDevices.length === 0 && (
-                <div className="text-sm text-gray-500 py-6 text-center">{t('noDeviceYet')}</div>
+                <div className="text-sm text-gray-500 py-6 text-center">검색된 기기가 아직 없어. 잠시만 기다려줘.</div>
               )}
             </div>
           </section>
@@ -171,15 +151,15 @@ export default function SettingsPage() {
 
         {wizardStep === 2 && selectedBle && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="font-medium">{t('selectedDevice')}: {selectedBle.name}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">{t('pairNextHint')}</p>
-            <button onClick={() => setWizardStep(3)} className="btn btn-primary">{t('pairDoneNext')}</button>
+            <p className="font-medium">선택된 기기: {selectedBle.name}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">다음 버튼을 누르면 페어링 단계로 진행해.</p>
+            <button onClick={() => setWizardStep(3)} className="btn btn-primary">페어링 완료하고 다음</button>
           </section>
         )}
 
         {wizardStep === 3 && selectedBle && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="text-sm">{t('deviceNamePrompt')}</p>
+            <p className="text-sm">기기명을 입력해줘.</p>
             <input value={deviceAlias} onChange={(e) => setDeviceAlias(e.target.value)} placeholder={selectedBle.name} className="w-full border rounded-md px-3 py-2 bg-transparent" />
             <button
               onClick={() => {
@@ -188,16 +168,16 @@ export default function SettingsPage() {
               }}
               className="btn btn-primary"
             >
-              {t('next')}
+              다음
             </button>
           </section>
         )}
 
         {wizardStep === 4 && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <h2 className="font-semibold">{t('registerDone')}</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300">{t('registerDoneMsg')}</p>
-            <button onClick={() => setView('wearables')} className="btn btn-primary">{t('goDeviceList')}</button>
+            <h2 className="font-semibold">등록 완료</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300">기기 등록이 완료됐어.</p>
+            <button onClick={() => setView('wearables')} className="btn btn-primary">기기 목록으로 이동</button>
           </section>
         )}
       </div>
@@ -207,21 +187,21 @@ export default function SettingsPage() {
   if (view === 'wearables') {
     return (
       <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-6">
-        <button className="text-sm underline" onClick={() => setView('main')}>← {t('backToSettings')}</button>
-        <h1 className="text-2xl font-bold">{t('wearableManageTitle')}</h1>
+        <button className="text-sm underline" onClick={() => setView('main')}>← 설정으로 돌아가기</button>
+        <h1 className="text-2xl font-bold">웨어러블 기기 관리</h1>
 
         <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-          <button onClick={beginWizard} className="btn btn-primary">{t('register')}</button>
-          {!isNativeWebView && <p className="text-sm text-amber-600">{t('appOnlyBle')}</p>}
+          <button onClick={beginWizard} className="btn btn-primary">등록하기</button>
+          {!isNativeWebView && <p className="text-sm text-amber-600">앱(WebView)에서 BLE 스캔이 동작해.</p>}
           <div className="space-y-2">
-            {wearables.length === 0 && <p className="text-sm text-gray-500">{t('noWearable')}</p>}
+            {wearables.length === 0 && <p className="text-sm text-gray-500">등록된 기기가 없어.</p>}
             {wearables.map((w) => (
               <div key={w.id} className="flex items-center justify-between border rounded-md px-3 py-2">
                 <div>
                   <p className="font-medium">{w.name}</p>
                   <p className="text-xs text-gray-500">{w.id}</p>
                 </div>
-                <button className="btn btn-sm btn-outline-danger" onClick={() => confirmDeleteWearable(w.id, w.name)}>{t('delete')}</button>
+                <button className="btn btn-sm btn-outline-danger" onClick={() => confirmDeleteWearable(w.id, w.name)}>삭제</button>
               </div>
             ))}
           </div>
@@ -245,7 +225,7 @@ export default function SettingsPage() {
             <input
               value={countryQuery}
               onChange={(e) => setCountryQuery(e.target.value)}
-              placeholder={t('countrySearch')}
+              placeholder="국가 검색"
               className="form-control"
             />
             <select className="form-select" value={country} onChange={(e) => setCountry(e.target.value)}>
@@ -258,7 +238,7 @@ export default function SettingsPage() {
             <input
               value={languageQuery}
               onChange={(e) => setLanguageQuery(e.target.value)}
-              placeholder={t('languageSearch')}
+              placeholder="언어 검색"
               className="form-control"
             />
             <select className="form-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
@@ -287,14 +267,14 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <p className="text-sm mb-2">{t('pressure')}</p>
+            <p className="text-sm mb-2">압력</p>
             <div className="flex gap-2">
               <button className={`btn btn-sm ${units.pressure === 'bar' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'bar' })}>bar</button>
               <button className={`btn btn-sm ${units.pressure === 'psi' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'psi' })}>psi</button>
             </div>
           </div>
           <div>
-            <p className="text-sm mb-2">{t('temperature')}</p>
+            <p className="text-sm mb-2">온도</p>
             <div className="flex gap-2">
               <button className={`btn btn-sm ${units.temperature === 'c' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'c' })}>°C</button>
               <button className={`btn btn-sm ${units.temperature === 'f' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'f' })}>°F</button>
@@ -322,8 +302,8 @@ export default function SettingsPage() {
 
       <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
         <h2 className="font-semibold">{t('wearable')}</h2>
-        <p className="text-sm text-gray-500">등록된 기기: {wearables.length ? wearables.map((w) => w.name).join(', ') : t('noData')}</p>
-        <button onClick={() => setView('wearables')} className="btn btn-outline-secondary">{t('wearableManageTitle')}로 이동</button>
+        <p className="text-sm text-gray-500">등록된 기기: {wearables.length ? wearables.map((w) => w.name).join(', ') : '없음'}</p>
+        <button onClick={() => setView('wearables')} className="btn btn-outline-secondary">웨어러블 기기 관리로 이동</button>
       </section>
     </div>
   );
