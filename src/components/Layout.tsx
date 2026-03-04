@@ -18,17 +18,12 @@ import {
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
-import {
-  HomeIcon as HomeIconSolid,
-  MagnifyingGlassIcon as MagnifyingGlassIconSolid,
-  FilmIcon as FilmIconSolid,
-  PlusCircleIcon as PlusCircleIconSolid,
-  UserCircleIcon as UserCircleIconSolid,
-  ChatBubbleOvalLeftEllipsisIcon as ChatBubbleOvalLeftEllipsisIconSolid,
-} from '@heroicons/react/24/solid';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ReportModal from './ReportModal';
+import MobileHeader from './layout/MobileHeader';
+import MobileFooterNav from './layout/MobileFooterNav';
+import { useMobileBarsVisibility } from '../hooks/useMobileBarsVisibility';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -45,9 +40,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     return saved ? JSON.parse(saved) : false;
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const lastScrollYRef = useRef(0);
-  const lastTouchYRef = useRef<number | null>(null);
-  const [mobileBarsHidden, setMobileBarsHidden] = useState(false);
+  const { mobileBarsHidden, setMobileBarsHidden } = useMobileBarsVisibility({ disabled: showMobileMenu });
   const { signOut } = useAuth();
 
   useEffect(() => {
@@ -75,59 +68,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    const hideBars = () => setMobileBarsHidden(true);
-    const showBars = () => setMobileBarsHidden(false);
-
-    const onScroll = () => {
-      if (window.innerWidth >= 1280 || showMobileMenu) return;
-
-      const currentY = window.scrollY;
-      const diff = currentY - lastScrollYRef.current;
-
-      if (currentY < 24) {
-        showBars();
-      } else if (diff > 6) {
-        hideBars();
-      } else if (diff < -6) {
-        showBars();
-      }
-
-      lastScrollYRef.current = currentY;
-    };
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (window.innerWidth >= 1280 || showMobileMenu) return;
-      lastTouchYRef.current = e.touches[0]?.clientY ?? null;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (window.innerWidth >= 1280 || showMobileMenu) return;
-      const currentY = e.touches[0]?.clientY;
-      if (currentY == null || lastTouchYRef.current == null) return;
-
-      const diff = currentY - lastTouchYRef.current;
-      if (window.scrollY < 24) {
-        showBars();
-      } else if (diff < -4) {
-        hideBars();
-      } else if (diff > 4) {
-        showBars();
-      }
-
-      lastTouchYRef.current = currentY;
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-    };
-  }, [showMobileMenu]);
 
   const handleLogout = async () => {
     await signOut();
@@ -142,7 +82,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     if (showMobileMenu) {
       setMobileBarsHidden(false);
     }
-  }, [showMobileMenu]);
+  }, [showMobileMenu, setMobileBarsHidden]);
 
   const navItems = [
     { id: 'home', icon: HomeIcon, label: '홈' },
@@ -158,45 +98,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 transition-colors">
-      <header className={`fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626] z-50 transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <button onClick={() => onNavigate('home')} className="cursor-pointer" aria-label="Divergram 홈">
-              <div className="w-10 h-10 rounded-xl bg-[#111827] text-white text-sm font-bold flex items-center justify-center">DG</div>
-            </button>
-
-            <div className="hidden md:flex flex-1 max-w-md">
-              <div className="relative w-full">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="검색"
-                  onClick={() => onNavigate('search')}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#262626] dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <button
-              onClick={() => onNavigate('notifications')}
-              className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full relative transition-colors"
-              aria-label="알림"
-            >
-              <BellIcon className={`h-6 w-6 dark:text-white ${currentPage === 'notifications' ? 'text-black dark:text-white' : ''}`} />
-            </button>
-            <button
-              onClick={() => setShowMobileMenu((v) => !v)}
-              className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
-              aria-label="전체 메뉴"
-              title="전체 메뉴"
-            >
-              <Bars3Icon className="h-6 w-6 dark:text-white" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <MobileHeader
+        currentPage={currentPage}
+        mobileBarsHidden={mobileBarsHidden}
+        onNavigate={onNavigate}
+        onToggleMenu={() => setShowMobileMenu((v) => !v)}
+      />
 
       {showMobileMenu && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -376,59 +283,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         </main>
       </div>
 
-      <nav
-        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
-        style={{
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          willChange: 'transform',
-        }}
-      >
-        <div className="flex items-center justify-around h-16">
-          {[navItems[0], navItems[3], navItems[1], navItems[4], navItems[7]].map((item) => {
-            const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            const solidMap: Record<string, any> = {
-              home: HomeIconSolid,
-              reels: FilmIconSolid,
-              explore: MagnifyingGlassIconSolid,
-              create: PlusCircleIconSolid,
-              profile: UserCircleIconSolid,
-            };
-            const ActiveIcon = solidMap[item.id] || Icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`flex flex-col items-center justify-center p-2 transition-colors ${
-                  isActive ? 'text-black dark:text-white' : 'text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                {isActive ? <ActiveIcon className="h-7 w-7" /> : <Icon className="h-7 w-7" />}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {currentPage !== 'reels' && (
-      <button
-        onClick={() => onNavigate('messages')}
-        aria-label="메시지"
-        title="메시지"
-        className={`fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-out z-40 ${mobileBarsHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
-      >
-        <div className="bg-white dark:bg-[#121212] rounded-full p-3 transition-colors">
-          {currentPage === 'messages' ? (
-            <ChatBubbleOvalLeftEllipsisIconSolid className="h-6 w-6 text-purple-600" />
-          ) : (
-            <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-gray-700" />
-          )}
-        </div>
-        <div className="mt-1 text-[10px] font-semibold text-white text-center drop-shadow">메시지</div>
-      </button>
-      )}
+      <MobileFooterNav
+        navItems={navItems}
+        currentPage={currentPage}
+        mobileBarsHidden={mobileBarsHidden}
+        onNavigate={onNavigate}
+      />
 
       {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} />}
     </div>
