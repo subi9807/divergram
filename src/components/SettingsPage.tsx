@@ -8,30 +8,50 @@ const FALLBACK_LANGUAGES = [
 ];
 
 function getAllCountries(locale: string) {
-  const dn = new Intl.DisplayNames([locale], { type: 'region' });
-  const out: Array<{ code: string; label: string }> = [];
-  for (let i = 65; i <= 90; i++) {
-    for (let j = 65; j <= 90; j++) {
-      const code = String.fromCharCode(i) + String.fromCharCode(j);
-      const label = dn.of(code);
-      if (label && label !== code) out.push({ code, label });
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: 'region' });
+    const out: Array<{ code: string; label: string }> = [];
+    for (let i = 65; i <= 90; i++) {
+      for (let j = 65; j <= 90; j++) {
+        const code = String.fromCharCode(i) + String.fromCharCode(j);
+        const label = dn.of(code);
+        if (label && label !== code) out.push({ code, label });
+      }
     }
+    return out.sort((a, b) => a.label.localeCompare(b.label));
+  } catch {
+    return [
+      { code: 'KR', label: 'Korea' },
+      { code: 'US', label: 'United States' },
+      { code: 'JP', label: 'Japan' },
+      { code: 'CN', label: 'China' },
+    ];
   }
-  return out.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function getAllLanguages(locale: string) {
-  const dn = new Intl.DisplayNames([locale], { type: 'language' });
-  const source = (Intl as any).supportedValuesOf?.('language') || FALLBACK_LANGUAGES;
-  const out: Array<{ code: string; label: string }> = [];
-  for (const code of source) {
-    const short = String(code).toLowerCase();
-    if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
-    const label = dn.of(short);
-    if (label && label !== short) out.push({ code: short, label });
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: 'language' });
+    let source: string[] = FALLBACK_LANGUAGES;
+    try {
+      const maybe = (Intl as any).supportedValuesOf?.('language');
+      if (Array.isArray(maybe) && maybe.length) source = maybe;
+    } catch {
+      source = FALLBACK_LANGUAGES;
+    }
+
+    const out: Array<{ code: string; label: string }> = [];
+    for (const code of source) {
+      const short = String(code).toLowerCase();
+      if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
+      const label = dn.of(short);
+      if (label && label !== short) out.push({ code: short, label });
+    }
+    const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
+    return uniq.sort((a, b) => a.label.localeCompare(b.label));
+  } catch {
+    return FALLBACK_LANGUAGES.map((code) => ({ code, label: code }));
   }
-  const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
-  return uniq.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export default function SettingsPage() {

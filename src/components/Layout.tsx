@@ -86,6 +86,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     }
   }, [showMobileMenu, setMobileBarsHidden]);
 
+  const handleNav = (page: string) => {
+    setMobileBarsHidden(false);
+    onNavigate(page);
+  };
+
   const navItems = [
     { id: 'home', icon: HomeIcon, label: t('home') },
     { id: 'explore', icon: MagnifyingGlassIcon, label: t('explore') },
@@ -108,7 +113,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       <MobileHeader
         currentPage={currentPage}
         mobileBarsHidden={mobileBarsHidden}
-        onNavigate={onNavigate}
+        onNavigate={handleNav}
         onToggleMenu={() => setShowMobileMenu((v) => !v)}
       />
 
@@ -137,7 +142,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   <button
                     key={item.id}
                     onClick={() => {
-                      onNavigate(item.id);
+                      handleNav(item.id);
                       setShowMobileMenu(false);
                     }}
                     className={`w-full flex items-center space-x-4 px-6 py-4 text-base hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
@@ -169,7 +174,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onNavigate(item.id)}
+                    onClick={() => handleNav(item.id)}
                     className={`group relative w-full flex items-center justify-center px-2 py-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white transition-colors ${
                       isActive ? 'font-bold' : 'font-medium'
                     }`}
@@ -293,7 +298,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       <MobileFooterNav
         currentPage={currentPage}
         mobileBarsHidden={mobileBarsHidden}
-        onNavigate={onNavigate}
+        onNavigate={handleNav}
         profileAvatarUrl={profile?.avatar_url || undefined}
       />
 
