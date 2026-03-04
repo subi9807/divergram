@@ -115,8 +115,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             aria-label="메뉴 닫기"
             onClick={() => setShowMobileMenu(false)}
           />
-          <div className="absolute inset-0 bg-white dark:bg-[#121212] animate-mobile-menu-slide-in transition-colors">
-            <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#262626]">
+          <div className="absolute inset-0 bg-white dark:bg-[#121212] animate-mobile-menu-slide-in transition-colors flex flex-col">
+            <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#262626] shrink-0">
               <button
                 onClick={() => setShowMobileMenu(false)}
                 className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
@@ -125,7 +125,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <Bars3Icon className="h-6 w-6 dark:text-white" />
               </button>
             </div>
-            <div className="py-3">
+            <div className="py-3 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
