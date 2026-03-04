@@ -188,30 +188,38 @@ export default function SettingsPage() {
     <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-8">
       <h1 className="text-2xl font-bold">{t('settingsTitle')}</h1>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('country')}</h2>
-        <input
-          value={countryQuery}
-          onChange={(e) => setCountryQuery(e.target.value)}
-          placeholder="국가 검색"
-          className="w-full border rounded-md px-3 py-2 bg-transparent"
-        />
-        <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={country} onChange={(e) => setCountry(e.target.value)}>
-          {filteredCountries.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
-        </select>
-      </section>
+      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] bg-white dark:bg-[#1b1d21] overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2f333a]">
+          <h2 className="font-semibold">{t('country')} / {t('language')}</h2>
+        </div>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('language')}</h2>
-        <input
-          value={languageQuery}
-          onChange={(e) => setLanguageQuery(e.target.value)}
-          placeholder="언어 검색"
-          className="w-full border rounded-md px-3 py-2 bg-transparent"
-        />
-        <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={language} onChange={(e) => setLanguage(e.target.value)}>
-          {filteredLanguages.map((l) => <option key={l.code} value={l.code}>{l.label} ({l.code})</option>)}
-        </select>
+        <div className="p-4 space-y-4">
+          <div className="rounded-lg border border-gray-200 dark:border-[#3a3f47] p-3 space-y-2">
+            <p className="text-sm font-medium">{t('country')}</p>
+            <input
+              value={countryQuery}
+              onChange={(e) => setCountryQuery(e.target.value)}
+              placeholder="국가 검색"
+              className="w-full border rounded-md px-3 py-2 bg-transparent"
+            />
+            <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={country} onChange={(e) => setCountry(e.target.value)}>
+              {filteredCountries.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
+            </select>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 dark:border-[#3a3f47] p-3 space-y-2">
+            <p className="text-sm font-medium">{t('language')}</p>
+            <input
+              value={languageQuery}
+              onChange={(e) => setLanguageQuery(e.target.value)}
+              placeholder="언어 검색"
+              className="w-full border rounded-md px-3 py-2 bg-transparent"
+            />
+            <select className="w-full border rounded-md px-3 py-2 bg-transparent" value={language} onChange={(e) => setLanguage(e.target.value)}>
+              {filteredLanguages.map((l) => <option key={l.code} value={l.code}>{l.label} ({l.code})</option>)}
+            </select>
+          </div>
+        </div>
       </section>
 
       <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-4 bg-white dark:bg-[#1b1d21]">
