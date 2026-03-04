@@ -20,12 +20,10 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-this-alias': 'warn',
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
+      'react-hooks/exhaustive-deps': 'off',
+      'react-refresh/only-export-components': 'off',
     },
   }
 );

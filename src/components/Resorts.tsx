@@ -122,7 +122,6 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
 
   useEffect(() => {
     loadResorts(myPos);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myPos]);
 
   useEffect(() => {

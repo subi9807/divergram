@@ -50,7 +50,6 @@ export default function AdminConsole() {
 
   useEffect(() => {
     if (adminKey) load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
