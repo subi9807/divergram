@@ -20,10 +20,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAppSettings } from '../contexts/AppSettingsContext';
 import ReportModal from './ReportModal';
 import MobileHeader from './layout/MobileHeader';
 import MobileFooterNav from './layout/MobileFooterNav';
 import { useMobileBarsVisibility } from '../hooks/useMobileBarsVisibility';
+import { useAppSettings } from '../contexts/AppSettingsContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -42,6 +44,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const { mobileBarsHidden, setMobileBarsHidden } = useMobileBarsVisibility({ disabled: showMobileMenu });
   const { signOut } = useAuth();
+  const { t } = useAppSettings();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -85,15 +88,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   }, [showMobileMenu, setMobileBarsHidden]);
 
   const navItems = [
-    { id: 'home', icon: HomeIcon, label: '홈' },
-    { id: 'explore', icon: MagnifyingGlassIcon, label: '탐색' },
-    { id: 'resorts', icon: BuildingStorefrontIcon, label: '리조트' },
-    { id: 'location', icon: MapIcon, label: '포인트 지도' },
-    { id: 'reels', icon: FilmIcon, label: '릴스' },
-    { id: 'create', icon: PlusCircleIcon, label: '게시물 등록' },
-    { id: 'messages', icon: ChatBubbleOvalLeftEllipsisIcon, label: '메시지' },
-    { id: 'notifications', icon: BellIcon, label: '알림' },
-    { id: 'profile', icon: UserCircleIcon, label: '프로필' },
+    { id: 'home', icon: HomeIcon, label: t('home') },
+    { id: 'explore', icon: MagnifyingGlassIcon, label: t('explore') },
+    { id: 'resorts', icon: BuildingStorefrontIcon, label: t('resorts') },
+    { id: 'location', icon: MapIcon, label: t('location') },
+    { id: 'reels', icon: FilmIcon, label: t('reels') },
+    { id: 'create', icon: PlusCircleIcon, label: t('create') },
+    { id: 'messages', icon: ChatBubbleOvalLeftEllipsisIcon, label: t('messages') },
+    { id: 'notifications', icon: BellIcon, label: t('notifications') },
+    { id: 'profile', icon: UserCircleIcon, label: t('profile') },
   ];
 
   return (
@@ -142,6 +145,19 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                 );
               })}
+              <div className="my-2 border-t border-gray-200 dark:border-[#262626]" />
+              <button
+                onClick={() => {
+                  onNavigate('settings');
+                  setShowMobileMenu(false);
+                }}
+                className={`w-full flex items-center space-x-4 px-6 py-4 text-base hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
+                  currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 font-semibold' : ''
+                }`}
+              >
+                <Cog6ToothIcon className="h-7 w-7" />
+                <span>{t('settings')}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -183,7 +199,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               >
                 <Bars3Icon className="h-6 w-6" />
                 <span className="pointer-events-none absolute left-[78px] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-[#262626] text-white text-xs px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg">
-                  더보기
+                  {t('more')}
                 </span>
               </button>
 
@@ -197,7 +213,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <Cog6ToothIcon className="h-5 w-5" />
-                    <span className="text-sm">설정</span>
+                    <span className="text-sm">{t('settings')}</span>
                   </button>
 
                   <button
@@ -208,7 +224,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <ClockIcon className="h-5 w-5" />
-                    <span className="text-sm">내 활동</span>
+                    <span className="text-sm">{t('activity')}</span>
                   </button>
 
                   <button
@@ -219,7 +235,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                     className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors"
                   >
                     <BookmarkIcon className="h-5 w-5" />
-                    <span className="text-sm">저장됨</span>
+                    <span className="text-sm">{t('saved')}</span>
                   </button>
 
                   <button

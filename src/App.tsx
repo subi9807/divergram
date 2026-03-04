@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AppSettingsProvider } from './contexts/AppSettingsContext';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
 import Feed from './components/Feed';
@@ -13,15 +14,15 @@ import Reels from './components/Reels';
 import Notifications from './components/Notifications';
 import LocationMapPage from './components/LocationMapPage';
 import ProfileEdit from './components/ProfileEdit';
-import PersonalInfoEdit from './components/PersonalInfoEdit';
 import AdminConsole from './components/AdminConsole';
+import SettingsPage from './components/SettingsPage';
 import { db } from './lib/internal-db';
 
 const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://divergram.com');
 const OPS_SECRET_KEY = 'm1na-ops-260301';
 
 function MainApp() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState('home');
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -32,7 +33,6 @@ function MainApp() {
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
   const [exploreTag, setExploreTag] = useState('');
   const [showProfileEdit, setShowProfileEdit] = useState(false);
-  const [activityCounts, setActivityCounts] = useState({ likes: 0, comments: 0, saved: 0 });
   const [reportText, setReportText] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'profile' | 'account' | 'activity'>('profile');
@@ -106,22 +106,6 @@ function MainApp() {
     exploreTag,
     opsAuthorized,
   ]);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const [{ data: likes }, { data: comments }, { data: saved }] = await Promise.all([
-        db.from('likes').select('*').eq('user_id', user.id),
-        db.from('comments').select('*').eq('user_id', user.id),
-        db.from('saved_posts').select('*').eq('user_id', user.id),
-      ]);
-      setActivityCounts({
-        likes: likes?.length || 0,
-        comments: comments?.length || 0,
-        saved: saved?.length || 0,
-      });
-    })();
-  }, [user]);
 
   useEffect(() => {
     const applyFromUrl = () => {
@@ -451,51 +435,7 @@ function MainApp() {
       case 'post':
         return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} singlePostMode />;
       case 'settings':
-        return (
-          <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100">
-            <h1 className="text-2xl font-bold mb-6">설정</h1>
-
-            <div className="flex gap-2 mb-6 border-b">
-              <button
-                onClick={() => setSettingsTab('profile')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'profile' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                프로필 수정
-              </button>
-              <button
-                onClick={() => setSettingsTab('account')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'account' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                개인정보 수정
-              </button>
-              <button
-                onClick={() => setSettingsTab('activity')}
-                className={`px-4 py-2 text-sm font-semibold ${settingsTab === 'activity' ? 'border-b-2 border-black dark:border-white' : 'text-gray-500 dark:text-gray-400'}`}
-              >
-                내 활동 보기
-              </button>
-            </div>
-
-            {settingsTab === 'profile' && (
-              <div className="space-y-3">
-                <p className="text-gray-600">프로필 사진/이름/소개 등 공개 프로필을 수정합니다.</p>
-                <button onClick={handleEditProfile} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">프로필 편집 열기</button>
-                <button onClick={() => setCurrentPage('report')} className="w-full text-left p-4 rounded-lg border border-gray-300 dark:border-[#262626] hover:bg-gray-50 dark:hover:bg-[#1a1a1a]">문제 신고</button>
-                <button onClick={() => signOut()} className="w-full text-left p-4 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">로그아웃</button>
-              </div>
-            )}
-
-            {settingsTab === 'account' && <PersonalInfoEdit />}
-
-            {settingsTab === 'activity' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">좋아요</p><p className="text-2xl font-bold">{activityCounts.likes}</p></div>
-                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">댓글</p><p className="text-2xl font-bold">{activityCounts.comments}</p></div>
-                <div className="rounded-lg border p-4"><p className="text-sm text-gray-500">저장</p><p className="text-2xl font-bold">{activityCounts.saved}</p></div>
-              </div>
-            )}
-          </div>
-        );
+        return <SettingsPage />;
       case 'admin':
         return <AdminConsole />;
       case 'ops':
@@ -608,7 +548,9 @@ function MainApp() {
 function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <AppSettingsProvider>
+        <MainApp />
+      </AppSettingsProvider>
     </AuthProvider>
   );
 }
