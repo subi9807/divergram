@@ -67,7 +67,7 @@ export default function LocationMapPage({ location, onBack }: Props) {
               .map((v) => String(v || '').trim())
               .filter(Boolean)
           )
-        );
+        ) as string[];
 
         const bounds = new google.maps.LatLngBounds();
         let hasMarker = false;

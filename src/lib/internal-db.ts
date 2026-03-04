@@ -318,7 +318,7 @@ function applyFilters(rows: any[], filters: AnyObj[]) {
       if (!clauses.length) return true;
 
       return clauses.some((clause: string) => {
-        const m = clause.match(/^([^\.]+)\.(eq|ilike)\.(.+)$/);
+        const m = clause.match(/^([^.]+)\.(eq|ilike)\.(.+)$/);
         if (!m) return false;
         const [, col, op, raw] = m;
         const rowVal = get(r, col);
@@ -405,11 +405,18 @@ class LocalQueryBuilder {
   async maybeSingle() { const rows = await this._rows(); return { data: rows[0] || null, error: null }; }
   async single() { const rows = await this._rows(); return { data: rows[0] || null, error: null }; }
 
-  async insert(data: any) {
-    const arr = Array.isArray(data) ? data : [data];
-    const out = arr.map((r) => ({ id: r.id || uid(this.table), created_at: r.created_at || nowIso(), ...r }));
-    await writeTable(this.table, out);
-    return { data: out, error: null };
+  insert(data: any) {
+    const perform = async () => {
+      const arr = Array.isArray(data) ? data : [data];
+      const out = arr.map((r) => ({ id: r.id || uid(this.table), created_at: r.created_at || nowIso(), ...r }));
+      await writeTable(this.table, out);
+      return { data: out, error: null };
+    };
+
+    return {
+      select: async () => perform(),
+      then: (resolve: (value: any) => any, reject?: (reason: any) => any) => perform().then(resolve, reject),
+    } as any;
   }
 
   update(data: any) {
@@ -418,7 +425,7 @@ class LocalQueryBuilder {
         await patchTable(this.table, [...this.filters, { op: 'eq', column, value }], data);
         return { data: null, error: null };
       },
-      then: (resolve: any, reject: any) => patchTable(this.table, this.filters, data).then(() => ({ data: null, error: null })).then(resolve, reject),
+      then: (resolve: (value: any) => any, reject?: (reason: any) => any) => patchTable(this.table, this.filters, data).then(() => ({ data: null, error: null })).then(resolve, reject),
     } as any;
   }
 
@@ -434,14 +441,14 @@ class LocalQueryBuilder {
         await deleteTable(qb.table, runtimeFilters);
         return { data: before || [], error: null };
       },
-      then(resolve: any, reject: any) {
+      then(resolve: (value: any) => any, reject?: (reason: any) => any) {
         return deleteTable(qb.table, runtimeFilters).then(() => ({ data: null, error: null })).then(resolve, reject);
       },
     } as any;
     return api;
   }
 
-  then(resolve: any, reject: any) {
+  then(resolve: (value: any) => any, reject?: (reason: any) => any) {
     return this._rows().then((rows) => ({ data: rows, error: null, count: rows.length })).then(resolve, reject);
   }
 }
@@ -474,7 +481,7 @@ export const db = {
     },
     onAuthStateChange(cb: AuthCb) {
       listeners.add(cb);
-      return { data: { subscription: { unsubscribe: () => listeners.delete(cb) } } };
+      return { data: { subscription: { unsubscribe: () => { listeners.delete(cb); } } } };
     },
     async signUp({ email, password }: { email: string; password: string }) {
       const username = email.split('@')[0];
@@ -506,7 +513,7 @@ export const db = {
   storage: {
     from(_bucket: string) {
       return {
-        async upload(path: string, file: File) {
+        async upload(path: string, file: File, _options?: AnyObj) {
           try {
             const map = loadStorageMap();
             map[path] = await fileToDataUrl(file);

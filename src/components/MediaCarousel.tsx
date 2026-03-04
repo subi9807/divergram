@@ -22,10 +22,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-
-  if (!media || media.length === 0) return null;
-
-  const sortedMedia = [...media].sort((a, b) => a.order_index - b.order_index);
+  const sortedMedia = [...(media || [])].sort((a, b) => a.order_index - b.order_index);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -87,6 +84,8 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
     else goToNext();
     setMouseStartX(null);
   };
+
+  if (sortedMedia.length === 0) return null;
 
   return (
     <div ref={containerRef} className={`relative ${className} cursor-grab active:cursor-grabbing select-none`} style={style} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onMouseDown={onMouseDown} onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDragStart={(e) => e.preventDefault()}>

@@ -56,7 +56,7 @@ export default function CreatePost({ onClose, onPostCreated }: CreatePostProps) 
           .flatMap((item: any) => [item.location, item.dive_site])
           .map((v) => String(v || '').trim())
           .filter(Boolean)
-      ));
+      )) as string[];
 
       setLocationSuggestions(merged);
 

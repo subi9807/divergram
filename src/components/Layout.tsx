@@ -21,7 +21,6 @@ import {
 import {
   HomeIcon as HomeIconSolid,
   MagnifyingGlassIcon as MagnifyingGlassIconSolid,
-  MapIcon as MapIconSolid,
   FilmIcon as FilmIconSolid,
   PlusCircleIcon as PlusCircleIconSolid,
   UserCircleIcon as UserCircleIconSolid,
