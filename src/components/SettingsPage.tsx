@@ -108,11 +108,7 @@ export default function SettingsPage() {
 
         {wizardStep === 1 && (
           <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="text-sm text-gray-600 dark:text-gray-300">BLE 스캐너에서 기기를 찾는 단계야.</p>
-            <div className="flex gap-2">
-              <button onClick={startBle} className="px-3 py-2 rounded-md bg-blue-500 text-white" disabled={!isNativeWebView || bleScanning}>스캔 시작</button>
-              <button onClick={stopBle} className="px-3 py-2 rounded-md border" disabled={!bleScanning}>스캔 중지</button>
-            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-300">등록하기를 누르면 자동으로 BLE 스캔을 시작해. 아래 목록에서 기기를 선택해줘.</p>
             <div className="space-y-2 max-h-72 overflow-auto">
               {bleDevices.map((d) => (
                 <button key={d.id} onClick={() => { setSelectedBle(d); setWizardStep(2); stopBle(); }} className="w-full flex items-center justify-between border rounded-md px-3 py-2 text-left">
@@ -224,23 +220,31 @@ export default function SettingsPage() {
         <div className="grid grid-cols-2 gap-6">
           <div>
             <p className="text-sm mb-2">Time</p>
-            <label className="mr-4"><input type="radio" checked={units.time === '24h'} onChange={() => setUnits({ ...units, time: '24h' })} /> 24h</label>
-            <label><input type="radio" checked={units.time === '12h'} onChange={() => setUnits({ ...units, time: '12h' })} /> 12h</label>
+            <div className="flex gap-2">
+              <button className={`px-3 py-1.5 rounded-md border ${units.time === '24h' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, time: '24h' })}>24h</button>
+              <button className={`px-3 py-1.5 rounded-md border ${units.time === '12h' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, time: '12h' })}>12h</button>
+            </div>
           </div>
           <div>
             <p className="text-sm mb-2">Length/Depth</p>
-            <label className="mr-4"><input type="radio" checked={units.length === 'metric'} onChange={() => setUnits({ ...units, length: 'metric' })} /> m</label>
-            <label><input type="radio" checked={units.length === 'imperial'} onChange={() => setUnits({ ...units, length: 'imperial' })} /> ft</label>
+            <div className="flex gap-2">
+              <button className={`px-3 py-1.5 rounded-md border ${units.length === 'metric' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, length: 'metric' })}>m</button>
+              <button className={`px-3 py-1.5 rounded-md border ${units.length === 'imperial' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, length: 'imperial' })}>ft</button>
+            </div>
           </div>
           <div>
             <p className="text-sm mb-2">압력</p>
-            <label className="mr-4"><input type="radio" checked={units.pressure === 'bar'} onChange={() => setUnits({ ...units, pressure: 'bar' })} /> bar</label>
-            <label><input type="radio" checked={units.pressure === 'psi'} onChange={() => setUnits({ ...units, pressure: 'psi' })} /> psi</label>
+            <div className="flex gap-2">
+              <button className={`px-3 py-1.5 rounded-md border ${units.pressure === 'bar' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, pressure: 'bar' })}>bar</button>
+              <button className={`px-3 py-1.5 rounded-md border ${units.pressure === 'psi' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, pressure: 'psi' })}>psi</button>
+            </div>
           </div>
           <div>
             <p className="text-sm mb-2">온도</p>
-            <label className="mr-4"><input type="radio" checked={units.temperature === 'c'} onChange={() => setUnits({ ...units, temperature: 'c' })} /> °C</label>
-            <label><input type="radio" checked={units.temperature === 'f'} onChange={() => setUnits({ ...units, temperature: 'f' })} /> °F</label>
+            <div className="flex gap-2">
+              <button className={`px-3 py-1.5 rounded-md border ${units.temperature === 'c' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, temperature: 'c' })}>°C</button>
+              <button className={`px-3 py-1.5 rounded-md border ${units.temperature === 'f' ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 dark:border-[#3a3f47]'}`} onClick={() => setUnits({ ...units, temperature: 'f' })}>°F</button>
+            </div>
           </div>
         </div>
       </section>
