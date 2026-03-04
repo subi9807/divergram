@@ -46,6 +46,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const lastScrollYRef = useRef(0);
+  const lastTouchYRef = useRef<number | null>(null);
   const [mobileBarsHidden, setMobileBarsHidden] = useState(false);
   const { signOut } = useAuth();
 
@@ -75,6 +76,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   }, [isDarkMode]);
 
   useEffect(() => {
+    const hideBars = () => setMobileBarsHidden(true);
+    const showBars = () => setMobileBarsHidden(false);
+
     const onScroll = () => {
       if (window.innerWidth >= 1280 || showMobileMenu) return;
 
@@ -82,18 +86,47 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       const diff = currentY - lastScrollYRef.current;
 
       if (currentY < 24) {
-        setMobileBarsHidden(false);
-      } else if (diff > 8) {
-        setMobileBarsHidden(true);
-      } else if (diff < -8) {
-        setMobileBarsHidden(false);
+        showBars();
+      } else if (diff > 6) {
+        hideBars();
+      } else if (diff < -6) {
+        showBars();
       }
 
       lastScrollYRef.current = currentY;
     };
 
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.innerWidth >= 1280 || showMobileMenu) return;
+      lastTouchYRef.current = e.touches[0]?.clientY ?? null;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (window.innerWidth >= 1280 || showMobileMenu) return;
+      const currentY = e.touches[0]?.clientY;
+      if (currentY == null || lastTouchYRef.current == null) return;
+
+      const diff = currentY - lastTouchYRef.current;
+      if (window.scrollY < 24) {
+        showBars();
+      } else if (diff < -4) {
+        hideBars();
+      } else if (diff > 4) {
+        showBars();
+      }
+
+      lastTouchYRef.current = currentY;
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+    };
   }, [showMobileMenu]);
 
   const handleLogout = async () => {
@@ -347,10 +380,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
-          transform: 'translateZ(0)',
-          WebkitTransform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
+          willChange: 'transform',
         }}
       >
         <div className="flex items-center justify-around h-16">
