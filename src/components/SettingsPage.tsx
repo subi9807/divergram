@@ -1,61 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 
-type BleDevice = { id: string; name: string; rssi?: number };
-
-const FALLBACK_LANGUAGES = [
-  'af','am','ar','as','az','be','bg','bn','bo','bs','ca','cs','cy','da','de','el','en','es','et','eu','fa','fi','fil','fr','ga','gl','gu','he','hi','hr','hu','hy','id','is','it','ja','ka','kk','km','kn','ko','ky','lo','lt','lv','mk','ml','mn','mr','ms','mt','my','ne','nl','no','or','pa','pl','ps','pt','ro','ru','si','sk','sl','sq','sr','sv','sw','ta','te','th','tr','uk','ur','uz','vi','zh','zu'
-];
-
-function getAllCountries(locale: string) {
-  const dn = new Intl.DisplayNames([locale], { type: 'region' });
-  const out: Array<{ code: string; label: string }> = [];
-  for (let i = 65; i <= 90; i++) {
-    for (let j = 65; j <= 90; j++) {
-      const code = String.fromCharCode(i) + String.fromCharCode(j);
-      const label = dn.of(code);
-      if (label && label !== code) out.push({ code, label });
-    }
-  }
-  return out.sort((a, b) => a.label.localeCompare(b.label));
-}
-
-function getAllLanguages(locale: string) {
-  try {
-    const dn = new Intl.DisplayNames([locale], { type: 'language' });
-    const out: Array<{ code: string; label: string }> = [];
-    for (const code of FALLBACK_LANGUAGES) {
-      const short = String(code).toLowerCase();
-      const label = dn.of(short);
-      if (label && label !== short) out.push({ code: short, label });
-    }
-    const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
-    return uniq.sort((a, b) => a.label.localeCompare(b.label));
-  } catch {
-    return FALLBACK_LANGUAGES.map((code) => ({ code, label: code }));
-  }
-}
-
 export default function SettingsPage() {
-  const {
-    country, setCountry,
-    language, setLanguage,
-    units, setUnits,
-    privacyScope, setPrivacyScope,
-    theme, setTheme,
-    wearables, addWearable, removeWearable,
-    t,
-  } = useAppSettings();
-
-  const [view, setView] = useState<'main' | 'wearables' | 'wizard'>('main');
-  const [countryQuery, setCountryQuery] = useState('');
-  const [languageQuery, setLanguageQuery] = useState('');
-
-  const [bleDevices, setBleDevices] = useState<BleDevice[]>([]);
+  const { language, setLanguage, units, setUnits, privacyScope, setPrivacyScope, theme, setTheme, wearables, addWearable, t } = useAppSettings();
+  const [bleDevices, setBleDevices] = useState<{ id: string; name: string; rssi?: number }[]>([]);
   const [bleScanning, setBleScanning] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [selectedBle, setSelectedBle] = useState<BleDevice | null>(null);
-  const [deviceAlias, setDeviceAlias] = useState('');
 
   const isNativeWebView = useMemo(() => typeof window !== 'undefined' && !!(window as any).ReactNativeWebView, []);
 
@@ -69,8 +18,7 @@ export default function SettingsPage() {
       }
       if (!data) return;
       if (data.type === 'ble_device_found') {
-        const next = { id: data.id, name: data.name || 'Unknown Device', rssi: data.rssi };
-        setBleDevices((prev) => prev.find((d) => d.id === next.id) ? prev : [...prev, next]);
+        setBleDevices((prev) => prev.find((d) => d.id === data.id) ? prev : [...prev, { id: data.id, name: data.name, rssi: data.rssi }]);
       }
       if (data.type === 'ble_scan_stopped') setBleScanning(false);
     };
@@ -99,213 +47,87 @@ export default function SettingsPage() {
     sendNative('stop_ble_scan');
   };
 
-  const languageOptions = useMemo(() => getAllLanguages(language || 'en'), [language]);
-
-  const countryOptions = useMemo(() => getAllCountries(language || 'en'), [language]);
-
-  const filteredLanguages = languageOptions.filter((x) => `${x.label} ${x.code}`.toLowerCase().includes(languageQuery.toLowerCase()));
-  const filteredCountries = countryOptions.filter((x) => `${x.label} ${x.code}`.toLowerCase().includes(countryQuery.toLowerCase()));
-
-  const beginWizard = () => {
-    setView('wizard');
-    setWizardStep(1);
-    setSelectedBle(null);
-    setDeviceAlias('');
-    setBleDevices([]);
-    startBle();
-  };
-
-  const confirmDeleteWearable = (id: string, name: string) => {
-    if (window.confirm(`${name} 기기를 삭제할까요?`)) {
-      removeWearable(id);
-    }
-  };
-
-  if (view === 'wizard') {
-    return (
-      <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-6">
-        <button className="text-sm underline" onClick={() => { stopBle(); setView('wearables'); }}>← 웨어러블 관리로 돌아가기</button>
-        <h1 className="text-2xl font-bold">웨어러블 등록 ({wizardStep}/4)</h1>
-
-        {wizardStep === 1 && (
-          <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-              {bleScanning && <span className="inline-block h-4 w-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />}
-              <span>{bleScanning ? 'BLE 스캔 중... 기기가 보이면 바로 선택할 수 있어.' : '스캔 준비 중...'}</span>
-            </div>
-
-            <div className="space-y-2 max-h-72 overflow-auto">
-              {bleDevices.map((d) => (
-                <button key={d.id} onClick={() => { setSelectedBle(d); setWizardStep(2); stopBle(); }} className="w-full flex items-center justify-between border rounded-md px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#252a31] transition-colors">
-                  <div>
-                    <p className="font-medium">{d.name}</p>
-                    <p className="text-xs text-gray-500">{d.id} {typeof d.rssi === 'number' ? `| RSSI ${d.rssi}` : ''}</p>
-                  </div>
-                  <span className="text-xs">선택</span>
-                </button>
-              ))}
-              {bleDevices.length === 0 && (
-                <div className="text-sm text-gray-500 py-6 text-center">검색된 기기가 아직 없어. 잠시만 기다려줘.</div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {wizardStep === 2 && selectedBle && (
-          <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="font-medium">선택된 기기: {selectedBle.name}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-300">다음 버튼을 누르면 페어링 단계로 진행해.</p>
-            <button onClick={() => setWizardStep(3)} className="btn btn-primary">페어링 완료하고 다음</button>
-          </section>
-        )}
-
-        {wizardStep === 3 && selectedBle && (
-          <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <p className="text-sm">기기명을 입력해줘.</p>
-            <input value={deviceAlias} onChange={(e) => setDeviceAlias(e.target.value)} placeholder={selectedBle.name} className="w-full border rounded-md px-3 py-2 bg-transparent" />
-            <button
-              onClick={() => {
-                addWearable({ ...selectedBle, name: deviceAlias.trim() || selectedBle.name });
-                setWizardStep(4);
-              }}
-              className="btn btn-primary"
-            >
-              다음
-            </button>
-          </section>
-        )}
-
-        {wizardStep === 4 && (
-          <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-            <h2 className="font-semibold">등록 완료</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-300">기기 등록이 완료됐어.</p>
-            <button onClick={() => setView('wearables')} className="btn btn-primary">기기 목록으로 이동</button>
-          </section>
-        )}
-      </div>
-    );
-  }
-
-  if (view === 'wearables') {
-    return (
-      <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-6">
-        <button className="text-sm underline" onClick={() => setView('main')}>← 설정으로 돌아가기</button>
-        <h1 className="text-2xl font-bold">웨어러블 기기 관리</h1>
-
-        <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-          <button onClick={beginWizard} className="btn btn-primary">등록하기</button>
-          {!isNativeWebView && <p className="text-sm text-amber-600">앱(WebView)에서 BLE 스캔이 동작해.</p>}
-          <div className="space-y-2">
-            {wearables.length === 0 && <p className="text-sm text-gray-500">등록된 기기가 없어.</p>}
-            {wearables.map((w) => (
-              <div key={w.id} className="flex items-center justify-between border rounded-md px-3 py-2">
-                <div>
-                  <p className="font-medium">{w.name}</p>
-                  <p className="text-xs text-gray-500">{w.id}</p>
-                </div>
-                <button className="btn btn-sm btn-outline-danger" onClick={() => confirmDeleteWearable(w.id, w.name)}>삭제</button>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6 md:p-8 max-w-4xl text-gray-900 dark:text-gray-100 space-y-8">
       <h1 className="text-2xl font-bold">{t('settingsTitle')}</h1>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] bg-white dark:bg-[#1b1d21] overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-[#2f333a]">
-          <h2 className="font-semibold">{t('country')} / {t('language')}</h2>
-        </div>
+      <section className="rounded-xl border p-4 space-y-3">
+        <h2 className="font-semibold">1) {t('language')}</h2>
+        <select className="border rounded-md px-3 py-2 bg-transparent" value={language} onChange={(e) => setLanguage(e.target.value as any)}>
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+        </select>
+      </section>
 
-        <div className="p-4 space-y-4">
-          <div className="rounded-lg border border-gray-200 dark:border-[#3a3f47] p-3 space-y-2">
-            <p className="text-sm font-medium">{t('country')}</p>
-            <input
-              value={countryQuery}
-              onChange={(e) => setCountryQuery(e.target.value)}
-              placeholder="국가 검색"
-              className="form-control"
-            />
-            <select className="form-select" value={country} onChange={(e) => setCountry(e.target.value)}>
-              {filteredCountries.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}
+      <section className="rounded-xl border p-4 space-y-3">
+        <h2 className="font-semibold">2) {t('units')}</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="text-sm">Time
+            <select className="mt-1 w-full border rounded-md px-3 py-2 bg-transparent" value={units.time} onChange={(e) => setUnits({ ...units, time: e.target.value as any })}>
+              <option value="24h">24h</option>
+              <option value="12h">12h</option>
             </select>
-          </div>
-
-          <div className="rounded-lg border border-gray-200 dark:border-[#3a3f47] p-3 space-y-2">
-            <p className="text-sm font-medium">{t('language')}</p>
-            <input
-              value={languageQuery}
-              onChange={(e) => setLanguageQuery(e.target.value)}
-              placeholder="언어 검색"
-              className="form-control"
-            />
-            <select className="form-select" value={language} onChange={(e) => setLanguage(e.target.value)}>
-              {filteredLanguages.map((l) => <option key={l.code} value={l.code}>{l.label} ({l.code})</option>)}
+          </label>
+          <label className="text-sm">Length/Depth
+            <select className="mt-1 w-full border rounded-md px-3 py-2 bg-transparent" value={units.length} onChange={(e) => setUnits({ ...units, length: e.target.value as any })}>
+              <option value="metric">Metric (m)</option>
+              <option value="imperial">Imperial (ft)</option>
             </select>
-          </div>
+          </label>
+          <label className="text-sm">Pressure
+            <select className="mt-1 w-full border rounded-md px-3 py-2 bg-transparent" value={units.pressure} onChange={(e) => setUnits({ ...units, pressure: e.target.value as any })}>
+              <option value="bar">bar</option>
+              <option value="psi">psi</option>
+            </select>
+          </label>
+          <label className="text-sm">Temperature
+            <select className="mt-1 w-full border rounded-md px-3 py-2 bg-transparent" value={units.temperature} onChange={(e) => setUnits({ ...units, temperature: e.target.value as any })}>
+              <option value="c">°C</option>
+              <option value="f">°F</option>
+            </select>
+          </label>
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-4 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('units')}</h2>
-
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-sm mb-2">Time</p>
-            <div className="flex gap-2">
-              <button className={`btn btn-sm ${units.time === '24h' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, time: '24h' })}>24h</button>
-              <button className={`btn btn-sm ${units.time === '12h' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, time: '12h' })}>12h</button>
+      <section className="rounded-xl border p-4 space-y-3">
+        <h2 className="font-semibold">3) {t('wearable')}</h2>
+        {!isNativeWebView && <p className="text-sm text-amber-600">앱(WebView)에서만 BLE 스캔이 동작해.</p>}
+        <div className="flex gap-2">
+          <button onClick={startBle} className="px-3 py-2 rounded-md bg-blue-500 text-white" disabled={!isNativeWebView || bleScanning}>{t('scanBle')}</button>
+          <button onClick={stopBle} className="px-3 py-2 rounded-md border" disabled={!bleScanning}>{t('stopBle')}</button>
+        </div>
+        <div className="space-y-2">
+          {bleDevices.map((d) => (
+            <div key={d.id} className="flex items-center justify-between border rounded-md px-3 py-2">
+              <div>
+                <p className="font-medium">{d.name}</p>
+                <p className="text-xs text-gray-500">{d.id} {typeof d.rssi === 'number' ? `| RSSI ${d.rssi}` : ''}</p>
+              </div>
+              <button className="px-3 py-1.5 rounded-md border" onClick={() => addWearable(d)}>등록</button>
             </div>
-          </div>
-          <div>
-            <p className="text-sm mb-2">Length/Depth</p>
-            <div className="flex gap-2">
-              <button className={`btn btn-sm ${units.length === 'metric' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, length: 'metric' })}>m</button>
-              <button className={`btn btn-sm ${units.length === 'imperial' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, length: 'imperial' })}>ft</button>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm mb-2">압력</p>
-            <div className="flex gap-2">
-              <button className={`btn btn-sm ${units.pressure === 'bar' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'bar' })}>bar</button>
-              <button className={`btn btn-sm ${units.pressure === 'psi' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, pressure: 'psi' })}>psi</button>
-            </div>
-          </div>
-          <div>
-            <p className="text-sm mb-2">온도</p>
-            <div className="flex gap-2">
-              <button className={`btn btn-sm ${units.temperature === 'c' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'c' })}>°C</button>
-              <button className={`btn btn-sm ${units.temperature === 'f' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setUnits({ ...units, temperature: 'f' })}>°F</button>
-            </div>
-          </div>
+          ))}
+          {wearables.length > 0 && <p className="text-sm text-green-600">등록됨: {wearables.map((w) => w.name).join(', ')}</p>}
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('privacy')}</h2>
-        <select className="form-select" value={privacyScope} onChange={(e) => setPrivacyScope(e.target.value as any)}>
+      <section className="rounded-xl border p-4 space-y-3">
+        <h2 className="font-semibold">4) {t('privacy')}</h2>
+        <select className="border rounded-md px-3 py-2 bg-transparent" value={privacyScope} onChange={(e) => setPrivacyScope(e.target.value as any)}>
           <option value="public">{t('public')}</option>
-          <option value="friends">{t('friends')}</option>
+          <option value="following">{t('following')}</option>
+          <option value="followers">{t('followers')}</option>
           <option value="private">{t('private')}</option>
         </select>
       </section>
 
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('theme')}</h2>
+      <section className="rounded-xl border p-4 space-y-3">
+        <h2 className="font-semibold">5) {t('theme')}</h2>
         <div className="flex gap-2">
-          <button className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setTheme('light')}>{t('lightMode')}</button>
-          <button className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setTheme('dark')}>{t('darkMode')}</button>
+          <button className={`px-3 py-2 rounded-md border ${theme === 'light' ? 'bg-gray-100' : ''}`} onClick={() => setTheme('light')}>라이트</button>
+          <button className={`px-3 py-2 rounded-md border ${theme === 'dark' ? 'bg-gray-100 dark:bg-gray-700' : ''}`} onClick={() => setTheme('dark')}>다크</button>
         </div>
-      </section>
-
-      <section className="rounded-xl border border-gray-200 dark:border-[#2f333a] p-4 space-y-3 bg-white dark:bg-[#1b1d21]">
-        <h2 className="font-semibold">{t('wearable')}</h2>
-        <p className="text-sm text-gray-500">등록된 기기: {wearables.length ? wearables.map((w) => w.name).join(', ') : '없음'}</p>
-        <button onClick={() => setView('wearables')} className="btn btn-outline-secondary">웨어러블 기기 관리로 이동</button>
       </section>
     </div>
   );
