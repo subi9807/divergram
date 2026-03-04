@@ -2,15 +2,30 @@
 
 WebView 기반 앱 셸 + 네이티브 브릿지(GPS/BLE/Push) 프로젝트.
 
-## Run
+## Run (Dev Client 권장)
 
 ```bash
 cd mobile-shell
 npm install
-npm run start
+npx expo prebuild
+npm run ios      # iOS 시뮬레이터/디바이스
+npm run android  # Android 에뮬레이터/디바이스
 ```
 
-BLE 연동(`react-native-ble-plx`)은 Expo Go 대신 Dev Client/EAS 빌드가 필요합니다.
+BLE 연동(`react-native-ble-plx`)은 **Expo Go 불가**이며 Dev Client/EAS 빌드가 필요합니다.
+
+## EAS Build (iOS + Android)
+
+```bash
+cd mobile-shell
+npx eas login
+npx eas build:configure
+npx eas build --platform ios --profile development
+npx eas build --platform android --profile development
+```
+
+- `development` 프로필: 네이티브 기능(BLE/GPS/Push) 검증용
+- `production` 프로필: 스토어 배포용
 
 ## Env
 
