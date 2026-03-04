@@ -38,6 +38,10 @@ jobs:
         run: |
           tar -czf dist.tar.gz dist
 
+      - name: Show GitHub runner egress IP
+        run: |
+          echo "Runner egress IP: $(curl -s https://api.ipify.org)"
+
       # ✅ [추가] 업로드 전에 서버에 target 디렉토리 생성/권한 정리
       # - scp-action은 target 디렉토리가 "미리 존재"해야 안정적으로 동작합니다.
       # - /var/www 아래는 권한이 빡빡한 경우가 많아, sudo + 소유권 조정으로 예방합니다.
@@ -47,7 +51,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22 # ✅ [추가] 명시(기본값이 22여도 로그/가독성 측면에서 추천)
+          port: 2922
           script: |
             set -e
             sudo mkdir -p /var/www/divergram/tmp
@@ -63,7 +67,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22 # ✅ [추가] 명시
+          port: 2922
           source: dist.tar.gz
           target: /var/www/divergram/tmp
           overwrite: true # ✅ [추가] 이전 파일이 있어도 덮어쓰기(재배포 안정성)
@@ -75,7 +79,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22 # ✅ [추가] 명시
+          port: 2922
           script: |
             set -e
 
