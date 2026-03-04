@@ -70,36 +70,99 @@ async function fetchTable(table: string, options: AnyObj = {}) {
   if (options.order) q.set('order', JSON.stringify(options.order));
   if (options.limit != null) q.set('limit', String(options.limit));
   if (options.range) q.set('range', JSON.stringify(options.range));
-  const r = await fetch(`${API_BASE}/api/data/${table}?${q.toString()}`);
-  const j = await r.json();
-  return j.data || [];
+
+  try {
+    const r = await fetch(`${API_BASE}/api/data/${table}?${q.toString()}`);
+    if (!r.ok) throw new Error(`fetchTable failed: ${r.status}`);
+    const j = await r.json();
+    return j.data || [];
+  } catch {
+    const db = _loadDb();
+    let rows = Array.isArray(db[table]) ? [...db[table]] : [];
+    rows = _applyFilters(rows, options.filters || []);
+
+    if (table === 'posts') {
+      rows = rows.map((p: any) => _normalizePost(p, db));
+    } else if (table === 'comments') {
+      rows = rows.map((c: any) => ({ ...c, profiles: db.profiles?.find((p: any) => p.id === c.user_id) || c.profiles }));
+    }
+
+    if (options.order?.column) {
+      const { column, ascending } = options.order;
+      rows.sort((a: any, b: any) => {
+        const av = a?.[column];
+        const bv = b?.[column];
+        if (av == null && bv == null) return 0;
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        if (av > bv) return ascending === false ? -1 : 1;
+        if (av < bv) return ascending === false ? 1 : -1;
+        return 0;
+      });
+    }
+
+    if (options.range && Array.isArray(options.range)) {
+      rows = rows.slice(options.range[0], options.range[1] + 1);
+    } else if (options.limit != null) {
+      rows = rows.slice(0, Number(options.limit));
+    }
+
+    return rows;
+  }
 }
 
 async function writeTable(table: string, rows: AnyObj[]) {
-  const r = await fetch(`${API_BASE}/api/data/${table}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rows }),
-  });
-  return r.json();
+  try {
+    const r = await fetch(`${API_BASE}/api/data/${table}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows }),
+    });
+    if (!r.ok) throw new Error(`writeTable failed: ${r.status}`);
+    return r.json();
+  } catch {
+    const db = _loadDb();
+    const prev = Array.isArray(db[table]) ? db[table] : [];
+    db[table] = [...rows, ...prev];
+    _saveDb(db);
+    return { data: rows, error: null };
+  }
 }
 
 async function patchTable(table: string, filters: AnyObj[], patch: AnyObj) {
-  const r = await fetch(`${API_BASE}/api/data/${table}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filters, patch }),
-  });
-  return r.json();
+  try {
+    const r = await fetch(`${API_BASE}/api/data/${table}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters, patch }),
+    });
+    if (!r.ok) throw new Error(`patchTable failed: ${r.status}`);
+    return r.json();
+  } catch {
+    const db = _loadDb();
+    const prev = Array.isArray(db[table]) ? db[table] : [];
+    db[table] = prev.map((row: any) => (_applyFilters([row], filters).length ? { ...row, ...patch } : row));
+    _saveDb(db);
+    return { data: null, error: null };
+  }
 }
 
 async function deleteTable(table: string, filters: AnyObj[]) {
-  const r = await fetch(`${API_BASE}/api/data/${table}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filters }),
-  });
-  return r.json();
+  try {
+    const r = await fetch(`${API_BASE}/api/data/${table}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters }),
+    });
+    if (!r.ok) throw new Error(`deleteTable failed: ${r.status}`);
+    return r.json();
+  } catch {
+    const db = _loadDb();
+    const prev = Array.isArray(db[table]) ? db[table] : [];
+    db[table] = prev.filter((row: any) => !_applyFilters([row], filters).length);
+    _saveDb(db);
+    return { data: null, error: null };
+  }
 }
 
 function seedDb() {
