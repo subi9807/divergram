@@ -58,6 +58,12 @@ window.ReactNativeWebView?.postMessage(JSON.stringify({ action: 'stop_ble_scan' 
 2. 앱이 토큰 발급 후 `push_token_result` 전달
 3. 웹이 `/api/push/tokens`로 `{ platform, push_token }` 전송
 
+## Mobile UI Rule (중요)
+
+- 모바일 화면에서는 **모달 사용 금지**
+- 화면은 **페이지 이동(라우팅) 중심**으로 구성
+- 예외: 메뉴 툴팁/가벼운 힌트 UI
+
 ## Notes
 
 - iOS 실제 푸시는 Apple Developer 설정(APNs key/cert) 필요
