@@ -99,6 +99,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { id: 'profile', icon: UserCircleIcon, label: t('profile') },
   ];
 
+  const mobileMenuItems = [
+    ...navItems,
+    { id: 'settings', icon: Cog6ToothIcon, label: t('settings') },
+  ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 transition-colors">
       <MobileHeader
@@ -126,7 +131,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
             </div>
             <div className="py-3 overflow-y-auto">
-              {navItems.map((item) => {
+              {mobileMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
                 return (
@@ -145,19 +150,6 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                   </button>
                 );
               })}
-              <div className="my-2 border-t border-gray-200 dark:border-[#262626]" />
-              <button
-                onClick={() => {
-                  onNavigate('settings');
-                  setShowMobileMenu(false);
-                }}
-                className={`w-full flex items-center space-x-4 px-6 py-4 text-base hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white transition-colors ${
-                  currentPage === 'settings' ? 'bg-gray-100 dark:bg-gray-700 font-semibold' : ''
-                }`}
-              >
-                <Cog6ToothIcon className="h-7 w-7" />
-                <span>{t('settings')}</span>
-              </button>
             </div>
           </div>
         </div>
