@@ -10,8 +10,6 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "firebase:deploy": "npm run build && firebase deploy --only hosting",
-    "firebase:preview": "npm run build && firebase hosting:channel:deploy preview",
     "worker:queue": "node server/queue-worker.js"
   },
   "dependencies": {
@@ -37,7 +35,6 @@
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",
-    "firebase-tools": "^14.26.0",
     "globals": "^15.9.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.18",
