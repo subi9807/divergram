@@ -4,7 +4,7 @@ import { useAppSettings } from '../contexts/AppSettingsContext';
 type BleDevice = { id: string; name: string; rssi?: number };
 
 const FALLBACK_LANGUAGES = [
-  'ko', 'en', 'ja', 'zh', 'es', 'fr', 'de', 'pt', 'it', 'ru', 'ar', 'hi', 'th', 'vi', 'id', 'tr', 'nl', 'pl', 'sv', 'uk', 'cs', 'ro', 'hu', 'fi', 'da', 'no', 'el', 'he'
+  'af','am','ar','as','az','be','bg','bn','bo','bs','ca','cs','cy','da','de','el','en','es','et','eu','fa','fi','fil','fr','ga','gl','gu','he','hi','hr','hu','hy','id','is','it','ja','ka','kk','km','kn','ko','ky','lo','lt','lv','mk','ml','mn','mr','ms','mt','my','ne','nl','no','or','pa','pl','ps','pt','ro','ru','si','sk','sl','sq','sr','sv','sw','ta','te','th','tr','uk','ur','uz','vi','zh','zu'
 ];
 
 function getAllCountries(locale: string) {
@@ -21,17 +21,19 @@ function getAllCountries(locale: string) {
 }
 
 function getAllLanguages(locale: string) {
-  const dn = new Intl.DisplayNames([locale], { type: 'language' });
-  const source = (Intl as any).supportedValuesOf?.('language') || FALLBACK_LANGUAGES;
-  const out: Array<{ code: string; label: string }> = [];
-  for (const code of source) {
-    const short = String(code).toLowerCase();
-    if (!/^[a-z]{2,3}(-[a-z0-9]+)?$/.test(short)) continue;
-    const label = dn.of(short);
-    if (label && label !== short) out.push({ code: short, label });
+  try {
+    const dn = new Intl.DisplayNames([locale], { type: 'language' });
+    const out: Array<{ code: string; label: string }> = [];
+    for (const code of FALLBACK_LANGUAGES) {
+      const short = String(code).toLowerCase();
+      const label = dn.of(short);
+      if (label && label !== short) out.push({ code: short, label });
+    }
+    const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
+    return uniq.sort((a, b) => a.label.localeCompare(b.label));
+  } catch {
+    return FALLBACK_LANGUAGES.map((code) => ({ code, label: code }));
   }
-  const uniq = Array.from(new Map(out.map((x) => [x.code, x])).values());
-  return uniq.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export default function SettingsPage() {
