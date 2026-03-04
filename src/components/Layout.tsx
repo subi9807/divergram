@@ -45,6 +45,8 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     return saved ? JSON.parse(saved) : false;
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
+  const lastScrollYRef = useRef(0);
+  const [mobileBarsHidden, setMobileBarsHidden] = useState(false);
   const { signOut } = useAuth();
 
   useEffect(() => {
@@ -72,6 +74,28 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.innerWidth >= 1280 || showMobileMenu) return;
+
+      const currentY = window.scrollY;
+      const diff = currentY - lastScrollYRef.current;
+
+      if (currentY < 24) {
+        setMobileBarsHidden(false);
+      } else if (diff > 8) {
+        setMobileBarsHidden(true);
+      } else if (diff < -8) {
+        setMobileBarsHidden(false);
+      }
+
+      lastScrollYRef.current = currentY;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [showMobileMenu]);
+
   const handleLogout = async () => {
     await signOut();
     setShowMoreMenu(false);
@@ -80,6 +104,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
+
+  useEffect(() => {
+    if (showMobileMenu) {
+      setMobileBarsHidden(false);
+    }
+  }, [showMobileMenu]);
 
   const navItems = [
     { id: 'home', icon: HomeIcon, label: '홈' },
@@ -95,7 +125,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 transition-colors">
-      <header className="fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626] z-50 transition-colors">
+      <header className={`fixed top-0 left-0 right-0 xl:hidden bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626] z-50 transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <button onClick={() => onNavigate('home')} className="cursor-pointer" aria-label="Divergram 홈">
@@ -314,7 +344,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </div>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-colors"
+        className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-[#121212] border-t border-gray-300 dark:border-[#262626] z-[60] xl:hidden transition-transform duration-300 ease-out transition-colors ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
         style={{
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: 'translateZ(0)',
@@ -355,7 +385,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         onClick={() => onNavigate('messages')}
         aria-label="메시지"
         title="메시지"
-        className="fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-shadow z-40"
+        className={`fixed bottom-20 right-4 xl:hidden bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 ease-out z-40 ${mobileBarsHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
       >
         <div className="bg-white dark:bg-[#121212] rounded-full p-3 transition-colors">
           {currentPage === 'messages' ? (
