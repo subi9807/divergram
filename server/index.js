@@ -38,13 +38,19 @@ app.use((req, res, next) => {
   next();
 });
 
+const connectionString = String(process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '').trim();
+
 const pool = new pg.Pool({
-  host: process.env.PGHOST || 'localhost',
-  port: Number(process.env.PGPORT || 5432),
-  database: process.env.PGDATABASE || 'divergram',
-  user: process.env.PGUSER || 'seowoo',
-  password: process.env.PGPASSWORD || undefined,
-  ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : undefined,
+  ...(connectionString
+    ? { connectionString }
+    : {
+        host: process.env.PGHOST || 'localhost',
+        port: Number(process.env.PGPORT || 5432),
+        database: process.env.PGDATABASE || 'divergram',
+        user: process.env.PGUSER || 'seowoo',
+        password: process.env.PGPASSWORD || undefined,
+      }),
+  ssl: process.env.PGSSL === 'true' || !!connectionString ? { rejectUnauthorized: false } : undefined,
   max: Number(process.env.PGPOOL_MAX || 10),
   idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_MS || 10000),
 });

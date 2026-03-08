@@ -89,14 +89,19 @@ npm install
 
 3. **환경 변수 설정**
 
-`.env` 파일을 프로젝트 루트에 생성하고 다음 내용을 추가합니다:
+`.env.local` / `.env.server` 파일을 프로젝트 루트에 생성하고 다음 내용을 추가합니다:
 
 ```env
+# .env.local
 VITE_API_BASE_URL=http://127.0.0.1:4000
-# no public anon key required
+
+# .env.server
+# Supabase Postgres 연결 문자열 (권장)
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/postgres?sslmode=require
+PGSSL=true
 ```
 
-Supabase 프로젝트 설정에서 URL과 API 키를 확인할 수 있습니다.
+`DATABASE_URL`이 없으면 기존 `PGHOST/PGPORT/PGDATABASE/PGUSER/PGPASSWORD` 값을 사용합니다.
 
 4. **데이터베이스 마이그레이션**
 
