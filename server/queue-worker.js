@@ -15,7 +15,7 @@ const pool = new pg.Pool({
         port: Number(process.env.PGPORT || 5432),
         database: process.env.PGDATABASE || 'divergram',
         user: process.env.PGUSER || 'seowoo',
-        password: process.env.PGPASSWORD || undefined,
+        password: (process.env.PGPASSWORD ?? ''),
       }),
   ssl: process.env.PGSSL === 'true' || !!connectionString ? { rejectUnauthorized: false } : undefined,
   max: Number(process.env.PGPOOL_MAX || 10),

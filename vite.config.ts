@@ -7,4 +7,12 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    host: true,
+    allowedHosts: ['divergram.com', 'www.divergram.com', 'manager.divergram.com', 'api.divergram.com'],
+  },
+  preview: {
+    host: true,
+    allowedHosts: ['divergram.com', 'www.divergram.com', 'manager.divergram.com', 'api.divergram.com'],
+  },
 });

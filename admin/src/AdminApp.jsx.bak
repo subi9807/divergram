@@ -8,6 +8,8 @@ import UsersSection from './sections/UsersSection';
 import ResortsSection from './sections/ResortsSection';
 import FeedsSection from './sections/FeedsSection';
 import ReelsSection from './sections/ReelsSection';
+import TablesSection from './sections/TablesSection';
+import LogsSection from './sections/LogsSection';
 import SettingsSection from './sections/SettingsSection';
 
 export function AdminApp() {
@@ -23,7 +25,7 @@ export function AdminApp() {
   const [loading, setLoading] = useState(false);
   const [section, setSection] = useState(() => {
     const seg = (window.location.pathname.split('/').filter(Boolean).pop() || '').toLowerCase();
-    const byPath = ['dashboard','map','users','resorts','feeds','reels','settings'];
+    const byPath = ['dashboard','map','users','resorts','feeds','reels','tables','logs','settings'];
     if (byPath.includes(seg)) return seg;
     const legacy = new URLSearchParams(window.location.search).get('section') || '';
     return byPath.includes(String(legacy)) ? String(legacy) : 'dashboard';
@@ -56,6 +58,7 @@ export function AdminApp() {
 
   const refreshTableRows = async (name = selectedTable) => {
     try { const r = await api(`/api/admin/table/${name}?limit=100`, { adminKey }); setTableRows(r.rows || []); }
+    catch (e) { setError(e.message || '테이블 조회 실패'); }
   };
 
   const updateUser = async (id, payload) => { try { await api(`/api/admin/users/${id}`, { adminKey, method: 'PATCH', body: payload }); await refresh(); } catch (e) { setError(e.message || '수정 실패'); } };
@@ -72,7 +75,7 @@ export function AdminApp() {
   };
 
   const seedBulk = async () => {
-    try { setLoading(true); await api('/api/admin/seed-bulk', { adminKey, method: 'POST', body: { users: 50, posts: 300, comments: 1000, likes: 2000 } }); await api('/api/admin/migrate-normalized', { adminKey, method: 'POST' }); await refresh(); }
+    try { setLoading(true); await api('/api/admin/seed-bulk', { adminKey, method: 'POST', body: { users: 50, posts: 300, comments: 1000, likes: 2000 } }); await api('/api/admin/migrate-normalized', { adminKey, method: 'POST' }); await refresh(); if (section === 'tables') await refreshTableRows(); }
     catch (e) { setError(e.message || '샘플 생성 실패'); } finally { setLoading(false); }
   };
 
@@ -97,7 +100,7 @@ export function AdminApp() {
   useEffect(() => {
     const onPop = () => {
       const seg = (window.location.pathname.split('/').filter(Boolean).pop() || '').toLowerCase();
-      const byPath = ['dashboard','map','users','resorts','feeds','reels','settings'];
+      const byPath = ['dashboard','map','users','resorts','feeds','reels','tables','logs','settings'];
       setSection(byPath.includes(seg) ? seg : 'dashboard');
     };
     window.addEventListener('popstate', onPop);
@@ -155,8 +158,8 @@ export function AdminApp() {
 
   const menus = [
     { key: 'dashboard', label: '대시보드' }, { key: 'map', label: '포인트 지도' }, { key: 'users', label: '사용자 관리' }, { key: 'resorts', label: '리조트 관리' },
-    { key: 'feeds', label: '피드 관리' }, { key: 'reels', label: '릴스 관리' }, 
-     { key: 'settings', label: '설정' },
+    { key: 'feeds', label: '피드 관리' }, { key: 'reels', label: '릴스 관리' }, { key: 'tables', label: '테이블 조회' },
+    { key: 'logs', label: '감사 로그' }, { key: 'settings', label: '설정' },
   ];
 
   return (
@@ -177,7 +180,7 @@ export function AdminApp() {
       </aside>
 
       <main className={`content section-${section} ${section === 'map' ? 'map-mode' : ''}`}>
-        {section !== 'map' && <div className="topbar"><button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button></div>}
+        {section !== 'dashboard' && <div className="topbar"><button onClick={refresh} disabled={loading}>{loading ? '동기화 중...' : '동기화'}</button></div>}
         {section !== 'map' && error && <p className="error">{error}</p>}
 
         {section === 'dashboard' && <DashboardSection stats={stats} trendData={trendData} memberTypeData={memberTypeData} blockData={blockData} />}
@@ -186,6 +189,8 @@ export function AdminApp() {
         {section === 'resorts' && <ResortsSection resorts={resorts} resortQuery={resortQuery} setResortQuery={setResortQuery} refreshResorts={refreshResorts} updateResort={updateResort} />}
         {section === 'feeds' && <FeedsSection feedRows={feedRows} feedPageRows={feedPageRows} feedPage={feedPage} feedTotalPages={feedTotalPages} setFeedPage={setFeedPage} />}
         {section === 'reels' && <ReelsSection reelRows={reelRows} reelPageRows={reelPageRows} reelPage={reelPage} reelTotalPages={reelTotalPages} setReelPage={setReelPage} getReelThumb={getReelThumb} />}
+        {section === 'tables' && <TablesSection tables={tables} selectedTable={selectedTable} setSelectedTable={setSelectedTable} refreshTableRows={refreshTableRows} tableRows={tableRows} />}
+        {section === 'logs' && <LogsSection logs={logs} />}
         {section === 'settings' && <SettingsSection adminKey={adminKey} setAdminKey={setAdminKey} loading={loading} refresh={refresh} seedBulk={seedBulk} checkUserAdminAuth={checkUserAdminAuth} authCheck={authCheck} />}
       </main>
     </div>
