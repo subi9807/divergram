@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "worker:queue": "node server/queue-worker.js"
+    "worker:queue": "node server/queue-worker.js",
+    "seed:local": "node scripts/seed-local-dev.mjs",
+    "seed:local:auth": "node scripts/seed-local-auth-users.mjs"
   },
   "dependencies": {
     "@googlemaps/markerclusterer": "^2.6.2",

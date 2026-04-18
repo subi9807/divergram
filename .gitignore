@@ -21,7 +21,13 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.local
+.env.server.local
 
 .firebase/
 
 .secrets/
+
+# local env / helper scripts
+.env.server.local
+.env.local
