@@ -119,10 +119,10 @@ export default function Notifications({ isOpen, onClose, onViewProfile }: Notifi
   const modalContent = (
     <div className="fixed inset-0 z-[9999] bg-black bg-opacity-50 flex items-center justify-center" onClick={onClose}>
       <div
-        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 dg-surface rounded-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 dg-surface rounded-[28px] w-full max-w-md mx-4 max-h-[80vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#22252a]">
           <h2 className="text-lg font-semibold">알림</h2>
           <div className="flex items-center space-x-2">
             {notifications.some(n => !n.read) && (
@@ -149,12 +149,12 @@ export default function Notifications({ isOpen, onClose, onViewProfile }: Notifi
               <p>알림이 없습니다</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200 dark:divide-[#262626]">
+            <div className="divide-y divide-gray-100 dark:divide-[#22252a]">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-4 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] transition-colors cursor-pointer ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-950/30' : ''
+                    !notification.read ? 'bg-sky-50 dark:bg-sky-950/20' : ''
                   }`}
                   onClick={() => {
                     markAsRead(notification.id);

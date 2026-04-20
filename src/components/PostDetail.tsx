@@ -219,8 +219,8 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
 
       <div
         className={inline
-          ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full flex md:rounded-sm rounded-xl overflow-hidden border border-gray-200 dark:border-[#262626]"
-          : "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-xl overflow-hidden shadow-2xl"}
+          ? "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full flex md:rounded-[28px] rounded-[24px] overflow-hidden border border-gray-200 shadow-[0_12px_32px_rgba(15,23,42,0.08)] dark:border-[#262626] dark:shadow-none"
+          : "bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 w-full max-w-5xl max-h-[90vh] flex rounded-[28px] overflow-hidden shadow-2xl"}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={inline ? "hidden md:flex flex-1 bg-black dark:bg-gray-950 items-center justify-center min-h-[70vh]" : "hidden md:flex flex-1 max-h-[90vh] bg-black dark:bg-gray-950 items-center justify-center"}>
@@ -239,7 +239,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
         </div>
 
         <div className={inline ? "w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] md:max-h-none overflow-visible border-l border-gray-200 dark:border-[#262626]" : "w-full md:w-[420px] flex flex-col bg-white dark:bg-[#121212] max-h-[90vh] overflow-y-auto"}>
-          <div className={inline ? "flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] bg-white dark:bg-[#121212]" : "flex items-center justify-between p-4 border-b border-gray-300 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10"}>
+          <div className={inline ? "flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212]" : "flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-[#262626] sticky top-0 bg-white dark:bg-[#121212] z-10"}>
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5">
                 <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
@@ -316,7 +316,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
               ) : null}
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="px-5 py-4 space-y-3.5">
               <p className="text-sm dark:text-white">
                 <span className="font-semibold mr-2">{post.profiles.username}</span>
                 {renderTextWithMentions(post.caption || '', async (username) => {
@@ -335,7 +335,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
               </p>
 
               {(post.dive_type || post.dive_site || post.water_temperature || post.max_depth || post.dive_duration || post.visibility || post.buddy_name || post.gas_type || post.gas_percent || post.dive_date || post.location) && (
-                <div className="mt-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 transition-colors">
+                <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/80 p-3.5 space-y-2.5 transition-colors dark:border-sky-900 dark:bg-sky-950/40">
                   {post.dive_type && (
                     <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
                       <Waves className="h-4 w-4" />
@@ -401,7 +401,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
             </div>
           </div>
 
-          <div className="border-b border-gray-300 dark:border-[#262626] p-4">
+          <div className="border-b border-gray-200 dark:border-[#262626] px-5 py-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-4">
                 <button
@@ -447,7 +447,7 @@ export default function PostDetail({ post: initialPost, onClose, onViewProfile, 
             </div>
           </div>
 
-          <div className="p-4 space-y-4 dark:bg-[#121212]">            {comments.map((comment) => (
+          <div className="px-5 py-4 space-y-4 dark:bg-[#121212]">            {comments.map((comment) => (
               <div
                 key={comment.id}
                 className="flex space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-2 px-2 py-1 rounded"

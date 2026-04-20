@@ -25,6 +25,7 @@ import ReportModal from './ReportModal';
 import MobileHeader from './layout/MobileHeader';
 import MobileFooterNav from './layout/MobileFooterNav';
 import { useMobileBarsVisibility } from '../hooks/useMobileBarsVisibility';
+import { DESKTOP_NAV_IDS, MOBILE_MENU_NAV_IDS } from '../config/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -103,8 +104,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { id: 'profile', icon: UserCircleIcon, label: t('profile') },
   ];
 
+  const desktopNavItems = navItems.filter((item) => DESKTOP_NAV_IDS.includes(item.id as any));
   const mobileMenuItems = [
-    ...navItems,
+    ...navItems.filter((item) => MOBILE_MENU_NAV_IDS.includes(item.id as any)),
     { id: 'settings', icon: Cog6ToothIcon, label: t('settings') },
   ];
 
@@ -125,6 +127,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             onClick={() => setShowMobileMenu(false)}
           />
           <div className="absolute inset-0 bg-white dark:bg-[#1b1d21] animate-mobile-menu-slide-in transition-colors flex flex-col">
+            <div className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-[#2f333a]">
+              <p className="text-xs font-semibold tracking-[0.24em] text-gray-400 uppercase">Menu</p>
+              <h2 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">둘러보기</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">자주 쓰는 기능만 남기고, 나머지는 더 단순하게 정리했어.</p>
+            </div>
             <div className="h-16 px-4 flex items-center justify-end border-b border-gray-300 dark:border-[#2f333a] shrink-0">
               <button
                 onClick={() => setShowMobileMenu(false)}
@@ -135,6 +142,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
             </div>
             <div className="py-3 overflow-y-auto">
+              <div className="px-6 pb-2 text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">More</div>
               {mobileMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
@@ -149,8 +157,13 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                       isActive ? 'bg-gray-100 dark:bg-gray-700 font-semibold' : ''
                     }`}
                   >
-                    <Icon className={`h-7 w-7 ${isActive ? 'fill-current' : ''}`} />
-                    <span>{item.label}</span>
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${isActive ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-gray-100 text-gray-700 dark:bg-[#262626] dark:text-gray-200'}`}>
+                      <Icon className={`h-6 w-6 ${isActive ? 'fill-current' : ''}`} />
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span>{item.label}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{item.id === 'notifications' ? '내 활동 확인' : item.id === 'location' ? '다이빙 포인트 탐색' : item.id === 'resorts' ? '리조트 둘러보기' : '추가 메뉴'}</span>
+                    </div>
                   </button>
                 );
               })}
@@ -168,7 +181,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
             </div>
             <div className="flex-1 flex flex-col justify-center">
-              {navItems.map((item) => {
+              {desktopNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
                 return (

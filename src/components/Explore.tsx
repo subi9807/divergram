@@ -153,7 +153,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
   return (
     <div ref={containerRef} className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
 
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#121212]/95 backdrop-blur border-b border-gray-200 dark:border-[#262626] mb-3 md:mb-4">
+      <div className="sticky top-0 z-10 mb-3 md:mb-4 rounded-b-[24px] border-b border-gray-200 bg-white/95 px-3 backdrop-blur dark:border-[#22252a] dark:bg-[#121212]/95">
         <div className="relative py-2">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -161,7 +161,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={searchType === 'resorts' ? '리조트 검색' : searchType === 'people' ? '사람 검색' : '탐색 검색'}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-3 rounded-2xl bg-gray-100 dark:bg-[#202329] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -175,7 +175,7 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
             <button
               key={t.key}
               onClick={() => { setSearchType(t.key as any); setVisibleCount(getPageSize()); }}
-              className={`px-3 py-1.5 text-sm rounded-full border ${searchType === t.key ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-gray-300 dark:border-[#262626] text-gray-600 dark:text-gray-300'}`}
+              className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${searchType === t.key ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-gray-200 dark:border-[#22252a] text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-[#17191d]'}`}
             >
               {t.label}
             </button>
@@ -222,9 +222,9 @@ export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps
         !searchQuery.trim() ? (
           <div className="text-center py-12 text-gray-500"><p>검색어를 입력하면 결과가 표시됩니다</p></div>
         ) : filteredProfiles.length > 0 ? (
-          <div className="bg-white dark:bg-[#121212] rounded-xl border border-gray-200 dark:border-[#262626] divide-y divide-gray-100 dark:divide-[#262626]">
+          <div className="rounded-[24px] border border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border-[#22252a] dark:bg-[#121212] dark:shadow-none divide-y divide-gray-100 dark:divide-[#22252a] overflow-hidden">
             {filteredProfiles.map((pr) => (
-              <button key={pr.id} onClick={() => onViewProfile?.(pr.id)} className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] text-left">
+              <button key={pr.id} onClick={() => onViewProfile?.(pr.id)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-[#17191d] text-left transition-colors">
                 <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#262626] overflow-hidden">
                   {pr.avatar_url ? <img src={pr.avatar_url} alt={pr.username} className="w-full h-full object-cover" /> : null}
                 </div>

@@ -1,4 +1,4 @@
-import { BellIcon, Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 interface MobileHeaderProps {
   currentPage: string;
@@ -31,11 +31,11 @@ export default function MobileHeader({ currentPage, mobileBarsHidden, onNavigate
 
         <div className="flex items-center space-x-2 md:space-x-4">
           <button
-            onClick={() => onNavigate('notifications')}
-            className="hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full relative transition-colors"
-            aria-label="알림"
+            onClick={() => onNavigate('search')}
+            className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"
+            aria-label="검색"
           >
-            <BellIcon className={`h-6 w-6 dark:text-white ${currentPage === 'notifications' ? 'text-black dark:text-white' : ''}`} />
+            <MagnifyingGlassIcon className="h-6 w-6 dark:text-white" />
           </button>
           <button
             onClick={onToggleMenu}

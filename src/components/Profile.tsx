@@ -177,7 +177,8 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
   return (
     <>
     <div className="w-full px-4 md:px-2 lg:px-0 py-4 md:py-8 text-gray-900 dark:text-gray-100">
-      <div className="mb-8 md:mb-12">
+      <div className="mx-auto max-w-[935px]">
+      <div className="mb-8 md:mb-12 rounded-[28px] border border-gray-200 bg-white px-4 py-6 shadow-sm dark:border-[#2f333a] dark:bg-[#121212] md:px-8">
         <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-20 mb-6 md:mb-8">
           <div className="w-24 h-24 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1 flex-shrink-0">
             <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
@@ -390,6 +391,7 @@ export default function Profile({ userId, onViewPost, onEditProfile, initialTab 
           )}
         </>
       )}
+      </div>
     </div>
 
     {selectedPost && (

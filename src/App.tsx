@@ -17,25 +17,30 @@ import ProfileEdit from './components/ProfileEdit';
 import AdminConsole from './components/AdminConsole';
 import SettingsPage from './components/SettingsPage';
 import { db } from './lib/internal-db';
+import type { AppPage, ModalState, SelectionState, SettingsTab } from './types/navigation';
 
 const OPS_API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://divergram.com');
 const OPS_SECRET_KEY = 'm1na-ops-260301';
 
 function MainApp() {
   const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('home');
-  const [showCreatePost, setShowCreatePost] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showMessages, setShowMessages] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
-  const [selectedPostId, setSelectedPostId] = useState<string | undefined>();
-  const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
-  const [exploreTag, setExploreTag] = useState('');
-  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [currentPage, setCurrentPage] = useState<AppPage>('home');
+  const [modalState, setModalState] = useState<ModalState>({
+    create: false,
+    search: false,
+    notifications: false,
+    messages: false,
+    editProfile: false,
+  });
+  const [selection, setSelection] = useState<SelectionState>({
+    userId: undefined,
+    postId: undefined,
+    location: undefined,
+    exploreTag: '',
+  });
   const [reportText, setReportText] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'profile' | 'account' | 'activity'>('profile');
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('profile');
   const [opsAuthorized, setOpsAuthorized] = useState(false);
   const [opsLoading, setOpsLoading] = useState(false);
   const [opsInfo, setOpsInfo] = useState<{ apiOk: boolean; users: number; posts: number; reels: number; apiBase: string; ts: string } | null>(null);
@@ -54,15 +59,15 @@ function MainApp() {
 
 
   const urlState = useMemo(() => {
-    const modal = showCreatePost
+    const modal = modalState.create
       ? 'create'
-      : showSearch
+      : modalState.search
       ? 'search'
-      : showNotifications
+      : modalState.notifications
       ? 'notifications'
-      : showMessages
+      : modalState.messages
       ? 'messages'
-      : showProfileEdit
+      : modalState.editProfile
       ? 'edit-profile'
       : '';
 
@@ -84,26 +89,26 @@ function MainApp() {
     else if (currentPage === 'ops') pathname = '/__ops';
 
     const params = new URLSearchParams();
-    if (selectedUserId) params.set('user', selectedUserId);
-    if (selectedPostId) params.set('post', selectedPostId);
-    if (selectedLocation) params.set('loc', selectedLocation);
-    if (currentPage === 'explore' && exploreTag) params.set('tag', exploreTag);
+    if (selection.userId) params.set('user', selection.userId);
+    if (selection.postId) params.set('post', selection.postId);
+    if (selection.location) params.set('loc', selection.location);
+    if (currentPage === 'explore' && selection.exploreTag) params.set('tag', selection.exploreTag);
     if (modal) params.set('modal', modal);
     if (currentPage === 'ops' && opsAuthorized) params.set('k', OPS_SECRET_KEY);
 
     return `${pathname}${params.toString() ? `?${params.toString()}` : ''}`;
   }, [
     currentPage,
-    selectedUserId,
-    selectedPostId,
-    selectedLocation,
-    showCreatePost,
-    showSearch,
-    showNotifications,
-    showMessages,
-    showProfileEdit,
+    selection.userId,
+    selection.postId,
+    selection.location,
+    modalState.create,
+    modalState.search,
+    modalState.notifications,
+    modalState.messages,
+    modalState.editProfile,
     settingsTab,
-    exploreTag,
+    selection.exploreTag,
     opsAuthorized,
   ]);
 
@@ -143,17 +148,21 @@ function MainApp() {
       }
       else setCurrentPage('home');
 
-      setSelectedUserId(q.get('user') || undefined);
-      setSelectedPostId(q.get('post') || undefined);
-      setSelectedLocation(q.get('loc') || undefined);
-      setExploreTag(q.get('tag') || '');
+      setSelection({
+        userId: q.get('user') || undefined,
+        postId: q.get('post') || undefined,
+        location: q.get('loc') || undefined,
+        exploreTag: q.get('tag') || '',
+      });
 
       const modal = q.get('modal');
-      setShowCreatePost(modal === 'create');
-      setShowSearch(modal === 'search');
-      setShowNotifications(modal === 'notifications');
-      setShowMessages(modal === 'messages');
-      setShowProfileEdit(modal === 'edit-profile');
+      setModalState({
+        create: modal === 'create',
+        search: modal === 'search',
+        notifications: modal === 'notifications',
+        messages: modal === 'messages',
+        editProfile: modal === 'edit-profile',
+      });
     };
 
     applyFromUrl();
@@ -312,58 +321,58 @@ function MainApp() {
 
   const handleNavigate = (page: string) => {
     if (page === 'create') {
-      setShowCreatePost(true);
+      setModalState((prev) => ({ ...prev, create: true }));
     } else if (page === 'search') {
-      setShowSearch(true);
+      setModalState((prev) => ({ ...prev, search: true }));
     } else if (page === 'notifications') {
-      setShowNotifications(true);
+      setModalState((prev) => ({ ...prev, notifications: true }));
     } else if (page === 'messages') {
-      setShowMessages(true);
+      setModalState((prev) => ({ ...prev, messages: true }));
     } else if (page === 'saved') {
-      setSelectedUserId(user?.id);
+      setSelection((prev) => ({ ...prev, userId: user?.id }));
       setCurrentPage('profile-saved');
     } else if (page === 'settings') {
       setCurrentPage('settings');
       setSettingsTab('profile');
-      setSelectedUserId(undefined);
+      setSelection((prev) => ({ ...prev, userId: undefined }));
     } else if (page === 'activity') {
       setCurrentPage('settings');
       setSettingsTab('activity');
-      setSelectedUserId(undefined);
+      setSelection((prev) => ({ ...prev, userId: undefined }));
     } else if (page === 'account') {
       setCurrentPage('settings');
       setSettingsTab('account');
-      setSelectedUserId(undefined);
+      setSelection((prev) => ({ ...prev, userId: undefined }));
     } else if (page === 'location' || page === 'post') {
-      setCurrentPage(page);
+      setCurrentPage(page as AppPage);
     } else if (page === 'report') {
-      setCurrentPage(page);
-      setSelectedUserId(undefined);
+      setCurrentPage('report');
+      setSelection((prev) => ({ ...prev, userId: undefined }));
     } else if (page === 'admin') {
       setCurrentPage('admin');
     } else {
-      setCurrentPage(page);
-      setSelectedUserId(undefined);
+      setCurrentPage(page as AppPage);
+      setSelection((prev) => ({ ...prev, userId: undefined }));
     }
   };
 
   const handleViewProfile = (userId: string) => {
-    setSelectedUserId(userId);
+    setSelection((prev) => ({ ...prev, userId }));
     setCurrentPage('profile');
-    setShowSearch(false);
+    setModalState((prev) => ({ ...prev, search: false }));
   };
 
   const handleViewLocation = (location: string) => {
-    setSelectedLocation(location);
+    setSelection((prev) => ({ ...prev, location }));
     setCurrentPage('location');
   };
 
   const handleEditProfile = () => {
-    setShowProfileEdit(true);
+    setModalState((prev) => ({ ...prev, editProfile: true }));
   };
 
   const closeProfileEdit = () => {
-    setShowProfileEdit(false);
+    setModalState((prev) => ({ ...prev, editProfile: false }));
     const url = new URL(window.location.href);
     if (url.searchParams.get('modal') === 'edit-profile') {
       url.searchParams.delete('modal');
@@ -414,26 +423,26 @@ function MainApp() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
+        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selection.postId} />;
       case 'explore':
-        return <Explore onViewProfile={handleViewProfile} initialTag={exploreTag} />;
+        return <Explore onViewProfile={handleViewProfile} initialTag={selection.exploreTag} />;
       case 'resorts':
         return <Resorts onViewProfile={handleViewProfile} />;
       case 'reels':
         return <Reels onViewProfile={handleViewProfile} />;
       case 'profile':
-        return <Profile userId={selectedUserId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} />;
+        return <Profile userId={selection.userId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} />;
       case 'profile-saved':
-        return <Profile userId={selectedUserId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} initialTab="saved" />;
+        return <Profile userId={selection.userId} onViewPost={handleViewProfile} onEditProfile={handleEditProfile} initialTab="saved" />;
       case 'location':
         return (
           <LocationMapPage
-            location={selectedLocation || ''}
+            location={selection.location || ''}
             onBack={() => setCurrentPage('home')}
           />
         );
       case 'post':
-        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} singlePostMode />;
+        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selection.postId} singlePostMode />;
       case 'settings':
         return <SettingsPage />;
       case 'admin':
@@ -484,7 +493,7 @@ function MainApp() {
           </div>
         );
       default:
-        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selectedPostId} />;
+        return <Feed onViewProfile={handleViewProfile} onViewLocation={handleViewLocation} selectedPostId={selection.postId} />;
     }
   };
 
@@ -494,48 +503,48 @@ function MainApp() {
         {renderPage()}
       </Layout>
 
-      {showCreatePost && (
+      {modalState.create && (
         <CreatePost
-          onClose={() => setShowCreatePost(false)}
+          onClose={() => setModalState((prev) => ({ ...prev, create: false }))}
           onPostCreated={() => {
-            setShowCreatePost(false);
+            setModalState((prev) => ({ ...prev, create: false }));
             setCurrentPage('home');
           }}
         />
       )}
 
-      {showSearch && (
+      {modalState.search && (
         <Search
-          onClose={() => setShowSearch(false)}
+          onClose={() => setModalState((prev) => ({ ...prev, search: false }))}
           onUserSelect={(userId) => {
-            setSelectedUserId(userId);
+            setSelection((prev) => ({ ...prev, userId }));
             setCurrentPage('profile');
-            setShowSearch(false);
+            setModalState((prev) => ({ ...prev, search: false }));
           }}
           onPostSelect={(postId) => {
-            setSelectedPostId(postId);
+            setSelection((prev) => ({ ...prev, postId }));
             setCurrentPage('home');
-            setShowSearch(false);
+            setModalState((prev) => ({ ...prev, search: false }));
           }}
         />
       )}
 
-      {showNotifications && (
+      {modalState.notifications && (
         <Notifications
-          isOpen={showNotifications}
-          onClose={() => setShowNotifications(false)}
+          isOpen={modalState.notifications}
+          onClose={() => setModalState((prev) => ({ ...prev, notifications: false }))}
           onViewProfile={handleViewProfile}
         />
       )}
 
-      {showMessages && (
+      {modalState.messages && (
         <Messages
-          isOpen={showMessages}
-          onClose={() => setShowMessages(false)}
+          isOpen={modalState.messages}
+          onClose={() => setModalState((prev) => ({ ...prev, messages: false }))}
         />
       )}
 
-      {showProfileEdit && (
+      {modalState.editProfile && (
         <ProfileEdit
           onClose={closeProfileEdit}
           onSaved={closeProfileEdit}

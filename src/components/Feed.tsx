@@ -546,15 +546,15 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
       <Stories onUserSelect={onViewProfile} />
 
-      <div className="space-y-5 md:space-y-8 max-w-[470px] mx-auto">
+      <div className="space-y-6 md:space-y-8 max-w-[470px] mx-auto">
         {postsToRender.map((post) => {
           const isLiked = post.likes.some((like: any) => like.user_id === user?.id);
           const likeCount = post.likes.length;
           const commentCount = post.comments.length;
 
           return (
-            <div key={post.id} className="bg-white dark:bg-[#121212] transition-colors">
-              <div className="flex items-center justify-between px-3 py-4 md:py-3.5">
+            <article key={post.id} className="overflow-hidden rounded-[28px] border border-gray-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition-colors dark:border-[#2f333a] dark:bg-[#121212] dark:shadow-none">
+              <div className="flex items-center justify-between px-4 py-4 md:py-4">
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={() => onViewProfile(post.user_id)}
@@ -612,7 +612,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 </button>
               </div>
 
-              <div className="w-full rounded-2xl overflow-hidden bg-black" style={{ aspectRatio: '3 / 4' }}>
+              <div className="w-full overflow-hidden bg-black border-y border-gray-100 dark:border-[#202327]" style={{ aspectRatio: '3 / 4' }}>
                 {post.post_media && post.post_media.length > 0 ? (
                   <MediaCarousel
                     media={post.post_media}
@@ -664,7 +664,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                 ) : null}
               </div>
 
-              <div className="px-3 py-4 md:py-3.5 space-y-4 md:space-y-3.5">
+              <div className="px-4 py-4 md:py-4 space-y-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-4">
                     <button
@@ -718,7 +718,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
                   if (!hasDiveData) return null;
 
                   return (
-                    <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-3 space-y-2 -mt-1 transition-colors">
+                    <div className="rounded-2xl border border-sky-100 bg-sky-50/80 p-3.5 space-y-2.5 transition-colors dark:border-sky-900 dark:bg-sky-950/40">
                       <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold text-sm">
                         <Waves className="h-4 w-4" />
                         {post.dive_type ? (post.dive_type === 'scuba' ? '스쿠버다이빙' : post.dive_type === 'technical' ? '테크니컬다이빙' : '프리다이빙') : '다이빙 로그'}
@@ -839,7 +839,7 @@ export default function Feed({ onViewProfile, onViewLocation, selectedPostId: in
 
 
               </div>
-            </div>
+            </article>
           );
         })}
 

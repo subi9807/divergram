@@ -67,8 +67,8 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
 
   return (
     <div className="fixed inset-0 bg-white dark:bg-[#121212] text-gray-900 dark:text-gray-100 z-50 overflow-y-auto">
-      <div className="max-w-2xl mx-auto">
-        <div className="sticky top-0 bg-white dark:bg-[#121212] border-b border-gray-300 dark:border-[#262626]">
+      <div className="max-w-2xl mx-auto px-3 md:px-4 pb-6">
+        <div className="sticky top-0 bg-white/95 dark:bg-[#121212]/95 backdrop-blur border-b border-gray-200 dark:border-[#22252a] rounded-b-[24px]">
           <div className="p-4">
             <div className="flex items-center space-x-4">
               <button
@@ -85,13 +85,13 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="사용자, 게시물 검색"
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-[#262626] dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-[#202329] dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
           </div>
           {query && totalResults > 0 && (
-            <div className="flex border-t border-gray-200">
+            <div className="flex border-t border-gray-200 dark:border-[#22252a] px-2 pb-2">
               <button
                 onClick={() => setActiveTab('all')}
                 className={`flex-1 py-3 text-sm font-medium ${
@@ -155,7 +155,7 @@ export default function Search({ onClose, onUserSelect, onPostSelect }: SearchPr
                       onUserSelect(profile.id);
                       onClose();
                     }}
-                    className="flex items-center space-x-3 w-full p-3 hover:bg-gray-50 rounded-lg"
+                    className="flex items-center space-x-3 w-full p-4 hover:bg-gray-50 dark:hover:bg-[#17191d] rounded-2xl transition-colors"
                   >
                     <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-0.5 flex-shrink-0">
                       <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
