@@ -183,18 +183,18 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
 
   return (
     <div className="px-4 md:px-6 py-6 max-w-5xl mx-auto text-gray-900 dark:text-gray-100">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold">리조트</h1>
+      <div className="mb-5 rounded-[28px] border border-gray-200 bg-white px-5 py-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] dark:border-[#22252a] dark:bg-[#121212] dark:shadow-none">
+        <p className="text-xs font-semibold tracking-[0.22em] text-gray-400 uppercase">Resorts</p>
+        <h1 className="mt-2 text-2xl font-bold">리조트</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">원하는 리조트를 검색하고 세부페이지에서 자세한 정보를 확인해보세요.</p>
       </div>
-
 
       <div className="mb-5">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="검색어를 입력하세요"
-          className="w-full rounded-xl border border-gray-300 dark:border-[#262626] bg-white dark:bg-[#1a1a1a] px-4 py-3 text-sm"
+          className="w-full rounded-2xl border border-gray-200 dark:border-[#22252a] bg-white dark:bg-[#17191d] px-4 py-3 text-sm"
         />
       </div>
 
@@ -206,7 +206,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {visibleItems.map((r) => (
-              <div key={r.id} onClick={() => onViewProfile(r.id)} className="rounded-2xl border border-gray-200 dark:border-[#262626] bg-white dark:bg-[#121212] overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+              <div key={r.id} onClick={() => onViewProfile(r.id)} className="rounded-[28px] border border-gray-200 dark:border-[#22252a] bg-white dark:bg-[#121212] overflow-hidden cursor-pointer shadow-[0_10px_30px_rgba(15,23,42,0.05)] hover:shadow-md dark:shadow-none transition-shadow">
                 <div className="relative h-56 md:h-60">
                   <img src={r.cover_url} alt={`${r.username} cover`} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -248,7 +248,7 @@ export default function Resorts({ onViewProfile }: ResortsProps) {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {deriveFacilities(r).map((f) => (
-                      <span key={f} className="text-[11px] px-2 py-1 rounded-md bg-gray-100 dark:bg-[#1f1f1f] text-gray-700 dark:text-gray-300">{f}</span>
+                      <span key={f} className="text-[11px] px-2 py-1 rounded-xl bg-gray-100 dark:bg-[#17191d] text-gray-700 dark:text-gray-300">{f}</span>
                     ))}
                   </div>
 

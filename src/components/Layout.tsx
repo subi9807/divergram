@@ -110,6 +110,12 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     { id: 'settings', icon: Cog6ToothIcon, label: t('settings') },
   ];
 
+  const settingsShortcutItems = [
+    { id: 'settings', icon: Cog6ToothIcon, label: t('settings'), description: '언어, 테마, 개인정보' },
+    { id: 'activity', icon: ClockIcon, label: t('activity'), description: '활동과 기록 보기' },
+    { id: 'saved', icon: BookmarkIcon, label: t('saved'), description: '저장한 게시물 보기' },
+  ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#1b1d21] text-gray-900 dark:text-gray-100 transition-colors">
       <MobileHeader
@@ -142,7 +148,31 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               </button>
             </div>
             <div className="py-3 overflow-y-auto">
-              <div className="px-6 pb-2 text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">More</div>
+              <div className="px-6 pb-2 text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">Quick settings</div>
+              <div className="px-4 pb-3 grid gap-2">
+                {settingsShortcutItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        handleNav(item.id);
+                        setShowMobileMenu(false);
+                      }}
+                      className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:border-[#22252a] dark:bg-[#17191d] dark:hover:bg-[#1d2026]"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 dark:bg-[#202329] dark:text-gray-200">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">{item.label}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{item.description}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="px-6 pb-2 pt-2 text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">More</div>
               {mobileMenuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.id;
