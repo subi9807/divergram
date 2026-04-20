@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Edit, AlertCircle, UserPlus, UserMinus, Bookmark, ArrowRight, Share2, Link, Code, Info, Trash2 } from 'lucide-react';
+import { Edit, AlertCircle, UserPlus, UserMinus, Bookmark, ArrowRight, Share2, Info, Trash2 } from 'lucide-react';
 
 interface PostOptionsModalProps {
   isOpen: boolean;
@@ -95,16 +95,6 @@ export default function PostOptionsModal({
       label: '공유',
       icon: Share2,
       onClick: onShare,
-    },
-    {
-      label: '링크 복사',
-      icon: Link,
-      onClick: onCopyLink,
-    },
-    {
-      label: '퍼가기',
-      icon: Code,
-      onClick: onEmbed,
     },
     !isOwnPost && {
       label: '이 계정 정보',
