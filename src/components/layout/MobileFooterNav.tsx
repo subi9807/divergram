@@ -14,6 +14,10 @@ interface MobileFooterNavProps {
 }
 
 export default function MobileFooterNav({ currentPage, mobileBarsHidden, onNavigate, profileAvatarUrl }: MobileFooterNavProps) {
+  const handleNavClick = (page: string) => {
+    if (page === currentPage) return;
+    onNavigate(page);
+  };
   const items = [
     { id: 'home', icon: HomeIcon, activeIcon: HomeIconSolid, label: '홈' },
     { id: 'explore', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassIconSolid, label: '탐색' },
@@ -24,6 +28,7 @@ export default function MobileFooterNav({ currentPage, mobileBarsHidden, onNavig
 
   return (
     <div
+      data-mobile-nav
       className={`fixed bottom-0 left-0 right-0 z-[60] xl:hidden transition-transform duration-300 ease-out ${mobileBarsHidden ? 'translate-y-full' : 'translate-y-0'}`}
       style={{
         paddingBottom: 'env(safe-area-inset-bottom)',
@@ -41,7 +46,7 @@ export default function MobileFooterNav({ currentPage, mobileBarsHidden, onNavig
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => handleNavClick(item.id)}
               className={`flex min-w-[56px] flex-col items-center justify-center gap-1 rounded-2xl px-3 py-2 transition-colors ${
                 isActive ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-gray-500 dark:text-gray-400'
               }`}

@@ -42,7 +42,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
     return saved ? JSON.parse(saved) : false;
   });
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const { mobileBarsHidden, setMobileBarsHidden } = useMobileBarsVisibility({ disabled: showMobileMenu });
+  const { mobileBarsHidden, setMobileBarsHidden, lockMobileBars } = useMobileBarsVisibility({ disabled: showMobileMenu });
   const { signOut, profile } = useAuth();
   const { t } = useAppSettings();
 
@@ -88,8 +88,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   }, [showMobileMenu, setMobileBarsHidden]);
 
   const handleNav = (page: string) => {
+    lockMobileBars(420);
     setMobileBarsHidden(false);
-    onNavigate(page);
+    window.requestAnimationFrame(() => {
+      onNavigate(page);
+    });
   };
 
   const navItems = [
