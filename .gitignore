@@ -31,3 +31,6 @@ dist-ssr
 # local env / helper scripts
 .env.server.local
 .env.local
+
+# local environment backups
+env-backup-*
