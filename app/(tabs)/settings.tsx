@@ -116,6 +116,6 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </Container>
   );
 }

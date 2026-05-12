@@ -97,6 +97,6 @@ export default function LogsScreen() {
           </View>
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </Container>
   );
 }
