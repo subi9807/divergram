@@ -1,0 +1,5 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'Dockerfile.api', '-t', 'asia-northeast3-docker.pkg.dev/divergram-260228/cloud-run-source-deploy/divergram-api:latest', '.']
+images:
+  - 'asia-northeast3-docker.pkg.dev/divergram-260228/cloud-run-source-deploy/divergram-api:latest'

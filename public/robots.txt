@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /manager
+
+Sitemap: https://divergram.com/sitemap.xml
