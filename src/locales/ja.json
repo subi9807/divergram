@@ -1,0 +1,142 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "cancel": "キャンセル",
+    "retry": "再試行",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "next": "次へ",
+    "previous": "前へ",
+    "done": "完了"
+  },
+  "welcome": {
+    "subtitle": "ダイビング体験を記録し\nコミュニティと共有しよう"
+  },
+  "auth": {
+    "welcome": "ようこそ",
+    "loginSubtitle": "アカウントにサインイン",
+    "continueWithGoogle": "Googleで続行",
+    "continueWithApple": "Appleで続行",
+    "continueWithFacebook": "Facebookで続行",
+    "continueWithKakao": "カカオで続行",
+    "continueWithNaver": "ネイバーで続行",
+    "continueWithEmail": "メールアドレスで続行",
+    "or": "または",
+    "email": "メールアドレス",
+    "emailPlaceholder": "your@email.com",
+    "password": "パスワード",
+    "passwordPlaceholder": "パスワードを入力",
+    "signIn": "サインイン",
+    "backToSocial": "ソーシャルログインに戻る",
+    "error": "エラー",
+    "loginFailed": "ログインに失敗しました",
+    "fillAllFields": "すべてのフィールドを入力してください",
+    "processing": "処理中...",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約"
+  },
+  "privacy": {
+    "content1": "Divergramはユーザーのプライバシーを重視しています。",
+    "content2": "収集された情報はサービス提供のためにのみ使用され、第三者に提供されることはありません。",
+    "content3": "詳細については、ウェブサイトのプライバシーポリシーをご参照ください。"
+  },
+  "terms": {
+    "content1": "本規約はDivergramサービスの利用に関する条件を定めています。",
+    "content2": "サービスを利用することで、本規約に同意したものとみなされます。",
+    "content3": "詳細については、ウェブサイトの利用規約をご参照ください。"
+  },
+  "tabs": {
+    "feed": "フィード",
+    "logs": "ダイブログ",
+    "devices": "デバイス",
+    "profile": "プロフィール",
+    "settings": "設定"
+  },
+  "feed": {
+    "error": "フィードを読み込めません",
+    "errorSubtitle": "ネットワークを確認して再試行してください",
+    "empty": "まだ投稿がありません",
+    "emptySubtitle": "最初のダイブログを作成しましょう！"
+  },
+  "logs": {
+    "title": "ダイブログ",
+    "subtitle": "私のダイビング記録",
+    "create": "作成",
+    "createFirst": "最初のログを作成",
+    "error": "ログを読み込めません",
+    "errorSubtitle": "ネットワークを確認して再試行してください",
+    "empty": "まだダイブログがありません",
+    "emptySubtitle": "最初のダイブログを作成しましょう！"
+  },
+  "devices": {
+    "title": "ダイビングデバイス",
+    "subtitle": "BLEダイビング機器接続",
+    "nearby": "近くのデバイス",
+    "startScan": "スキャン開始",
+    "stopScan": "スキャン停止",
+    "liveData": "リアルタイムデータ",
+    "empty": "近くにデバイスがありません",
+    "emptySubtitle": "ダイビング機器を起動してスキャンを開始してください",
+    "connect": "接続",
+    "disconnect": "切断",
+    "connected": "接続済み"
+  },
+  "profile": {
+    "unnamed": "名前なし",
+    "edit": "プロフィール編集",
+    "about": "紹介",
+    "noBio": "まだ紹介がありません",
+    "stats": {
+      "totalDives": "総ダイビング数",
+      "maxDepth": "最大深度",
+      "totalTime": "総時間"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "notifications": "通知",
+    "pushNotifications": "プッシュ通知",
+    "pushNotificationsDesc": "新しい活動の通知を受け取る",
+    "preferences": "環境設定",
+    "language": "言語",
+    "languageDesc": "アプリの言語を変更",
+    "permissions": "権限",
+    "permissionsDesc": "アプリの権限を管理",
+    "data": "データ",
+    "exportData": "データエクスポート",
+    "exportDataDesc": "データをファイルに保存",
+    "logout": "サインアウト",
+    "logoutTitle": "サインアウト",
+    "logoutMessage": "本当にサインアウトしますか？"
+  },
+  "permissions": {
+    "grant": "権限を許可",
+    "settingsTitle": "設定へ移動",
+    "settingsMessage": "設定で権限を許可してください",
+    "openSettings": "設定を開く",
+    "location": {
+      "title": "位置情報権限が必要",
+      "description": "ダイブログに位置情報を記録するために権限が必要です"
+    },
+    "bluetooth": {
+      "title": "Bluetooth権限が必要",
+      "description": "ダイビング機器と接続するためにBluetooth権限が必要です"
+    },
+    "notifications": {
+      "title": "通知権限が必要",
+      "description": "重要な通知を受け取るために権限が必要です"
+    }
+  },
+  "ble": {
+    "permissionDenied": "権限が拒否されました",
+    "permissionDeniedMessage": "Bluetooth権限が必要です",
+    "connected": "接続完了",
+    "connectedMessage": "{{name}}に接続されました",
+    "connectionFailed": "接続失敗",
+    "connectionFailedMessage": "デバイスへの接続に失敗しました",
+    "disconnected": "切断",
+    "disconnectedMessage": "デバイスが切断されました"
+  }
+}
