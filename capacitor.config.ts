@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.divergram.app',
+  appId: 'com.divergram.app.ios',
   appName: 'Divergram',
   webDir: 'dist',
   server: {
