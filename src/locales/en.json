@@ -136,6 +136,10 @@
       "totalDives": "Total Dives",
       "maxDepth": "Max Depth",
       "totalTime": "Total Time"
+    },
+    "completion": {
+      "title": "Profile Completion",
+      "subtitle": "{{percent}}% complete. Add more info to improve trust with buddies."
     }
   },
   "settings": {
@@ -233,7 +237,13 @@
     "heroSubtitle": "Compare by area, rating, and operating programs quickly.",
     "loadingName": "Loading resort information",
     "loadingTag": "Connected to production data",
-    "reviews": "{{count}} reviews"
+    "reviews": "{{count}} reviews",
+    "cta": "View details",
+    "filters": {
+      "all": "All",
+      "top": "Top Rated",
+      "reviewed": "Reviewed"
+    }
   },
   "reels": {
     "likesSummary": "{{count}} likes · Divergram Reels",
@@ -315,7 +325,12 @@
   },
   "pages": {
     "messages": {
-      "subtitle": "Direct messages and dive planning chats"
+      "subtitle": "Direct messages and dive planning chats",
+      "unread": "Unread",
+      "rooms": "Rooms",
+      "members": "{{count}} members",
+      "active": "Active now",
+      "idle": "Idle"
     },
     "notifications": {
       "subtitle": "Realtime likes, follows, and service updates",

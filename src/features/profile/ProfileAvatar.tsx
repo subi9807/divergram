@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { Text, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { cn } from '../../lib/utils';
 
 interface ProfileAvatarProps {
@@ -28,20 +29,19 @@ export function ProfileAvatar({ user, size = 'medium', className }: ProfileAvata
     return (
       <Image
         source={{ uri: user.avatar }}
-        className={cn(sizeClasses[size], 'rounded-full', className)}
+        className={cn(sizeClasses[size], 'rounded-full border border-surface-200', className)}
       />
     );
   }
 
   return (
-    <View className={cn(
-      sizeClasses[size], 
-      'bg-primary-100 rounded-full items-center justify-center',
-      className
-    )}>
-      <Text className={cn('text-primary-600 font-semibold', textSizeClasses[size])}>
-        {user?.name?.charAt(0).toUpperCase() || '?'}
-      </Text>
-    </View>
+    <LinearGradient
+      colors={['#0d5fa8', '#1198f5']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      className={cn(sizeClasses[size], 'items-center justify-center rounded-full', className)}
+    >
+      <Text className={cn('font-semibold text-white', textSizeClasses[size])}>{user?.name?.charAt(0).toUpperCase() || '?'}</Text>
+    </LinearGradient>
   );
 }

@@ -17,12 +17,18 @@ export function Screen({ children, className, safe = true, tone = 'gradient' }: 
     <Container style={styles.root} className={cn('flex-1', className)}>
       {tone === 'gradient' ? (
         <LinearGradient
-          colors={['#f8fbff', '#eef5ff']}
+          colors={['#f9fcff', '#eef6ff']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           pointerEvents="none"
           style={styles.gradient}
         />
+      ) : null}
+      {tone === 'gradient' ? (
+        <>
+          <View pointerEvents="none" style={styles.topOrb} />
+          <View pointerEvents="none" style={styles.bottomOrb} />
+        </>
       ) : null}
       <View style={styles.content}>{children}</View>
     </Container>
@@ -39,5 +45,23 @@ const styles = StyleSheet.create({
   },
   gradient: {
     ...StyleSheet.absoluteFillObject,
+  },
+  topOrb: {
+    position: 'absolute',
+    top: -120,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(17, 152, 245, 0.12)',
+  },
+  bottomOrb: {
+    position: 'absolute',
+    bottom: -140,
+    left: -100,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: 'rgba(13, 95, 168, 0.08)',
   },
 });

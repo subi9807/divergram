@@ -1,0 +1,255 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
+import { db, Post, Profile } from '../lib/internal-db';
+import MasonryGrid from './MasonryGrid';
+import PostDetail from './PostDetail';
+
+interface ExploreProps {
+  onViewProfile?: (userId: string) => void;
+  initialTag?: string;
+}
+
+export default function Explore({ onViewProfile, initialTag = '' }: ExploreProps) {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [tagFilter, setTagFilter] = useState(initialTag);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState<'posts' | 'reels' | 'people' | 'resorts'>('posts');
+  const [visibleCount, setVisibleCount] = useState(18);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  useEffect(() => {
+    setTagFilter(initialTag || '');
+    setVisibleCount(getPageSize());
+  }, [initialTag]);
+
+  const getPageSize = () => {
+    if (typeof window === 'undefined') return 18;
+    return window.innerWidth < 768 ? 12 : 18;
+  };
+
+  useEffect(() => {
+    const onResize = () => setVisibleCount((prev) => Math.max(prev, getPageSize()));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const loadPosts = async () => {
+    const { data } = await db
+      .from('posts')
+      .select(`
+        *,
+        profiles!posts_user_id_fkey(id, username, avatar_url),
+        likes(id),
+        comments(id),
+        post_media(id, media_url, media_type, order_index)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (data) {
+      setPosts(data as Post[]);
+    }
+
+    const { data: profileData } = await db
+      .from('profiles')
+      .select('id, username, full_name, avatar_url, account_type')
+      .limit(500);
+    if (profileData) setProfiles(profileData as Profile[]);
+
+    setLoading(false);
+  };
+
+  const isReelPost = (p: Post) => {
+    const firstMedia = p.post_media && p.post_media.length > 0
+      ? [...p.post_media].sort((a, b) => a.order_index - b.order_index)[0]
+      : null;
+    return firstMedia?.media_type === 'video' || (!firstMedia && !!p.video_url);
+  };
+
+  const filteredPosts = useMemo(() => {
+    let base = tagFilter
+      ? posts.filter((p) => String(p.caption || '').toLowerCase().includes(`#${tagFilter.toLowerCase()}`))
+      : posts;
+
+    if (searchType === 'posts') base = base.filter((p) => !isReelPost(p));
+    if (searchType === 'reels') base = base.filter((p) => isReelPost(p));
+
+    if (!searchQuery.trim()) return base;
+    const q = searchQuery.toLowerCase();
+    return base.filter((p) =>
+      String(p.caption || '').toLowerCase().includes(q) ||
+      String(p.profiles?.username || '').toLowerCase().includes(q) ||
+      String(p.location || '').toLowerCase().includes(q)
+    );
+  }, [posts, tagFilter, searchQuery, searchType]);
+
+  const filteredProfiles = useMemo(() => {
+    const typeFiltered = profiles.filter((pr) =>
+      searchType === 'people' ? (pr.account_type || 'personal') !== 'resort' : (pr.account_type || 'personal') === 'resort'
+    );
+    if (!searchQuery.trim()) return typeFiltered;
+    const q = searchQuery.toLowerCase();
+    return typeFiltered.filter((pr) =>
+      String(pr.username || '').toLowerCase().includes(q) ||
+      String(pr.full_name || '').toLowerCase().includes(q)
+    );
+  }, [profiles, searchType, searchQuery]);
+
+  const displayedPosts = filteredPosts.slice(0, visibleCount);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const scrollRoot = containerRef.current?.closest('main.overflow-y-auto') as HTMLElement | null;
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (!entry?.isIntersecting) return;
+      setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
+    }, { root: scrollRoot || null, rootMargin: '300px' });
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [filteredPosts.length]);
+
+  useEffect(() => {
+    const scrollRoot = containerRef.current?.closest('main.overflow-y-auto') as HTMLElement | null;
+
+    const onScrollBottom = () => {
+      if (scrollRoot) {
+        const total = Math.max(1, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+        const ratio = scrollRoot.scrollTop / total;
+        if (ratio < 0.8) return;
+      } else {
+        const doc = document.documentElement;
+        const total = Math.max(1, doc.scrollHeight - window.innerHeight);
+        const ratio = window.scrollY / total;
+        if (ratio < 0.8) return;
+      }
+      setVisibleCount((prev) => Math.min(filteredPosts.length, prev + getPageSize()));
+    };
+
+    const target: any = scrollRoot || window;
+    target.addEventListener('scroll', onScrollBottom, { passive: true });
+    return () => target.removeEventListener('scroll', onScrollBottom);
+  }, [filteredPosts.length]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="w-full px-2 md:px-4 py-0 md:py-8 text-gray-900 dark:text-gray-100">
+
+      <div className="sticky top-0 z-10 bg-white/95 dark:bg-[#121212]/95 backdrop-blur border-b border-gray-200 dark:border-[#262626] mb-3 md:mb-4">
+        <div className="relative py-2">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={searchType === 'resorts' ? '리조트 검색' : searchType === 'people' ? '사람 검색' : '탐색 검색'}
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-gray-100 dark:bg-[#262626] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="flex gap-2 pb-2">
+          {[
+            { key: 'posts', label: '게시물' },
+            { key: 'reels', label: '릴스' },
+            { key: 'people', label: '사람' },
+            { key: 'resorts', label: '리조트' },
+          ].map((t) => (
+            <button
+              key={t.key}
+              onClick={() => { setSearchType(t.key as any); setVisibleCount(getPageSize()); }}
+              className={`px-3 py-1.5 text-sm rounded-full border ${searchType === t.key ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white' : 'border-gray-300 dark:border-[#262626] text-gray-600 dark:text-gray-300'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {(searchType === 'posts' || searchType === 'reels') ? (filteredPosts.length > 0 ? (
+        <>
+          {tagFilter && (
+            <div className="mb-3 text-sm text-gray-600 dark:text-gray-300">#{tagFilter} 검색 결과</div>
+          )}
+          <MasonryGrid
+            items={displayedPosts.map((post) => {
+              const firstMedia = post.post_media && post.post_media.length > 0
+                ? [...post.post_media].sort((a, b) => a.order_index - b.order_index)[0]
+                : null;
+              const displayUrl = firstMedia?.media_url || post.image_url || post.video_url || '';
+              const isVideo = firstMedia?.media_type === 'video' || (!firstMedia && !!post.video_url);
+              const aspectRatio = 4 / 5;
+
+              return {
+                id: post.id,
+                url: displayUrl,
+                isVideo,
+                likes: post.likes.length,
+                comments: post.comments.length,
+                aspectRatio,
+              };
+            })}
+            onItemClick={(id) => {
+              const found = filteredPosts.find((p) => p.id === id) || null;
+              setSelectedPost(found);
+            }}
+          />
+
+          <div ref={loadMoreRef} className="h-10" />
+          {displayedPosts.length < filteredPosts.length && (
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 py-2">스크롤하면 더 불러와요</p>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-12 text-gray-500"><p>탐색할 게시물이 없습니다</p></div>
+      )) : (
+        !searchQuery.trim() ? (
+          <div className="text-center py-12 text-gray-500"><p>검색어를 입력하면 결과가 표시됩니다</p></div>
+        ) : filteredProfiles.length > 0 ? (
+          <div className="bg-white dark:bg-[#121212] rounded-xl border border-gray-200 dark:border-[#262626] divide-y divide-gray-100 dark:divide-[#262626]">
+            {filteredProfiles.map((pr) => (
+              <button key={pr.id} onClick={() => onViewProfile?.(pr.id)} className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] text-left">
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-[#262626] overflow-hidden">
+                  {pr.avatar_url ? <img src={pr.avatar_url} alt={pr.username} className="w-full h-full object-cover" /> : null}
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">@{pr.username}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{pr.full_name || ''}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500"><p>{searchType === 'people' ? '사람 검색 결과가 없습니다' : '리조트 검색 결과가 없습니다'}</p></div>
+        )
+      )}
+
+      {selectedPost && (
+        <PostDetail
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onViewProfile={(userId) => {
+            onViewProfile?.(userId);
+            setSelectedPost(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}

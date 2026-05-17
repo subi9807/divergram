@@ -136,6 +136,10 @@
       "totalDives": "총 다이빙",
       "maxDepth": "최대 깊이",
       "totalTime": "총 시간"
+    },
+    "completion": {
+      "title": "프로필 완성도",
+      "subtitle": "{{percent}}% 완성. 정보를 더 채우면 버디 신뢰도가 올라갑니다."
     }
   },
   "settings": {
@@ -233,7 +237,13 @@
     "heroSubtitle": "지역, 평점, 운영 프로그램을 기준으로 빠르게 비교하세요.",
     "loadingName": "리조트 정보를 불러오는 중",
     "loadingTag": "운영 서버 데이터 연결됨",
-    "reviews": "리뷰 {{count}}개"
+    "reviews": "리뷰 {{count}}개",
+    "cta": "상세 보기",
+    "filters": {
+      "all": "전체",
+      "top": "평점순",
+      "reviewed": "리뷰 있음"
+    }
   },
   "reels": {
     "likesSummary": "좋아요 {{count}} · Divergram Reels",
@@ -315,7 +325,12 @@
   },
   "pages": {
     "messages": {
-      "subtitle": "다이빙 일정과 버디 대화를 관리하세요"
+      "subtitle": "다이빙 일정과 버디 대화를 관리하세요",
+      "unread": "읽지 않음",
+      "rooms": "대화방",
+      "members": "{{count}}명",
+      "active": "활동 중",
+      "idle": "대기 중"
     },
     "notifications": {
       "subtitle": "좋아요, 팔로우, 서비스 소식을 확인하세요",

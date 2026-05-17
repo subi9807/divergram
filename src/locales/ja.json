@@ -136,6 +136,10 @@
       "totalDives": "総ダイビング数",
       "maxDepth": "最大深度",
       "totalTime": "総時間"
+    },
+    "completion": {
+      "title": "プロフィール完成度",
+      "subtitle": "{{percent}}% 完了。情報を追加するとバディの信頼度が上がります。"
     }
   },
   "settings": {
@@ -233,7 +237,13 @@
     "heroSubtitle": "地域、評価、運営プログラムで素早く比較できます。",
     "loadingName": "リゾート情報を読み込み中",
     "loadingTag": "本番データに接続済み",
-    "reviews": "レビュー {{count}}件"
+    "reviews": "レビュー {{count}}件",
+    "cta": "詳細を見る",
+    "filters": {
+      "all": "すべて",
+      "top": "高評価",
+      "reviewed": "レビューあり"
+    }
   },
   "reels": {
     "likesSummary": "いいね {{count}} · Divergram Reels",
@@ -315,7 +325,12 @@
   },
   "pages": {
     "messages": {
-      "subtitle": "ダイビング計画とバディチャット"
+      "subtitle": "ダイビング計画とバディチャット",
+      "unread": "未読",
+      "rooms": "ルーム",
+      "members": "{{count}}人",
+      "active": "アクティブ",
+      "idle": "待機中"
     },
     "notifications": {
       "subtitle": "いいね・フォロー・更新情報を確認",

@@ -1,35 +1,40 @@
-# dependencies
-node_modules/
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+node_modules
+dist
+dist-ssr
+*.local
 
-# native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macos
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-*.pem
-
-# local env files
-.env*.local
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .env
+.env.local
+.env.server.local
+.env.backups/
+expo-env.d.ts
+.expo/
 
-# typescript
-*.tsbuildinfo
+.firebase/
+
+.secrets/
+
+# native/generated
+ios/Pods/
+ios/build/
+
+# local env / helper scripts
+.env.server.local
+.env.local

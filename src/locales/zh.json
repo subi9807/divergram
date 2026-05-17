@@ -128,14 +128,18 @@
     "connected": "Connected"
   },
   "profile": {
-    "unnamed": "Unnamed",
-    "edit": "Edit Profile",
-    "about": "About",
-    "noBio": "No bio yet",
+    "unnamed": "未命名",
+    "edit": "编辑资料",
+    "about": "简介",
+    "noBio": "暂无简介",
     "stats": {
-      "totalDives": "Total Dives",
-      "maxDepth": "Max Depth",
-      "totalTime": "Total Time"
+      "totalDives": "总潜水次数",
+      "maxDepth": "最大深度",
+      "totalTime": "总时长"
+    },
+    "completion": {
+      "title": "资料完整度",
+      "subtitle": "当前 {{percent}}%。完善资料可提升潜伴信任度。"
     }
   },
   "settings": {
@@ -227,13 +231,19 @@
     }
   },
   "resorts": {
-    "title": "Resorts",
-    "subtitle": "Resort discovery flow adapted from divergram.com for mobile.",
-    "heroTitle": "Verified Dive Resorts",
-    "heroSubtitle": "Compare by area, rating, and operating programs quickly.",
-    "loadingName": "Loading resort information",
-    "loadingTag": "Connected to production data",
-    "reviews": "{{count}} reviews"
+    "title": "度假村",
+    "subtitle": "已将 divergram.com 的度假村浏览流程适配到移动端。",
+    "heroTitle": "精选潜水度假村",
+    "heroSubtitle": "按区域、评分与运营项目快速对比。",
+    "loadingName": "正在加载度假村信息",
+    "loadingTag": "已连接生产数据",
+    "reviews": "{{count}} 条评价",
+    "cta": "查看详情",
+    "filters": {
+      "all": "全部",
+      "top": "高评分",
+      "reviewed": "有评价"
+    }
   },
   "reels": {
     "likesSummary": "{{count}} likes · Divergram Reels",
@@ -315,7 +325,12 @@
   },
   "pages": {
     "messages": {
-      "subtitle": "管理私信与潜水行程沟通"
+      "subtitle": "管理私信与潜水行程沟通",
+      "unread": "未读",
+      "rooms": "会话",
+      "members": "{{count}} 人",
+      "active": "在线",
+      "idle": "离线"
     },
     "notifications": {
       "subtitle": "实时查看点赞、关注与系统更新",
