@@ -12,13 +12,15 @@ export function LoadingOverlay({ visible, text, className }: LoadingOverlayProps
   if (!visible) return null;
 
   return (
-    <View className={cn('absolute inset-0 bg-white/80 items-center justify-center z-50', className)}>
-      <ActivityIndicator size="large" color="#0ea5e9" />
+    <View className={cn('absolute inset-0 z-50 items-center justify-center bg-surface-900/20', className)}>
+      <View className="rounded-2xl bg-white px-5 py-4 shadow-lg shadow-surface-300">
+        <ActivityIndicator size="large" color="#1198f5" />
       {text && (
-        <Text className="text-secondary-600 mt-4 text-center">
+          <Text className="mt-3 text-center text-surface-600">
           {text}
-        </Text>
+          </Text>
       )}
+      </View>
     </View>
   );
 }

@@ -9,10 +9,15 @@
     "close": "닫기",
     "next": "다음",
     "previous": "이전",
-    "done": "완료"
+    "done": "완료",
+    "all": "전체",
+    "today": "오늘"
   },
   "welcome": {
-    "subtitle": "다이빙 경험을 기록하고\n커뮤니티와 공유하세요"
+    "subtitle": "다이빙 경험을 기록하고\n커뮤니티와 공유하세요",
+    "getStarted": "시작하기",
+    "title": "다이빙을 기록하고 공유하세요",
+    "badge": "Dive community"
   },
   "auth": {
     "welcome": "환영합니다",
@@ -35,7 +40,19 @@
     "fillAllFields": "모든 필드를 채워주세요",
     "processing": "처리 중...",
     "privacy": "개인정보처리방침",
-    "terms": "이용약관"
+    "terms": "이용약관",
+    "welcomeBackTitle": "환영합니다",
+    "welcomeBackMessage": "로그인에 성공했습니다",
+    "welcomeTitle": "환영합니다",
+    "welcomeMessage": "로그인에 성공했습니다",
+    "signedOutTitle": "로그아웃",
+    "signedOutMessage": "정상적으로 로그아웃되었습니다",
+    "kakaoCancelled": "카카오 로그인이 취소되었습니다.",
+    "kakaoTokenExchangeFailed": "카카오 토큰 교환 실패: {{message}}",
+    "kakaoUserInfoFailed": "카카오 사용자 정보 조회 실패",
+    "naverCancelled": "네이버 로그인이 취소되었습니다.",
+    "naverTokenExchangeFailed": "네이버 토큰 교환 실패: {{message}}",
+    "naverUserInfoFailed": "네이버 사용자 정보 조회 실패"
   },
   "privacy": {
     "content1": "Divergram은 사용자의 개인정보 보호를 중요하게 생각합니다.",
@@ -52,13 +69,40 @@
     "logs": "다이빙 로그",
     "devices": "디바이스",
     "profile": "프로필",
-    "settings": "설정"
+    "settings": "설정",
+    "home": "홈",
+    "explore": "탐색",
+    "resorts": "리조트",
+    "reels": "릴스",
+    "create": "작성",
+    "messages": "메시지",
+    "notifications": "알림",
+    "location": "포인트 지도",
+    "activity": "내 활동",
+    "saved": "저장됨",
+    "admin": "관리자",
+    "search": "검색",
+    "account": "계정",
+    "post": "게시물",
+    "report": "신고",
+    "profileEdit": "프로필 편집"
   },
   "feed": {
     "error": "피드를 불러올 수 없습니다",
     "errorSubtitle": "네트워크를 확인하고 다시 시도해주세요",
     "empty": "아직 게시물이 없습니다",
-    "emptySubtitle": "첫 번째 다이빙 로그를 작성해보세요!"
+    "emptySubtitle": "첫 번째 다이빙 로그를 작성해보세요!",
+    "header": {
+      "subtitle": "다이버들의 최신 기록",
+      "tabs": {
+        "following": "팔로잉",
+        "forYou": "추천",
+        "nearby": "근처"
+      }
+    },
+    "meta": {
+      "visibility": "시야 {{value}}m"
+    }
   },
   "logs": {
     "title": "다이빙 로그",
@@ -138,5 +182,234 @@
     "connectionFailedMessage": "디바이스 연결에 실패했습니다",
     "disconnected": "연결 해제",
     "disconnectedMessage": "디바이스 연결이 해제되었습니다"
+  },
+  "brand": {
+    "tagline": "Dive, record, share"
+  },
+  "home": {
+    "heroTitle": "기록할 다이빙이 있나요?",
+    "heroSubtitle": "로그, 사진, 위치와 버디를 한 번에 남기고 커뮤니티에 공유하세요.",
+    "quickTitle": "둘러보기",
+    "recentTitle": "최근 활동",
+    "noticeTitle": "운영 웹 기준 화면을 앱으로 맞추는 중",
+    "noticeSubtitle": "탐색, 리조트, 릴스 화면부터 모바일 스타일을 정리했습니다.",
+    "quick": {
+      "exploreLabel": "탐색",
+      "exploreDesc": "새 다이빙 피드",
+      "resortsLabel": "리조트",
+      "resortsDesc": "샵과 숙소",
+      "devicesLabel": "디바이스",
+      "devicesDesc": "BLE 장비 연결",
+      "reelsLabel": "릴스",
+      "reelsDesc": "짧은 영상"
+    },
+    "activity": {
+      "item1Title": "서귀포 문섬",
+      "item1Meta": "18m / 45분 / 시야 12m",
+      "item2Title": "부산 태종대",
+      "item2Meta": "12m / 35분 / 야간 다이빙"
+    },
+    "createLog": "로그 작성"
+  },
+  "explore": {
+    "title": "탐색",
+    "subtitle": "장소, 다이버, 로그를 찾아보세요.",
+    "searchPlaceholder": "다이빙 포인트 검색",
+    "loadingTitle": "인기 포인트를 불러오는 중",
+    "loadingMeta": "운영 서버 데이터 연결됨",
+    "topics": {
+      "jeju": "제주",
+      "freediving": "프리다이빙",
+      "scuba": "스쿠버",
+      "night": "야간",
+      "beginner": "초보",
+      "photo": "수중사진"
+    }
+  },
+  "resorts": {
+    "title": "리조트",
+    "subtitle": "운영 웹의 리조트 탐색 흐름을 모바일에 맞췄습니다.",
+    "heroTitle": "검증된 다이빙 리조트",
+    "heroSubtitle": "지역, 평점, 운영 프로그램을 기준으로 빠르게 비교하세요.",
+    "loadingName": "리조트 정보를 불러오는 중",
+    "loadingTag": "운영 서버 데이터 연결됨",
+    "reviews": "리뷰 {{count}}개"
+  },
+  "reels": {
+    "likesSummary": "좋아요 {{count}} · Divergram Reels",
+    "items": {
+      "item1": "문섬 하강 라인",
+      "item2": "태종대 야간 시야",
+      "item3": "관음도 수중 절벽"
+    }
+  },
+  "logsForm": {
+    "saveSuccessTitle": "저장 완료",
+    "saveSuccessMessage": "다이빙 로그가 피드에 반영됐습니다.",
+    "saveFailTitle": "저장 실패",
+    "saveFailMessage": "로그 저장을 다시 시도해주세요.",
+    "title": "작성",
+    "subtitle": "운영 웹의 다이빙 게시물 필드를 모바일 입력으로 정리했습니다.",
+    "heroTitle": "새 다이빙 로그",
+    "heroSubtitle": "위치, 수심, 시간, 버디를 기록하세요.",
+    "fields": {
+      "titleLabel": "제목",
+      "titlePlaceholder": "오늘의 다이빙",
+      "locationLabel": "포인트",
+      "locationPlaceholder": "제주 문섬",
+      "depthLabel": "최대 수심",
+      "durationLabel": "시간",
+      "temperatureLabel": "수온",
+      "visibilityLabel": "시야",
+      "buddyLabel": "버디",
+      "buddyPlaceholder": "@diver",
+      "notesLabel": "메모",
+      "notesPlaceholder": "장비, 조류, 느낀 점"
+    },
+    "buttons": {
+      "saving": "저장 중",
+      "save": "로그 저장"
+    },
+    "units": {
+      "minute": "분"
+    }
+  },
+  "settingsPage": {
+    "title": "설정",
+    "subtitle": "앱 설정 및 계정 관리",
+    "profileEdit": "프로필 편집",
+    "items": {
+      "profileTitle": "프로필 설정",
+      "profileSubtitle": "개인정보 및 프로필 관리",
+      "notificationsTitle": "알림 설정",
+      "notificationsSubtitle": "푸시 알림 및 이메일 설정",
+      "languageTitle": "언어 설정",
+      "privacyTitle": "개인정보 보호",
+      "privacySubtitle": "데이터 및 개인정보 설정",
+      "supportTitle": "도움말 및 지원",
+      "supportSubtitle": "자주 묻는 질문 및 고객지원"
+    },
+    "appInfoTitle": "앱 정보",
+    "versionLabel": "버전 {{version}}",
+    "logout": "로그아웃",
+    "languages": {
+      "ko": "한국어",
+      "en": "영어",
+      "ja": "일본어",
+      "zh": "중국어"
+    }
+  },
+  "menu": {
+    "quick": "빠른 설정",
+    "more": "더보기",
+    "desc": {
+      "settings": "언어, 테마, 개인정보",
+      "activity": "내 활동과 기록",
+      "saved": "저장한 게시물/릴스",
+      "reels": "짧은 다이빙 영상",
+      "resorts": "다이빙 리조트 탐색",
+      "location": "지도에서 포인트 찾기",
+      "notifications": "최신 알림과 업데이트",
+      "admin": "운영 전용 화면"
+    }
+  },
+  "pages": {
+    "messages": {
+      "subtitle": "다이빙 일정과 버디 대화를 관리하세요"
+    },
+    "notifications": {
+      "subtitle": "좋아요, 팔로우, 서비스 소식을 확인하세요",
+      "markAll": "모두 읽음"
+    },
+    "location": {
+      "subtitle": "지도 중심으로 다이빙 포인트를 탐색하세요",
+      "mapTitle": "다이빙 맵 미리보기",
+      "mapPlaceholder": "지도 SDK 영역"
+    },
+    "search": {
+      "placeholder": "포인트, 다이버, 리조트 검색",
+      "empty": "검색 결과가 없습니다."
+    },
+    "activity": {
+      "subtitle": "최근 반응과 활동 내역"
+    },
+    "saved": {
+      "subtitle": "저장한 게시물과 릴스",
+      "empty": "저장한 콘텐츠가 없습니다.",
+      "noCaption": "제목 없는 게시물"
+    },
+    "account": {
+      "subtitle": "프로필, 계정, 보안 설정",
+      "email": "이메일 설정",
+      "security": "보안 및 연동 계정"
+    },
+    "admin": {
+      "subtitle": "운영 전용 관리 화면",
+      "restricted": "접근 권한 필요",
+      "note": "운영 계정에서만 접근 가능한 페이지입니다."
+    },
+    "post": {
+      "subtitle": "단일 게시물 상세 보기",
+      "empty": "게시물을 찾을 수 없습니다."
+    },
+    "report": {
+      "subtitle": "서비스 문제를 남겨주세요",
+      "placeholder": "문제 상황을 자세히 작성해주세요",
+      "submit": "제출",
+      "doneTitle": "접수 완료",
+      "doneBody": "신고가 정상적으로 접수되었습니다."
+    },
+    "profileEdit": {
+      "subtitle": "프로필 정보를 수정하세요",
+      "name": "표시 이름",
+      "bio": "소개",
+      "save": "변경사항 저장",
+      "doneTitle": "저장 완료",
+      "doneBody": "프로필 정보가 업데이트되었습니다."
+    }
+  },
+  "api": {
+    "explore": {
+      "defaultTitle": "인기 다이빙 포인트",
+      "postsMeta": "게시물 {{count}}개",
+      "avgVisibility": "평균 시야 {{value}}m"
+    },
+    "resorts": {
+      "defaultName": "Divergram Resort",
+      "noArea": "지역 정보 없음"
+    },
+    "logs": {
+      "defaultTitle": "다이빙 로그",
+      "defaultCaption": "다이빙 로그"
+    }
+  },
+  "notifications": {
+    "diveReminderTitle": "다이빙 준비 알림",
+    "diveReminderBodyWithLocation": "내일 {{location}}에서 다이빙 예정입니다. 장비를 확인하세요!",
+    "diveReminderBody": "내일 다이빙 예정입니다. 장비를 확인하세요!",
+    "viewDive": "다이빙 보기",
+    "remindLater": "나중에 알림"
+  },
+  "diveMode": {
+    "bgPermissionDescription": "다이빙 모드에서는 백그라운드 위치 권한이 필요합니다.",
+    "startTitle": "다이빙 모드 시작",
+    "startMessage": "GPS 추적이 시작되었습니다.",
+    "startFailTitle": "추적 시작 실패",
+    "startFailMessage": "GPS 추적을 시작할 수 없습니다.",
+    "stopTitle": "다이빙 모드 종료",
+    "stopMessage": "{{count}}개의 위치 데이터가 저장되었습니다.",
+    "loading": "GPS 초기화 중...",
+    "title": "다이빙 모드",
+    "tracking": "GPS 추적 중...",
+    "idle": "GPS 추적을 시작하여 다이빙 경로를 기록하세요",
+    "stopButton": "추적 중지",
+    "startButton": "추적 시작",
+    "points": "기록된 포인트: {{count}}개",
+    "currentLocation": "현재 위치 정보",
+    "coordinate": "좌표",
+    "heading": "방향",
+    "speed": "속도",
+    "accuracy": "정확도: ±{{value}}m",
+    "altitude": "고도: {{value}}m"
   }
 }

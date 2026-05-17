@@ -20,7 +20,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'com.divergram.app',
     buildNumber: '1',
-    deploymentTarget: '15.1',
     infoPlist: {
       NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
       NSLocationAlwaysAndWhenInUseUsageDescription: '백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.',
@@ -41,8 +40,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: 'com.divergram.app',
     versionCode: 1,
-    compileSdkVersion: 34,
-    targetSdkVersion: 34,
     permissions: [
       'ACCESS_FINE_LOCATION',
       'ACCESS_COARSE_LOCATION',
@@ -78,9 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-build-properties',
       {
         android: {
-          compileSdkVersion: 34,
-          targetSdkVersion: 34,
-          buildToolsVersion: '34.0.0'
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+          buildToolsVersion: '35.0.0'
         },
         ios: {
           deploymentTarget: '15.1'

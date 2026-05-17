@@ -1,6 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import i18n from '../i18n';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -45,13 +45,13 @@ export class NaverAuth {
     try {
       // Step 1: Get authorization code
       const authUrl = this.buildAuthUrl();
-      const result = await AuthSession.startAsync({
+      const result = await (AuthSession as any).startAsync({
         authUrl,
         returnUrl: this.config.redirectUri,
       });
 
       if (result.type !== 'success' || !result.params.code) {
-        throw new Error('네이버 로그인이 취소되었습니다.');
+        throw new Error(i18n.t('auth.naverCancelled'));
       }
 
       // Step 2: Exchange code for access token
@@ -100,7 +100,7 @@ export class NaverAuth {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`네이버 토큰 교환 실패: ${error.error_description}`);
+      throw new Error(i18n.t('auth.naverTokenExchangeFailed', { message: error.error_description }));
     }
 
     return response.json();
@@ -114,7 +114,7 @@ export class NaverAuth {
     });
 
     if (!response.ok) {
-      throw new Error('네이버 사용자 정보 조회 실패');
+      throw new Error(i18n.t('auth.naverUserInfoFailed'));
     }
 
     return response.json();

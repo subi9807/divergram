@@ -9,10 +9,15 @@
     "close": "Close",
     "next": "Next",
     "previous": "Previous",
-    "done": "Done"
+    "done": "Done",
+    "all": "All",
+    "today": "Today"
   },
   "welcome": {
-    "subtitle": "Record your diving experiences\nand share with the community"
+    "subtitle": "Record your diving experiences\nand share with the community",
+    "getStarted": "Get Started",
+    "title": "Log and share your dives",
+    "badge": "Dive community"
   },
   "auth": {
     "welcome": "Welcome",
@@ -35,7 +40,19 @@
     "fillAllFields": "Please fill all fields",
     "processing": "Processing...",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "welcomeBackTitle": "Welcome back",
+    "welcomeBackMessage": "Successfully signed in",
+    "welcomeTitle": "Welcome",
+    "welcomeMessage": "Successfully signed in",
+    "signedOutTitle": "Signed out",
+    "signedOutMessage": "You have been signed out successfully",
+    "kakaoCancelled": "Kakao login was cancelled.",
+    "kakaoTokenExchangeFailed": "Kakao token exchange failed: {{message}}",
+    "kakaoUserInfoFailed": "Failed to fetch Kakao user info",
+    "naverCancelled": "Naver login was cancelled.",
+    "naverTokenExchangeFailed": "Naver token exchange failed: {{message}}",
+    "naverUserInfoFailed": "Failed to fetch Naver user info"
   },
   "privacy": {
     "content1": "Divergram takes user privacy seriously.",
@@ -52,13 +69,40 @@
     "logs": "Dive Logs",
     "devices": "Devices",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "home": "Home",
+    "explore": "Explore",
+    "resorts": "Resorts",
+    "reels": "Reels",
+    "create": "Create",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "location": "Location",
+    "activity": "Activity",
+    "saved": "Saved",
+    "admin": "Admin",
+    "search": "Search",
+    "account": "Account",
+    "post": "Post",
+    "report": "Report",
+    "profileEdit": "Edit Profile"
   },
   "feed": {
     "error": "Unable to load feed",
     "errorSubtitle": "Please check your network and try again",
     "empty": "No posts yet",
-    "emptySubtitle": "Create your first dive log!"
+    "emptySubtitle": "Create your first dive log!",
+    "header": {
+      "subtitle": "Latest logs from divers",
+      "tabs": {
+        "following": "Following",
+        "forYou": "For You",
+        "nearby": "Nearby"
+      }
+    },
+    "meta": {
+      "visibility": "Visibility {{value}}m"
+    }
   },
   "logs": {
     "title": "Dive Logs",
@@ -138,5 +182,234 @@
     "connectionFailedMessage": "Failed to connect to device",
     "disconnected": "Disconnected",
     "disconnectedMessage": "Device disconnected"
+  },
+  "brand": {
+    "tagline": "Dive, record, share"
+  },
+  "home": {
+    "heroTitle": "Ready to log your next dive?",
+    "heroSubtitle": "Capture logs, photos, location, and buddy details in one place and share with the community.",
+    "quickTitle": "Explore",
+    "recentTitle": "Recent Activity",
+    "noticeTitle": "Aligning mobile UI with divergram.com",
+    "noticeSubtitle": "Explore, Resorts, and Reels were prioritized first for mobile consistency.",
+    "quick": {
+      "exploreLabel": "Explore",
+      "exploreDesc": "Fresh dive feeds",
+      "resortsLabel": "Resorts",
+      "resortsDesc": "Shops and stays",
+      "devicesLabel": "Devices",
+      "devicesDesc": "Connect BLE gear",
+      "reelsLabel": "Reels",
+      "reelsDesc": "Short videos"
+    },
+    "activity": {
+      "item1Title": "Munseom, Seogwipo",
+      "item1Meta": "18m / 45m / Visibility 12m",
+      "item2Title": "Taejongdae, Busan",
+      "item2Meta": "12m / 35m / Night dive"
+    },
+    "createLog": "Create Log"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Find spots, divers, and logs.",
+    "searchPlaceholder": "Search dive points",
+    "loadingTitle": "Loading popular dive points",
+    "loadingMeta": "Connected to production data",
+    "topics": {
+      "jeju": "Jeju",
+      "freediving": "Freediving",
+      "scuba": "Scuba",
+      "night": "Night",
+      "beginner": "Beginner",
+      "photo": "Underwater Photo"
+    }
+  },
+  "resorts": {
+    "title": "Resorts",
+    "subtitle": "Resort discovery flow adapted from divergram.com for mobile.",
+    "heroTitle": "Verified Dive Resorts",
+    "heroSubtitle": "Compare by area, rating, and operating programs quickly.",
+    "loadingName": "Loading resort information",
+    "loadingTag": "Connected to production data",
+    "reviews": "{{count}} reviews"
+  },
+  "reels": {
+    "likesSummary": "{{count}} likes · Divergram Reels",
+    "items": {
+      "item1": "Munseom Descent Line",
+      "item2": "Taejongdae Night Visibility",
+      "item3": "Gwaneumdo Underwater Cliff"
+    }
+  },
+  "logsForm": {
+    "saveSuccessTitle": "Saved",
+    "saveSuccessMessage": "Your dive log was added to feed.",
+    "saveFailTitle": "Save failed",
+    "saveFailMessage": "Please try saving the log again.",
+    "title": "Create",
+    "subtitle": "Mobile input fields aligned with dive post structure.",
+    "heroTitle": "New Dive Log",
+    "heroSubtitle": "Record location, depth, time, and buddy.",
+    "fields": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "Today's dive",
+      "locationLabel": "Point",
+      "locationPlaceholder": "Munseom, Jeju",
+      "depthLabel": "Max Depth",
+      "durationLabel": "Duration",
+      "temperatureLabel": "Water Temp",
+      "visibilityLabel": "Visibility",
+      "buddyLabel": "Buddy",
+      "buddyPlaceholder": "@diver",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Gear, current, impressions"
+    },
+    "buttons": {
+      "saving": "Saving",
+      "save": "Save Log"
+    },
+    "units": {
+      "minute": "min"
+    }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "subtitle": "App settings and account management",
+    "profileEdit": "Edit profile",
+    "items": {
+      "profileTitle": "Profile",
+      "profileSubtitle": "Personal info and profile management",
+      "notificationsTitle": "Notifications",
+      "notificationsSubtitle": "Push and email notification settings",
+      "languageTitle": "Language",
+      "privacyTitle": "Privacy",
+      "privacySubtitle": "Data and privacy controls",
+      "supportTitle": "Help & Support",
+      "supportSubtitle": "FAQ and customer support"
+    },
+    "appInfoTitle": "App Info",
+    "versionLabel": "Version {{version}}",
+    "logout": "Sign Out",
+    "languages": {
+      "ko": "Korean",
+      "en": "English",
+      "ja": "Japanese",
+      "zh": "Chinese"
+    }
+  },
+  "menu": {
+    "quick": "Quick settings",
+    "more": "More",
+    "desc": {
+      "settings": "Language, theme, privacy",
+      "activity": "Your actions and records",
+      "saved": "Saved posts and reels",
+      "reels": "Short dive videos",
+      "resorts": "Dive resort discovery",
+      "location": "Dive points on map",
+      "notifications": "Latest alerts and updates",
+      "admin": "Operational dashboard"
+    }
+  },
+  "pages": {
+    "messages": {
+      "subtitle": "Direct messages and dive planning chats"
+    },
+    "notifications": {
+      "subtitle": "Realtime likes, follows, and service updates",
+      "markAll": "Mark all"
+    },
+    "location": {
+      "subtitle": "Map-first discovery for dive points",
+      "mapTitle": "Dive map preview",
+      "mapPlaceholder": "Map SDK area"
+    },
+    "search": {
+      "placeholder": "Search points, divers, resorts",
+      "empty": "No matching results."
+    },
+    "activity": {
+      "subtitle": "Track recent engagement and actions"
+    },
+    "saved": {
+      "subtitle": "Collected posts and reels",
+      "empty": "No saved content yet.",
+      "noCaption": "Untitled post"
+    },
+    "account": {
+      "subtitle": "Profile, account, and security",
+      "email": "Email preferences",
+      "security": "Security and linked accounts"
+    },
+    "admin": {
+      "subtitle": "Internal operations area",
+      "restricted": "Restricted access",
+      "note": "This page is reserved for operation accounts."
+    },
+    "post": {
+      "subtitle": "Single post detail view",
+      "empty": "Post not found."
+    },
+    "report": {
+      "subtitle": "Submit a service issue",
+      "placeholder": "Describe the issue in detail",
+      "submit": "Submit",
+      "doneTitle": "Submitted",
+      "doneBody": "Your report has been received."
+    },
+    "profileEdit": {
+      "subtitle": "Update your profile information",
+      "name": "Display name",
+      "bio": "Bio",
+      "save": "Save changes",
+      "doneTitle": "Saved",
+      "doneBody": "Profile changes were applied."
+    }
+  },
+  "api": {
+    "explore": {
+      "defaultTitle": "Popular Dive Point",
+      "postsMeta": "{{count}} posts",
+      "avgVisibility": "Avg visibility {{value}}m"
+    },
+    "resorts": {
+      "defaultName": "Divergram Resort",
+      "noArea": "Area unavailable"
+    },
+    "logs": {
+      "defaultTitle": "Dive Log",
+      "defaultCaption": "Dive log"
+    }
+  },
+  "notifications": {
+    "diveReminderTitle": "Dive Prep Reminder",
+    "diveReminderBodyWithLocation": "You are diving at {{location}} tomorrow. Check your gear!",
+    "diveReminderBody": "You are diving tomorrow. Check your gear!",
+    "viewDive": "View Dive",
+    "remindLater": "Remind Later"
+  },
+  "diveMode": {
+    "bgPermissionDescription": "Dive mode requires background location permission.",
+    "startTitle": "Dive mode started",
+    "startMessage": "GPS tracking has started.",
+    "startFailTitle": "Failed to start tracking",
+    "startFailMessage": "Unable to start GPS tracking.",
+    "stopTitle": "Dive mode ended",
+    "stopMessage": "{{count}} location points were saved.",
+    "loading": "Initializing GPS...",
+    "title": "Dive Mode",
+    "tracking": "Tracking GPS...",
+    "idle": "Start GPS tracking to record your dive path",
+    "stopButton": "Stop Tracking",
+    "startButton": "Start Tracking",
+    "points": "Recorded points: {{count}}",
+    "currentLocation": "Current Location",
+    "coordinate": "Coordinates",
+    "heading": "Heading",
+    "speed": "Speed",
+    "accuracy": "Accuracy: ±{{value}}m",
+    "altitude": "Altitude: {{value}}m"
   }
 }

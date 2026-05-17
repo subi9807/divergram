@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
-import { Card } from '../../components/Card';
+import { useTranslation } from 'react-i18next';
 import { formatDate } from '../../lib/utils';
-import { Heart, MessageCircle, Share } from 'lucide-react-native';
+import { Bookmark, Gauge, Heart, MapPin, MessageCircle, MoreHorizontal, Send, Thermometer, Waves } from 'lucide-react-native';
 
 interface FeedPostProps {
   post: {
@@ -16,57 +16,83 @@ interface FeedPostProps {
     likes: number;
     comments: number;
     createdAt: string;
+    location?: string;
+    maxDepth?: number;
+    waterTemperature?: number;
+    visibility?: number;
   };
 }
 
 export function FeedPost({ post }: FeedPostProps) {
+  const { t } = useTranslation();
+
   return (
-    <Card className="mx-4 mb-4">
+    <View className="mx-4 mb-5 overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-sm shadow-surface-200">
       <View className="p-4">
-        <View className="flex-row items-center mb-3">
-          <View className="w-10 h-10 bg-primary-100 rounded-full items-center justify-center mr-3">
-            <Text className="text-primary-600 font-semibold">
-              {post.user.name.charAt(0).toUpperCase()}
+        <View className="flex-row items-center mb-4">
+          {post.user.avatar ? (
+            <Image source={{ uri: post.user.avatar }} className="mr-3 h-11 w-11 rounded-2xl" resizeMode="cover" />
+          ) : (
+            <View className="mr-3 h-11 w-11 items-center justify-center rounded-2xl bg-brand-600">
+              <Text className="font-semibold text-white">{post.user.name.charAt(0).toUpperCase()}</Text>
+            </View>
+          )}
+          <View className="flex-1">
+            <Text className="font-semibold text-surface-900">{post.user.name}</Text>
+            <Text className="text-sm text-surface-500">
+              {formatDate(post.createdAt)}{post.location ? ` · ${post.location}` : ''}
             </Text>
           </View>
-          <View>
-            <Text className="font-semibold text-secondary-800">
-              {post.user.name}
-            </Text>
-            <Text className="text-secondary-500 text-sm">
-              {formatDate(post.createdAt)}
-            </Text>
-          </View>
+          <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 bg-surface-50">
+            <MoreHorizontal size={19} color="#1e293b" />
+          </TouchableOpacity>
         </View>
 
-        <Text className="text-secondary-700 mb-3 leading-5">
-          {post.content}
-        </Text>
+        <Text className="mb-4 leading-6 text-surface-800">{post.content}</Text>
 
         {post.image && (
           <Image 
             source={{ uri: post.image }} 
-            className="w-full h-48 rounded-lg mb-3"
+            className="w-full h-72 rounded-3xl mb-4"
             resizeMode="cover"
           />
         )}
 
-        <View className="flex-row items-center justify-between pt-3 border-t border-secondary-100">
-          <TouchableOpacity className="flex-row items-center">
-            <Heart size={20} color="#64748b" />
-            <Text className="text-secondary-600 ml-2">{post.likes}</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="flex-row items-center">
-            <MessageCircle size={20} color="#64748b" />
-            <Text className="text-secondary-600 ml-2">{post.comments}</Text>
-          </TouchableOpacity>
-          
+        <View className="mb-4 flex-row flex-wrap">
+          {post.location && <MetaChip icon={MapPin} text={post.location} />}
+          {post.maxDepth ? <MetaChip icon={Gauge} text={`${post.maxDepth}m`} /> : null}
+          {post.waterTemperature ? <MetaChip icon={Thermometer} text={`${post.waterTemperature}°C`} /> : null}
+          {post.visibility ? <MetaChip icon={Waves} text={t('feed.meta.visibility', { value: post.visibility })} /> : null}
+        </View>
+
+        <View className="flex-row items-center justify-between border-t border-surface-100 pt-4">
+          <View className="flex-row items-center">
+            <TouchableOpacity className="mr-5 flex-row items-center">
+              <Heart size={21} color="#1e293b" />
+              <Text className="ml-2 font-semibold text-surface-700">{post.likes}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="mr-5 flex-row items-center">
+              <MessageCircle size={21} color="#1e293b" />
+              <Text className="ml-2 font-semibold text-surface-700">{post.comments}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Send size={21} color="#1e293b" />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity>
-            <Share size={20} color="#64748b" />
+            <Bookmark size={21} color="#1e293b" />
           </TouchableOpacity>
         </View>
       </View>
-    </Card>
+    </View>
+  );
+}
+
+function MetaChip({ icon: Icon, text }: { icon: typeof MapPin; text: string }) {
+  return (
+    <View className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 bg-surface-50 px-3 py-2">
+      <Icon size={14} color="#4d5d6b" />
+      <Text className="ml-1 text-xs font-medium text-surface-700">{text}</Text>
+    </View>
   );
 }

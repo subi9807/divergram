@@ -10,9 +10,6 @@ interface DiveData {
   temperature: number;
 }
 
-const DIVE_SERVICE_UUID = '0000FFF0-0000-1000-8000-00805F9B34FB';
-const DEPTH_CHARACTERISTIC_UUID = '0000FFF1-0000-1000-8000-00805F9B34FB';
-
 export function useBle() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -96,7 +93,6 @@ export function useBle() {
 
   const connectToDevice = async (device: Device) => {
     try {
-      const bleManager = bleManagerRef.current;
       stopScan();
       
       const connectedDev = await device.connect();

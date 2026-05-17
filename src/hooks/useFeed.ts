@@ -11,14 +11,13 @@ export function useFeed() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    status,
     refetch,
     isLoading
   } = useInfiniteQuery({
     queryKey: ['feed'],
-    queryFn: ({ pageParam = null }) => apiClient.getFeed(pageParam),
+    queryFn: ({ pageParam }) => apiClient.getFeed(pageParam as string | null),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: null,
+    initialPageParam: null as string | null,
   });
 
   const handleRefresh = async () => {
@@ -33,7 +32,7 @@ export function useFeed() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading: status === 'pending',
+    isLoading,
     refetch: handleRefresh,
     isRefreshing
   };

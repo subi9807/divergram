@@ -1,11 +1,18 @@
-import axios from 'axios';
-import { MMKV } from 'react-native-mmkv';
+import { create } from 'axios';
+import i18n from './i18n';
+import { storage } from './storage';
 
-const storage = new MMKV();
-const API_BASE = process.env.DIVERGRAM_API_BASE || process.env.EXPO_PUBLIC_API_BASE_URL || 'https://divergram.com';
+const RAW_API_BASE =
+  process.env.EXPO_PUBLIC_DIVERGRAM_API_BASE ||
+  process.env.DIVERGRAM_API_BASE ||
+  process.env.EXPO_PUBLIC_API_BASE_URL ||
+  'https://api.divergram.com';
 
-const axiosInstance = axios.create({
-  baseURL: `${API_BASE}/api`,
+const API_BASE = RAW_API_BASE.replace(/\/+$/, '');
+const API_ROOT = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
+
+const axiosInstance = create({
+  baseURL: API_ROOT,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -49,6 +56,10 @@ const dataApi = {
     const res = await axiosInstance.get(`/data/${table}`, { params });
     return { data: res.data?.data || [], count: res.data?.count || 0 };
   },
+  insert: async <T>(table: string, rows: T[]): Promise<T[]> => {
+    const res = await axiosInstance.post(`/data/${table}`, { rows });
+    return res.data?.data || rows;
+  },
 };
 
 function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCount: Record<string, number>, commentsCount: Record<string, number>) {
@@ -65,6 +76,10 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
     likes: likesCount[String(post.id)] || 0,
     comments: commentsCount[String(post.id)] || 0,
     createdAt: post.created_at || new Date().toISOString(),
+    location: post.location || post.dive_site || undefined,
+    maxDepth: post.max_depth ? Number(post.max_depth) : undefined,
+    waterTemperature: post.water_temperature ? Number(post.water_temperature) : undefined,
+    visibility: post.visibility ? Number(post.visibility) : undefined,
   };
 }
 
@@ -127,9 +142,84 @@ export const apiClient = {
     };
   },
 
-  getLogs: () => Promise.resolve([]),
-  createLog: (_data: any) => Promise.reject(new Error('not_implemented')),
+  getExplore: async () => {
+    const posts = await dataApi.list<any>('posts', {
+      order: { column: 'created_at', ascending: false },
+      limit: 80,
+    });
+    const grouped = new Map<string, { title: string; location: string; count: number; visibility: number[] }>();
+    for (const post of posts.data) {
+      const location = String(post.location || post.dive_site || '').trim();
+      if (!location) continue;
+      const prev = grouped.get(location) || { title: i18n.t('api.explore.defaultTitle'), location, count: 0, visibility: [] };
+      prev.count += 1;
+      if (post.visibility) prev.visibility.push(Number(post.visibility));
+      grouped.set(location, prev);
+    }
+    return Array.from(grouped.values()).slice(0, 10).map((item) => ({
+      ...item,
+      meta: `${i18n.t('api.explore.postsMeta', { count: item.count })}${item.visibility.length ? ` · ${i18n.t('api.explore.avgVisibility', { value: Math.round(item.visibility.reduce((a, b) => a + b, 0) / item.visibility.length) })}` : ''}`,
+    }));
+  },
+
+  getResorts: async () => {
+    const res = await dataApi.list<any>('profiles', {
+      filters: [{ column: 'account_type', op: 'eq', value: 'resort' }],
+      limit: 50,
+    });
+    return res.data.map((item) => ({
+      id: String(item.id),
+      name: item.full_name || item.username || i18n.t('api.resorts.defaultName'),
+      area: item.resort_region || item.resort_address || item.bio || i18n.t('api.resorts.noArea'),
+      rating: Number(item.resort_rating_avg || 0),
+      reviewCount: Number(item.resort_review_count || 0),
+      tags: item.website || item.account_type || 'resort',
+    }));
+  },
+
+  getLogs: async () => {
+    const res = await dataApi.list<any>('posts', {
+      order: { column: 'created_at', ascending: false },
+      limit: 30,
+    });
+    return res.data.map((post) => ({
+      id: String(post.id),
+      title: post.caption || post.dive_site || i18n.t('api.logs.defaultTitle'),
+      location: post.location || post.dive_site || '',
+      depth: Number(post.max_depth || 0),
+      duration: Number(post.dive_duration || 0),
+      notes: post.caption || '',
+      createdAt: post.created_at || new Date().toISOString(),
+      updatedAt: post.created_at || new Date().toISOString(),
+    }));
+  },
+  createLog: async (data: any) => {
+    const user = await apiClient.getMe();
+    const id = `native_${Date.now()}`;
+    const row = {
+      id,
+      user_id: String(user?.id || 'native-user'),
+      caption: data.title || data.notes || i18n.t('api.logs.defaultCaption'),
+      location: data.location || '',
+      dive_site: data.location || '',
+      dive_type: data.diveType || 'scuba',
+      max_depth: Number(data.depth || 0),
+      dive_duration: Number(data.duration || 0),
+      water_temperature: Number(data.temperature || 0),
+      visibility: Number(data.visibility || 0),
+      buddy_name: data.buddy || '',
+      created_at: new Date().toISOString(),
+    };
+    const [created] = await dataApi.insert('posts', [row]);
+    return created;
+  },
   uploadTrack: (_logId: string, _trackData: any) => Promise.reject(new Error('not_implemented')),
+};
+
+export const apiConfig = {
+  rawBase: RAW_API_BASE,
+  base: API_BASE,
+  root: API_ROOT,
 };
 
 export default axiosInstance;

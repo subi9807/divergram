@@ -4,11 +4,11 @@ import { LineChart } from 'react-native-chart-kit';
 import { formatDepth, formatTemperature } from '../../lib/utils';
 
 interface DiveDataChartProps {
-  data: Array<{
+  data: {
     timestamp: number;
     depth: number;
     temperature: number;
-  }>;
+  }[];
 }
 
 export function DiveDataChart({ data }: DiveDataChartProps) {

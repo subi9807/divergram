@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { View } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { LoadingOverlay } from '../../../src/components/LoadingOverlay';
@@ -12,8 +12,7 @@ export default function AppleCallbackScreen() {
   const params = useLocalSearchParams();
   const { loginWithApple } = useAuth();
 
-  useEffect(() => {
-    const handleCallback = async () => {
+  const handleCallback = useCallback(async () => {
       try {
         if (params.code || params.id_token) {
           // Handle the OAuth callback
@@ -31,10 +30,11 @@ export default function AppleCallbackScreen() {
         });
         router.replace('/(auth)/login');
       }
-    };
+  }, [loginWithApple, params, showToast, t]);
 
+  useEffect(() => {
     handleCallback();
-  }, [params]);
+  }, [handleCallback]);
 
   return (
     <View className="flex-1 bg-white">

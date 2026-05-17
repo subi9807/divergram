@@ -1,0 +1,415 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "next": "Next",
+    "previous": "Previous",
+    "done": "Done",
+    "all": "All",
+    "today": "Today"
+  },
+  "welcome": {
+    "subtitle": "Record your diving experiences\nand share with the community",
+    "getStarted": "Get Started",
+    "title": "Log and share your dives",
+    "badge": "Dive community"
+  },
+  "auth": {
+    "welcome": "Welcome",
+    "loginSubtitle": "Sign in to your account",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "continueWithFacebook": "Continue with Facebook",
+    "continueWithKakao": "Continue with Kakao",
+    "continueWithNaver": "Continue with Naver",
+    "continueWithEmail": "Continue with Email",
+    "or": "or",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signIn": "Sign In",
+    "backToSocial": "Back to social login",
+    "error": "Error",
+    "loginFailed": "Login failed",
+    "fillAllFields": "Please fill all fields",
+    "processing": "Processing...",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "welcomeBackTitle": "Welcome back",
+    "welcomeBackMessage": "Successfully signed in",
+    "welcomeTitle": "Welcome",
+    "welcomeMessage": "Successfully signed in",
+    "signedOutTitle": "Signed out",
+    "signedOutMessage": "You have been signed out successfully",
+    "kakaoCancelled": "Kakao login was cancelled.",
+    "kakaoTokenExchangeFailed": "Kakao token exchange failed: {{message}}",
+    "kakaoUserInfoFailed": "Failed to fetch Kakao user info",
+    "naverCancelled": "Naver login was cancelled.",
+    "naverTokenExchangeFailed": "Naver token exchange failed: {{message}}",
+    "naverUserInfoFailed": "Failed to fetch Naver user info"
+  },
+  "privacy": {
+    "content1": "Divergram takes user privacy seriously.",
+    "content2": "Collected information is used only for service provision and is not shared with third parties.",
+    "content3": "Please refer to the privacy policy on our website for details."
+  },
+  "terms": {
+    "content1": "These terms govern the use of Divergram services.",
+    "content2": "By using the service, you agree to these terms.",
+    "content3": "Please refer to the terms of service on our website for details."
+  },
+  "tabs": {
+    "feed": "动态",
+    "logs": "潜水日志",
+    "devices": "设备",
+    "profile": "个人主页",
+    "settings": "设置",
+    "home": "首页",
+    "explore": "探索",
+    "resorts": "度假村",
+    "reels": "短视频",
+    "create": "发布",
+    "messages": "消息",
+    "notifications": "通知",
+    "location": "潜点地图",
+    "activity": "我的活动",
+    "saved": "已收藏",
+    "admin": "管理员",
+    "search": "搜索",
+    "account": "账号",
+    "post": "帖子",
+    "report": "举报",
+    "profileEdit": "编辑资料"
+  },
+  "feed": {
+    "error": "Unable to load feed",
+    "errorSubtitle": "Please check your network and try again",
+    "empty": "No posts yet",
+    "emptySubtitle": "Create your first dive log!",
+    "header": {
+      "subtitle": "Latest logs from divers",
+      "tabs": {
+        "following": "Following",
+        "forYou": "For You",
+        "nearby": "Nearby"
+      }
+    },
+    "meta": {
+      "visibility": "Visibility {{value}}m"
+    }
+  },
+  "logs": {
+    "title": "Dive Logs",
+    "subtitle": "My diving records",
+    "create": "Create",
+    "createFirst": "Create first log",
+    "error": "Unable to load logs",
+    "errorSubtitle": "Please check your network and try again",
+    "empty": "No dive logs yet",
+    "emptySubtitle": "Create your first dive log!"
+  },
+  "devices": {
+    "title": "Dive Devices",
+    "subtitle": "BLE diving equipment connection",
+    "nearby": "Nearby Devices",
+    "startScan": "Start Scan",
+    "stopScan": "Stop Scan",
+    "liveData": "Live Data",
+    "empty": "No devices nearby",
+    "emptySubtitle": "Turn on your diving equipment and start scanning",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "connected": "Connected"
+  },
+  "profile": {
+    "unnamed": "Unnamed",
+    "edit": "Edit Profile",
+    "about": "About",
+    "noBio": "No bio yet",
+    "stats": {
+      "totalDives": "Total Dives",
+      "maxDepth": "Max Depth",
+      "totalTime": "Total Time"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "notifications": "Notifications",
+    "pushNotifications": "Push Notifications",
+    "pushNotificationsDesc": "Receive notifications for new activities",
+    "preferences": "Preferences",
+    "language": "Language",
+    "languageDesc": "Change app language",
+    "permissions": "Permissions",
+    "permissionsDesc": "Manage app permissions",
+    "data": "Data",
+    "exportData": "Export Data",
+    "exportDataDesc": "Save your data to a file",
+    "logout": "Sign Out",
+    "logoutTitle": "Sign Out",
+    "logoutMessage": "Are you sure you want to sign out?"
+  },
+  "permissions": {
+    "grant": "Grant Permission",
+    "settingsTitle": "Go to Settings",
+    "settingsMessage": "Please allow permission in settings",
+    "openSettings": "Open Settings",
+    "location": {
+      "title": "Location Permission Required",
+      "description": "Location permission is needed to record location in dive logs"
+    },
+    "bluetooth": {
+      "title": "Bluetooth Permission Required",
+      "description": "Bluetooth permission is needed to connect to diving equipment"
+    },
+    "notifications": {
+      "title": "Notification Permission Required",
+      "description": "Permission is needed to receive important notifications"
+    }
+  },
+  "ble": {
+    "permissionDenied": "Permission Denied",
+    "permissionDeniedMessage": "Bluetooth permission is required",
+    "connected": "Connected",
+    "connectedMessage": "Connected to {{name}}",
+    "connectionFailed": "Connection Failed",
+    "connectionFailedMessage": "Failed to connect to device",
+    "disconnected": "Disconnected",
+    "disconnectedMessage": "Device disconnected"
+  },
+  "brand": {
+    "tagline": "Dive, record, share"
+  },
+  "home": {
+    "heroTitle": "Ready to log your next dive?",
+    "heroSubtitle": "Capture logs, photos, location, and buddy details in one place and share with the community.",
+    "quickTitle": "Explore",
+    "recentTitle": "Recent Activity",
+    "noticeTitle": "Aligning mobile UI with divergram.com",
+    "noticeSubtitle": "Explore, Resorts, and Reels were prioritized first for mobile consistency.",
+    "quick": {
+      "exploreLabel": "Explore",
+      "exploreDesc": "Fresh dive feeds",
+      "resortsLabel": "Resorts",
+      "resortsDesc": "Shops and stays",
+      "devicesLabel": "Devices",
+      "devicesDesc": "Connect BLE gear",
+      "reelsLabel": "Reels",
+      "reelsDesc": "Short videos"
+    },
+    "activity": {
+      "item1Title": "Munseom, Seogwipo",
+      "item1Meta": "18m / 45m / Visibility 12m",
+      "item2Title": "Taejongdae, Busan",
+      "item2Meta": "12m / 35m / Night dive"
+    },
+    "createLog": "Create Log"
+  },
+  "explore": {
+    "title": "Explore",
+    "subtitle": "Find spots, divers, and logs.",
+    "searchPlaceholder": "Search dive points",
+    "loadingTitle": "Loading popular dive points",
+    "loadingMeta": "Connected to production data",
+    "topics": {
+      "jeju": "Jeju",
+      "freediving": "Freediving",
+      "scuba": "Scuba",
+      "night": "Night",
+      "beginner": "Beginner",
+      "photo": "Underwater Photo"
+    }
+  },
+  "resorts": {
+    "title": "Resorts",
+    "subtitle": "Resort discovery flow adapted from divergram.com for mobile.",
+    "heroTitle": "Verified Dive Resorts",
+    "heroSubtitle": "Compare by area, rating, and operating programs quickly.",
+    "loadingName": "Loading resort information",
+    "loadingTag": "Connected to production data",
+    "reviews": "{{count}} reviews"
+  },
+  "reels": {
+    "likesSummary": "{{count}} likes · Divergram Reels",
+    "items": {
+      "item1": "Munseom Descent Line",
+      "item2": "Taejongdae Night Visibility",
+      "item3": "Gwaneumdo Underwater Cliff"
+    }
+  },
+  "logsForm": {
+    "saveSuccessTitle": "Saved",
+    "saveSuccessMessage": "Your dive log was added to feed.",
+    "saveFailTitle": "Save failed",
+    "saveFailMessage": "Please try saving the log again.",
+    "title": "Create",
+    "subtitle": "Mobile input fields aligned with dive post structure.",
+    "heroTitle": "New Dive Log",
+    "heroSubtitle": "Record location, depth, time, and buddy.",
+    "fields": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "Today's dive",
+      "locationLabel": "Point",
+      "locationPlaceholder": "Munseom, Jeju",
+      "depthLabel": "Max Depth",
+      "durationLabel": "Duration",
+      "temperatureLabel": "Water Temp",
+      "visibilityLabel": "Visibility",
+      "buddyLabel": "Buddy",
+      "buddyPlaceholder": "@diver",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Gear, current, impressions"
+    },
+    "buttons": {
+      "saving": "Saving",
+      "save": "Save Log"
+    },
+    "units": {
+      "minute": "min"
+    }
+  },
+  "settingsPage": {
+    "title": "Settings",
+    "subtitle": "App settings and account management",
+    "profileEdit": "Edit profile",
+    "items": {
+      "profileTitle": "Profile",
+      "profileSubtitle": "Personal info and profile management",
+      "notificationsTitle": "Notifications",
+      "notificationsSubtitle": "Push and email notification settings",
+      "languageTitle": "Language",
+      "privacyTitle": "Privacy",
+      "privacySubtitle": "Data and privacy controls",
+      "supportTitle": "Help & Support",
+      "supportSubtitle": "FAQ and customer support"
+    },
+    "appInfoTitle": "App Info",
+    "versionLabel": "Version {{version}}",
+    "logout": "Sign Out",
+    "languages": {
+      "ko": "韩语",
+      "en": "英语",
+      "ja": "日语",
+      "zh": "中文"
+    }
+  },
+  "menu": {
+    "quick": "快捷设置",
+    "more": "更多",
+    "desc": {
+      "settings": "语言、主题、隐私",
+      "activity": "最近互动与记录",
+      "saved": "已保存的帖子与短视频",
+      "reels": "潜水短视频",
+      "resorts": "潜水度假村探索",
+      "location": "地图潜点导航",
+      "notifications": "最新提醒与更新",
+      "admin": "运营管理入口"
+    }
+  },
+  "pages": {
+    "messages": {
+      "subtitle": "管理私信与潜水行程沟通"
+    },
+    "notifications": {
+      "subtitle": "实时查看点赞、关注与系统更新",
+      "markAll": "全部已读"
+    },
+    "location": {
+      "subtitle": "以地图为中心发现潜点",
+      "mapTitle": "潜点地图预览",
+      "mapPlaceholder": "地图 SDK 区域"
+    },
+    "search": {
+      "placeholder": "搜索潜点、潜友、度假村",
+      "empty": "没有匹配结果。"
+    },
+    "activity": {
+      "subtitle": "查看最近互动与活动"
+    },
+    "saved": {
+      "subtitle": "你收藏的帖子与短视频",
+      "empty": "还没有收藏内容。",
+      "noCaption": "无标题帖子"
+    },
+    "account": {
+      "subtitle": "资料、账号与安全",
+      "email": "邮箱偏好设置",
+      "security": "安全与绑定账号"
+    },
+    "admin": {
+      "subtitle": "内部运营管理区域",
+      "restricted": "需要权限访问",
+      "note": "此页面仅对运营账号开放。"
+    },
+    "post": {
+      "subtitle": "单帖详情页",
+      "empty": "未找到帖子。"
+    },
+    "report": {
+      "subtitle": "提交服务问题",
+      "placeholder": "请详细描述问题",
+      "submit": "提交",
+      "doneTitle": "提交完成",
+      "doneBody": "我们已收到你的反馈。"
+    },
+    "profileEdit": {
+      "subtitle": "更新个人资料",
+      "name": "显示名称",
+      "bio": "个人简介",
+      "save": "保存修改",
+      "doneTitle": "保存成功",
+      "doneBody": "个人资料已更新。"
+    }
+  },
+  "api": {
+    "explore": {
+      "defaultTitle": "Popular Dive Point",
+      "postsMeta": "{{count}} posts",
+      "avgVisibility": "Avg visibility {{value}}m"
+    },
+    "resorts": {
+      "defaultName": "Divergram Resort",
+      "noArea": "Area unavailable"
+    },
+    "logs": {
+      "defaultTitle": "Dive Log",
+      "defaultCaption": "Dive log"
+    }
+  },
+  "notifications": {
+    "diveReminderTitle": "Dive Prep Reminder",
+    "diveReminderBodyWithLocation": "You are diving at {{location}} tomorrow. Check your gear!",
+    "diveReminderBody": "You are diving tomorrow. Check your gear!",
+    "viewDive": "View Dive",
+    "remindLater": "Remind Later"
+  },
+  "diveMode": {
+    "bgPermissionDescription": "Dive mode requires background location permission.",
+    "startTitle": "Dive mode started",
+    "startMessage": "GPS tracking has started.",
+    "startFailTitle": "Failed to start tracking",
+    "startFailMessage": "Unable to start GPS tracking.",
+    "stopTitle": "Dive mode ended",
+    "stopMessage": "{{count}} location points were saved.",
+    "loading": "Initializing GPS...",
+    "title": "Dive Mode",
+    "tracking": "Tracking GPS...",
+    "idle": "Start GPS tracking to record your dive path",
+    "stopButton": "Stop Tracking",
+    "startButton": "Start Tracking",
+    "points": "Recorded points: {{count}}",
+    "currentLocation": "Current Location",
+    "coordinate": "Coordinates",
+    "heading": "Heading",
+    "speed": "Speed",
+    "accuracy": "Accuracy: ±{{value}}m",
+    "altitude": "Altitude: {{value}}m"
+  }
+}

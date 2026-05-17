@@ -47,7 +47,7 @@ export function DiveMode() {
       if (status !== 'granted') {
         Alert.alert(
           t('permissions.location.title'),
-          '다이빙 모드에서는 백그라운드 위치 권한이 필요합니다.',
+          t('diveMode.bgPermissionDescription'),
           [
             { text: t('common.cancel'), style: 'cancel' },
             { text: t('permissions.openSettings'), onPress: () => Location.requestBackgroundPermissionsAsync() }
@@ -85,8 +85,8 @@ export function DiveMode() {
       analytics.diveEvent('Tracking Started');
       showToast({
         type: 'success',
-        title: '다이빙 모드 시작',
-        message: 'GPS 추적이 시작되었습니다.'
+        title: t('diveMode.startTitle'),
+        message: t('diveMode.startMessage')
       });
 
     } catch (error) {
@@ -94,8 +94,8 @@ export function DiveMode() {
       analytics.error(error as Error, { context: 'dive_tracking_start' });
       showToast({
         type: 'error',
-        title: '추적 시작 실패',
-        message: 'GPS 추적을 시작할 수 없습니다.'
+        title: t('diveMode.startFailTitle'),
+        message: t('diveMode.startFailMessage')
       });
     } finally {
       setLoading(false);
@@ -124,8 +124,8 @@ export function DiveMode() {
 
       showToast({
         type: 'info',
-        title: '다이빙 모드 종료',
-        message: `${locationHistory.length}개의 위치 데이터가 저장되었습니다.`
+        title: t('diveMode.stopTitle'),
+        message: t('diveMode.stopMessage', { count: locationHistory.length })
       });
 
       // Reset data
@@ -157,7 +157,7 @@ export function DiveMode() {
 
   return (
     <Screen>
-      <LoadingOverlay visible={loading} text="GPS 초기화 중..." />
+      <LoadingOverlay visible={loading} text={t('diveMode.loading')} />
       
       <PermissionGate
         permission="location"
@@ -167,10 +167,10 @@ export function DiveMode() {
         <View className="flex-1 p-6">
           <View className="mb-6">
             <Text className="text-3xl font-bold text-secondary-800 mb-2">
-              다이빙 모드
+              {t('diveMode.title')}
             </Text>
             <Text className="text-secondary-600">
-              {isTracking ? 'GPS 추적 중...' : 'GPS 추적을 시작하여 다이빙 경로를 기록하세요'}
+              {isTracking ? t('diveMode.tracking') : t('diveMode.idle')}
             </Text>
           </View>
 
@@ -192,14 +192,14 @@ export function DiveMode() {
                 size="lg"
                 disabled={loading}
               >
-                {isTracking ? '추적 중지' : '추적 시작'}
+                {isTracking ? t('diveMode.stopButton') : t('diveMode.startButton')}
               </Button>
             </View>
 
             {isTracking && (
               <View className="space-y-3">
                 <Text className="text-center text-secondary-600 mb-4">
-                  기록된 포인트: {locationHistory.length}개
+                  {t('diveMode.points', { count: locationHistory.length })}
                 </Text>
               </View>
             )}
@@ -208,14 +208,14 @@ export function DiveMode() {
           {currentLocation && (
             <Card className="p-6">
               <Text className="text-lg font-semibold text-secondary-800 mb-4">
-                현재 위치 정보
+                {t('diveMode.currentLocation')}
               </Text>
               
               <View className="space-y-4">
                 <View className="flex-row items-center">
                   <MapPin size={20} color="#64748b" />
                   <View className="ml-3 flex-1">
-                    <Text className="text-secondary-800 font-medium">좌표</Text>
+                    <Text className="text-secondary-800 font-medium">{t('diveMode.coordinate')}</Text>
                     <Text className="text-secondary-600 text-sm">
                       {formatCoordinate(currentLocation.latitude, 'lat')}
                     </Text>
@@ -228,7 +228,7 @@ export function DiveMode() {
                 <View className="flex-row items-center">
                   <Compass size={20} color="#64748b" />
                   <View className="ml-3 flex-1">
-                    <Text className="text-secondary-800 font-medium">방향</Text>
+                    <Text className="text-secondary-800 font-medium">{t('diveMode.heading')}</Text>
                     <Text className="text-secondary-600 text-sm">
                       {formatHeading(currentLocation.heading)}
                     </Text>
@@ -238,7 +238,7 @@ export function DiveMode() {
                 <View className="flex-row items-center">
                   <Gauge size={20} color="#64748b" />
                   <View className="ml-3 flex-1">
-                    <Text className="text-secondary-800 font-medium">속도</Text>
+                    <Text className="text-secondary-800 font-medium">{t('diveMode.speed')}</Text>
                     <Text className="text-secondary-600 text-sm">
                       {formatSpeed(currentLocation.speed)}
                     </Text>
@@ -248,11 +248,11 @@ export function DiveMode() {
                 {currentLocation.accuracy && (
                   <View className="pt-2 border-t border-secondary-200">
                     <Text className="text-secondary-600 text-sm">
-                      정확도: ±{currentLocation.accuracy.toFixed(1)}m
+                      {t('diveMode.accuracy', { value: currentLocation.accuracy.toFixed(1) })}
                     </Text>
                     {currentLocation.altitude && (
                       <Text className="text-secondary-600 text-sm">
-                        고도: {currentLocation.altitude.toFixed(1)}m
+                        {t('diveMode.altitude', { value: currentLocation.altitude.toFixed(1) })}
                       </Text>
                     )}
                   </View>

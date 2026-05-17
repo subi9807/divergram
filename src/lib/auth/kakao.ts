@@ -1,6 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
-import { Platform } from 'react-native';
+import i18n from '../i18n';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -52,13 +52,13 @@ export class KakaoAuth {
     try {
       // Step 1: Get authorization code
       const authUrl = this.buildAuthUrl();
-      const result = await AuthSession.startAsync({
+      const result = await (AuthSession as any).startAsync({
         authUrl,
         returnUrl: this.config.redirectUri,
       });
 
       if (result.type !== 'success' || !result.params.code) {
-        throw new Error('카카오 로그인이 취소되었습니다.');
+        throw new Error(i18n.t('auth.kakaoCancelled'));
       }
 
       // Step 2: Exchange code for access token
@@ -104,7 +104,7 @@ export class KakaoAuth {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(`카카오 토큰 교환 실패: ${error.error_description}`);
+      throw new Error(i18n.t('auth.kakaoTokenExchangeFailed', { message: error.error_description }));
     }
 
     return response.json();
@@ -119,7 +119,7 @@ export class KakaoAuth {
     });
 
     if (!response.ok) {
-      throw new Error('카카오 사용자 정보 조회 실패');
+      throw new Error(i18n.t('auth.kakaoUserInfoFailed'));
     }
 
     return response.json();

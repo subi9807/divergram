@@ -36,7 +36,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             Something went wrong
           </Text>
           <Text className="text-secondary-600 text-center mb-8 leading-6">
-            We're sorry, but something unexpected happened. Please try restarting the app.
+            We are sorry, but something unexpected happened. Please try restarting the app.
           </Text>
           <Button 
             onPress={() => this.setState({ hasError: false })}

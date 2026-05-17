@@ -56,8 +56,9 @@ cp .env.example .env
 
 Required environment variables:
 ```env
-DIVERGRAM_API_BASE=https://divergram.com
-EXPO_PUBLIC_API_BASE_URL=https://divergram.com
+DIVERGRAM_API_BASE=https://api.divergram.com
+EXPO_PUBLIC_DIVERGRAM_API_BASE=https://api.divergram.com
+EXPO_PUBLIC_API_BASE_URL=https://api.divergram.com
 
 # OAuth Configuration
 GOOGLE_CLIENT_ID_IOS=your-google-client-id-ios

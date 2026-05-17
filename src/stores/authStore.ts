@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
-
-const storage = new MMKV();
+import { storage } from '../lib/storage';
 
 const zustandStorage = {
   setItem: (name: string, value: string) => {

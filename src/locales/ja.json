@@ -9,10 +9,15 @@
     "close": "閉じる",
     "next": "次へ",
     "previous": "前へ",
-    "done": "完了"
+    "done": "完了",
+    "all": "すべて",
+    "today": "今日"
   },
   "welcome": {
-    "subtitle": "ダイビング体験を記録し\nコミュニティと共有しよう"
+    "subtitle": "ダイビング体験を記録し\nコミュニティと共有しよう",
+    "getStarted": "はじめる",
+    "title": "ダイビングを記録して共有しよう",
+    "badge": "Dive community"
   },
   "auth": {
     "welcome": "ようこそ",
@@ -35,7 +40,19 @@
     "fillAllFields": "すべてのフィールドを入力してください",
     "processing": "処理中...",
     "privacy": "プライバシーポリシー",
-    "terms": "利用規約"
+    "terms": "利用規約",
+    "welcomeBackTitle": "おかえりなさい",
+    "welcomeBackMessage": "サインインに成功しました",
+    "welcomeTitle": "ようこそ",
+    "welcomeMessage": "サインインに成功しました",
+    "signedOutTitle": "サインアウト",
+    "signedOutMessage": "正常にサインアウトしました",
+    "kakaoCancelled": "Kakaoログインがキャンセルされました。",
+    "kakaoTokenExchangeFailed": "Kakaoトークン交換に失敗しました: {{message}}",
+    "kakaoUserInfoFailed": "Kakaoユーザー情報の取得に失敗しました",
+    "naverCancelled": "Naverログインがキャンセルされました。",
+    "naverTokenExchangeFailed": "Naverトークン交換に失敗しました: {{message}}",
+    "naverUserInfoFailed": "Naverユーザー情報の取得に失敗しました"
   },
   "privacy": {
     "content1": "Divergramはユーザーのプライバシーを重視しています。",
@@ -52,13 +69,40 @@
     "logs": "ダイブログ",
     "devices": "デバイス",
     "profile": "プロフィール",
-    "settings": "設定"
+    "settings": "設定",
+    "home": "ホーム",
+    "explore": "探索",
+    "resorts": "リゾート",
+    "reels": "リール",
+    "create": "作成",
+    "messages": "メッセージ",
+    "notifications": "通知",
+    "location": "ポイント地図",
+    "activity": "アクティビティ",
+    "saved": "保存済み",
+    "admin": "管理者",
+    "search": "検索",
+    "account": "アカウント",
+    "post": "投稿",
+    "report": "報告",
+    "profileEdit": "プロフィール編集"
   },
   "feed": {
     "error": "フィードを読み込めません",
     "errorSubtitle": "ネットワークを確認して再試行してください",
     "empty": "まだ投稿がありません",
-    "emptySubtitle": "最初のダイブログを作成しましょう！"
+    "emptySubtitle": "最初のダイブログを作成しましょう！",
+    "header": {
+      "subtitle": "ダイバーの最新記録",
+      "tabs": {
+        "following": "フォロー中",
+        "forYou": "おすすめ",
+        "nearby": "近く"
+      }
+    },
+    "meta": {
+      "visibility": "透明度 {{value}}m"
+    }
   },
   "logs": {
     "title": "ダイブログ",
@@ -138,5 +182,234 @@
     "connectionFailedMessage": "デバイスへの接続に失敗しました",
     "disconnected": "切断",
     "disconnectedMessage": "デバイスが切断されました"
+  },
+  "brand": {
+    "tagline": "Dive, record, share"
+  },
+  "home": {
+    "heroTitle": "次のダイビングを記録しますか？",
+    "heroSubtitle": "ログ、写真、位置情報、バディ情報をまとめて記録し、コミュニティに共有しましょう。",
+    "quickTitle": "見て回る",
+    "recentTitle": "最近のアクティビティ",
+    "noticeTitle": "divergram.com基準でモバイル画面を調整中",
+    "noticeSubtitle": "まず探索・リゾート・リール画面のモバイル整合性を反映しました。",
+    "quick": {
+      "exploreLabel": "探索",
+      "exploreDesc": "最新ダイビングフィード",
+      "resortsLabel": "リゾート",
+      "resortsDesc": "ショップと宿泊",
+      "devicesLabel": "デバイス",
+      "devicesDesc": "BLE機器接続",
+      "reelsLabel": "リール",
+      "reelsDesc": "ショート動画"
+    },
+    "activity": {
+      "item1Title": "西帰浦 ムンソム",
+      "item1Meta": "18m / 45分 / 透明度 12m",
+      "item2Title": "釜山 テジョンデ",
+      "item2Meta": "12m / 35分 / ナイトダイブ"
+    },
+    "createLog": "ログ作成"
+  },
+  "explore": {
+    "title": "探索",
+    "subtitle": "スポット、ダイバー、ログを探しましょう。",
+    "searchPlaceholder": "ダイビングポイントを検索",
+    "loadingTitle": "人気ポイントを読み込み中",
+    "loadingMeta": "本番データに接続済み",
+    "topics": {
+      "jeju": "済州",
+      "freediving": "フリーダイビング",
+      "scuba": "スキューバ",
+      "night": "ナイト",
+      "beginner": "初心者",
+      "photo": "水中写真"
+    }
+  },
+  "resorts": {
+    "title": "リゾート",
+    "subtitle": "divergram.comのリゾート探索導線をモバイル向けに最適化しました。",
+    "heroTitle": "検証済みダイビングリゾート",
+    "heroSubtitle": "地域、評価、運営プログラムで素早く比較できます。",
+    "loadingName": "リゾート情報を読み込み中",
+    "loadingTag": "本番データに接続済み",
+    "reviews": "レビュー {{count}}件"
+  },
+  "reels": {
+    "likesSummary": "いいね {{count}} · Divergram Reels",
+    "items": {
+      "item1": "ムンソム下降ライン",
+      "item2": "テジョンデ夜間の透明度",
+      "item3": "クァヌムド水中の崖"
+    }
+  },
+  "logsForm": {
+    "saveSuccessTitle": "保存完了",
+    "saveSuccessMessage": "ダイブログがフィードに反映されました。",
+    "saveFailTitle": "保存失敗",
+    "saveFailMessage": "ログ保存を再試行してください。",
+    "title": "作成",
+    "subtitle": "ダイビング投稿項目をモバイル入力に最適化しました。",
+    "heroTitle": "新しいダイブログ",
+    "heroSubtitle": "位置、深度、時間、バディを記録しましょう。",
+    "fields": {
+      "titleLabel": "タイトル",
+      "titlePlaceholder": "今日のダイビング",
+      "locationLabel": "ポイント",
+      "locationPlaceholder": "済州 ムンソム",
+      "depthLabel": "最大深度",
+      "durationLabel": "時間",
+      "temperatureLabel": "水温",
+      "visibilityLabel": "透明度",
+      "buddyLabel": "バディ",
+      "buddyPlaceholder": "@diver",
+      "notesLabel": "メモ",
+      "notesPlaceholder": "器材、潮流、感想"
+    },
+    "buttons": {
+      "saving": "保存中",
+      "save": "ログを保存"
+    },
+    "units": {
+      "minute": "分"
+    }
+  },
+  "settingsPage": {
+    "title": "設定",
+    "subtitle": "アプリ設定とアカウント管理",
+    "profileEdit": "プロフィール編集",
+    "items": {
+      "profileTitle": "プロフィール設定",
+      "profileSubtitle": "個人情報とプロフィール管理",
+      "notificationsTitle": "通知設定",
+      "notificationsSubtitle": "プッシュ通知とメール設定",
+      "languageTitle": "言語設定",
+      "privacyTitle": "プライバシー",
+      "privacySubtitle": "データとプライバシー設定",
+      "supportTitle": "ヘルプとサポート",
+      "supportSubtitle": "よくある質問とサポート"
+    },
+    "appInfoTitle": "アプリ情報",
+    "versionLabel": "バージョン {{version}}",
+    "logout": "サインアウト",
+    "languages": {
+      "ko": "韓国語",
+      "en": "英語",
+      "ja": "日本語",
+      "zh": "中国語"
+    }
+  },
+  "menu": {
+    "quick": "クイック設定",
+    "more": "その他",
+    "desc": {
+      "settings": "言語・テーマ・プライバシー",
+      "activity": "最近の行動と記録",
+      "saved": "保存済み投稿とリール",
+      "reels": "短いダイビング動画",
+      "resorts": "ダイビングリゾート探索",
+      "location": "地図でポイント確認",
+      "notifications": "最新通知と更新情報",
+      "admin": "運用専用ページ"
+    }
+  },
+  "pages": {
+    "messages": {
+      "subtitle": "ダイビング計画とバディチャット"
+    },
+    "notifications": {
+      "subtitle": "いいね・フォロー・更新情報を確認",
+      "markAll": "すべて既読"
+    },
+    "location": {
+      "subtitle": "地図中心でダイビングポイントを探索",
+      "mapTitle": "ダイブマッププレビュー",
+      "mapPlaceholder": "マップSDK表示エリア"
+    },
+    "search": {
+      "placeholder": "ポイント、ダイバー、リゾート検索",
+      "empty": "一致する結果がありません。"
+    },
+    "activity": {
+      "subtitle": "最近の反応と活動履歴"
+    },
+    "saved": {
+      "subtitle": "保存した投稿とリール",
+      "empty": "保存済みコンテンツがありません。",
+      "noCaption": "タイトルなし投稿"
+    },
+    "account": {
+      "subtitle": "プロフィール・アカウント・セキュリティ",
+      "email": "メール設定",
+      "security": "セキュリティと連携アカウント"
+    },
+    "admin": {
+      "subtitle": "運用向け管理エリア",
+      "restricted": "アクセス権限が必要です",
+      "note": "このページは運用アカウント専用です。"
+    },
+    "post": {
+      "subtitle": "投稿詳細画面",
+      "empty": "投稿が見つかりません。"
+    },
+    "report": {
+      "subtitle": "サービスの問題を送信",
+      "placeholder": "問題内容を詳しく入力してください",
+      "submit": "送信",
+      "doneTitle": "送信完了",
+      "doneBody": "報告を受け付けました。"
+    },
+    "profileEdit": {
+      "subtitle": "プロフィール情報を更新",
+      "name": "表示名",
+      "bio": "自己紹介",
+      "save": "変更を保存",
+      "doneTitle": "保存完了",
+      "doneBody": "プロフィール情報を更新しました。"
+    }
+  },
+  "api": {
+    "explore": {
+      "defaultTitle": "人気ダイビングポイント",
+      "postsMeta": "投稿 {{count}}件",
+      "avgVisibility": "平均透明度 {{value}}m"
+    },
+    "resorts": {
+      "defaultName": "Divergram Resort",
+      "noArea": "地域情報なし"
+    },
+    "logs": {
+      "defaultTitle": "ダイブログ",
+      "defaultCaption": "ダイブログ"
+    }
+  },
+  "notifications": {
+    "diveReminderTitle": "ダイビング準備リマインダー",
+    "diveReminderBodyWithLocation": "明日 {{location}} でダイビング予定です。器材を確認してください。",
+    "diveReminderBody": "明日ダイビング予定です。器材を確認してください。",
+    "viewDive": "ダイビングを見る",
+    "remindLater": "あとで通知"
+  },
+  "diveMode": {
+    "bgPermissionDescription": "ダイビングモードではバックグラウンド位置情報権限が必要です。",
+    "startTitle": "ダイビングモード開始",
+    "startMessage": "GPS追跡を開始しました。",
+    "startFailTitle": "追跡開始失敗",
+    "startFailMessage": "GPS追跡を開始できません。",
+    "stopTitle": "ダイビングモード終了",
+    "stopMessage": "{{count}}件の位置データを保存しました。",
+    "loading": "GPS初期化中...",
+    "title": "ダイビングモード",
+    "tracking": "GPS追跡中...",
+    "idle": "GPS追跡を開始してダイビング経路を記録しましょう",
+    "stopButton": "追跡停止",
+    "startButton": "追跡開始",
+    "points": "記録ポイント: {{count}}件",
+    "currentLocation": "現在位置情報",
+    "coordinate": "座標",
+    "heading": "方位",
+    "speed": "速度",
+    "accuracy": "精度: ±{{value}}m",
+    "altitude": "高度: {{value}}m"
   }
 }

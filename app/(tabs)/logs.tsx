@@ -1,102 +1,128 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, MapPin, Clock, Thermometer } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Calendar, Gauge, MapPin, Thermometer, Timer, UserRound, Waves } from 'lucide-react-native';
+import { Screen } from '../../src/components/Screen';
+import { apiClient } from '../../src/lib/api';
+
+const fields = [
+  { key: 'location', labelKey: 'logsForm.fields.locationLabel', placeholderKey: 'logsForm.fields.locationPlaceholder', icon: MapPin },
+  { key: 'depth', labelKey: 'logsForm.fields.depthLabel', placeholder: '18', icon: Gauge, suffix: 'm', keyboardType: 'numeric' },
+  { key: 'duration', labelKey: 'logsForm.fields.durationLabel', placeholder: '45', icon: Timer, suffixKey: 'logsForm.units.minute', keyboardType: 'numeric' },
+  { key: 'temperature', labelKey: 'logsForm.fields.temperatureLabel', placeholder: '18', icon: Thermometer, suffix: '°C', keyboardType: 'numeric' },
+  { key: 'visibility', labelKey: 'logsForm.fields.visibilityLabel', placeholder: '12', icon: Waves, suffix: 'm', keyboardType: 'numeric' },
+  { key: 'buddy', labelKey: 'logsForm.fields.buddyLabel', placeholderKey: 'logsForm.fields.buddyPlaceholder', icon: UserRound },
+] as const;
 
 export default function LogsScreen() {
-  // 웹에서는 SafeAreaView 대신 일반 View 사용
-  const Container = Platform.OS === 'web' ? View : SafeAreaView;
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    title: '',
+    location: '',
+    depth: '',
+    duration: '',
+    temperature: '',
+    visibility: '',
+    buddy: '',
+    notes: '',
+  });
 
-  const dummyLogs = [
-    {
-      id: 1,
-      title: '제주도 서귀포 다이빙',
-      location: '서귀포 해양공원',
-      date: '2024-01-15',
-      duration: 45,
-      maxDepth: 18,
-      temperature: 16,
+  const mutation = useMutation({
+    mutationFn: () => apiClient.createLog(form),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['logs'] });
+      await queryClient.invalidateQueries({ queryKey: ['feed'] });
+      setForm({ title: '', location: '', depth: '', duration: '', temperature: '', visibility: '', buddy: '', notes: '' });
+      Alert.alert(t('logsForm.saveSuccessTitle'), t('logsForm.saveSuccessMessage'));
     },
-    {
-      id: 2,
-      title: '부산 태종대 야간 다이빙',
-      location: '태종대 해안',
-      date: '2024-01-10',
-      duration: 35,
-      maxDepth: 12,
-      temperature: 14,
-    },
-    {
-      id: 3,
-      title: '울릉도 관음도 다이빙',
-      location: '관음도 포인트',
-      date: '2024-01-05',
-      duration: 52,
-      maxDepth: 25,
-      temperature: 18,
-    },
-  ];
+    onError: () => Alert.alert(t('logsForm.saveFailTitle'), t('logsForm.saveFailMessage')),
+  });
+
+  const update = (key: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [key]: value }));
+  const canSubmit = form.title.trim() && form.location.trim();
 
   return (
-    <Container className="flex-1 bg-gray-50" style={Platform.OS === 'web' ? { minHeight: '100vh' } : undefined}>
-      <View className="flex-1">
-        {/* Header */}
-        <View className="bg-white px-6 py-4 border-b border-gray-200">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-2xl font-bold text-gray-800">다이빙 로그</Text>
-              <Text className="text-gray-600 mt-1">나의 다이빙 기록</Text>
+    <Screen>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+        <View className="px-5 pt-4 pb-5 border-b border-gray-100">
+          <Text className="text-2xl font-semibold text-gray-950">{t('logsForm.title')}</Text>
+          <Text className="mt-1 text-gray-500">{t('logsForm.subtitle')}</Text>
+        </View>
+
+        <View className="px-5 py-5">
+          <View className="rounded-3xl bg-gray-950 p-5">
+            <View className="flex-row items-center">
+              <View className="h-12 w-12 rounded-2xl bg-white items-center justify-center">
+                <Calendar size={24} color="#111827" />
+              </View>
+              <View className="ml-4 flex-1">
+                <Text className="text-xl font-bold text-white">{t('logsForm.heroTitle')}</Text>
+                <Text className="mt-1 text-gray-300">{t('logsForm.heroSubtitle')}</Text>
+              </View>
             </View>
-            <TouchableOpacity className="bg-primary-500 px-4 py-2 rounded-lg flex-row items-center">
-              <Plus size={16} color="white" />
-              <Text className="text-white font-medium ml-2">작성</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* Logs List */}
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-          <View className="px-6 py-4">
-            {dummyLogs.map((log) => (
-              <TouchableOpacity
-                key={log.id}
-                className="bg-white rounded-lg shadow-sm p-4 mb-4"
-              >
-                <Text className="text-lg font-semibold text-gray-800 mb-2">
-                  {log.title}
-                </Text>
-                
-                <View className="flex-row items-center mb-2">
-                  <MapPin size={16} color="#64748b" />
-                  <Text className="text-gray-600 ml-2">{log.location}</Text>
-                </View>
+        <View className="px-5">
+          <Text className="mb-2 text-sm font-semibold text-gray-700">{t('logsForm.fields.titleLabel')}</Text>
+          <TextInput
+            className="mb-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base text-gray-950"
+            placeholder={t('logsForm.fields.titlePlaceholder')}
+            placeholderTextColor="#9ca3af"
+            value={form.title}
+            onChangeText={(value) => update('title', value)}
+          />
 
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center">
-                    <Clock size={16} color="#64748b" />
-                    <Text className="text-gray-600 ml-2">{log.duration}분</Text>
-                  </View>
-                  
-                  <View className="flex-row items-center">
-                    <Text className="text-primary-600 font-medium">
-                      최대 {log.maxDepth}m
-                    </Text>
-                  </View>
-                  
-                  <View className="flex-row items-center">
-                    <Thermometer size={16} color="#64748b" />
-                    <Text className="text-gray-600 ml-1">{log.temperature}°C</Text>
+          <View className="flex-row flex-wrap -mx-1">
+            {fields.map((field) => {
+              const Icon = field.icon;
+              return (
+                <View key={field.key} className="w-1/2 p-1">
+                  <View className="rounded-2xl border border-gray-200 bg-white p-3">
+                    <View className="mb-2 flex-row items-center">
+                      <Icon size={16} color="#6b7280" />
+                      <Text className="ml-1 text-xs font-semibold text-gray-500">{t(field.labelKey)}</Text>
+                    </View>
+                    <View className="flex-row items-center">
+                      <TextInput
+                        className="flex-1 py-1 text-base font-semibold text-gray-950"
+                        placeholder={'placeholderKey' in field ? t(field.placeholderKey) : field.placeholder}
+                        placeholderTextColor="#9ca3af"
+                        keyboardType={'keyboardType' in field ? field.keyboardType : 'default'}
+                        value={form[field.key]}
+                        onChangeText={(value) => update(field.key, value)}
+                      />
+                      {'suffix' in field && <Text className="ml-1 text-sm text-gray-500">{field.suffix}</Text>}
+                      {'suffixKey' in field && <Text className="ml-1 text-sm text-gray-500">{t(field.suffixKey)}</Text>}
+                    </View>
                   </View>
                 </View>
-
-                <View className="mt-3 pt-3 border-t border-gray-100">
-                  <Text className="text-gray-500 text-sm">{log.date}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+              );
+            })}
           </View>
-        </ScrollView>
-      </View>
-    </Container>
+
+          <Text className="mb-2 mt-4 text-sm font-semibold text-gray-700">{t('logsForm.fields.notesLabel')}</Text>
+          <TextInput
+            className="min-h-28 rounded-2xl border border-gray-200 bg-white px-4 py-4 text-base text-gray-950"
+            multiline
+            textAlignVertical="top"
+            placeholder={t('logsForm.fields.notesPlaceholder')}
+            placeholderTextColor="#9ca3af"
+            value={form.notes}
+            onChangeText={(value) => update('notes', value)}
+          />
+
+          <TouchableOpacity
+            disabled={!canSubmit || mutation.isPending}
+            className={`mt-5 h-13 rounded-2xl items-center justify-center ${canSubmit && !mutation.isPending ? 'bg-gray-950' : 'bg-gray-300'}`}
+            onPress={() => mutation.mutate()}
+          >
+            <Text className="font-semibold text-white">{mutation.isPending ? t('logsForm.buttons.saving') : t('logsForm.buttons.save')}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }

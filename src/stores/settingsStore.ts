@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { MMKV } from 'react-native-mmkv';
-
-const storage = new MMKV();
+import { storage } from '../lib/storage';
 
 const zustandStorage = {
   setItem: (name: string, value: string) => {
@@ -19,7 +17,7 @@ const zustandStorage = {
 
 interface SettingsState {
   // App Settings
-  language: 'ko' | 'en' | 'ja';
+  language: 'ko' | 'en' | 'ja' | 'zh';
   theme: 'light' | 'dark' | 'system';
   
   // Notifications
@@ -36,7 +34,7 @@ interface SettingsState {
   defaultDiveMode: 'recreational' | 'technical';
   
   // Actions
-  updateLanguage: (language: 'ko' | 'en' | 'ja') => void;
+  updateLanguage: (language: 'ko' | 'en' | 'ja' | 'zh') => void;
   updateTheme: (theme: 'light' | 'dark' | 'system') => void;
   updateNotificationSetting: (key: string, value: boolean) => void;
   updatePrivacySetting: (key: string, value: boolean) => void;

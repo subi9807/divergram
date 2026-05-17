@@ -1,5 +1,4 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
-import { MMKV } from 'react-native-mmkv';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
@@ -7,10 +6,10 @@ import { apiClient } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { kakaoAuth } from '../lib/auth/kakao';
 import { naverAuth } from '../lib/auth/naver';
+import i18n from '../lib/i18n';
+import { storage } from '../lib/storage';
 
 WebBrowser.maybeCompleteAuthSession();
-
-const storage = new MMKV();
 
 interface User {
   id: string;
@@ -64,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiClient.getMe();
         setUser(userData);
       }
-    } catch (error) {
+    } catch {
       // Token invalid, clear storage
       storage.delete('auth_token');
       storage.delete('refresh_token');
@@ -80,8 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         scopes: ['openid', 'profile', 'email'],
         redirectUri,
         responseType: AuthSession.ResponseType.Token,
-        additionalParameters: {},
-      });
+      } as any);
 
       const discovery = {
         authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -165,8 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       showToast({
         type: 'success',
-        title: 'Welcome back!',
-        message: 'Successfully signed in'
+        title: i18n.t('auth.welcomeBackTitle'),
+        message: i18n.t('auth.welcomeBackMessage')
       });
     } catch (error) {
       console.error('Email login error:', error);
@@ -185,8 +183,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       showToast({
         type: 'success',
-        title: 'Welcome!',
-        message: 'Successfully signed in'
+        title: i18n.t('auth.welcomeTitle'),
+        message: i18n.t('auth.welcomeMessage')
       });
     } catch (error) {
       console.error('OAuth success handler error:', error);
@@ -201,8 +199,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     showToast({
       type: 'info',
-      title: 'Signed out',
-      message: 'You have been signed out successfully'
+      title: i18n.t('auth.signedOutTitle'),
+      message: i18n.t('auth.signedOutMessage')
     });
   }, [showToast]);
 

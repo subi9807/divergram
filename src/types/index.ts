@@ -33,6 +33,10 @@ export interface FeedPost {
   likes: number;
   comments: number;
   createdAt: string;
+  location?: string;
+  maxDepth?: number;
+  waterTemperature?: number;
+  visibility?: number;
 }
 
 export interface BleDevice {

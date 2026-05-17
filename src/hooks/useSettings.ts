@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MMKV } from 'react-native-mmkv';
-
-const storage = new MMKV();
+import { storage } from '../lib/storage';
 
 interface Settings {
   pushNotifications: boolean;

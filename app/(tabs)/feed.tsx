@@ -2,7 +2,6 @@ import React from 'react';
 import { FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
-import { Card } from '../../src/components/Card';
 import { EmptyState } from '../../src/components/EmptyState';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { useFeed } from '../../src/hooks/useFeed';
@@ -22,9 +21,9 @@ export default function FeedScreen() {
     isRefreshing
   } = useFeed();
 
-  const posts = data?.pages.flatMap(page => page.data) || [];
+  const posts = data?.pages.flatMap((page) => page.data) ?? [];
 
-  const renderPost = ({ item }) => <FeedPost post={item} />;
+  const renderPost = ({ item }: { item: any }) => <FeedPost post={item} />;
 
   const onEndReached = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -55,12 +54,12 @@ export default function FeedScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={<FeedHeader />}
         ListEmptyComponent={
-          !isLoading && (
+          !isLoading ? (
             <EmptyState
               title={t('feed.empty')}
               subtitle={t('feed.emptySubtitle')}
             />
-          )
+          ) : null
         }
         onEndReached={onEndReached}
         onEndReachedThreshold={0.1}
@@ -68,11 +67,11 @@ export default function FeedScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => refetch()}
-            tintColor="#0ea5e9"
+            tintColor="#1198f5"
           />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       />
     </Screen>
   );

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Alert, Linking } from 'react-native';
-import { Button } from './Button';
 import { EmptyState } from './EmptyState';
 import { Shield } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -18,11 +17,7 @@ export function PermissionGate({ children, permission, title, description }: Per
   const [hasPermission, setHasPermission] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkPermission();
-  }, [permission]);
-
-  const checkPermission = async () => {
+  const checkPermission = useCallback(async () => {
     setIsLoading(true);
     try {
       switch (permission) {
@@ -45,7 +40,11 @@ export function PermissionGate({ children, permission, title, description }: Per
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [permission]);
+
+  useEffect(() => {
+    checkPermission();
+  }, [checkPermission]);
 
   const requestPermission = async () => {
     try {

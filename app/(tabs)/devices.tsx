@@ -24,7 +24,7 @@ export default function DevicesScreen() {
     diveData
   } = useBle();
 
-  const renderDevice = ({ item }) => (
+  const renderDevice = ({ item }: { item: any }) => (
     <DeviceCard
       device={item}
       onConnect={connectToDevice}

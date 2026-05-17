@@ -23,23 +23,23 @@ export function EmptyState({
   return (
     <View className={cn('flex-1 items-center justify-center px-8 py-12', className)}>
       {icon && (
-        <View className="mb-6">
+        <View className="mb-6 rounded-2xl bg-surface-100 p-4">
           {icon}
         </View>
       )}
-      
-      <Text className="text-xl font-semibold text-secondary-800 text-center mb-2">
+
+      <Text className="mb-2 text-center text-xl font-semibold text-surface-800">
         {title}
       </Text>
-      
+
       {subtitle && (
-        <Text className="text-secondary-600 text-center mb-8 leading-6">
+        <Text className="mb-8 text-center leading-6 text-surface-600">
           {subtitle}
         </Text>
       )}
-      
+
       {actionText && onAction && (
-        <Button onPress={onAction} variant="primary">
+        <Button onPress={onAction} variant="primary" size="md" className="min-w-36">
           {actionText}
         </Button>
       )}

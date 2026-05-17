@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { Card } from '../../src/components/Card';
@@ -9,9 +10,11 @@ import { useProfile } from '../../src/hooks/useProfile';
 import { ProfileStats } from '../../src/features/profile/ProfileStats';
 import { ProfileAvatar } from '../../src/features/profile/ProfileAvatar';
 import { Edit, MapPin } from 'lucide-react-native';
+import { appRouteMap } from '../../src/config/sitemap';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
 
@@ -39,6 +42,7 @@ export default function ProfileScreen() {
               variant="outline"
               size="sm"
               className="mt-4 flex-row items-center"
+              onPress={() => router.push(appRouteMap.profile_edit.path as never)}
             >
               <Edit size={16} color="#0ea5e9" className="mr-2" />
               {t('profile.edit')}
@@ -55,6 +59,24 @@ export default function ProfileScreen() {
               {profile?.bio || t('profile.noBio')}
             </Text>
           </Card>
+
+          <View className="mb-6 flex-row flex-wrap">
+            <TouchableOpacity className="w-1/2 pr-1" onPress={() => router.push(appRouteMap.saved.path as never)}>
+              <View className="rounded-2xl border border-gray-200 bg-white p-4">
+                <Text className="text-sm font-semibold text-gray-900">{t('tabs.saved')}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity className="w-1/2 pl-1" onPress={() => router.push(appRouteMap.activity.path as never)}>
+              <View className="rounded-2xl border border-gray-200 bg-white p-4">
+                <Text className="text-sm font-semibold text-gray-900">{t('tabs.activity')}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity className="w-full mt-2" onPress={() => router.push(appRouteMap.settings.path as never)}>
+              <View className="rounded-2xl border border-gray-200 bg-white p-4">
+                <Text className="text-sm font-semibold text-gray-900">{t('tabs.settings')}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </Screen>

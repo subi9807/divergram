@@ -1,8 +1,11 @@
+import React from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { apiClient } from './api';
 import { analytics } from './analytics';
+import i18n from './i18n';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -10,6 +13,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -107,13 +112,14 @@ class NotificationManager {
     return this.scheduleLocal(
       {
         type: 'dive_reminder',
-        title: '다이빙 준비 알림',
-        body: location 
-          ? `내일 ${location}에서 다이빙 예정입니다. 장비를 확인하세요!`
-          : '내일 다이빙 예정입니다. 장비를 확인하세요!',
+        title: i18n.t('notifications.diveReminderTitle'),
+        body: location
+          ? i18n.t('notifications.diveReminderBodyWithLocation', { location })
+          : i18n.t('notifications.diveReminderBody'),
         data: { diveDate: diveDate.toISOString(), location },
       },
       {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: reminderTime,
       }
     );
@@ -167,12 +173,12 @@ class NotificationManager {
       await Notifications.setNotificationCategoryAsync('dive_reminder', [
         {
           identifier: 'view_dive',
-          buttonTitle: '다이빙 보기',
+          buttonTitle: i18n.t('notifications.viewDive'),
           options: { opensAppToForeground: true },
         },
         {
           identifier: 'snooze',
-          buttonTitle: '나중에 알림',
+          buttonTitle: i18n.t('notifications.remindLater'),
           options: { opensAppToForeground: false },
         },
       ]);
