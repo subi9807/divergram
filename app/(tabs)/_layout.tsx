@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Tabs } from 'expo-router';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { House, MessageCircle, PlusCircle, Search, User } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { DgTabHeader } from '../../src/components/DgTabHeader';
+import { useAuth } from '../../src/hooks/useAuth';
 
 function tabIcon(Icon: typeof House) {
   function TabBarIcon({ size, color, focused }: { size: number; color: string; focused: boolean }) {
@@ -20,6 +21,19 @@ function tabIcon(Icon: typeof House) {
 
 export default function TabLayout() {
   const { t } = useTranslation();
+  const { loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color="#0d5fa8" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
 
   return (
     <Tabs
@@ -86,5 +100,11 @@ const styles = StyleSheet.create({
   },
   iconWrapActive: {
     backgroundColor: '#e8f4ff',
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
   },
 });

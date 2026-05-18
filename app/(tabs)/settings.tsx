@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const language = useSettingsStore((state) => state.language);
   const pushNotifications = useSettingsStore((state) => state.pushNotifications);
   const updateLanguage = useSettingsStore((state) => state.updateLanguage);
@@ -29,6 +30,23 @@ export default function SettingsScreen() {
     if (i18n.language !== lng) {
       i18n.changeLanguage(lng);
     }
+  };
+
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+    Alert.alert(t('settings.logoutTitle'), t('settings.logoutMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('settingsPage.logout'),
+        style: 'destructive',
+        onPress: () => {
+          setIsLoggingOut(true);
+          logout();
+          router.replace('/(auth)/login');
+          setIsLoggingOut(false);
+        },
+      },
+    ]);
   };
 
   return (
@@ -132,7 +150,11 @@ export default function SettingsScreen() {
         </View>
 
         <View className="mx-5 mb-10 mt-6">
-          <TouchableOpacity className="flex-row items-center justify-center rounded-2xl border border-red-200 bg-white p-4 shadow-sm shadow-surface-200" onPress={logout}>
+          <TouchableOpacity
+            className="flex-row items-center justify-center rounded-2xl border border-red-200 bg-white p-4 shadow-sm shadow-surface-200"
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+          >
             <LogOut size={20} color="#ef4444" />
             <Text className="ml-2 font-medium text-red-500">{t('settingsPage.logout')}</Text>
           </TouchableOpacity>
