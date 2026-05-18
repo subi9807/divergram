@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, View } from 'react-native';
+import { Pressable, Text, ActivityIndicator, View } from 'react-native';
 import { cva, VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 
@@ -46,7 +46,7 @@ const textVariants = cva('font-semibold', {
 
 interface ButtonProps
   extends VariantProps<typeof buttonVariants>,
-    React.ComponentProps<typeof TouchableOpacity> {
+    React.ComponentProps<typeof Pressable> {
   children: React.ReactNode;
   loading?: boolean;
   disabled?: boolean;
@@ -69,10 +69,9 @@ export function Button({
   const indicatorColor = variant === 'primary' || variant === 'danger' ? '#ffffff' : '#334155';
 
   return (
-    <TouchableOpacity
+    <Pressable
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
-      activeOpacity={0.92}
       {...props}
     >
       {loading ? (
@@ -82,6 +81,6 @@ export function Button({
       ) : (
         <View className={cn('flex-row items-center justify-center', contentClassName)}>{children}</View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }

@@ -1,9 +1,22 @@
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { House, MessageCircle, PlusCircle, Search, User } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { DgTabHeader } from '../../src/components/DgTabHeader';
+
+function tabIcon(Icon: typeof House) {
+  function TabBarIcon({ size, color, focused }: { size: number; color: string; focused: boolean }) {
+    return (
+      <View style={[styles.iconWrap, focused ? styles.iconWrapActive : null]}>
+        <Icon size={size - 1} color={focused ? '#0d5fa8' : color} />
+      </View>
+    );
+  }
+
+  return TabBarIcon;
+}
 
 export default function TabLayout() {
   const { t } = useTranslation();
@@ -13,31 +26,36 @@ export default function TabLayout() {
       initialRouteName="index"
       screenOptions={{
         header: ({ options }) => <DgTabHeader title={String(options.title || '')} />,
-        tabBarActiveTintColor: '#1198f5',
-        tabBarInactiveTintColor: '#7b8a99',
+        tabBarActiveTintColor: '#0d5fa8',
+        tabBarInactiveTintColor: '#6f8193',
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
-          borderTopColor: '#dce7f3',
-          elevation: 0,
-          shadowOpacity: 0.06,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: -2 },
-          height: 82,
+          borderTopColor: '#d7e4f1',
+          elevation: 10,
+          shadowColor: '#0d5fa8',
+          shadowOpacity: 0.13,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 8 },
+          height: 76,
           paddingTop: 8,
-          paddingBottom: 16,
+          paddingBottom: 12,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '700',
         },
+        tabBarItemStyle: {
+          height: 54,
+        },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: t(appRouteMap.home.titleKey), tabBarIcon: ({ size, color }) => <House size={size} color={color} /> }} />
-      <Tabs.Screen name="explore" options={{ title: t(appRouteMap.explore.titleKey), tabBarIcon: ({ size, color }) => <Search size={size} color={color} /> }} />
-      <Tabs.Screen name="create" options={{ title: t(appRouteMap.create.titleKey), tabBarIcon: ({ size, color }) => <PlusCircle size={size} color={color} /> }} />
-      <Tabs.Screen name="messages" options={{ title: t(appRouteMap.messages.titleKey), tabBarIcon: ({ size, color }) => <MessageCircle size={size} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: t(appRouteMap.profile.titleKey), tabBarIcon: ({ size, color }) => <User size={size} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: t(appRouteMap.home.titleKey), tabBarIcon: tabIcon(House) }} />
+      <Tabs.Screen name="explore" options={{ title: t(appRouteMap.explore.titleKey), tabBarIcon: tabIcon(Search) }} />
+      <Tabs.Screen name="create" options={{ title: t(appRouteMap.create.titleKey), tabBarIcon: tabIcon(PlusCircle) }} />
+      <Tabs.Screen name="messages" options={{ title: t(appRouteMap.messages.titleKey), tabBarIcon: tabIcon(MessageCircle) }} />
+      <Tabs.Screen name="profile" options={{ title: t(appRouteMap.profile.titleKey), tabBarIcon: tabIcon(User) }} />
       <Tabs.Screen name="resorts" options={{ href: null }} />
       <Tabs.Screen name="reels" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
@@ -57,3 +75,16 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapActive: {
+    backgroundColor: '#e8f4ff',
+  },
+});

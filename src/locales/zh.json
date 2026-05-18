@@ -1,17 +1,17 @@
 {
   "common": {
-    "loading": "Loading...",
-    "cancel": "Cancel",
-    "retry": "Retry",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "close": "Close",
-    "next": "Next",
-    "previous": "Previous",
-    "done": "Done",
-    "all": "All",
-    "today": "Today"
+    "loading": "加载中...",
+    "cancel": "取消",
+    "retry": "重试",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "next": "下一步",
+    "previous": "上一步",
+    "done": "完成",
+    "all": "全部",
+    "today": "今天"
   },
   "welcome": {
     "subtitle": "Record your diving experiences\nand share with the community",
@@ -88,20 +88,20 @@
     "profileEdit": "编辑资料"
   },
   "feed": {
-    "error": "Unable to load feed",
-    "errorSubtitle": "Please check your network and try again",
-    "empty": "No posts yet",
-    "emptySubtitle": "Create your first dive log!",
+    "error": "无法加载动态",
+    "errorSubtitle": "请检查网络后重试",
+    "empty": "暂无动态",
+    "emptySubtitle": "发布你的第一条潜水记录吧",
     "header": {
-      "subtitle": "Latest logs from divers",
+      "subtitle": "查看潜伴最新记录",
       "tabs": {
-        "following": "Following",
-        "forYou": "For You",
-        "nearby": "Nearby"
+        "following": "关注中",
+        "forYou": "为你推荐",
+        "nearby": "附近"
       }
     },
     "meta": {
-      "visibility": "Visibility {{value}}m"
+      "visibility": "能见度 {{value}}m"
     }
   },
   "logs": {
@@ -254,54 +254,54 @@
     }
   },
   "logsForm": {
-    "saveSuccessTitle": "Saved",
-    "saveSuccessMessage": "Your dive log was added to feed.",
-    "saveFailTitle": "Save failed",
-    "saveFailMessage": "Please try saving the log again.",
-    "title": "Create",
-    "subtitle": "Mobile input fields aligned with dive post structure.",
-    "heroTitle": "New Dive Log",
-    "heroSubtitle": "Record location, depth, time, and buddy.",
+    "saveSuccessTitle": "保存成功",
+    "saveSuccessMessage": "潜水日志已同步到动态。",
+    "saveFailTitle": "保存失败",
+    "saveFailMessage": "请重试保存日志。",
+    "title": "发布",
+    "subtitle": "已按运营站字段优化移动端日志输入。",
+    "heroTitle": "新潜水日志",
+    "heroSubtitle": "记录地点、深度、时长与潜伴。",
     "fields": {
-      "titleLabel": "Title",
-      "titlePlaceholder": "Today's dive",
-      "locationLabel": "Point",
-      "locationPlaceholder": "Munseom, Jeju",
-      "depthLabel": "Max Depth",
-      "durationLabel": "Duration",
-      "temperatureLabel": "Water Temp",
-      "visibilityLabel": "Visibility",
-      "buddyLabel": "Buddy",
+      "titleLabel": "标题",
+      "titlePlaceholder": "今天的潜水",
+      "locationLabel": "潜点",
+      "locationPlaceholder": "济州 文岛",
+      "depthLabel": "最大深度",
+      "durationLabel": "时长",
+      "temperatureLabel": "水温",
+      "visibilityLabel": "能见度",
+      "buddyLabel": "潜伴",
       "buddyPlaceholder": "@diver",
-      "notesLabel": "Notes",
-      "notesPlaceholder": "Gear, current, impressions"
+      "notesLabel": "备注",
+      "notesPlaceholder": "装备、水流、体验感受"
     },
     "buttons": {
-      "saving": "Saving",
-      "save": "Save Log"
+      "saving": "保存中",
+      "save": "保存日志"
     },
     "units": {
-      "minute": "min"
+      "minute": "分钟"
     }
   },
   "settingsPage": {
-    "title": "Settings",
-    "subtitle": "App settings and account management",
-    "profileEdit": "Edit profile",
+    "title": "设置",
+    "subtitle": "应用设置与账号管理",
+    "profileEdit": "编辑资料",
     "items": {
-      "profileTitle": "Profile",
-      "profileSubtitle": "Personal info and profile management",
-      "notificationsTitle": "Notifications",
-      "notificationsSubtitle": "Push and email notification settings",
-      "languageTitle": "Language",
-      "privacyTitle": "Privacy",
-      "privacySubtitle": "Data and privacy controls",
-      "supportTitle": "Help & Support",
-      "supportSubtitle": "FAQ and customer support"
+      "profileTitle": "资料设置",
+      "profileSubtitle": "管理个人信息与主页资料",
+      "notificationsTitle": "通知设置",
+      "notificationsSubtitle": "推送与提醒偏好",
+      "languageTitle": "语言设置",
+      "privacyTitle": "隐私与安全",
+      "privacySubtitle": "数据与隐私控制",
+      "supportTitle": "帮助与支持",
+      "supportSubtitle": "常见问题与客服支持"
     },
-    "appInfoTitle": "App Info",
-    "versionLabel": "Version {{version}}",
-    "logout": "Sign Out",
+    "appInfoTitle": "应用信息",
+    "versionLabel": "版本 {{version}}",
+    "logout": "退出登录",
     "languages": {
       "ko": "韩语",
       "en": "英语",

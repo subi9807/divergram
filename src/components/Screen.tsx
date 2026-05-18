@@ -17,7 +17,7 @@ export function Screen({ children, className, safe = true, tone = 'gradient' }: 
     <Container style={styles.root} className={cn('flex-1', className)}>
       {tone === 'gradient' ? (
         <LinearGradient
-          colors={['#f9fcff', '#eef6ff']}
+          colors={['#fbfdff', '#f4f8fc']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           pointerEvents="none"
@@ -37,7 +37,7 @@ export function Screen({ children, className, safe = true, tone = 'gradient' }: 
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: '#f6f9fd',
+    backgroundColor: '#f8fbfe',
     flex: 1,
   },
   content: {
@@ -48,20 +48,20 @@ const styles = StyleSheet.create({
   },
   topOrb: {
     position: 'absolute',
-    top: -120,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(17, 152, 245, 0.12)',
+    top: -160,
+    right: -140,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(17, 152, 245, 0.04)',
   },
   bottomOrb: {
     position: 'absolute',
-    bottom: -140,
-    left: -100,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(13, 95, 168, 0.08)',
+    bottom: -180,
+    left: -140,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(13, 95, 168, 0.025)',
   },
 });

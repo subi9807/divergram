@@ -13,23 +13,19 @@ export function FeedHeader() {
     <View className="px-5 pb-3 pt-4">
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-2xl font-bold text-surface-900">
-            {t('tabs.feed')}
-          </Text>
-          <Text className="mt-1 text-surface-500">
-            {t('feed.header.subtitle')}
-          </Text>
+          <Text className="text-2xl font-bold text-surface-900">{t('tabs.feed')}</Text>
+          <Text className="mt-1 text-surface-500">{t('feed.header.subtitle')}</Text>
         </View>
         <View className="flex-row">
           <TouchableOpacity
-            className="mr-2 h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white"
+            className="mr-2 h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white shadow-sm shadow-surface-200"
             activeOpacity={0.86}
             onPress={() => router.push(appRouteMap.search.path as never)}
           >
             <Search size={19} color="#1e293b" />
           </TouchableOpacity>
           <TouchableOpacity
-            className="mr-2 h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white"
+            className="mr-2 h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white shadow-sm shadow-surface-200"
             activeOpacity={0.86}
             onPress={() => router.push(appRouteMap.notifications.path as never)}
           >
@@ -45,16 +41,31 @@ export function FeedHeader() {
         </View>
       </View>
 
-      <View className="mt-4 flex-row">
-        {[t('feed.header.tabs.following'), t('feed.header.tabs.forYou'), t('feed.header.tabs.nearby')].map((item, index) => (
+      <View className="mt-4 rounded-3xl border border-surface-200 bg-white p-4 shadow-sm shadow-surface-200">
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text className="text-sm font-semibold text-brand-700">{t('brand.tagline')}</Text>
+            <Text className="mt-1 text-xl font-bold text-surface-900">{t('feed.header.tabs.forYou')}</Text>
+          </View>
           <TouchableOpacity
-            key={item}
-            activeOpacity={0.86}
-            className={`mr-2 rounded-full px-4 py-2 ${index === 1 ? 'bg-brand-600' : 'border border-surface-200 bg-white'}`}
+            className="h-10 w-10 items-center justify-center rounded-2xl bg-brand-600"
+            activeOpacity={0.9}
+            onPress={() => router.push(appRouteMap.create.path as never)}
           >
-            <Text className={`text-sm font-semibold ${index === 1 ? 'text-white' : 'text-surface-700'}`}>{item}</Text>
+            <PlusCircle size={20} color="#ffffff" />
           </TouchableOpacity>
-        ))}
+        </View>
+        <View className="mt-3 h-px bg-surface-100" />
+        <View className="mt-3 flex-row">
+          <View className="mr-2 flex-1 rounded-2xl bg-surface-50 px-3 py-2">
+            <Text className="text-xs text-surface-500">{t('feed.header.tabs.following')}</Text>
+            <Text className="mt-1 text-base font-bold text-surface-900">{t('common.today')}</Text>
+          </View>
+          <View className="flex-1 rounded-2xl bg-surface-50 px-3 py-2">
+            <Text className="text-xs text-surface-500">{t('feed.header.tabs.nearby')}</Text>
+            <Text className="mt-1 text-base font-bold text-surface-900">{t('tabs.explore')}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );

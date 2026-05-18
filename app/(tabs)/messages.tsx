@@ -4,18 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { MessageCircle, Search, Send, Users } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
-
-const fallbackRooms = [
-  { id: '1', name: 'Blue Coral Team', last: '내일 오전 8시 출항해요.', unread: 2, members: 12, updatedAt: '09:32', active: true },
-  { id: '2', name: 'Jeju Buddy', last: '문섬 시야 12m 확인!', unread: 0, members: 2, updatedAt: '08:11', active: false },
-  { id: '3', name: 'Divergram Crew', last: '장비 점검 체크리스트 공유합니다.', unread: 1, members: 18, updatedAt: '어제', active: true },
-];
+import { messageRoomSamples } from '../../src/mock/menuSamples';
 
 export default function MessagesScreen() {
   const { t } = useTranslation();
-  const { data = fallbackRooms } = useQuery({
+  const { data = messageRoomSamples } = useQuery({
     queryKey: ['messages'],
-    queryFn: async () => fallbackRooms,
+    queryFn: async () => messageRoomSamples,
   });
   const unreadCount = useMemo(() => data.reduce((sum, room) => sum + room.unread, 0), [data]);
 
@@ -32,30 +27,27 @@ export default function MessagesScreen() {
         </View>
 
         <View className="px-5 pb-4">
-          <View className="flex-row">
-            <View className="mr-2 flex-1 rounded-2xl border border-surface-200 bg-white p-3">
-              <Text className="text-xs font-medium text-surface-500">{t('pages.messages.unread')}</Text>
-              <Text className="mt-1 text-xl font-bold text-brand-700">{unreadCount}</Text>
-            </View>
-            <View className="flex-1 rounded-2xl border border-surface-200 bg-white p-3">
-              <Text className="text-xs font-medium text-surface-500">{t('pages.messages.rooms')}</Text>
-              <Text className="mt-1 text-xl font-bold text-surface-900">{data.length}</Text>
+          <View className="rounded-3xl border border-surface-200 bg-white p-5 shadow-sm shadow-surface-200">
+            <Text className="text-sm font-semibold text-brand-700">{t('brand.tagline')}</Text>
+            <Text className="mt-2 text-base text-surface-600">{t('pages.messages.subtitle')}</Text>
+            <View className="mt-4 flex-row">
+              <View className="mr-2 flex-1 rounded-2xl bg-surface-50 px-3 py-2">
+                <Text className="text-xs text-surface-500">{t('pages.messages.unread')}</Text>
+                <Text className="mt-1 text-base font-bold text-surface-900">{unreadCount}</Text>
+              </View>
+              <View className="flex-1 rounded-2xl bg-surface-50 px-3 py-2">
+                <Text className="text-xs text-surface-500">{t('pages.messages.rooms')}</Text>
+                <Text className="mt-1 text-base font-bold text-surface-900">{data.length}</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        <View className="px-5 pb-3">
-          <View className="flex-row">
-            <TouchableOpacity activeOpacity={0.86} className="mr-2 rounded-full bg-brand-600 px-4 py-2">
-              <Text className="text-sm font-semibold text-white">{t('menu.quick')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.86} className="rounded-full border border-surface-200 bg-white px-4 py-2">
-              <Text className="text-sm font-semibold text-surface-700">{t('menu.more')}</Text>
-            </TouchableOpacity>
-          </View>
+        <View className="px-5 pb-2">
+          <Text className="text-sm font-semibold text-surface-500">{t('pages.messages.rooms')}</Text>
         </View>
 
-        <View className="px-5 py-2">
+        <View className="px-5 py-1">
           {data.map((room) => (
             <TouchableOpacity
               key={room.id}

@@ -48,12 +48,15 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
       <SafeAreaView edges={['top']} style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.brandWrap} activeOpacity={0.85} onPress={() => router.replace(appRouteMap.home.path as never)}>
-            <LinearGradient colors={['#1198f5', '#3bb8ff']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
+            <LinearGradient colors={['#0d5fa8', '#1198f5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
               <Text style={styles.logoText}>DG</Text>
             </LinearGradient>
             <View style={styles.brandTextWrap}>
               <Text style={styles.brandTitle}>Divergram</Text>
-              <Text numberOfLines={1} style={styles.brandSubtitle}>{title || t('brand.tagline')}</Text>
+              <View style={styles.subtitleRow}>
+                <View style={styles.liveDot} />
+                <Text numberOfLines={1} style={styles.brandSubtitle}>{title || t('brand.tagline')}</Text>
+              </View>
             </View>
           </TouchableOpacity>
 
@@ -100,8 +103,8 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
 
 const styles = StyleSheet.create({
   headerSafe: {
-    backgroundColor: '#f8fbff',
-    borderBottomColor: '#dce7f3',
+    backgroundColor: '#ffffff',
+    borderBottomColor: '#e4ecf4',
     borderBottomWidth: 1,
   },
   header: {
@@ -117,11 +120,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0d5fa8',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
   },
   logoText: {
     color: '#ffffff',
@@ -141,7 +148,18 @@ const styles = StyleSheet.create({
   brandSubtitle: {
     color: '#64748b',
     fontSize: 11,
-    marginTop: 1,
+  },
+  subtitleRow: {
+    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#16a34a',
+    marginRight: 6,
   },
   actionWrap: {
     flexDirection: 'row',
@@ -152,19 +170,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eef4fb',
+    backgroundColor: '#f8fbff',
     borderWidth: 1,
-    borderColor: '#dbe7f3',
+    borderColor: '#dde8f3',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0d5fa8',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(9,16,27,0.36)',
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f7fbff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 10,
@@ -194,11 +216,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2eaf4',
+    borderColor: '#dee8f2',
+    backgroundColor: '#ffffff',
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 8,
+    shadowColor: '#0d5fa8',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
   },
   menuIconWrap: {
     width: 40,

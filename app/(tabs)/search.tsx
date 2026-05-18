@@ -5,11 +5,13 @@ import { Search } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { apiClient } from '../../src/lib/api';
+import { exploreSampleCards } from '../../src/mock/menuSamples';
 
 export default function SearchScreen() {
   const { t } = useTranslation();
   const [q, setQ] = useState('');
-  const { data = [] } = useQuery({ queryKey: ['search-base'], queryFn: apiClient.getExplore });
+  const { data: searchBase = [] } = useQuery({ queryKey: ['search-base'], queryFn: apiClient.getExplore });
+  const data = searchBase.length ? searchBase : exploreSampleCards;
 
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();

@@ -3,12 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Clock3, Heart, MessageCircle, UserPlus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
-
-const rows = [
-  { id: '1', icon: Heart, text: 'Your Jeju post received 12 likes.' },
-  { id: '2', icon: MessageCircle, text: '3 new comments on your reel.' },
-  { id: '3', icon: UserPlus, text: '2 divers started following you.' },
-];
+import { activitySamples } from '../../src/mock/menuSamples';
 
 export default function ActivityScreen() {
   const { t } = useTranslation();
@@ -21,8 +16,8 @@ export default function ActivityScreen() {
         </View>
 
         <View className="px-5 py-5">
-          {rows.map((row) => {
-            const Icon = row.icon;
+          {activitySamples.map((row) => {
+            const Icon = row.type === 'like' ? Heart : row.type === 'comment' ? MessageCircle : UserPlus;
             return (
               <View key={row.id} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
                 <View className="flex-row items-center">
@@ -33,7 +28,7 @@ export default function ActivityScreen() {
                     <Text className="text-sm text-gray-700">{row.text}</Text>
                     <View className="mt-1 flex-row items-center">
                       <Clock3 size={13} color="#9ca3af" />
-                      <Text className="ml-1 text-xs text-gray-500">2h ago</Text>
+                      <Text className="ml-1 text-xs text-gray-500">{row.when}</Text>
                     </View>
                   </View>
                 </View>

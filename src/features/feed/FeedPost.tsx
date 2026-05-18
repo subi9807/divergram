@@ -25,11 +25,12 @@ interface FeedPostProps {
 
 export function FeedPost({ post }: FeedPostProps) {
   const { t } = useTranslation();
+  const hasRenderableImage = typeof post.image === 'string' && /^https?:\/\//.test(post.image);
 
   return (
-    <View className="mx-4 mb-5 overflow-hidden rounded-3xl border border-surface-200 bg-white shadow-sm shadow-surface-200">
+    <View className="mx-4 mb-5 overflow-hidden rounded-[28px] border border-surface-200 bg-white shadow-sm shadow-surface-200">
       <View className="p-4">
-        <View className="flex-row items-center mb-4">
+        <View className="mb-4 flex-row items-start">
           {post.user.avatar ? (
             <Image source={{ uri: post.user.avatar }} className="mr-3 h-11 w-11 rounded-2xl" resizeMode="cover" />
           ) : (
@@ -39,48 +40,47 @@ export function FeedPost({ post }: FeedPostProps) {
           )}
           <View className="flex-1">
             <Text className="font-semibold text-surface-900">{post.user.name}</Text>
-            <Text className="text-sm text-surface-500">
-              {formatDate(post.createdAt)}{post.location ? ` · ${post.location}` : ''}
-            </Text>
+            <Text className="mt-0.5 text-sm text-surface-500">{formatDate(post.createdAt)}</Text>
+            {post.location ? <Text className="mt-1 text-xs font-medium text-brand-700">{post.location}</Text> : null}
           </View>
-          <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 bg-surface-50">
+          <TouchableOpacity className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 bg-white">
             <MoreHorizontal size={19} color="#1e293b" />
           </TouchableOpacity>
         </View>
 
-        <Text className="mb-4 leading-6 text-surface-800">{post.content}</Text>
+        <Text className="mb-4 text-[15px] leading-6 text-surface-800">{post.content}</Text>
 
-        {post.image && (
-          <Image 
+        {hasRenderableImage && (
+          <Image
             source={{ uri: post.image }} 
-            className="w-full h-72 rounded-3xl mb-4"
+            className="mb-4 h-80 w-full rounded-3xl"
             resizeMode="cover"
           />
         )}
 
-        <View className="mb-4 flex-row flex-wrap">
+        <View className="mb-3 flex-row flex-wrap">
           {post.location && <MetaChip icon={MapPin} text={post.location} />}
           {post.maxDepth ? <MetaChip icon={Gauge} text={`${post.maxDepth}m`} /> : null}
           {post.waterTemperature ? <MetaChip icon={Thermometer} text={`${post.waterTemperature}°C`} /> : null}
           {post.visibility ? <MetaChip icon={Waves} text={t('feed.meta.visibility', { value: post.visibility })} /> : null}
         </View>
 
-        <View className="flex-row items-center justify-between border-t border-surface-100 pt-4">
+        <View className="flex-row items-center justify-between border-t border-surface-100 pt-3">
           <View className="flex-row items-center">
-            <TouchableOpacity className="mr-5 flex-row items-center">
-              <Heart size={21} color="#1e293b" />
+            <TouchableOpacity className="mr-2 h-10 flex-row items-center rounded-full bg-surface-50 px-3">
+              <Heart size={19} color="#1e293b" />
               <Text className="ml-2 font-semibold text-surface-700">{post.likes}</Text>
             </TouchableOpacity>
-            <TouchableOpacity className="mr-5 flex-row items-center">
-              <MessageCircle size={21} color="#1e293b" />
+            <TouchableOpacity className="mr-2 h-10 flex-row items-center rounded-full bg-surface-50 px-3">
+              <MessageCircle size={19} color="#1e293b" />
               <Text className="ml-2 font-semibold text-surface-700">{post.comments}</Text>
             </TouchableOpacity>
-            <TouchableOpacity>
-              <Send size={21} color="#1e293b" />
+            <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-surface-50">
+              <Send size={19} color="#1e293b" />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity>
-            <Bookmark size={21} color="#1e293b" />
+          <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-surface-50">
+            <Bookmark size={19} color="#1e293b" />
           </TouchableOpacity>
         </View>
       </View>

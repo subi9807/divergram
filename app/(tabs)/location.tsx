@@ -5,10 +5,12 @@ import { MapPin, Waves } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { apiClient } from '../../src/lib/api';
+import { exploreSampleCards } from '../../src/mock/menuSamples';
 
 export default function LocationScreen() {
   const { t } = useTranslation();
-  const { data = [] } = useQuery({ queryKey: ['location-feed'], queryFn: apiClient.getExplore });
+  const { data: locationFeed = [] } = useQuery({ queryKey: ['location-feed'], queryFn: apiClient.getExplore });
+  const data = locationFeed.length ? locationFeed : exploreSampleCards;
 
   return (
     <Screen>

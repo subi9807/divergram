@@ -6,12 +6,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MapPin, Star, Store, Waves } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { apiClient } from '../../src/lib/api';
+import { resortSampleCards } from '../../src/mock/menuSamples';
 
 export default function ResortsScreen() {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<'all' | 'top' | 'reviewed'>('all');
-  const fallbackResorts = [{ id: 'fallback', name: t('resorts.loadingName'), area: 'Divergram', rating: 0, reviewCount: 0, tags: t('resorts.loadingTag') }];
-  const { data: resorts = fallbackResorts } = useQuery({ queryKey: ['resorts'], queryFn: apiClient.getResorts });
+  const { data: resortData = [] } = useQuery({ queryKey: ['resorts'], queryFn: apiClient.getResorts });
+  const resorts = resortData.length ? resortData : resortSampleCards;
   const filters = [
     { key: 'all' as const, label: t('resorts.filters.all') },
     { key: 'top' as const, label: t('resorts.filters.top') },
@@ -23,6 +24,12 @@ export default function ResortsScreen() {
     return resorts;
   }, [filter, resorts]);
   const list = filteredResorts.length ? filteredResorts : resorts;
+  const summary = useMemo(() => {
+    const reviewTotal = resorts.reduce((sum, item) => sum + Number(item.reviewCount || 0), 0);
+    const rated = resorts.filter((item) => Number(item.rating || 0) > 0);
+    const avgRating = rated.length ? rated.reduce((sum, item) => sum + Number(item.rating || 0), 0) / rated.length : 0;
+    return { reviewTotal, avgRating };
+  }, [resorts]);
 
   return (
     <Screen>
@@ -39,6 +46,16 @@ export default function ResortsScreen() {
             </View>
             <Text className="mt-4 text-2xl font-bold text-white">{t('resorts.heroTitle')}</Text>
             <Text className="mt-2 leading-5 text-blue-100">{t('resorts.heroSubtitle')}</Text>
+            <View className="mt-4 flex-row">
+              <View className="mr-2 flex-1 rounded-2xl bg-white/90 px-3 py-2">
+                <Text className="text-xs text-brand-700">{t('resorts.filters.reviewed')}</Text>
+                <Text className="mt-1 text-base font-bold text-surface-900">{summary.reviewTotal}</Text>
+              </View>
+              <View className="flex-1 rounded-2xl bg-white/90 px-3 py-2">
+                <Text className="text-xs text-brand-700">{t('resorts.filters.top')}</Text>
+                <Text className="mt-1 text-base font-bold text-surface-900">{summary.avgRating ? summary.avgRating.toFixed(1) : '-'}</Text>
+              </View>
+            </View>
           </LinearGradient>
         </View>
 
@@ -58,7 +75,7 @@ export default function ResortsScreen() {
         </View>
 
         <View className="px-5">
-          {list.map((item) => (
+          {list.map((item, index) => (
             <TouchableOpacity key={item.id} activeOpacity={0.92} className="mb-4 rounded-3xl border border-surface-200 bg-white p-4 shadow-sm shadow-surface-200">
               <View className="flex-row">
                 <View className="h-24 w-24 items-center justify-center rounded-3xl bg-brand-50">
@@ -71,6 +88,9 @@ export default function ResortsScreen() {
                       <Star size={13} color="#1e293b" />
                       <Text className="ml-1 text-xs font-semibold text-surface-800">{item.rating ? item.rating.toFixed(1) : '-'}</Text>
                     </View>
+                  </View>
+                  <View className="mt-1 self-start rounded-full bg-brand-50 px-2 py-1">
+                    <Text className="text-[11px] font-semibold text-brand-700">#{index + 1}</Text>
                   </View>
                   <View className="mt-2 flex-row items-center">
                     <MapPin size={15} color="#64748b" />

@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Screen } from '../../src/components/Screen';
 import { Card } from '../../src/components/Card';
 import { Button } from '../../src/components/Button';
@@ -10,7 +9,7 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ProfileStats } from '../../src/features/profile/ProfileStats';
 import { ProfileAvatar } from '../../src/features/profile/ProfileAvatar';
-import { Activity, Edit, MapPin, Settings, Star } from 'lucide-react-native';
+import { Activity, Edit, MapPin, Settings, ShieldCheck, Star } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 
 export default function ProfileScreen() {
@@ -32,21 +31,29 @@ export default function ProfileScreen() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="px-5 py-6">
-          <LinearGradient colors={['#0d5fa8', '#1198f5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="mb-5 rounded-3xl p-5">
+          <View className="mb-5 rounded-3xl border border-surface-200 bg-white p-5 shadow-sm shadow-surface-200">
             <View className="flex-row items-center">
-              <ProfileAvatar user={user} size="large" className="border-2 border-white/40" />
+              <ProfileAvatar user={user} size="large" className="border border-surface-200" />
               <View className="ml-4 flex-1">
-                <Text className="text-2xl font-bold text-white">{user?.name || t('profile.unnamed')}</Text>
-                <Text className="mt-1 text-sm text-blue-100">{user?.email}</Text>
+                <Text className="text-2xl font-bold text-surface-900">{user?.name || t('profile.unnamed')}</Text>
+                <Text className="mt-1 text-sm text-surface-500">{user?.email}</Text>
                 {profile?.location ? (
                   <View className="mt-2 flex-row items-center">
-                    <MapPin size={15} color="#e0f2fe" />
-                    <Text className="ml-1 text-sm text-blue-100">{profile.location}</Text>
+                    <MapPin size={15} color="#64748b" />
+                    <Text className="ml-1 text-sm text-surface-500">{profile.location}</Text>
                   </View>
                 ) : null}
+                <View className="mt-2 self-start rounded-full bg-brand-50 px-3 py-1">
+                  <View className="flex-row items-center">
+                    <ShieldCheck size={14} color="#0d5fa8" />
+                    <Text className="ml-1 text-xs font-semibold text-brand-700">Divergram Member</Text>
+                  </View>
+                </View>
               </View>
             </View>
-          </LinearGradient>
+          </View>
+
+          <ProfileStats profile={profile} loading={isLoading} />
 
           <Card className="mb-5 p-5">
             <View className="flex-row items-center justify-between">
@@ -59,14 +66,13 @@ export default function ProfileScreen() {
             </View>
           </Card>
 
-          <Card className="mb-5 items-center py-6">
-            <ProfileAvatar user={user} size="large" />
-            <Text className="mt-4 text-xl font-bold text-surface-900">{t('profile.about')}</Text>
-            <Text className="mt-2 px-4 text-center leading-6 text-surface-600">{profile?.bio || t('profile.noBio')}</Text>
+          <Card className="mb-5 p-5">
+            <Text className="text-sm font-semibold text-surface-500">{t('profile.about')}</Text>
+            <Text className="mt-2 leading-6 text-surface-700">{profile?.bio || t('profile.noBio')}</Text>
             <Button
               variant="outline"
               size="sm"
-              className="mt-5 flex-row items-center border-brand-200 bg-brand-50"
+              className="mt-4 self-start border-brand-200 bg-brand-50"
               onPress={() => router.push(appRouteMap.profile_edit.path as never)}
             >
               <View className="flex-row items-center justify-center">
@@ -75,8 +81,6 @@ export default function ProfileScreen() {
               </View>
             </Button>
           </Card>
-
-          <ProfileStats profile={profile} loading={isLoading} />
 
           <View className="mb-6">
             <Text className="mb-3 px-1 text-sm font-semibold text-surface-500">{t('menu.quick')}</Text>
