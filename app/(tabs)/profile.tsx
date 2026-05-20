@@ -31,6 +31,21 @@ const PROFILE_CARD_UI = {
   editTopGap: 10,
 } as const;
 
+function levelLabel(t: any, mode: 'scuba' | 'freediving', key: string): string {
+  const value = String(key || '').trim();
+  if (!value || value === 'none') return '';
+  if (mode === 'scuba') {
+    if (value === 'instructor' || value === 'trainer' || value === 'course_director') {
+      return t(`pages.profileEdit.commonLevels.${value}` as any, { defaultValue: value });
+    }
+    return t(`pages.profileEdit.scubaLevels.${value}` as any, { defaultValue: value });
+  }
+  if (value === 'instructor' || value === 'trainer' || value === 'course_director') {
+    return t(`pages.profileEdit.commonLevels.${value}` as any, { defaultValue: value });
+  }
+  return t(`pages.profileEdit.freedivingLevels.${value}` as any, { defaultValue: value });
+}
+
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -65,6 +80,14 @@ export default function ProfileScreen() {
   const displayHandle = profile?.username ? `@${profile.username}` : '';
   const displayBio = profile?.bio || t('profile.noBio');
   const displayLocation = profile?.location;
+  const scubaLevelKey = String(profile?.scuba_level || '').trim();
+  const freedivingLevelKey = String(profile?.freediving_level || '').trim();
+  const scubaLevelLabel = levelLabel(t, 'scuba', scubaLevelKey);
+  const freedivingLevelLabel = levelLabel(t, 'freediving', freedivingLevelKey);
+  const diveLevelKey = String(profile?.diving_level || '').trim();
+  const diveLevelLabel = diveLevelKey
+    ? t(`profile.diveLevels.${diveLevelKey}` as any, { defaultValue: diveLevelKey })
+    : '';
 
   const completion = useMemo(() => {
     const checks = [
@@ -158,6 +181,29 @@ export default function ProfileScreen() {
                   <View className="ml-4 flex-1">
                     <Text className="text-2xl font-bold text-white">{displayName}</Text>
                     {displayHandle ? <Text className="mt-1 text-sm text-sky-100">{displayHandle}</Text> : null}
+                    {scubaLevelLabel || freedivingLevelLabel || diveLevelLabel ? (
+                      <View className="mt-2 flex-row flex-wrap">
+                        {scubaLevelLabel ? (
+                          <View className="mb-1 mr-1 self-start rounded-full bg-white/22 px-2.5 py-1">
+                            <Text className="text-[11px] font-semibold text-white">
+                              {t('logsForm.diveTypes.scuba', { defaultValue: 'Scuba' })} · {scubaLevelLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {freedivingLevelLabel ? (
+                          <View className="mb-1 mr-1 self-start rounded-full bg-white/22 px-2.5 py-1">
+                            <Text className="text-[11px] font-semibold text-white">
+                              {t('logsForm.diveTypes.freediving', { defaultValue: 'Freediving' })} · {freedivingLevelLabel}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {!scubaLevelLabel && !freedivingLevelLabel && diveLevelLabel ? (
+                          <View className="mb-1 mr-1 self-start rounded-full bg-white/22 px-2.5 py-1">
+                            <Text className="text-[11px] font-semibold text-white">{diveLevelLabel}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
                     {displayLocation ? (
                       <View className="mt-2 flex-row items-center">
                         <MapPin size={14} color="#e0f2fe" />

@@ -204,6 +204,12 @@
       "maxDepth": "최대 깊이",
       "totalTime": "총 시간"
     },
+    "diveLevels": {
+      "beginner": "입문",
+      "intermediate": "중급",
+      "advanced": "상급",
+      "pro": "프로"
+    },
     "completion": {
       "title": "프로필 완성도",
       "subtitle": "{{percent}}% 완성. 정보를 더 채우면 버디 신뢰도가 올라갑니다."
@@ -488,9 +494,63 @@
       "subtitle": "프로필 정보를 수정하세요",
       "name": "표시 이름",
       "bio": "소개",
+      "diveLevel": "다이빙 레벨",
+      "scubaLevel": "스쿠버다이빙 레벨",
+      "freedivingLevel": "프리다이빙 레벨",
+      "photoSelect": "사진 선택",
+      "photoRemove": "사진 제거",
+      "photoPermissionTitle": "사진 권한이 필요합니다.",
+      "photoSelectFailTitle": "사진 선택 실패",
+      "photoSelectFailBody": "사진을 불러오는 중 오류가 발생했습니다.",
+      "nameRequired": "표시 이름을 입력해주세요.",
+      "saveFailTitle": "저장 실패",
+      "saveFailBody": "프로필 저장 중 오류가 발생했습니다.",
       "save": "변경사항 저장",
       "doneTitle": "저장 완료",
-      "doneBody": "프로필 정보가 업데이트되었습니다."
+      "doneBody": "프로필 정보가 업데이트되었습니다.",
+      "scubaLevels": {
+        "none": "라이선스 없음",
+        "open_water": "오픈워터",
+        "advanced": "어드벤스",
+        "rescue": "레스큐",
+        "master": "마스터"
+      },
+      "freedivingLevels": {
+        "none": "라이선스 없음",
+        "level_1": "Level 1",
+        "level_2": "Level 2",
+        "level_3": "Level 3",
+        "level_4": "Level 4"
+      },
+      "commonLevels": {
+        "instructor": "강사",
+        "trainer": "트레이너",
+        "course_director": "코스디렉터"
+      },
+      "license": {
+        "title": "라이선스 검증",
+        "subtitle": "라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.",
+        "upload": "라이선스 사진 업로드 + OCR",
+        "remove": "사진 제거",
+        "processing": "인식 중...",
+        "agency": "단체명",
+        "agencyPlaceholder": "예: PADI, SSI, AIDA",
+        "number": "라이선스 번호",
+        "numberPlaceholder": "예: 12345678",
+        "issuedAt": "취득일",
+        "issuedAtPlaceholder": "YYYY-MM-DD",
+        "ocrDoneTitle": "OCR 인식 완료",
+        "uploadDone": "라이선스 사진 등록 완료",
+        "ocrApplied": "OCR 인식 결과를 라이선스 정보에 반영했습니다. 저장 전에 확인해주세요.",
+        "ocrFailed": "사진은 등록되었지만 OCR 인식에 실패했습니다. 값을 직접 입력해주세요.",
+        "ocrNotConfigured": "라이선스 이미지는 등록되었지만 OCR 설정이 없어 자동 입력이 비활성화되어 있습니다.",
+        "ocrNoBase64Title": "자동 인식 불가",
+        "ocrNoBase64": "이미지를 선택했지만 자동 인식 데이터가 없어 수동 입력이 필요합니다.",
+        "uploadFailTitle": "라이선스 업로드 실패",
+        "uploadFailBody": "라이선스 사진 업로드 중 오류가 발생했습니다.",
+        "uploadFailNotice": "자동 인식에 실패했습니다. 수동으로 입력해주세요.",
+        "fileTooLarge": "8MB 이하 이미지를 선택해주세요."
+      }
     }
   },
   "api": {

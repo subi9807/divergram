@@ -204,6 +204,12 @@
       "maxDepth": "Max Depth",
       "totalTime": "Total Time"
     },
+    "diveLevels": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "pro": "Pro"
+    },
     "completion": {
       "title": "Profile Completion",
       "subtitle": "{{percent}}% complete. Add more info to improve trust with buddies."
@@ -488,9 +494,63 @@
       "subtitle": "Update your profile information",
       "name": "Display name",
       "bio": "Bio",
+      "diveLevel": "Dive Level",
+      "scubaLevel": "Scuba level",
+      "freedivingLevel": "Freediving level",
+      "photoSelect": "Select Photo",
+      "photoRemove": "Remove Photo",
+      "photoPermissionTitle": "Photo permission is required.",
+      "photoSelectFailTitle": "Photo select failed",
+      "photoSelectFailBody": "An error occurred while loading the photo.",
+      "nameRequired": "Please enter your display name.",
+      "saveFailTitle": "Save failed",
+      "saveFailBody": "An error occurred while saving your profile.",
       "save": "Save changes",
       "doneTitle": "Saved",
-      "doneBody": "Profile changes were applied."
+      "doneBody": "Profile changes were applied.",
+      "scubaLevels": {
+        "none": "No license",
+        "open_water": "Open Water",
+        "advanced": "Advanced",
+        "rescue": "Rescue",
+        "master": "Master"
+      },
+      "freedivingLevels": {
+        "none": "No license",
+        "level_1": "Level 1",
+        "level_2": "Level 2",
+        "level_3": "Level 3",
+        "level_4": "Level 4"
+      },
+      "commonLevels": {
+        "instructor": "Instructor",
+        "trainer": "Trainer",
+        "course_director": "Course Director"
+      },
+      "license": {
+        "title": "License verification",
+        "subtitle": "Upload your license photo to auto-detect agency, number, and issue date.",
+        "upload": "Upload license photo + OCR",
+        "remove": "Remove Photo",
+        "processing": "Processing...",
+        "agency": "Agency",
+        "agencyPlaceholder": "e.g. PADI, SSI, AIDA",
+        "number": "License number",
+        "numberPlaceholder": "e.g. 12345678",
+        "issuedAt": "Issue date",
+        "issuedAtPlaceholder": "YYYY-MM-DD",
+        "ocrDoneTitle": "OCR completed",
+        "uploadDone": "License image uploaded",
+        "ocrApplied": "OCR result has been applied to fields. Please review before saving.",
+        "ocrFailed": "Image uploaded, but OCR failed. Please fill in fields manually.",
+        "ocrNotConfigured": "Image uploaded, but OCR is not configured yet.",
+        "ocrNoBase64Title": "Auto-detect unavailable",
+        "ocrNoBase64": "Image selected, but auto-detect data is unavailable. Please enter details manually.",
+        "uploadFailTitle": "License upload failed",
+        "uploadFailBody": "An error occurred while uploading the license image.",
+        "uploadFailNotice": "Auto-detect failed. Please enter license details manually.",
+        "fileTooLarge": "Please select an image under 8MB."
+      }
     }
   },
   "api": {

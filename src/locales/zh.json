@@ -204,6 +204,12 @@
       "maxDepth": "最大深度",
       "totalTime": "总时长"
     },
+    "diveLevels": {
+      "beginner": "入门",
+      "intermediate": "中级",
+      "advanced": "高级",
+      "pro": "专业"
+    },
     "completion": {
       "title": "资料完整度",
       "subtitle": "当前 {{percent}}%。完善资料可提升潜伴信任度。"
@@ -488,9 +494,63 @@
       "subtitle": "更新个人资料",
       "name": "显示名称",
       "bio": "个人简介",
+      "diveLevel": "潜水等级",
+      "scubaLevel": "水肺潜水等级",
+      "freedivingLevel": "自由潜水等级",
+      "photoSelect": "选择照片",
+      "photoRemove": "移除照片",
+      "photoPermissionTitle": "需要相册权限。",
+      "photoSelectFailTitle": "选择照片失败",
+      "photoSelectFailBody": "加载照片时发生错误。",
+      "nameRequired": "请输入显示名称。",
+      "saveFailTitle": "保存失败",
+      "saveFailBody": "保存个人资料时发生错误。",
       "save": "保存修改",
       "doneTitle": "保存成功",
-      "doneBody": "个人资料已更新。"
+      "doneBody": "个人资料已更新。",
+      "scubaLevels": {
+        "none": "无证书",
+        "open_water": "开放水域",
+        "advanced": "进阶",
+        "rescue": "救援",
+        "master": "大师"
+      },
+      "freedivingLevels": {
+        "none": "无证书",
+        "level_1": "Level 1",
+        "level_2": "Level 2",
+        "level_3": "Level 3",
+        "level_4": "Level 4"
+      },
+      "commonLevels": {
+        "instructor": "教练",
+        "trainer": "培训师",
+        "course_director": "课程总监"
+      },
+      "license": {
+        "title": "证书验证",
+        "subtitle": "上传证书照片后可自动识别机构、证书编号和取得日期。",
+        "upload": "上传证书照片 + OCR",
+        "remove": "移除照片",
+        "processing": "识别中...",
+        "agency": "机构名称",
+        "agencyPlaceholder": "例如：PADI, SSI, AIDA",
+        "number": "证书编号",
+        "numberPlaceholder": "例如：12345678",
+        "issuedAt": "取得日期",
+        "issuedAtPlaceholder": "YYYY-MM-DD",
+        "ocrDoneTitle": "OCR识别完成",
+        "uploadDone": "证书照片已上传",
+        "ocrApplied": "OCR结果已填入字段，请保存前确认。",
+        "ocrFailed": "照片已上传，但OCR识别失败，请手动填写。",
+        "ocrNotConfigured": "照片已上传，但OCR尚未配置。",
+        "ocrNoBase64Title": "无法自动识别",
+        "ocrNoBase64": "已选择图片，但缺少自动识别数据，请手动填写。",
+        "uploadFailTitle": "证书上传失败",
+        "uploadFailBody": "上传证书图片时发生错误。",
+        "uploadFailNotice": "自动识别失败，请手动填写证书信息。",
+        "fileTooLarge": "请选择 8MB 以下的图片。"
+      }
     }
   },
   "api": {

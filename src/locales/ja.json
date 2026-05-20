@@ -204,6 +204,12 @@
       "maxDepth": "最大深度",
       "totalTime": "総時間"
     },
+    "diveLevels": {
+      "beginner": "入門",
+      "intermediate": "中級",
+      "advanced": "上級",
+      "pro": "プロ"
+    },
     "completion": {
       "title": "プロフィール完成度",
       "subtitle": "{{percent}}% 完了。情報を追加するとバディの信頼度が上がります。"
@@ -488,9 +494,63 @@
       "subtitle": "プロフィール情報を更新",
       "name": "表示名",
       "bio": "自己紹介",
+      "diveLevel": "ダイビングレベル",
+      "scubaLevel": "スキューバレベル",
+      "freedivingLevel": "フリーダイビングレベル",
+      "photoSelect": "写真を選択",
+      "photoRemove": "写真を削除",
+      "photoPermissionTitle": "写真へのアクセス権限が必要です。",
+      "photoSelectFailTitle": "写真の選択に失敗しました",
+      "photoSelectFailBody": "写真の読み込み中にエラーが発生しました。",
+      "nameRequired": "表示名を入力してください。",
+      "saveFailTitle": "保存失敗",
+      "saveFailBody": "プロフィール保存中にエラーが発生しました。",
       "save": "変更を保存",
       "doneTitle": "保存完了",
-      "doneBody": "プロフィール情報を更新しました。"
+      "doneBody": "プロフィール情報を更新しました。",
+      "scubaLevels": {
+        "none": "ライセンスなし",
+        "open_water": "オープンウォーター",
+        "advanced": "アドバンス",
+        "rescue": "レスキュー",
+        "master": "マスター"
+      },
+      "freedivingLevels": {
+        "none": "ライセンスなし",
+        "level_1": "Level 1",
+        "level_2": "Level 2",
+        "level_3": "Level 3",
+        "level_4": "Level 4"
+      },
+      "commonLevels": {
+        "instructor": "インストラクター",
+        "trainer": "トレーナー",
+        "course_director": "コースディレクター"
+      },
+      "license": {
+        "title": "ライセンス認証",
+        "subtitle": "ライセンス写真をアップロードすると、団体名・番号・取得日を自動認識します。",
+        "upload": "ライセンス写真アップロード + OCR",
+        "remove": "写真を削除",
+        "processing": "認識中...",
+        "agency": "団体名",
+        "agencyPlaceholder": "例: PADI, SSI, AIDA",
+        "number": "ライセンス番号",
+        "numberPlaceholder": "例: 12345678",
+        "issuedAt": "取得日",
+        "issuedAtPlaceholder": "YYYY-MM-DD",
+        "ocrDoneTitle": "OCR認識完了",
+        "uploadDone": "ライセンス写真を登録しました",
+        "ocrApplied": "OCRの結果を入力欄に反映しました。保存前に確認してください。",
+        "ocrFailed": "写真は登録されましたが、OCRに失敗しました。手動で入力してください。",
+        "ocrNotConfigured": "写真は登録されましたが、OCRは未設定です。",
+        "ocrNoBase64Title": "自動認識不可",
+        "ocrNoBase64": "画像は選択されましたが、自動認識データがありません。手動入力してください。",
+        "uploadFailTitle": "ライセンスアップロード失敗",
+        "uploadFailBody": "ライセンス画像のアップロード中にエラーが発生しました。",
+        "uploadFailNotice": "自動認識に失敗しました。手動で入力してください。",
+        "fileTooLarge": "8MB以下の画像を選択してください。"
+      }
     }
   },
   "api": {

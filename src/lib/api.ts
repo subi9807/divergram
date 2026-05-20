@@ -85,6 +85,43 @@ function normalizeString(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function profileExtraStorageKey(userId: string, field: string) {
+  return `profile_extra_${field}_${userId}`;
+}
+
+function readProfileExtrasFromStorage(userId: string) {
+  const read = (field: string) => normalizeString(storage.getString(profileExtraStorageKey(userId, field)) || '');
+  return {
+    diving_level: read('diving_level'),
+    scuba_level: read('scuba_level'),
+    freediving_level: read('freediving_level'),
+    license_image_url: read('license_image_url'),
+    license_agency: read('license_agency'),
+    license_number: read('license_number'),
+    license_issued_at: read('license_issued_at'),
+  };
+}
+
+function writeProfileExtrasToStorage(userId: string, patch: Record<string, unknown>) {
+  const fields = [
+    'diving_level',
+    'scuba_level',
+    'freediving_level',
+    'license_image_url',
+    'license_agency',
+    'license_number',
+    'license_issued_at',
+  ] as const;
+
+  for (const field of fields) {
+    if (!Object.prototype.hasOwnProperty.call(patch, field)) continue;
+    const key = profileExtraStorageKey(userId, field);
+    const value = normalizeString(patch[field]);
+    if (value) storage.set(key, value);
+    else storage.delete(key);
+  }
+}
+
 export interface FeedCommentItem {
   id: string;
   postId: string;
@@ -201,7 +238,19 @@ export const apiClient = {
       filters: [{ column: 'id', op: 'eq', value: id }],
       limit: 1,
     });
-    return res.data[0] || null;
+    const profile = res.data[0] || null;
+    if (!profile) return null;
+    const extras = readProfileExtrasFromStorage(id);
+    return {
+      ...profile,
+      diving_level: normalizeString(profile.diving_level || extras.diving_level || ''),
+      scuba_level: normalizeString(profile.scuba_level || extras.scuba_level || ''),
+      freediving_level: normalizeString(profile.freediving_level || extras.freediving_level || ''),
+      license_image_url: normalizeString(profile.license_image_url || extras.license_image_url || ''),
+      license_agency: normalizeString(profile.license_agency || extras.license_agency || ''),
+      license_number: normalizeString(profile.license_number || extras.license_number || ''),
+      license_issued_at: normalizeString(profile.license_issued_at || extras.license_issued_at || ''),
+    };
   },
 
   getProfileSummary: async (userId: string) => {
@@ -221,6 +270,7 @@ export const apiClient = {
 
     const profile = profileRes.data[0] || null;
     if (!profile) return null;
+    const extras = readProfileExtrasFromStorage(id);
 
     const posts = postsRes.data || [];
     let maxDepth = 0;
@@ -240,7 +290,81 @@ export const apiClient = {
       totalDives: posts.length,
       maxDepth,
       totalTime,
+      diving_level: normalizeString(profile.diving_level || extras.diving_level || ''),
+      scuba_level: normalizeString(profile.scuba_level || extras.scuba_level || ''),
+      freediving_level: normalizeString(profile.freediving_level || extras.freediving_level || ''),
+      license_image_url: normalizeString(profile.license_image_url || extras.license_image_url || ''),
+      license_agency: normalizeString(profile.license_agency || extras.license_agency || ''),
+      license_number: normalizeString(profile.license_number || extras.license_number || ''),
+      license_issued_at: normalizeString(profile.license_issued_at || extras.license_issued_at || ''),
     };
+  },
+
+  updateProfile: async (
+    userId: string,
+    patch: {
+      full_name?: string;
+      bio?: string;
+      avatar_url?: string;
+      diving_level?: string;
+      scuba_level?: string;
+      freediving_level?: string;
+      license_image_url?: string;
+      license_agency?: string;
+      license_number?: string;
+      license_issued_at?: string;
+    }
+  ) => {
+    const uid = normalizeString(userId);
+    if (!uid) throw new Error('invalid_user_id');
+
+    const cleanPatch: Record<string, any> = {};
+    if (patch.full_name !== undefined) cleanPatch.full_name = normalizeString(patch.full_name);
+    if (patch.bio !== undefined) cleanPatch.bio = normalizeString(patch.bio);
+    if (patch.avatar_url !== undefined) cleanPatch.avatar_url = normalizeString(patch.avatar_url);
+    if (patch.diving_level !== undefined) cleanPatch.diving_level = normalizeString(patch.diving_level);
+    if (patch.scuba_level !== undefined) cleanPatch.scuba_level = normalizeString(patch.scuba_level);
+    if (patch.freediving_level !== undefined) cleanPatch.freediving_level = normalizeString(patch.freediving_level);
+    if (patch.license_image_url !== undefined) cleanPatch.license_image_url = normalizeString(patch.license_image_url);
+    if (patch.license_agency !== undefined) cleanPatch.license_agency = normalizeString(patch.license_agency);
+    if (patch.license_number !== undefined) cleanPatch.license_number = normalizeString(patch.license_number);
+    if (patch.license_issued_at !== undefined) cleanPatch.license_issued_at = normalizeString(patch.license_issued_at);
+
+    const filters = [{ column: 'id', op: 'eq' as const, value: uid }];
+    writeProfileExtrasToStorage(uid, cleanPatch);
+
+    try {
+      await dataApi.update<any>('profiles', filters, cleanPatch);
+    } catch (error: any) {
+      const message = String(error?.response?.data?.error || error?.message || '').toLowerCase();
+      const hasOptionalFieldsPatch =
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'diving_level') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'scuba_level') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'freediving_level') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'license_image_url') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'license_agency') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'license_number') ||
+        Object.prototype.hasOwnProperty.call(cleanPatch, 'license_issued_at');
+
+      if (hasOptionalFieldsPatch && (message.includes('column') || message.includes('schema') || message.includes('does not exist'))) {
+        const fallbackPatch: Record<string, any> = {};
+        if (cleanPatch.full_name !== undefined) fallbackPatch.full_name = cleanPatch.full_name;
+        if (cleanPatch.bio !== undefined) fallbackPatch.bio = cleanPatch.bio;
+        if (cleanPatch.avatar_url !== undefined) fallbackPatch.avatar_url = cleanPatch.avatar_url;
+        await dataApi.update<any>('profiles', filters, fallbackPatch);
+      } else {
+        throw error;
+      }
+    }
+
+    return apiClient.getProfileById(uid);
+  },
+
+  uploadLicenseImageWithOcr: async (imageData: string) => {
+    const dataUrl = normalizeString(imageData);
+    if (!dataUrl) throw new Error('invalid_image_data');
+    const response = await axiosInstance.post('/license-image/ocr', { imageData: dataUrl });
+    return response.data || {};
   },
 
   isPostLikedByUser: async (postId: string, userId: string) => {
