@@ -132,13 +132,36 @@
       "edit": "編集",
       "share": "共有",
       "report": "報告",
+      "follow": "フォロー",
+      "unfollow": "フォロー解除",
       "addFavorite": "お気に入りに追加",
+      "cancelFavorite": "お気に入りを解除",
       "openPost": "投稿へ移動",
       "accountInfo": "アカウント情報",
+      "followed": "フォローしました。",
+      "unfollowed": "フォローを解除しました。",
+      "followFailed": "フォローの更新に失敗しました。",
       "favoriteAdded": "お気に入りに追加しました。",
+      "favoriteRemoved": "お気に入りから削除しました。",
+      "favoriteFailed": "お気に入りの更新に失敗しました。",
+      "likeFailed": "いいねの更新に失敗しました。",
       "shareFailed": "共有に失敗しました。",
-      "editPending": "編集機能は準備中です。",
-      "accountInfoPending": "詳細なアカウント情報はまもなく提供されます。"
+      "editSaved": "投稿を更新しました。",
+      "editFailed": "投稿の更新に失敗しました。",
+      "locationPlaceholder": "場所",
+      "delete": "削除",
+      "deleteTitle": "投稿を削除",
+      "deleteMessage": "この投稿を削除しますか？",
+      "deleteDone": "投稿を削除しました。",
+      "deleteFailed": "投稿の削除に失敗しました。"
+    },
+    "comments": {
+      "title": "コメント",
+      "empty": "まだコメントはありません。",
+      "placeholder": "コメントを入力",
+      "submit": "コメントを投稿",
+      "loadFailed": "コメントの読み込みに失敗しました。",
+      "submitFailed": "コメント投稿に失敗しました。"
     }
   },
   "logs": {
@@ -167,8 +190,15 @@
   "profile": {
     "unnamed": "名前なし",
     "edit": "プロフィール編集",
+    "memberBadge": "Divergram Member",
     "about": "紹介",
     "noBio": "まだ紹介がありません",
+    "quick": {
+      "favoritesLabel": "お気に入り",
+      "savedDesc": "保存した投稿とリゾート",
+      "activityDesc": "いいね、コメント、フォロー活動",
+      "settingsDesc": "通知、言語、アカウントセキュリティ"
+    },
     "stats": {
       "totalDives": "総ダイビング数",
       "maxDepth": "最大深度",

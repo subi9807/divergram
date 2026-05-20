@@ -1,34 +1,52 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { Bookmark } from 'lucide-react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
-import { useFeed } from '../../src/hooks/useFeed';
+import { useAuth } from '../../src/hooks/useAuth';
+import { apiClient } from '../../src/lib/api';
+import { FeedPost } from '../../src/features/feed/FeedPost';
 
 export default function SavedScreen() {
   const { t } = useTranslation();
-  const { data } = useFeed();
-  const posts = (data?.pages.flatMap((page) => page.data) ?? []).slice(0, 8);
+  const { user } = useAuth();
+  const {
+    data: posts = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: ['saved-feed', user?.id],
+    queryFn: () => apiClient.getSavedFeed(String(user?.id || '')),
+    enabled: Boolean(user?.id),
+  });
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 28 }}
+        refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={() => refetch()} tintColor="#1198f5" />}
+      >
         <View className="px-5 py-4 border-b border-gray-100">
           <Text className="text-2xl font-semibold text-gray-950">{t('tabs.saved')}</Text>
           <Text className="mt-1 text-gray-500">{t('pages.saved.subtitle')}</Text>
         </View>
 
-        <View className="px-5 py-5">
-          {posts.map((post) => (
-            <View key={post.id} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
-              <View className="flex-row items-center justify-between">
-                <Text className="flex-1 text-sm font-semibold text-gray-900">{post.content || t('pages.saved.noCaption')}</Text>
-                <Bookmark size={16} color="#111827" />
-              </View>
-              <Text className="mt-1 text-xs text-gray-500">{post.user.name}{post.location ? ` · ${post.location}` : ''}</Text>
+        <View className="pt-4">
+          {isLoading ? (
+            <View className="py-10 items-center">
+              <ActivityIndicator color="#0d5fa8" />
             </View>
-          ))}
-          {posts.length === 0 ? <Text className="text-center text-gray-500">{t('pages.saved.empty')}</Text> : null}
+          ) : null}
+
+          {!isLoading && posts.length === 0 ? (
+            <Text className="px-5 py-10 text-center text-gray-500">{t('pages.saved.empty')}</Text>
+          ) : null}
+
+          {!isLoading
+            ? posts.map((post: any) => <FeedPost key={post.id} post={post} />)
+            : null}
         </View>
       </ScrollView>
     </Screen>

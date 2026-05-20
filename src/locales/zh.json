@@ -132,13 +132,36 @@
       "edit": "编辑",
       "share": "分享",
       "report": "举报",
+      "follow": "关注",
+      "unfollow": "取消关注",
       "addFavorite": "添加到收藏",
+      "cancelFavorite": "取消收藏",
       "openPost": "前往帖子",
       "accountInfo": "账号信息",
+      "followed": "已关注。",
+      "unfollowed": "已取消关注。",
+      "followFailed": "关注状态更新失败。",
       "favoriteAdded": "已添加到收藏。",
+      "favoriteRemoved": "已从收藏移除。",
+      "favoriteFailed": "更新收藏失败。",
+      "likeFailed": "更新点赞失败。",
       "shareFailed": "分享失败。",
-      "editPending": "编辑功能即将上线。",
-      "accountInfoPending": "详细账号信息即将提供。"
+      "editSaved": "帖子已更新。",
+      "editFailed": "更新帖子失败。",
+      "locationPlaceholder": "位置",
+      "delete": "删除",
+      "deleteTitle": "删除帖子",
+      "deleteMessage": "确定要删除这条帖子吗？",
+      "deleteDone": "帖子已删除。",
+      "deleteFailed": "删除帖子失败。"
+    },
+    "comments": {
+      "title": "评论",
+      "empty": "还没有评论。",
+      "placeholder": "输入评论",
+      "submit": "发布评论",
+      "loadFailed": "加载评论失败。",
+      "submitFailed": "发布评论失败。"
     }
   },
   "logs": {
@@ -167,8 +190,15 @@
   "profile": {
     "unnamed": "未命名",
     "edit": "编辑资料",
+    "memberBadge": "Divergram Member",
     "about": "简介",
     "noBio": "暂无简介",
+    "quick": {
+      "favoritesLabel": "收藏夹",
+      "savedDesc": "已保存的帖子与度假村",
+      "activityDesc": "点赞、评论与关注动态",
+      "settingsDesc": "通知、语言与账号安全"
+    },
     "stats": {
       "totalDives": "总潜水次数",
       "maxDepth": "最大深度",
