@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState, useCallback } from 'react';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import { apiClient } from '../lib/api';
 import { useToast } from '../components/Toast';
@@ -10,6 +11,18 @@ import i18n from '../lib/i18n';
 import { storage } from '../lib/storage';
 
 WebBrowser.maybeCompleteAuthSession();
+const GOOGLE_CLIENT_ID_IOS = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '';
+const GOOGLE_CLIENT_ID_ANDROID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || process.env.GOOGLE_CLIENT_ID_ANDROID || '';
+const GOOGLE_CLIENT_ID_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || process.env.GOOGLE_CLIENT_ID_WEB || '';
+
+function toGoogleIosUrlScheme(clientId: string): string | null {
+  const trimmed = clientId.trim();
+  if (!trimmed) return null;
+  const suffix = '.apps.googleusercontent.com';
+  if (!trimmed.endsWith(suffix)) return null;
+  const id = trimmed.slice(0, -suffix.length);
+  return id ? `com.googleusercontent.apps.${id}` : null;
+}
 
 interface User {
   id: string;
@@ -27,9 +40,20 @@ interface AuthContextType {
   loginWithKakao: () => Promise<void>;
   loginWithNaver: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
+  signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<void>;
+  linkSocialAccount: (link: SocialLinkInput) => Promise<void>;
   logout: () => void;
   getAccessToken: () => string | null;
 }
+
+type SocialProvider = 'google' | 'apple' | 'facebook' | 'kakao' | 'naver';
+
+export type SocialLinkInput = {
+  provider: SocialProvider;
+  providerUserId: string;
+  email: string;
+  linkToken?: string;
+};
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -37,24 +61,96 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const googleIosUrlScheme = toGoogleIosUrlScheme(GOOGLE_CLIENT_ID_IOS);
 
   // OAuth configuration
   const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'divergram',
-    path: 'auth'
+    path: 'auth',
+    native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined,
   });
 
-  const googleConfig = {
-    clientId: Platform.select({
-      ios: process.env.GOOGLE_CLIENT_ID_IOS,
-      android: process.env.GOOGLE_CLIENT_ID_ANDROID,
-      default: process.env.GOOGLE_CLIENT_ID_WEB,
-    }),
-  };
+  const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const googleClientId = isExpoGo
+    ? GOOGLE_CLIENT_ID_WEB
+    : Platform.select({
+        ios: GOOGLE_CLIENT_ID_IOS,
+        android: GOOGLE_CLIENT_ID_ANDROID,
+        default: GOOGLE_CLIENT_ID_WEB,
+      });
 
   useEffect(() => {
     checkAuthState();
   }, []);
+
+  const persistAuthPayload = useCallback((payload: any, fallback?: Partial<User>) => {
+    const token = payload?.token;
+    if (!token) throw new Error('missing_auth_token');
+    storage.set('auth_token', token);
+    if (payload?.refreshToken) storage.set('refresh_token', payload.refreshToken);
+    else storage.delete('refresh_token');
+
+    const userPayload = payload?.user || {};
+    const profilePayload = payload?.profile || {};
+    setUser({
+      id: String(userPayload.id || fallback?.id || ''),
+      email: String(userPayload.email || fallback?.email || ''),
+      name: profilePayload.full_name || profilePayload.username || fallback?.name,
+      avatar: profilePayload.avatar_url || fallback?.avatar,
+    });
+  }, []);
+
+  const sanitizeUsername = useCallback((value: string) => {
+    const normalized = value
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    return (normalized || 'diver').slice(0, 20);
+  }, []);
+
+  const linkSocialAccount = useCallback(async (link: SocialLinkInput) => {
+    const linkToken = String(link.linkToken || '').trim();
+    if (!linkToken) throw new Error('missing_link_token');
+    try {
+      const response = await apiClient.linkOAuthMobileConfirm(linkToken, 'approve');
+      persistAuthPayload(response.data);
+      return;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 404 || status === 405) {
+        await apiClient.linkOAuthMobile(linkToken);
+        return;
+      }
+      throw error;
+    }
+  }, [persistAuthPayload]);
+
+  const signInOrSignUpWithGoogle = useCallback(
+    async (googleAccessToken: string) => {
+      try {
+        const response = await apiClient.authWithOAuthMobile('google', googleAccessToken);
+        persistAuthPayload(response.data);
+      } catch (error: any) {
+        const status = error?.response?.status;
+        const body = error?.response?.data || {};
+        const message = String(body?.error || error?.message || '');
+        if (status === 409 && (message.includes('sso_email_exists') || message.includes('email'))) {
+          const linkError = new Error('sso_email_exists');
+          (linkError as any).code = 'sso_email_exists';
+          (linkError as any).socialLink = {
+            provider: 'google',
+            providerUserId: String(body?.providerUserId || ''),
+            email: String(body?.email || '').trim().toLowerCase(),
+            linkToken: String(body?.linkToken || ''),
+          } satisfies SocialLinkInput;
+          throw linkError;
+        }
+        throw error;
+      }
+    },
+    [persistAuthPayload]
+  );
 
   const checkAuthState = async () => {
     try {
@@ -74,11 +170,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     try {
+      if (isExpoGo) {
+        throw new Error('google_requires_dev_build');
+      }
+      if (!googleClientId) {
+        throw new Error('missing_google_client_id');
+      }
       const request = new AuthSession.AuthRequest({
-        clientId: googleConfig.clientId!,
+        clientId: googleClientId!,
         scopes: ['openid', 'profile', 'email'],
         redirectUri,
-        responseType: AuthSession.ResponseType.Token,
+        responseType: AuthSession.ResponseType.Code,
+        usePKCE: true,
+        extraParams: { access_type: 'offline' },
       } as any);
 
       const discovery = {
@@ -91,8 +195,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await request.promptAsync(discovery);
       
       if (result.type === 'success') {
-        const { access_token } = result.params;
-        await handleOAuthSuccess('google', access_token);
+        let access_token = result.params.access_token;
+        if (!access_token && result.params.code) {
+          const exchange = await AuthSession.exchangeCodeAsync(
+            {
+              clientId: googleClientId!,
+              code: result.params.code,
+              redirectUri,
+              extraParams: (request as any).codeVerifier ? { code_verifier: (request as any).codeVerifier } : undefined,
+            },
+            discovery
+          );
+          access_token = exchange.accessToken;
+        }
+        if (!access_token) {
+          throw new Error('google_access_token_missing');
+        }
+        await signInOrSignUpWithGoogle(access_token);
       }
     } catch (error) {
       console.error('Google login error:', error);
@@ -155,11 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithEmail = async (email: string, password: string) => {
     try {
       const response = await apiClient.authWithEmail(email, password);
-      const { token, refreshToken, user } = response.data;
-      
-      storage.set('auth_token', token);
-      storage.set('refresh_token', refreshToken);
-      setUser(user);
+      persistAuthPayload(response.data);
       
       showToast({
         type: 'success',
@@ -172,14 +287,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signupWithEmail = async (email: string, password: string, name: string, contact: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedName = name.trim();
+    const normalizedContact = contact.trim();
+    const baseUsername = sanitizeUsername(normalizedName || normalizedEmail.split('@')[0] || 'diver');
+    const attempts = [
+      baseUsername,
+      `${baseUsername}_${Date.now().toString().slice(-6)}`,
+      `${baseUsername}_${Math.floor(Math.random() * 9000 + 1000)}`,
+    ];
+    let lastError: any;
+
+    for (const username of attempts) {
+      try {
+        const response = await apiClient.authWithEmailSignup(normalizedEmail, password, username, 'personal');
+        persistAuthPayload(response.data, {
+          email: normalizedEmail,
+          name: normalizedName || username,
+        });
+        showToast({
+          type: 'success',
+          title: i18n.t('auth.welcomeTitle'),
+          message: i18n.t('auth.welcomeMessage')
+        });
+        return;
+      } catch (error: any) {
+        lastError = error;
+        const status = error?.response?.status;
+        const message = String(error?.response?.data?.error || error?.message || '').toLowerCase();
+        const usernameConflict = status === 409 && message.includes('username');
+        if (usernameConflict) continue;
+        if (status === 409 && (message.includes('email') || message.includes('already'))) {
+          throw new Error('email_already_exists');
+        }
+        if (status === 400 && message.includes('password')) {
+          throw new Error('password_too_short');
+        }
+        throw error;
+      }
+    }
+
+    // Contact is collected in mobile UX and will be saved once backend field mapping is enabled.
+    void normalizedContact;
+    throw lastError || new Error('signup_failed');
+  };
+
   const handleOAuthSuccess = async (provider: string, accessToken: string, userInfo?: any) => {
     try {
       const response = await apiClient.authWithOAuth(provider, accessToken, userInfo);
-      const { token, refreshToken, user } = response.data;
-      
-      storage.set('auth_token', token);
-      storage.set('refresh_token', refreshToken);
-      setUser(user);
+      persistAuthPayload(response.data);
       
       showToast({
         type: 'success',
@@ -187,6 +344,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: i18n.t('auth.welcomeMessage')
       });
     } catch (error) {
+      if ((error as any)?.response?.status === 404) {
+        throw new Error('oauth_backend_not_available');
+      }
       console.error('OAuth success handler error:', error);
       throw error;
     }
@@ -217,6 +377,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loginWithKakao,
     loginWithNaver,
     loginWithEmail,
+    signupWithEmail,
+    linkSocialAccount,
     logout,
     getAccessToken,
   };

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Heart, MessageCircle, Play, Send } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen';
 
-const cardHeight = Math.min(Dimensions.get('window').height - 170, 640);
 const reelGradients: [string, string][] = [
   ['#072f54', '#0d5fa8'],
   ['#0a3a63', '#1198f5'],
@@ -14,6 +15,14 @@ const reelGradients: [string, string][] = [
 
 export default function ReelsScreen() {
   const { t } = useTranslation();
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
+  const reelHeight = Math.max(windowHeight - tabBarHeight, 1);
+  const headerTop = insets.top + 12;
+  const actionsBottom = insets.bottom + 108;
+  const detailsBottom = insets.bottom + 24;
+
   const reels = [
     { title: t('reels.items.item1'), author: 'diver_jeju', likes: '1.2k', comments: '221', shares: '74', tag: 'Drift' },
     { title: t('reels.items.item2'), author: 'nightblue', likes: '842', comments: '108', shares: '31', tag: 'Night' },
@@ -21,18 +30,24 @@ export default function ReelsScreen() {
   ];
 
   return (
-    <Screen tone="plain" className="bg-[#04111f]">
-      <ScrollView pagingEnabled showsVerticalScrollIndicator={false}>
+    <Screen safe={false} tone="plain" className="bg-[#04111f]">
+      <ScrollView
+        pagingEnabled
+        decelerationRate="fast"
+        snapToInterval={reelHeight}
+        snapToAlignment="start"
+        contentInsetAdjustmentBehavior="never"
+        showsVerticalScrollIndicator={false}
+      >
         {reels.map((item, index) => (
           <LinearGradient
-            key={item.title}
+            key={`${item.author}-${item.tag}-${index}`}
             colors={reelGradients[index % reelGradients.length]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ height: cardHeight }}
-            className="mx-4 my-3 overflow-hidden rounded-3xl border border-white/10"
+            style={[styles.reel, { height: reelHeight }]}
           >
-            <View className="absolute left-4 right-4 top-4 flex-row items-center justify-between">
+            <View className="absolute left-4 right-4 flex-row items-center justify-between" style={{ top: headerTop }}>
               <View className="rounded-full bg-white/15 px-3 py-1">
                 <Text className="text-xs font-semibold text-white">{t('tabs.reels')}</Text>
               </View>
@@ -47,13 +62,13 @@ export default function ReelsScreen() {
               </TouchableOpacity>
             </View>
 
-            <View className="absolute bottom-24 right-4 items-center">
+            <View className="absolute right-4 items-center" style={{ bottom: actionsBottom }}>
               <Action icon={<Heart size={22} color="#ffffff" />} value={item.likes} />
               <Action icon={<MessageCircle size={22} color="#ffffff" />} value={item.comments} />
               <Action icon={<Send size={22} color="#ffffff" />} value={item.shares} />
             </View>
 
-            <View className="absolute bottom-7 left-5 right-24">
+            <View className="absolute left-5 right-24" style={{ bottom: detailsBottom }}>
               <View className="rounded-2xl border border-white/15 bg-black/25 p-4">
                 <Text className="text-sm font-semibold text-blue-100">@{item.author}</Text>
                 <Text className="mt-2 text-2xl font-bold text-white">{item.title}</Text>
@@ -77,3 +92,10 @@ function Action({ icon, value }: { icon: React.ReactNode; value: string }) {
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  reel: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+});

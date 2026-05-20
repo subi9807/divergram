@@ -34,10 +34,20 @@
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "name": "Name",
+    "namePlaceholder": "John Diver",
+    "contact": "Contact",
+    "contactPlaceholder": "+82 10-1234-5678",
     "backToSocial": "Back to social login",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
     "error": "Error",
     "loginFailed": "Login failed",
+    "signupFailed": "Sign up failed",
     "fillAllFields": "Please fill all fields",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "emailAlreadyExists": "This email is already registered.",
     "processing": "Processing...",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
@@ -47,6 +57,19 @@
     "welcomeMessage": "Successfully signed in",
     "signedOutTitle": "Signed out",
     "signedOutMessage": "You have been signed out successfully",
+    "googleConfigMissing": "Google login configuration is missing.",
+    "googleRequiresDevBuild": "Google login is limited in Expo Go. Please use an iOS/Android development build.",
+    "googleProfileMissing": "Google profile data (email/ID) is missing.",
+    "oauthBackendMissing": "OAuth token exchange is not available on this server.",
+    "googleUserInfoFailed": "Failed to load Google user information.",
+    "socialEmailExists": "This email is already registered.",
+    "socialEmailExistsPrompt": "{{email}} is already registered with email login. Do you want to link this social account?",
+    "socialLinkedEmailLoginRequired": "This social account is linked. Please sign in with your email password to continue.",
+    "socialLinkFailed": "Failed to link your social account. Please try again.",
+    "socialLinkPendingNotice": "Linking {{provider}} in progress. Sign in with {{email}} password to complete.",
+    "linkNow": "Link now",
+    "ssoLinkedTitle": "Linked",
+    "ssoLinkedMessage": "{{provider}} account has been linked to your email account.",
     "kakaoCancelled": "Kakao login was cancelled.",
     "kakaoTokenExchangeFailed": "Kakao token exchange failed: {{message}}",
     "kakaoUserInfoFailed": "Failed to fetch Kakao user info",
@@ -101,7 +124,21 @@
       }
     },
     "meta": {
-      "visibility": "能见度 {{value}}m"
+      "visibility": "能见度 {{value}}m",
+      "gasWithPercent": "{{gas}} {{percent}}%",
+      "resort": "度假村 {{name}}"
+    },
+    "menu": {
+      "edit": "编辑",
+      "share": "分享",
+      "report": "举报",
+      "addFavorite": "添加到收藏",
+      "openPost": "前往帖子",
+      "accountInfo": "账号信息",
+      "favoriteAdded": "已添加到收藏。",
+      "shareFailed": "分享失败。",
+      "editPending": "编辑功能即将上线。",
+      "accountInfoPending": "详细账号信息即将提供。"
     }
   },
   "logs": {
@@ -262,9 +299,29 @@
     "subtitle": "已按运营站字段优化移动端日志输入。",
     "heroTitle": "新潜水日志",
     "heroSubtitle": "记录地点、深度、时长与潜伴。",
+    "diveTypes": {
+      "scuba": "水肺潜水",
+      "freediving": "自由潜水"
+    },
+    "gasTypes": {
+      "air": "空气",
+      "nitrox": "高氧",
+      "heliox": "氦氧"
+    },
     "fields": {
       "titleLabel": "标题",
       "titlePlaceholder": "今天的潜水",
+      "diveTypeLabel": "潜水类型",
+      "gasTypeLabel": "气体类型",
+      "gasPercentLabel": "混合比例 %",
+      "pointNameLabel": "潜点名称",
+      "pointNamePlaceholder": "Blue Corner",
+      "pointSearchLabel": "Google Maps 搜索潜点",
+      "pointSearchPlaceholder": "Blue Corner Bali",
+      "selectedPointLabel": "已选潜点",
+      "selectedPointPlaceholder": "请搜索并选择潜点",
+      "resortLabel": "潜水度假村",
+      "resortPlaceholder": "搜索或手动输入度假村",
       "locationLabel": "潜点",
       "locationPlaceholder": "济州 文岛",
       "depthLabel": "最大深度",
@@ -279,6 +336,28 @@
     "buttons": {
       "saving": "保存中",
       "save": "保存日志"
+    },
+    "validation": {
+      "gasPercentRequired": "高氧/氦氧潜水需要填写混合比例%。"
+    },
+    "map": {
+      "apiKeyMissing": "未配置 Google Maps API Key。",
+      "apiKeyGuide": "请在 .env 中设置 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY。",
+      "queryRequired": "请输入关键词后再点击搜索。",
+      "searchFailed": "潜点搜索失败，请重试。",
+      "noResult": "没有匹配的潜点。",
+      "resultFound": "已找到 {{count}} 个潜点。",
+      "previewPlaceholder": "选择潜点后将显示地图预览。"
+    },
+    "photo": {
+      "select": "选择照片",
+      "permissionTitle": "需要照片权限",
+      "permissionMessage": "读取照片 GPS 信息需要授予照片访问权限。",
+      "gpsNotFoundTitle": "照片无 GPS 信息",
+      "gpsNotFoundMessage": "所选照片不包含 GPS 元数据。",
+      "gpsAppliedTitle": "GPS 已应用",
+      "gpsAppliedMessage": "已将照片 GPS 自动填入潜点位置。",
+      "gpsHint": "若照片包含 GPS，潜点位置会自动填写。"
     },
     "units": {
       "minute": "分钟"
@@ -313,6 +392,7 @@
     "quick": "快捷设置",
     "more": "更多",
     "desc": {
+      "messages": "潜伴聊天与行程计划",
       "settings": "语言、主题、隐私",
       "activity": "最近互动与记录",
       "saved": "已保存的帖子与短视频",

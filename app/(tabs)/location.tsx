@@ -10,7 +10,17 @@ import { exploreSampleCards } from '../../src/mock/menuSamples';
 export default function LocationScreen() {
   const { t } = useTranslation();
   const { data: locationFeed = [] } = useQuery({ queryKey: ['location-feed'], queryFn: apiClient.getExplore });
-  const data = locationFeed.length ? locationFeed : exploreSampleCards;
+  const locationRows = Array.isArray(locationFeed)
+    ? locationFeed
+        .filter((item) => item && typeof item === 'object')
+        .map((item: any, index: number) => ({
+          title: String(item.title || t('api.explore.defaultTitle')),
+          location: String(item.location || ''),
+          meta: String(item.meta || ''),
+          key: `${String(item.location || 'location')}-${String(item.title || 'title')}-${index}`,
+        }))
+    : [];
+  const data = locationRows.length ? locationRows : exploreSampleCards.map((item, index) => ({ ...item, key: `sample-${index}` }));
 
   return (
     <Screen>
@@ -30,7 +40,7 @@ export default function LocationScreen() {
           </View>
 
           {data.map((item) => (
-            <TouchableOpacity key={item.title} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
+            <TouchableOpacity key={item.key} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
               <View className="h-28 rounded-2xl bg-gray-100 items-center justify-center mb-3">
                 <Waves size={28} color="#111827" />
               </View>

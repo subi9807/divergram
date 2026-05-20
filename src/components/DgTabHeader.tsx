@@ -1,17 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bell, Compass, Film, MapPin, Menu, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
+import { Bell, Compass, Film, MapPin, Menu, MessageCircle, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { appRouteMap, type AppRouteId } from '../config/sitemap';
 
-const quickRouteIds: AppRouteId[] = ['settings', 'activity', 'saved'];
+const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity', 'saved'];
 const moreRouteIds: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'admin'];
 
 const iconMap: Partial<Record<AppRouteId, React.ComponentType<{ size?: number; color?: string }>>> = {
   settings: Settings,
+  messages: MessageCircle,
   activity: UserRoundCog,
   saved: Compass,
   reels: Film,

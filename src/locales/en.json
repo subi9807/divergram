@@ -34,10 +34,20 @@
     "password": "Password",
     "passwordPlaceholder": "Enter your password",
     "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "name": "Name",
+    "namePlaceholder": "John Diver",
+    "contact": "Contact",
+    "contactPlaceholder": "+82 10-1234-5678",
     "backToSocial": "Back to social login",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
     "error": "Error",
     "loginFailed": "Login failed",
+    "signupFailed": "Sign up failed",
     "fillAllFields": "Please fill all fields",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "emailAlreadyExists": "This email is already registered.",
     "processing": "Processing...",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
@@ -47,6 +57,19 @@
     "welcomeMessage": "Successfully signed in",
     "signedOutTitle": "Signed out",
     "signedOutMessage": "You have been signed out successfully",
+    "googleConfigMissing": "Google login configuration is missing.",
+    "googleRequiresDevBuild": "Google login is limited in Expo Go. Please use an iOS/Android development build.",
+    "googleProfileMissing": "Google profile data (email/ID) is missing.",
+    "oauthBackendMissing": "OAuth token exchange is not available on this server.",
+    "googleUserInfoFailed": "Failed to load Google user information.",
+    "socialEmailExists": "This email is already registered.",
+    "socialEmailExistsPrompt": "{{email}} is already registered with email login. Do you want to link this social account?",
+    "socialLinkedEmailLoginRequired": "This social account is linked. Please sign in with your email password to continue.",
+    "socialLinkFailed": "Failed to link your social account. Please try again.",
+    "socialLinkPendingNotice": "Linking {{provider}} in progress. Sign in with {{email}} password to complete.",
+    "linkNow": "Link now",
+    "ssoLinkedTitle": "Linked",
+    "ssoLinkedMessage": "{{provider}} account has been linked to your email account.",
     "kakaoCancelled": "Kakao login was cancelled.",
     "kakaoTokenExchangeFailed": "Kakao token exchange failed: {{message}}",
     "kakaoUserInfoFailed": "Failed to fetch Kakao user info",
@@ -101,7 +124,21 @@
       }
     },
     "meta": {
-      "visibility": "Visibility {{value}}m"
+      "visibility": "Visibility {{value}}m",
+      "gasWithPercent": "{{gas}} {{percent}}%",
+      "resort": "Resort {{name}}"
+    },
+    "menu": {
+      "edit": "Edit",
+      "share": "Share",
+      "report": "Report",
+      "addFavorite": "Add to Favorites",
+      "openPost": "Go to Post",
+      "accountInfo": "Account Info",
+      "favoriteAdded": "Added to favorites.",
+      "shareFailed": "Failed to share.",
+      "editPending": "Edit is coming soon.",
+      "accountInfoPending": "Detailed account info is coming soon."
     }
   },
   "logs": {
@@ -262,9 +299,29 @@
     "subtitle": "Mobile input fields aligned with dive post structure.",
     "heroTitle": "New Dive Log",
     "heroSubtitle": "Record location, depth, time, and buddy.",
+    "diveTypes": {
+      "scuba": "Scuba",
+      "freediving": "Freediving"
+    },
+    "gasTypes": {
+      "air": "Air",
+      "nitrox": "Nitrox",
+      "heliox": "Heliox"
+    },
     "fields": {
       "titleLabel": "Title",
       "titlePlaceholder": "Today's dive",
+      "diveTypeLabel": "Dive Type",
+      "gasTypeLabel": "Gas Type",
+      "gasPercentLabel": "Blend %",
+      "pointNameLabel": "Dive Point Name",
+      "pointNamePlaceholder": "Blue Corner",
+      "pointSearchLabel": "Search Point on Google Maps",
+      "pointSearchPlaceholder": "Blue Corner Bali",
+      "selectedPointLabel": "Selected Point",
+      "selectedPointPlaceholder": "Search and pick a point",
+      "resortLabel": "Dive Resort",
+      "resortPlaceholder": "Search or type resort",
       "locationLabel": "Point",
       "locationPlaceholder": "Munseom, Jeju",
       "depthLabel": "Max Depth",
@@ -279,6 +336,28 @@
     "buttons": {
       "saving": "Saving",
       "save": "Save Log"
+    },
+    "validation": {
+      "gasPercentRequired": "Please enter blend % for Nitrox or Heliox."
+    },
+    "map": {
+      "apiKeyMissing": "Google Maps API key is missing.",
+      "apiKeyGuide": "Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY in .env for map search.",
+      "queryRequired": "Type a keyword, then tap search.",
+      "searchFailed": "Failed to search dive points. Try again.",
+      "noResult": "No matching points found.",
+      "resultFound": "Found {{count}} points.",
+      "previewPlaceholder": "Map preview appears after point selection."
+    },
+    "photo": {
+      "select": "Select Photo",
+      "permissionTitle": "Photo permission required",
+      "permissionMessage": "Please allow photo access to load GPS from image.",
+      "gpsNotFoundTitle": "No GPS in photo",
+      "gpsNotFoundMessage": "Selected photo has no GPS metadata.",
+      "gpsAppliedTitle": "GPS applied",
+      "gpsAppliedMessage": "Photo GPS was applied to dive point.",
+      "gpsHint": "If photo has GPS metadata, point location is auto-filled."
     },
     "units": {
       "minute": "min"
@@ -313,6 +392,7 @@
     "quick": "Quick settings",
     "more": "More",
     "desc": {
+      "messages": "Buddy chat and dive plans",
       "settings": "Language, theme, privacy",
       "activity": "Your actions and records",
       "saved": "Saved posts and reels",

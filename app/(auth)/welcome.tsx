@@ -1,11 +1,12 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ShieldCheck, Waves } from 'lucide-react-native';
+import { ShieldCheck } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 
 const heroImage = { uri: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1400&q=85' };
+const brandLogo = require('../../assets/images/logo.png');
 
 export default function WelcomeScreen() {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export default function WelcomeScreen() {
         <View style={styles.overlay} />
         <View style={styles.top}>
           <View style={styles.logo}>
-            <Waves size={28} color="#111827" />
+            <Image source={brandLogo} style={styles.logoImage} resizeMode="contain" />
           </View>
           <Text style={styles.brand}>Divergram</Text>
         </View>
@@ -73,6 +74,10 @@ const styles = StyleSheet.create({
     height: 48,
     justifyContent: 'center',
     width: 48,
+  },
+  logoImage: {
+    width: 28,
+    height: 28,
   },
   brand: {
     color: '#ffffff',

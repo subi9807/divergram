@@ -11,7 +11,19 @@ export default function SearchScreen() {
   const { t } = useTranslation();
   const [q, setQ] = useState('');
   const { data: searchBase = [] } = useQuery({ queryKey: ['search-base'], queryFn: apiClient.getExplore });
-  const data = searchBase.length ? searchBase : exploreSampleCards;
+  const normalizedSearchBase = Array.isArray(searchBase)
+    ? searchBase
+        .filter((item) => item && typeof item === 'object')
+        .map((item: any, index: number) => ({
+          title: String(item.title || t('api.explore.defaultTitle')),
+          location: String(item.location || ''),
+          meta: String(item.meta || ''),
+          key: `${String(item.location || 'location')}-${String(item.title || 'title')}-${index}`,
+        }))
+    : [];
+  const data = normalizedSearchBase.length
+    ? normalizedSearchBase
+    : exploreSampleCards.map((item, index) => ({ ...item, key: `sample-${index}` }));
 
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -39,7 +51,7 @@ export default function SearchScreen() {
 
         <View className="px-5 py-5">
           {results.map((item) => (
-            <TouchableOpacity key={item.title} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
+            <TouchableOpacity key={item.key} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
               <Text className="text-base font-semibold text-gray-950">{item.title}</Text>
               <Text className="mt-1 text-sm text-gray-500">{item.meta}</Text>
               <Text className="mt-2 text-sm text-gray-600">📍 {item.location}</Text>

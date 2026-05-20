@@ -34,10 +34,20 @@
     "password": "パスワード",
     "passwordPlaceholder": "パスワードを入力",
     "signIn": "サインイン",
+    "signUp": "新規登録",
+    "name": "名前",
+    "namePlaceholder": "ダイバー 太郎",
+    "contact": "連絡先",
+    "contactPlaceholder": "090-1234-5678",
     "backToSocial": "ソーシャルログインに戻る",
+    "noAccount": "アカウントをお持ちでないですか？",
+    "hasAccount": "すでにアカウントをお持ちですか？",
     "error": "エラー",
     "loginFailed": "ログインに失敗しました",
+    "signupFailed": "新規登録に失敗しました",
     "fillAllFields": "すべてのフィールドを入力してください",
+    "passwordTooShort": "パスワードは8文字以上で入力してください。",
+    "emailAlreadyExists": "このメールアドレスはすでに登録されています。",
     "processing": "処理中...",
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
@@ -47,6 +57,19 @@
     "welcomeMessage": "サインインに成功しました",
     "signedOutTitle": "サインアウト",
     "signedOutMessage": "正常にサインアウトしました",
+    "googleConfigMissing": "Googleログイン設定が見つかりません。",
+    "googleRequiresDevBuild": "Expo GoではGoogleログインが制限されています。iOS/Androidの開発ビルドでお試しください。",
+    "googleProfileMissing": "Googleプロフィール情報（メール/ID）が不足しています。",
+    "oauthBackendMissing": "このサーバーではOAuthトークン交換をサポートしていません。",
+    "googleUserInfoFailed": "Googleユーザー情報の取得に失敗しました。",
+    "socialEmailExists": "このメールアドレスはすでに登録されています。",
+    "socialEmailExistsPrompt": "{{email}} はメールアドレス登録済みです。ソーシャルアカウントを連携しますか？",
+    "socialLinkedEmailLoginRequired": "連携済みアカウントです。メールアドレスのパスワードでログインしてください。",
+    "socialLinkFailed": "ソーシャルアカウント連携に失敗しました。もう一度お試しください。",
+    "socialLinkPendingNotice": "{{provider}} 連携を進めています。{{email}} のパスワードでログインしてください。",
+    "linkNow": "連携する",
+    "ssoLinkedTitle": "連携完了",
+    "ssoLinkedMessage": "{{provider}} アカウントをメールアドレスアカウントに連携しました。",
     "kakaoCancelled": "Kakaoログインがキャンセルされました。",
     "kakaoTokenExchangeFailed": "Kakaoトークン交換に失敗しました: {{message}}",
     "kakaoUserInfoFailed": "Kakaoユーザー情報の取得に失敗しました",
@@ -101,7 +124,21 @@
       }
     },
     "meta": {
-      "visibility": "透明度 {{value}}m"
+      "visibility": "透明度 {{value}}m",
+      "gasWithPercent": "{{gas}} {{percent}}%",
+      "resort": "リゾート {{name}}"
+    },
+    "menu": {
+      "edit": "編集",
+      "share": "共有",
+      "report": "報告",
+      "addFavorite": "お気に入りに追加",
+      "openPost": "投稿へ移動",
+      "accountInfo": "アカウント情報",
+      "favoriteAdded": "お気に入りに追加しました。",
+      "shareFailed": "共有に失敗しました。",
+      "editPending": "編集機能は準備中です。",
+      "accountInfoPending": "詳細なアカウント情報はまもなく提供されます。"
     }
   },
   "logs": {
@@ -262,9 +299,29 @@
     "subtitle": "ダイビング投稿項目をモバイル入力に最適化しました。",
     "heroTitle": "新しいダイブログ",
     "heroSubtitle": "位置、深度、時間、バディを記録しましょう。",
+    "diveTypes": {
+      "scuba": "スキューバダイビング",
+      "freediving": "フリーダイビング"
+    },
+    "gasTypes": {
+      "air": "エア",
+      "nitrox": "ナイトロックス",
+      "heliox": "ヘリオックス"
+    },
     "fields": {
       "titleLabel": "タイトル",
       "titlePlaceholder": "今日のダイビング",
+      "diveTypeLabel": "ダイビングタイプ",
+      "gasTypeLabel": "ガスタイプ",
+      "gasPercentLabel": "ブレンド %",
+      "pointNameLabel": "ダイブポイント名",
+      "pointNamePlaceholder": "ブルーコーナー",
+      "pointSearchLabel": "Google Maps でポイント検索",
+      "pointSearchPlaceholder": "Blue Corner Bali",
+      "selectedPointLabel": "選択したポイント",
+      "selectedPointPlaceholder": "検索してポイントを選択してください",
+      "resortLabel": "ダイブリゾート",
+      "resortPlaceholder": "検索または直接入力",
       "locationLabel": "ポイント",
       "locationPlaceholder": "済州 ムンソム",
       "depthLabel": "最大深度",
@@ -279,6 +336,28 @@
     "buttons": {
       "saving": "保存中",
       "save": "ログを保存"
+    },
+    "validation": {
+      "gasPercentRequired": "ナイトロックス/ヘリオックスはブレンド%の入力が必要です。"
+    },
+    "map": {
+      "apiKeyMissing": "Google Maps API キーが設定されていません。",
+      "apiKeyGuide": ".env に EXPO_PUBLIC_GOOGLE_MAPS_API_KEY を設定してください。",
+      "queryRequired": "キーワードを入力して検索してください。",
+      "searchFailed": "ポイント検索に失敗しました。再試行してください。",
+      "noResult": "一致するポイントがありません。",
+      "resultFound": "{{count}}件のポイントが見つかりました。",
+      "previewPlaceholder": "ポイント選択後に地図プレビューが表示されます。"
+    },
+    "photo": {
+      "select": "写真を選択",
+      "permissionTitle": "写真権限が必要です",
+      "permissionMessage": "画像GPSを読み込むには写真アクセスを許可してください。",
+      "gpsNotFoundTitle": "GPS情報なし",
+      "gpsNotFoundMessage": "選択した写真にGPSメタデータがありません。",
+      "gpsAppliedTitle": "GPS適用完了",
+      "gpsAppliedMessage": "写真GPSをダイブポイントに反映しました。",
+      "gpsHint": "写真にGPSがある場合、ポイント位置が自動入力されます。"
     },
     "units": {
       "minute": "分"
@@ -313,6 +392,7 @@
     "quick": "クイック設定",
     "more": "その他",
     "desc": {
+      "messages": "バディとのチャットと計画",
       "settings": "言語・テーマ・プライバシー",
       "activity": "最近の行動と記録",
       "saved": "保存済み投稿とリール",

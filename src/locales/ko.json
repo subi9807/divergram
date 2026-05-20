@@ -34,10 +34,20 @@
     "password": "비밀번호",
     "passwordPlaceholder": "비밀번호를 입력하세요",
     "signIn": "로그인",
+    "signUp": "회원가입",
+    "name": "이름",
+    "namePlaceholder": "홍길동",
+    "contact": "연락처",
+    "contactPlaceholder": "010-1234-5678",
     "backToSocial": "소셜 로그인으로 돌아가기",
+    "noAccount": "계정이 없으신가요?",
+    "hasAccount": "이미 계정이 있으신가요?",
     "error": "오류",
     "loginFailed": "로그인에 실패했습니다",
+    "signupFailed": "회원가입에 실패했습니다",
     "fillAllFields": "모든 필드를 채워주세요",
+    "passwordTooShort": "비밀번호는 8자 이상이어야 합니다.",
+    "emailAlreadyExists": "이미 가입된 이메일입니다.",
     "processing": "처리 중...",
     "privacy": "개인정보처리방침",
     "terms": "이용약관",
@@ -47,6 +57,19 @@
     "welcomeMessage": "로그인에 성공했습니다",
     "signedOutTitle": "로그아웃",
     "signedOutMessage": "정상적으로 로그아웃되었습니다",
+    "googleConfigMissing": "Google 로그인 설정이 누락되었습니다.",
+    "googleRequiresDevBuild": "Expo Go에서는 Google 로그인이 제한됩니다. iOS/Android 개발 빌드에서 다시 시도해주세요.",
+    "googleProfileMissing": "Google 계정 정보(이메일/ID)를 확인할 수 없습니다.",
+    "oauthBackendMissing": "현재 서버에서 OAuth 토큰 교환을 지원하지 않습니다.",
+    "googleUserInfoFailed": "Google 사용자 정보 조회에 실패했습니다.",
+    "socialEmailExists": "이미 가입된 이메일입니다.",
+    "socialEmailExistsPrompt": "{{email}} 은(는) 이미 이메일 계정으로 가입되어 있습니다. 소셜 계정을 연동할까요?",
+    "socialLinkedEmailLoginRequired": "연동된 계정입니다. 이메일 비밀번호로 로그인하면 소셜 연동이 완료됩니다.",
+    "socialLinkFailed": "소셜 계정 연동에 실패했습니다. 다시 시도해주세요.",
+    "socialLinkPendingNotice": "{{provider}} 연동 진행 중입니다. {{email}} 계정 비밀번호로 로그인해주세요.",
+    "linkNow": "연동하기",
+    "ssoLinkedTitle": "연동 완료",
+    "ssoLinkedMessage": "{{provider}} 계정이 이메일 계정에 연동되었습니다.",
     "kakaoCancelled": "카카오 로그인이 취소되었습니다.",
     "kakaoTokenExchangeFailed": "카카오 토큰 교환 실패: {{message}}",
     "kakaoUserInfoFailed": "카카오 사용자 정보 조회 실패",
@@ -101,7 +124,21 @@
       }
     },
     "meta": {
-      "visibility": "시야 {{value}}m"
+      "visibility": "시야 {{value}}m",
+      "gasWithPercent": "{{gas}} {{percent}}%",
+      "resort": "리조트 {{name}}"
+    },
+    "menu": {
+      "edit": "수정",
+      "share": "공유",
+      "report": "신고",
+      "addFavorite": "즐겨찾기 추가",
+      "openPost": "게시물로 이동",
+      "accountInfo": "계정정보",
+      "favoriteAdded": "즐겨찾기에 추가했습니다.",
+      "shareFailed": "공유에 실패했습니다.",
+      "editPending": "편집 기능은 준비 중입니다.",
+      "accountInfoPending": "계정정보 상세는 곧 제공됩니다."
     }
   },
   "logs": {
@@ -262,9 +299,29 @@
     "subtitle": "운영 웹의 다이빙 게시물 필드를 모바일 입력으로 정리했습니다.",
     "heroTitle": "새 다이빙 로그",
     "heroSubtitle": "위치, 수심, 시간, 버디를 기록하세요.",
+    "diveTypes": {
+      "scuba": "스쿠버다이빙",
+      "freediving": "프리다이빙"
+    },
+    "gasTypes": {
+      "air": "에어",
+      "nitrox": "나이트록스",
+      "heliox": "헬리옥스"
+    },
     "fields": {
       "titleLabel": "제목",
       "titlePlaceholder": "오늘의 다이빙",
+      "diveTypeLabel": "다이빙 타입",
+      "gasTypeLabel": "기체 상태",
+      "gasPercentLabel": "블렌딩 %",
+      "pointNameLabel": "다이빙 포인트명",
+      "pointNamePlaceholder": "문섬 하강 포인트",
+      "pointSearchLabel": "Google Maps 포인트 검색",
+      "pointSearchPlaceholder": "제주 문섬",
+      "selectedPointLabel": "선택된 포인트",
+      "selectedPointPlaceholder": "검색 후 포인트를 선택하세요",
+      "resortLabel": "다이빙 리조트",
+      "resortPlaceholder": "리조트 검색 또는 직접 입력",
       "locationLabel": "포인트",
       "locationPlaceholder": "제주 문섬",
       "depthLabel": "최대 수심",
@@ -279,6 +336,28 @@
     "buttons": {
       "saving": "저장 중",
       "save": "로그 저장"
+    },
+    "validation": {
+      "gasPercentRequired": "나이트록스/헬리옥스는 블렌딩 % 입력이 필요합니다."
+    },
+    "map": {
+      "apiKeyMissing": "Google Maps API 키가 설정되지 않았습니다.",
+      "apiKeyGuide": ".env 에 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY 값을 설정해 주세요.",
+      "queryRequired": "검색어를 입력한 뒤 버튼을 눌러주세요.",
+      "searchFailed": "포인트 검색에 실패했습니다. 다시 시도해 주세요.",
+      "noResult": "검색 결과가 없습니다.",
+      "resultFound": "{{count}}개의 포인트를 찾았습니다.",
+      "previewPlaceholder": "포인트를 선택하면 지도 미리보기가 표시됩니다."
+    },
+    "photo": {
+      "select": "사진 선택",
+      "permissionTitle": "사진 권한 필요",
+      "permissionMessage": "사진의 GPS 정보를 불러오려면 접근 권한이 필요합니다.",
+      "gpsNotFoundTitle": "GPS 정보 없음",
+      "gpsNotFoundMessage": "선택한 사진에 GPS 메타데이터가 없습니다.",
+      "gpsAppliedTitle": "GPS 적용 완료",
+      "gpsAppliedMessage": "사진 GPS 위치를 다이빙 포인트에 반영했습니다.",
+      "gpsHint": "사진에 GPS 정보가 있으면 포인트 위치가 자동으로 입력됩니다."
     },
     "units": {
       "minute": "분"
@@ -313,6 +392,7 @@
     "quick": "빠른 설정",
     "more": "더보기",
     "desc": {
+      "messages": "버디와 채팅, 약속 조율",
       "settings": "언어, 테마, 개인정보",
       "activity": "내 활동과 기록",
       "saved": "저장한 게시물/릴스",

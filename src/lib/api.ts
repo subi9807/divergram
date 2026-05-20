@@ -62,6 +62,17 @@ const dataApi = {
   },
 };
 
+function normalizeImageUrl(url: unknown): string | undefined {
+  const raw = typeof url === 'string' ? url.trim() : '';
+  if (!/^(https?:\/\/|file:\/\/|content:\/\/)/i.test(raw)) return undefined;
+  return raw;
+}
+
+function normalizeNumber(value: unknown): number | undefined {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCount: Record<string, number>, commentsCount: Record<string, number>) {
   const profile = profileMap[post.user_id] || {};
   return {
@@ -72,14 +83,21 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
       avatar: profile.avatar_url || undefined,
     },
     content: post.caption || '',
-    image: post.image_url || undefined,
+    image: normalizeImageUrl(post.image_url),
     likes: likesCount[String(post.id)] || 0,
     comments: commentsCount[String(post.id)] || 0,
     createdAt: post.created_at || new Date().toISOString(),
     location: post.location || post.dive_site || undefined,
-    maxDepth: post.max_depth ? Number(post.max_depth) : undefined,
-    waterTemperature: post.water_temperature ? Number(post.water_temperature) : undefined,
-    visibility: post.visibility ? Number(post.visibility) : undefined,
+    diveSite: post.dive_site || undefined,
+    diveType: post.dive_type || undefined,
+    gasType: post.gas_type || undefined,
+    gasPercent: normalizeNumber(post.gas_percent),
+    resort: post.buddy || undefined,
+    maxDepth: normalizeNumber(post.max_depth),
+    waterTemperature: normalizeNumber(post.water_temperature),
+    visibility: normalizeNumber(post.visibility),
+    locationLat: normalizeNumber(post.location_lat),
+    locationLng: normalizeNumber(post.location_lng),
   };
 }
 
@@ -87,7 +105,19 @@ export const apiClient = {
   authWithOAuth: (provider: string, accessToken: string, userInfo?: any) =>
     axiosInstance.post('/auth/oauth', { provider, accessToken, userInfo }),
 
+  authWithOAuthMobile: (provider: string, accessToken: string, sessionDays = 7) =>
+    axiosInstance.post('/auth/oauth/mobile', { provider, accessToken, sessionDays }),
+
+  linkOAuthMobile: (linkToken: string) =>
+    axiosInstance.post('/auth/oauth/mobile/link', { linkToken }),
+
+  linkOAuthMobileConfirm: (linkToken: string, action: 'approve' | 'cancel' = 'approve') =>
+    axiosInstance.post('/auth/oauth/mobile/link/confirm', { linkToken, action }),
+
   authWithEmail: (email: string, password: string) => axiosInstance.post('/auth/login', { email, password }),
+
+  authWithEmailSignup: (email: string, password: string, username: string, accountType: 'personal' | 'resort' = 'personal') =>
+    axiosInstance.post('/auth/signup', { email, password, username, account_type: accountType }),
 
   refreshToken: (_refreshToken: string) => Promise.reject(new Error('refresh_token_not_supported')),
 
@@ -196,18 +226,37 @@ export const apiClient = {
   createLog: async (data: any) => {
     const user = await apiClient.getMe();
     const id = `native_${Date.now()}`;
+    const locationLabel = String(data.location || data.pointName || '').trim();
+    const pointName = String(data.pointName || data.location || '').trim();
+    const title = String(data.title || '').trim();
+    const notes = String(data.notes || '').trim();
+    const caption = [title, notes].filter(Boolean).join('\n').trim() || i18n.t('api.logs.defaultCaption');
+    const diveType = String(data.diveType || 'freediving') === 'scuba' ? 'scuba' : 'freediving';
+    const gasType = diveType === 'scuba' ? String(data.gasType || 'air') : null;
+    const gasPercent = diveType === 'scuba' && gasType !== 'air' ? normalizeNumber(data.gasPercent) : undefined;
+    const latitude = normalizeNumber(data.latitude);
+    const longitude = normalizeNumber(data.longitude);
+    const imageUrl = normalizeImageUrl(data.imageUri);
     const row = {
       id,
       user_id: String(user?.id || 'native-user'),
-      caption: data.title || data.notes || i18n.t('api.logs.defaultCaption'),
-      location: data.location || '',
-      dive_site: data.location || '',
-      dive_type: data.diveType || 'scuba',
-      max_depth: Number(data.depth || 0),
-      dive_duration: Number(data.duration || 0),
-      water_temperature: Number(data.temperature || 0),
-      visibility: Number(data.visibility || 0),
-      buddy_name: data.buddy || '',
+      image_url: imageUrl || null,
+      caption,
+      location: locationLabel || null,
+      dive_site: pointName || null,
+      dive_type: diveType,
+      max_depth: normalizeNumber(data.depth),
+      dive_duration: normalizeNumber(data.duration),
+      water_temperature: normalizeNumber(data.temperature),
+      visibility: normalizeNumber(data.visibility),
+      gas_type: gasType,
+      gas_percent: gasPercent,
+      buddy: String(data.resortName || '').trim() || null,
+      buddy_name: String(data.buddy || '').trim() || null,
+      location_lat: latitude,
+      location_lng: longitude,
+      publish_to_feed: true,
+      publish_to_reels: false,
       created_at: new Date().toISOString(),
     };
     const [created] = await dataApi.insert('posts', [row]);

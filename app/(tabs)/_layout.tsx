@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { House, MessageCircle, PlusCircle, Search, User } from 'lucide-react-native';
+import { BookOpen, House, MapPin, Search, User } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { DgTabHeader } from '../../src/components/DgTabHeader';
 import { useAuth } from '../../src/hooks/useAuth';
@@ -67,13 +67,14 @@ export default function TabLayout() {
     >
       <Tabs.Screen name="index" options={{ title: t(appRouteMap.home.titleKey), tabBarIcon: tabIcon(House) }} />
       <Tabs.Screen name="explore" options={{ title: t(appRouteMap.explore.titleKey), tabBarIcon: tabIcon(Search) }} />
-      <Tabs.Screen name="create" options={{ title: t(appRouteMap.create.titleKey), tabBarIcon: tabIcon(PlusCircle) }} />
-      <Tabs.Screen name="messages" options={{ title: t(appRouteMap.messages.titleKey), tabBarIcon: tabIcon(MessageCircle) }} />
+      <Tabs.Screen name="location" options={{ title: t(appRouteMap.location.titleKey), tabBarIcon: tabIcon(MapPin) }} />
+      <Tabs.Screen name="logs" options={{ title: t(appRouteMap.logs.titleKey), tabBarIcon: tabIcon(BookOpen) }} />
       <Tabs.Screen name="profile" options={{ title: t(appRouteMap.profile.titleKey), tabBarIcon: tabIcon(User) }} />
+      <Tabs.Screen name="create" options={{ href: null }} />
+      <Tabs.Screen name="messages" options={{ href: null }} />
       <Tabs.Screen name="resorts" options={{ href: null }} />
       <Tabs.Screen name="reels" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
-      <Tabs.Screen name="location" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="saved" options={{ href: null }} />
       <Tabs.Screen name="activity" options={{ href: null }} />
@@ -85,7 +86,6 @@ export default function TabLayout() {
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="feed" options={{ href: null }} />
-      <Tabs.Screen name="logs" options={{ href: null }} />
     </Tabs>
   );
 }

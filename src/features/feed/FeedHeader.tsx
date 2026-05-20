@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Bell, PlusCircle, Search } from 'lucide-react-native';
+import { Bell, Search } from 'lucide-react-native';
 import { appRouteMap } from '../../config/sitemap';
 
 export function FeedHeader() {
@@ -25,18 +25,11 @@ export function FeedHeader() {
             <Search size={19} color="#1e293b" />
           </TouchableOpacity>
           <TouchableOpacity
-            className="mr-2 h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white shadow-sm shadow-surface-200"
+            className="h-10 w-10 items-center justify-center rounded-full border border-surface-200 bg-white shadow-sm shadow-surface-200"
             activeOpacity={0.86}
             onPress={() => router.push(appRouteMap.notifications.path as never)}
           >
             <Bell size={19} color="#1e293b" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="h-10 w-10 items-center justify-center rounded-full bg-brand-500"
-            activeOpacity={0.86}
-            onPress={() => router.push(appRouteMap.create.path as never)}
-          >
-            <PlusCircle size={19} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -47,13 +40,9 @@ export function FeedHeader() {
             <Text className="text-sm font-semibold text-brand-700">{t('brand.tagline')}</Text>
             <Text className="mt-1 text-xl font-bold text-surface-900">{t('feed.header.tabs.forYou')}</Text>
           </View>
-          <TouchableOpacity
-            className="h-10 w-10 items-center justify-center rounded-2xl bg-brand-600"
-            activeOpacity={0.9}
-            onPress={() => router.push(appRouteMap.create.path as never)}
-          >
-            <PlusCircle size={20} color="#ffffff" />
-          </TouchableOpacity>
+          <View className="rounded-2xl bg-brand-50 px-3 py-2">
+            <Text className="text-xs font-semibold text-brand-700">DG</Text>
+          </View>
         </View>
         <View className="mt-3 h-px bg-surface-100" />
         <View className="mt-3 flex-row">
