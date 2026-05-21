@@ -87,6 +87,7 @@ export default function ProfileEditScreen() {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [licenseIssuedAt, setLicenseIssuedAt] = useState('');
   const [ocrPending, setOcrPending] = useState(false);
+  const [pickerBusy, setPickerBusy] = useState(false);
   const [ocrNotice, setOcrNotice] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -154,6 +155,8 @@ export default function ProfileEditScreen() {
   );
 
   const pickAvatar = async () => {
+    if (pickerBusy) return;
+    setPickerBusy(true);
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -168,7 +171,7 @@ export default function ProfileEditScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.65,
       });
 
       if (result.canceled || !result.assets?.length) return;
@@ -179,11 +182,14 @@ export default function ProfileEditScreen() {
         title: t('pages.profileEdit.photoSelectFailTitle', { defaultValue: '사진 선택 실패' }),
         message: t('pages.profileEdit.photoSelectFailBody', { defaultValue: '사진을 불러오는 중 오류가 발생했습니다.' }),
       });
+    } finally {
+      setPickerBusy(false);
     }
   };
 
   const pickLicenseImageWithOcr = async () => {
-    if (ocrPending) return;
+    if (ocrPending || pickerBusy) return;
+    setPickerBusy(true);
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
@@ -197,7 +203,7 @@ export default function ProfileEditScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: false,
-        quality: 0.85,
+        quality: 0.45,
         base64: true,
       });
       if (result.canceled || !result.assets?.length) return;
@@ -217,6 +223,14 @@ export default function ProfileEditScreen() {
         showToast({
           type: 'info',
           title: t('pages.profileEdit.license.ocrNoBase64Title', { defaultValue: '자동 인식 불가' }),
+        });
+        return;
+      }
+      if (asset.base64.length > 8_000_000) {
+        setOcrNotice(t('pages.profileEdit.license.ocrTooLarge', { defaultValue: '이미지가 커서 자동 인식을 생략했습니다. 수동으로 입력해주세요.' }));
+        showToast({
+          type: 'info',
+          title: t('pages.profileEdit.license.ocrTooLargeTitle', { defaultValue: '자동 인식 생략' }),
         });
         return;
       }
@@ -267,6 +281,7 @@ export default function ProfileEditScreen() {
       });
     } finally {
       setOcrPending(false);
+      setPickerBusy(false);
     }
   };
 
@@ -342,6 +357,7 @@ export default function ProfileEditScreen() {
                 className="mr-2 flex-row items-center rounded-xl border border-gray-200 bg-white px-3 py-2"
                 activeOpacity={0.88}
                 onPress={pickAvatar}
+                disabled={pickerBusy}
               >
                 <ImagePlus size={15} color="#0f172a" />
                 <Text className="ml-1 text-xs font-semibold text-gray-900">
@@ -352,6 +368,7 @@ export default function ProfileEditScreen() {
                 className="rounded-xl border border-gray-200 bg-white px-3 py-2"
                 activeOpacity={0.88}
                 onPress={() => setAvatarUri('')}
+                disabled={pickerBusy}
               >
                 <Text className="text-xs font-semibold text-gray-700">
                   {t('pages.profileEdit.photoRemove', { defaultValue: '사진 제거' })}
@@ -429,7 +446,7 @@ export default function ProfileEditScreen() {
                 className={`mr-2 flex-row items-center rounded-xl border px-3 py-2 ${ocrPending ? 'border-gray-300 bg-gray-100' : 'border-gray-200 bg-white'}`}
                 activeOpacity={0.88}
                 onPress={pickLicenseImageWithOcr}
-                disabled={ocrPending}
+                disabled={ocrPending || pickerBusy}
               >
                 {ocrPending ? <ActivityIndicator size="small" color="#0f172a" /> : <ImagePlus size={15} color="#0f172a" />}
                 <Text className="ml-1 text-xs font-semibold text-gray-900">

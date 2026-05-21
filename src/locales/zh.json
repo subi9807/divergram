@@ -417,6 +417,117 @@
     "appInfoTitle": "应用信息",
     "versionLabel": "版本 {{version}}",
     "logout": "退出登录",
+    "sections": {
+      "profile": "个人资料设置",
+      "account": "账号设置",
+      "notifications": "通知设置",
+      "privacy": "隐私范围设置",
+      "diving": "潜水设置",
+      "app": "应用设置",
+      "safety": "安全设置"
+    },
+    "tabSubtitles": {
+      "profile": "简洁地管理个人资料与账号信息。",
+      "account": "配置社交登录、登录设备和账号安全。",
+      "notifications": "只接收你真正需要的通知。",
+      "privacy": "控制资料、帖子与潜水日志的可见范围。",
+      "diving": "按你的活动习惯设置潜水类型和单位。",
+      "app": "管理语言、主题、政策与支持菜单。",
+      "safety": "配置紧急联系人与安全共享选项。"
+    },
+    "common": {
+      "comingSoonTitle": "即将上线",
+      "comingSoonBody": "{{feature}} 功能即将支持。",
+      "selectOption": "请选择一个选项。"
+    },
+    "options": {
+      "public": "公开",
+      "followers": "仅关注者",
+      "private": "私密",
+      "diveType": {
+        "scuba": "水肺",
+        "freediving": "自由潜",
+        "snorkeling": "浮潜"
+      },
+      "depthUnit": {
+        "m": "m",
+        "ft": "ft"
+      },
+      "tempUnit": {
+        "c": "℃",
+        "f": "℉"
+      }
+    },
+    "profile": {
+      "image": "更换头像",
+      "nickname": "修改昵称",
+      "bio": "编辑简介",
+      "email": "修改邮箱",
+      "phoneVerify": "手机号验证",
+      "password": "修改密码",
+      "profileEditSubtitle": "更新头像、昵称和个人简介。",
+      "accountEditSubtitle": "管理邮箱、手机号验证和密码。"
+    },
+    "account": {
+      "googleLink": "关联 Google 登录",
+      "appleLink": "关联 Apple 登录",
+      "kakaoLink": "关联 Kakao 登录",
+      "devices": "登录设备管理",
+      "deleteAccount": "删除账号",
+      "deleteConfirm": "删除账号后无法恢复，是否继续？",
+      "socialSubtitle": "关联社交账号以提升登录便捷性与安全性。",
+      "linkAction": "立即关联",
+      "devicesSubtitle": "查看并管理当前已登录设备。",
+      "deleteSubtitle": "账号删除后将无法恢复。"
+    },
+    "notifications": {
+      "likes": "点赞通知",
+      "comments": "评论通知",
+      "follows": "关注通知",
+      "events": "活动通知",
+      "pushAll": "全部推送通知",
+      "pushAllSubtitle": "一键开启或关闭全部应用通知。"
+    },
+    "privacy": {
+      "profilePublic": "资料公开",
+      "postVisibility": "帖子公开范围",
+      "logVisibility": "潜水日志公开范围",
+      "locationSharing": "位置共享",
+      "blockedUsers": "黑名单管理"
+    },
+    "diving": {
+      "diveType": "潜水类型选择",
+      "certifications": "证书管理",
+      "certificationsSubtitle": "更新你持有的证书和当前等级。",
+      "equipment": "装备信息登记",
+      "region": "活动区域设置",
+      "points": "关注潜点设置",
+      "depthUnit": "深度单位设置",
+      "tempUnit": "水温单位设置"
+    },
+    "app": {
+      "darkMode": "深色模式",
+      "language": "语言设置",
+      "clearCache": "清除缓存",
+      "clearCacheConfirm": "是否清除缓存？",
+      "cacheClearedTitle": "完成",
+      "cacheClearedBody": "缓存已清理。",
+      "version": "查看应用版本",
+      "terms": "使用条款",
+      "privacyPolicy": "隐私政策",
+      "customerCenter": "客服中心",
+      "contact": "联系我们"
+    },
+    "safety": {
+      "emergencyContact": "紧急联系人",
+      "emergencyShare": "紧急共享设置",
+      "guide": "潜水安全指南",
+      "insurance": "保险信息登记"
+    },
+    "language": {
+      "title": "语言设置",
+      "subtitle": "请选择应用语言。"
+    },
     "languages": {
       "ko": "韩语",
       "en": "英语",
@@ -549,7 +660,9 @@
         "uploadFailTitle": "证书上传失败",
         "uploadFailBody": "上传证书图片时发生错误。",
         "uploadFailNotice": "自动识别失败，请手动填写证书信息。",
-        "fileTooLarge": "请选择 8MB 以下的图片。"
+        "fileTooLarge": "请选择 8MB 以下的图片。",
+        "ocrTooLargeTitle": "已跳过自动识别",
+        "ocrTooLarge": "图片过大，已跳过 OCR，请手动填写。"
       }
     }
   },

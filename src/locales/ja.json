@@ -417,6 +417,117 @@
     "appInfoTitle": "アプリ情報",
     "versionLabel": "バージョン {{version}}",
     "logout": "サインアウト",
+    "sections": {
+      "profile": "プロフィール設定",
+      "account": "アカウント設定",
+      "notifications": "通知設定",
+      "privacy": "公開範囲設定",
+      "diving": "ダイビング設定",
+      "app": "アプリ設定",
+      "safety": "安全設定"
+    },
+    "tabSubtitles": {
+      "profile": "プロフィールとアカウント情報をすっきり管理します。",
+      "account": "ソーシャル連携、ログイン端末、アカウント保護を設定します。",
+      "notifications": "必要な通知だけを正確に受け取りましょう。",
+      "privacy": "プロフィール、投稿、ログの公開範囲を制御します。",
+      "diving": "ダイビングタイプと単位を活動スタイルに合わせて設定します。",
+      "app": "言語、テーマ、ポリシー、サポート項目を管理します。",
+      "safety": "緊急連絡先と安全共有オプションを設定します。"
+    },
+    "common": {
+      "comingSoonTitle": "準備中",
+      "comingSoonBody": "{{feature}} はまもなく対応予定です。",
+      "selectOption": "オプションを選択してください。"
+    },
+    "options": {
+      "public": "公開",
+      "followers": "フォロワー",
+      "private": "非公開",
+      "diveType": {
+        "scuba": "スキューバ",
+        "freediving": "フリーダイビング",
+        "snorkeling": "スノーケリング"
+      },
+      "depthUnit": {
+        "m": "m",
+        "ft": "ft"
+      },
+      "tempUnit": {
+        "c": "℃",
+        "f": "℉"
+      }
+    },
+    "profile": {
+      "image": "プロフィール画像を変更",
+      "nickname": "ニックネーム変更",
+      "bio": "自己紹介を編集",
+      "email": "メール変更",
+      "phoneVerify": "電話番号認証",
+      "password": "パスワード変更",
+      "profileEditSubtitle": "プロフィール画像、ニックネーム、自己紹介を更新します。",
+      "accountEditSubtitle": "メール、電話番号認証、パスワードを管理します。"
+    },
+    "account": {
+      "googleLink": "Google ログイン連携",
+      "appleLink": "Apple ログイン連携",
+      "kakaoLink": "Kakao ログイン連携",
+      "devices": "ログイン端末管理",
+      "deleteAccount": "アカウント削除",
+      "deleteConfirm": "アカウント削除は取り消せません。続行しますか？",
+      "socialSubtitle": "ソーシャル連携でログインの利便性と安全性を高めます。",
+      "linkAction": "連携する",
+      "devicesSubtitle": "現在ログイン中の端末を確認・管理します。",
+      "deleteSubtitle": "アカウント削除は復旧できません。"
+    },
+    "notifications": {
+      "likes": "いいね通知",
+      "comments": "コメント通知",
+      "follows": "フォロー通知",
+      "events": "イベント通知",
+      "pushAll": "プッシュ通知全体",
+      "pushAllSubtitle": "アプリ通知を一括でオン/オフします。"
+    },
+    "privacy": {
+      "profilePublic": "プロフィール公開",
+      "postVisibility": "投稿公開範囲",
+      "logVisibility": "ダイブログ公開範囲",
+      "locationSharing": "位置情報共有",
+      "blockedUsers": "ブロックユーザー管理"
+    },
+    "diving": {
+      "diveType": "ダイビングタイプ選択",
+      "certifications": "資格管理",
+      "certificationsSubtitle": "保有資格と現在レベルを更新します。",
+      "equipment": "器材情報登録",
+      "region": "活動地域設定",
+      "points": "関心ダイビングポイント",
+      "depthUnit": "水深単位設定",
+      "tempUnit": "水温単位設定"
+    },
+    "app": {
+      "darkMode": "ダークモード",
+      "language": "言語設定",
+      "clearCache": "キャッシュ削除",
+      "clearCacheConfirm": "キャッシュを削除しますか？",
+      "cacheClearedTitle": "完了",
+      "cacheClearedBody": "キャッシュを整理しました。",
+      "version": "アプリバージョン確認",
+      "terms": "利用規約",
+      "privacyPolicy": "プライバシーポリシー",
+      "customerCenter": "カスタマーセンター",
+      "contact": "お問い合わせ"
+    },
+    "safety": {
+      "emergencyContact": "緊急連絡先登録",
+      "emergencyShare": "緊急時共有設定",
+      "guide": "ダイビング安全ガイド",
+      "insurance": "保険情報登録"
+    },
+    "language": {
+      "title": "言語設定",
+      "subtitle": "アプリで使用する言語を選択してください。"
+    },
     "languages": {
       "ko": "韓国語",
       "en": "英語",
@@ -549,7 +660,9 @@
         "uploadFailTitle": "ライセンスアップロード失敗",
         "uploadFailBody": "ライセンス画像のアップロード中にエラーが発生しました。",
         "uploadFailNotice": "自動認識に失敗しました。手動で入力してください。",
-        "fileTooLarge": "8MB以下の画像を選択してください。"
+        "fileTooLarge": "8MB以下の画像を選択してください。",
+        "ocrTooLargeTitle": "自動認識を省略",
+        "ocrTooLarge": "画像が大きいためOCRを省略しました。手動で入力してください。"
       }
     }
   },

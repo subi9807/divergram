@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Keyboard, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +12,7 @@ import { buildGoogleStaticMapUrl, isGoogleMapsApiConfigured, reverseGooglePoint,
 
 type DiveType = 'scuba' | 'freediving';
 type GasType = 'air' | 'nitrox' | 'heliox';
+type SelectedMediaItem = { uri: string; type: 'image' | 'video' };
 
 type DiveLogForm = {
   title: string;
@@ -98,6 +99,14 @@ function parseExifGps(exif: Record<string, unknown> | null | undefined): { lat: 
   return { lat, lng };
 }
 
+function normalizePickedUri(raw: unknown): string {
+  const uri = String(raw || '').trim();
+  if (!uri) return '';
+  if (/^(file|content|ph|assets-library|https?):\/\//i.test(uri)) return uri;
+  if (uri.startsWith('/')) return `file://${uri}`;
+  return uri;
+}
+
 export default function LogsScreen() {
   const { t } = useTranslation();
   const { showToast } = useToast();
@@ -109,6 +118,7 @@ export default function LogsScreen() {
   const [pointResults, setPointResults] = useState<GooglePointResult[]>([]);
   const [resortQuery, setResortQuery] = useState('');
   const [resortFocus, setResortFocus] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<SelectedMediaItem[]>([]);
 
   const { data: resorts = [] } = useQuery({ queryKey: ['logs-resorts'], queryFn: apiClient.getResorts });
 
@@ -143,7 +153,8 @@ export default function LogsScreen() {
         resortName: form.resortName.trim(),
         latitude: latNum,
         longitude: lngNum,
-        imageUri: form.photoUri || null,
+        imageUri: selectedMedia.find((item) => item.type === 'image')?.uri || selectedMedia[0]?.uri || form.photoUri || null,
+        mediaAssets: selectedMedia,
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['logs'] });
@@ -151,6 +162,7 @@ export default function LogsScreen() {
       await queryClient.invalidateQueries({ queryKey: ['explore'] });
       await queryClient.invalidateQueries({ queryKey: ['location-feed'] });
       setForm(initialForm);
+      setSelectedMedia([]);
       setPointQuery('');
       setPointResults([]);
       setResortQuery('');
@@ -228,19 +240,41 @@ export default function LogsScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
-      quality: 0.95,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: 10,
+      orderedSelection: true,
+      quality: 0.75,
       exif: true,
     });
 
     if (result.canceled || !result.assets?.length) return;
-    const asset = result.assets[0];
-    setForm((prev) => ({ ...prev, photoUri: asset.uri || '' }));
+    const assets = result.assets.slice(0, 10);
+    const mediaItems: SelectedMediaItem[] = assets
+      .map((asset) => ({
+        uri: normalizePickedUri(asset.uri),
+        type: asset.type === 'video' ? 'video' : 'image',
+      }))
+      .filter((asset) => Boolean(asset.uri));
+    if (!mediaItems.length) return;
 
-    const gps = parseExifGps(asset.exif as Record<string, unknown> | null | undefined);
+    setSelectedMedia(mediaItems);
+    const primaryImage = mediaItems.find((item) => item.type === 'image')?.uri || mediaItems[0]?.uri || '';
+    setForm((prev) => ({ ...prev, photoUri: primaryImage }));
+
+    let gps: { lat: number; lng: number } | null = null;
+    for (const asset of assets) {
+      const found = parseExifGps(asset.exif as Record<string, unknown> | null | undefined);
+      if (found) {
+        gps = found;
+        break;
+      }
+    }
     if (!gps) {
-      Alert.alert(t('logsForm.photo.gpsNotFoundTitle'), t('logsForm.photo.gpsNotFoundMessage'));
+      if (mediaItems.length === 1 && mediaItems[0]?.type === 'image') {
+        Alert.alert(t('logsForm.photo.gpsNotFoundTitle'), t('logsForm.photo.gpsNotFoundMessage'));
+      }
       return;
     }
 
@@ -447,12 +481,42 @@ export default function LogsScreen() {
             className="mb-4 flex-row items-center justify-center rounded-2xl border border-surface-200 bg-white px-4 py-4"
           >
             <Camera size={20} color="#0d5fa8" />
-            <Text className="ml-2 font-semibold text-brand-700">{t('logsForm.photo.select')}</Text>
+            <Text className="ml-2 font-semibold text-brand-700">
+              {t('logsForm.photo.selectMultiple', { defaultValue: '사진/동영상 선택 (최대 10개)' })}
+            </Text>
           </TouchableOpacity>
 
-          {form.photoUri ? (
+          {selectedMedia.length ? (
             <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
-              <ExpoImage source={{ uri: form.photoUri }} className="h-56 w-full" contentFit="cover" />
+              <View className="flex-row items-center justify-between px-3 py-2">
+                <Text className="text-xs font-semibold text-surface-700">
+                  {t('logsForm.photo.selectedCount', { defaultValue: '{{count}}개 선택됨', count: selectedMedia.length })}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedMedia([]);
+                    setForm((prev) => ({ ...prev, photoUri: '' }));
+                  }}
+                >
+                  <Text className="text-xs font-semibold text-red-500">
+                    {t('logsForm.photo.clear', { defaultValue: '선택 해제' })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}>
+                {selectedMedia.map((item, index) => (
+                  <View key={`${item.uri}-${index}`} className="mr-2 h-28 w-28 overflow-hidden rounded-xl border border-surface-200 bg-surface-50">
+                    {item.type === 'image' ? (
+                      <Image source={{ uri: item.uri }} className="h-full w-full" resizeMode="cover" />
+                    ) : (
+                      <View className="h-full w-full items-center justify-center">
+                        <Camera size={20} color="#64748b" />
+                        <Text className="mt-1 text-[10px] font-semibold text-surface-600">VIDEO</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
               <View className="px-3 py-2">
                 <Text className="text-xs text-surface-500">{t('logsForm.photo.gpsHint')}</Text>
               </View>

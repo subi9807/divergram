@@ -417,6 +417,117 @@
     "appInfoTitle": "App Info",
     "versionLabel": "Version {{version}}",
     "logout": "Sign Out",
+    "sections": {
+      "profile": "Profile Settings",
+      "account": "Account Settings",
+      "notifications": "Notification Settings",
+      "privacy": "Privacy Settings",
+      "diving": "Diving Settings",
+      "app": "App Settings",
+      "safety": "Safety Settings"
+    },
+    "tabSubtitles": {
+      "profile": "Manage your profile and account details cleanly.",
+      "account": "Configure social links, login devices, and account security.",
+      "notifications": "Receive only the notifications you really need.",
+      "privacy": "Control visibility for profile, posts, and dive logs.",
+      "diving": "Set dive type and units to match your activity style.",
+      "app": "Manage language, theme, policies, and support menus.",
+      "safety": "Configure emergency contacts and safety sharing options."
+    },
+    "common": {
+      "comingSoonTitle": "Coming soon",
+      "comingSoonBody": "{{feature}} will be available soon.",
+      "selectOption": "Select an option."
+    },
+    "options": {
+      "public": "Public",
+      "followers": "Followers",
+      "private": "Private",
+      "diveType": {
+        "scuba": "Scuba",
+        "freediving": "Freediving",
+        "snorkeling": "Snorkeling"
+      },
+      "depthUnit": {
+        "m": "m",
+        "ft": "ft"
+      },
+      "tempUnit": {
+        "c": "℃",
+        "f": "℉"
+      }
+    },
+    "profile": {
+      "image": "Change profile image",
+      "nickname": "Change nickname",
+      "bio": "Edit bio",
+      "email": "Change email",
+      "phoneVerify": "Verify phone number",
+      "password": "Change password",
+      "profileEditSubtitle": "Update profile image, nickname, and bio.",
+      "accountEditSubtitle": "Manage email, phone verification, and password."
+    },
+    "account": {
+      "googleLink": "Link Google login",
+      "appleLink": "Link Apple login",
+      "kakaoLink": "Link Kakao login",
+      "devices": "Manage login devices",
+      "deleteAccount": "Delete account",
+      "deleteConfirm": "Account deletion cannot be undone. Continue?",
+      "socialSubtitle": "Link social accounts to improve sign-in convenience and security.",
+      "linkAction": "Link now",
+      "devicesSubtitle": "Review and manage currently signed-in devices.",
+      "deleteSubtitle": "Account deletion is permanent."
+    },
+    "notifications": {
+      "likes": "Like notifications",
+      "comments": "Comment notifications",
+      "follows": "Follow notifications",
+      "events": "Event notifications",
+      "pushAll": "All push notifications",
+      "pushAllSubtitle": "Turn all app notifications on or off at once."
+    },
+    "privacy": {
+      "profilePublic": "Profile visibility",
+      "postVisibility": "Post visibility",
+      "logVisibility": "Dive log visibility",
+      "locationSharing": "Location sharing",
+      "blockedUsers": "Blocked users"
+    },
+    "diving": {
+      "diveType": "Dive type",
+      "certifications": "Certification management",
+      "certificationsSubtitle": "Update your certifications and current level.",
+      "equipment": "Equipment registration",
+      "region": "Activity region",
+      "points": "Favorite dive points",
+      "depthUnit": "Depth unit",
+      "tempUnit": "Water temperature unit"
+    },
+    "app": {
+      "darkMode": "Dark mode",
+      "language": "Language",
+      "clearCache": "Clear cache",
+      "clearCacheConfirm": "Clear cached data?",
+      "cacheClearedTitle": "Done",
+      "cacheClearedBody": "Cache has been cleared.",
+      "version": "App version",
+      "terms": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "customerCenter": "Customer Center",
+      "contact": "Contact Us"
+    },
+    "safety": {
+      "emergencyContact": "Emergency contact",
+      "emergencyShare": "Emergency sharing",
+      "guide": "Dive safety guide",
+      "insurance": "Insurance information"
+    },
+    "language": {
+      "title": "Language",
+      "subtitle": "Choose the app language."
+    },
     "languages": {
       "ko": "Korean",
       "en": "English",
@@ -549,7 +660,9 @@
         "uploadFailTitle": "License upload failed",
         "uploadFailBody": "An error occurred while uploading the license image.",
         "uploadFailNotice": "Auto-detect failed. Please enter license details manually.",
-        "fileTooLarge": "Please select an image under 8MB."
+        "fileTooLarge": "Please select an image under 8MB.",
+        "ocrTooLargeTitle": "Auto-detect skipped",
+        "ocrTooLarge": "Image is too large for OCR. Please enter details manually."
       }
     }
   },

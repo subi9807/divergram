@@ -853,11 +853,28 @@ export const apiClient = {
     const gasPercent = diveType === 'scuba' && gasType !== 'air' ? normalizeNumber(data.gasPercent) : undefined;
     const latitude = normalizeNumber(data.latitude);
     const longitude = normalizeNumber(data.longitude);
-    const imageUrl = normalizeImageUrl(data.imageUri);
+    const rawMediaAssets = Array.isArray(data.mediaAssets) ? data.mediaAssets : [];
+    const mediaAssets = rawMediaAssets
+      .map((item: any, index: number) => {
+        const uri = normalizeImageUrl(item?.uri || item?.url);
+        if (!uri) return null;
+        return {
+          uri,
+          type: item?.type === 'video' ? 'video' : 'image',
+          order: index,
+        };
+      })
+      .filter(Boolean) as { uri: string; type: 'image' | 'video'; order: number }[];
+
+    const firstImage = mediaAssets.find((item) => item.type === 'image')?.uri;
+    const firstVideo = mediaAssets.find((item) => item.type === 'video')?.uri;
+    const imageUrl = firstImage || normalizeImageUrl(data.imageUri);
+    const videoUrl = firstVideo || normalizeImageUrl(data.videoUri);
     const row = {
       id,
       user_id: String(user?.id || 'native-user'),
       image_url: imageUrl || null,
+      video_url: videoUrl || null,
       caption,
       location: locationLabel || null,
       dive_site: pointName || null,
@@ -877,6 +894,19 @@ export const apiClient = {
       created_at: new Date().toISOString(),
     };
     const [created] = await dataApi.insert('posts', [row]);
+    if (mediaAssets.length) {
+      await dataApi.insert(
+        'post_media',
+        mediaAssets.map((item, index) => ({
+          id: `${id}_media_${index + 1}`,
+          post_id: id,
+          media_url: item.uri,
+          media_type: item.type,
+          order_index: item.order,
+          created_at: row.created_at,
+        }))
+      );
+    }
     return created;
   },
   uploadTrack: (_logId: string, _trackData: any) => Promise.reject(new Error('not_implemented')),
