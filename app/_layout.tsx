@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { ToastProvider } from '../src/components/Toast';
 import { AuthProvider } from '../src/providers/AuthProvider';
+import { GlobalEdgeSwipeNav } from '../src/components/GlobalEdgeSwipeNav';
 import i18n from '../src/lib/i18n';
 import { useSettingsStore } from '../src/stores/settingsStore';
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="+not-found" />
             </Stack>
+            <GlobalEdgeSwipeNav />
             <StatusBar style="auto" />
           </AuthProvider>
         </ToastProvider>

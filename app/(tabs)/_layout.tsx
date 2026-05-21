@@ -85,6 +85,7 @@ export default function TabLayout() {
       <Tabs.Screen name="profile-edit" options={{ href: null }} />
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="settings-detail" options={{ href: null }} />
       <Tabs.Screen name="feed" options={{ href: null }} />
     </Tabs>
   );

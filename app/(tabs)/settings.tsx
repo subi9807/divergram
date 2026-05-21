@@ -26,7 +26,7 @@ import { appRouteMap } from '../../src/config/sitemap';
 
 const languageOptions: ('ko' | 'en' | 'ja' | 'zh')[] = ['ko', 'en', 'ja', 'zh'];
 type SettingsTab = 'account' | 'notifications' | 'privacy' | 'diving' | 'app' | 'safety';
-type IconComponent = React.ComponentType<{ size?: number | string; color?: string }>;
+type IconComponent = React.ComponentType<{ size?: number | string; color?: any }>;
 
 type ActionRowProps = {
   icon: React.ReactNode;
@@ -122,7 +122,7 @@ function SocialButton({ label, actionLabel, badge, onPress }: SocialButtonProps)
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
 
@@ -154,7 +154,6 @@ export default function SettingsScreen() {
   const updateTemperatureUnit = useSettingsStore((state) => state.updateTemperatureUnit);
 
   const version = Constants.expoConfig?.version || '1.0.0';
-  const initial = (user?.name || user?.email || 'D').charAt(0).toUpperCase();
   const appYear = new Date().getFullYear();
 
   const tx = (key: string, fallback: string, params?: Record<string, unknown>) =>
@@ -229,23 +228,9 @@ export default function SettingsScreen() {
     },
   };
 
-  const themeLabel =
-    theme === 'dark'
-      ? tx('settingsPage.app.darkMode', '다크모드')
-      : theme === 'light'
-        ? tx('settingsPage.app.lightMode', '라이트모드')
-        : tx('settingsPage.app.systemMode', '시스템 설정');
-
   const setLanguage = (lng: 'ko' | 'en' | 'ja' | 'zh') => {
     updateLanguage(lng);
     if (i18n.language !== lng) i18n.changeLanguage(lng);
-  };
-
-  const openComingSoon = (feature: string) => {
-    Alert.alert(
-      tx('settingsPage.common.comingSoonTitle', '준비 중'),
-      tx('settingsPage.common.comingSoonBody', '{{feature}} 기능은 곧 지원됩니다.', { feature })
-    );
   };
 
   const pickLanguage = () => {
@@ -340,18 +325,7 @@ export default function SettingsScreen() {
   };
 
   const handleAccountDelete = () => {
-    Alert.alert(
-      tx('settingsPage.account.deleteAccount', '계정 삭제'),
-      tx('settingsPage.account.deleteConfirm', '계정 삭제는 되돌릴 수 없습니다. 계속할까요?'),
-      [
-        { text: tx('common.cancel', '취소'), style: 'cancel' },
-        {
-          text: tx('common.delete', '삭제'),
-          style: 'destructive',
-          onPress: () => openComingSoon(tx('settingsPage.account.deleteAccount', '계정 삭제')),
-        },
-      ]
-    );
+    router.push('/(tabs)/settings-detail?mode=account-delete' as never);
   };
 
   const handleLogout = () => {
@@ -384,7 +358,7 @@ export default function SettingsScreen() {
               <SocialButton
                 label="Google"
                 actionLabel={tx('settingsPage.account.linkAction', '연동하기')}
-                onPress={() => openComingSoon('Google SSO')}
+                onPress={() => router.push('/(tabs)/settings-detail?mode=link-google' as never)}
                 badge={
                   <View style={[styles.socialBadge, { borderColor: '#c9d9ee' }]}>
                     <Text style={{ fontSize: 15, fontWeight: '800', color: '#2563eb' }}>G</Text>
@@ -394,7 +368,7 @@ export default function SettingsScreen() {
               <SocialButton
                 label="Apple"
                 actionLabel={tx('settingsPage.account.linkAction', '연동하기')}
-                onPress={() => openComingSoon('Apple SSO')}
+                onPress={() => router.push('/(tabs)/settings-detail?mode=link-apple' as never)}
                 badge={
                   <View style={[styles.socialBadge, { backgroundColor: '#111827' }]}>
                     <Apple size={16} color="#ffffff" />
@@ -404,7 +378,7 @@ export default function SettingsScreen() {
               <SocialButton
                 label="Kakao"
                 actionLabel={tx('settingsPage.account.linkAction', '연동하기')}
-                onPress={() => openComingSoon('Kakao SSO')}
+                onPress={() => router.push('/(tabs)/settings-detail?mode=link-kakao' as never)}
                 badge={
                   <View style={[styles.socialBadge, { backgroundColor: '#FEE500' }]}>
                     <Text style={{ fontSize: 15, fontWeight: '800', color: '#191919' }}>K</Text>
@@ -485,7 +459,7 @@ export default function SettingsScreen() {
           <ActionRow
             icon={<Shield size={18} color="#4d5d6b" />}
             title={tx('settingsPage.privacy.blockedUsers', '차단 사용자 관리')}
-            onPress={() => openComingSoon(tx('settingsPage.privacy.blockedUsers', '차단 사용자 관리'))}
+            onPress={() => router.push('/(tabs)/settings-detail?mode=blocked-users' as never)}
             border={false}
           />
         </View>
@@ -573,7 +547,7 @@ export default function SettingsScreen() {
           <ActionRow
             icon={<HelpCircle size={18} color="#4d5d6b" />}
             title={tx('settingsPage.app.customerCenter', '고객센터')}
-            onPress={() => openComingSoon(tx('settingsPage.app.customerCenter', '고객센터'))}
+            onPress={() => router.push('/(tabs)/settings-detail?mode=customer-center' as never)}
           />
           <ActionRow
             icon={<Mail size={18} color="#4d5d6b" />}
@@ -590,7 +564,7 @@ export default function SettingsScreen() {
         <ActionRow
           icon={<UserRoundCog size={18} color="#4d5d6b" />}
           title={tx('settingsPage.safety.emergencyContact', '비상 연락처 등록')}
-          onPress={() => openComingSoon(tx('settingsPage.safety.emergencyContact', '비상 연락처 등록'))}
+          onPress={() => router.push('/(tabs)/settings-detail?mode=emergency-contact' as never)}
         />
         <ToggleRow
           icon={<Shield size={18} color="#4d5d6b" />}
@@ -601,12 +575,12 @@ export default function SettingsScreen() {
         <ActionRow
           icon={<HelpCircle size={18} color="#4d5d6b" />}
           title={tx('settingsPage.safety.guide', '다이빙 안전 가이드 보기')}
-          onPress={() => openComingSoon(tx('settingsPage.safety.guide', '다이빙 안전 가이드 보기'))}
+          onPress={() => router.push('/(tabs)/settings-detail?mode=safety-guide' as never)}
         />
         <ActionRow
           icon={<Link2 size={18} color="#4d5d6b" />}
           title={tx('settingsPage.safety.insurance', '보험 정보 등록')}
-          onPress={() => openComingSoon(tx('settingsPage.safety.insurance', '보험 정보 등록'))}
+          onPress={() => router.push('/(tabs)/settings-detail?mode=insurance' as never)}
           border={false}
         />
       </View>
@@ -616,49 +590,6 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-        <View style={styles.pageHeader}>
-          <Text style={styles.pageTitle}>{tx('settingsPage.title', '설정')}</Text>
-          <Text style={styles.pageSubtitle}>{tx('settingsPage.subtitle', '계정과 앱 환경을 한 곳에서 관리하세요.')}</Text>
-        </View>
-
-        <View style={styles.profileCard}>
-          <View style={styles.profileTopRow}>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{initial}</Text>
-            </View>
-            <View style={styles.profileTextWrap}>
-              <Text style={styles.profileName}>{user?.name || t('profile.unnamed')}</Text>
-              <Text style={styles.profileDesc}>{tx('settingsPage.account.socialSubtitle', '소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.')}</Text>
-            </View>
-          </View>
-          <View style={styles.profileActionRow}>
-            <TouchableOpacity
-              activeOpacity={0.86}
-              onPress={() => router.push(appRouteMap.profile_edit.path as never)}
-              style={[styles.headerActionButton, styles.headerActionButtonPrimary]}
-            >
-              <Text style={styles.headerActionTextPrimary}>{tx('settingsPage.profileEdit', '프로필 편집')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.86}
-              onPress={() => router.push(appRouteMap.account.path as never)}
-              style={styles.headerActionButton}
-            >
-              <Text style={styles.headerActionText}>{tx('tabs.account', '계정')}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.profileMetaRow}>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>{tx('settingsPage.app.language', '언어')}</Text>
-              <Text style={styles.metaPillValue}>{labelMap.language[language]}</Text>
-            </View>
-            <View style={styles.metaPill}>
-              <Text style={styles.metaPillLabel}>{tx('settingsPage.app.darkMode', '테마')}</Text>
-              <Text style={styles.metaPillValue}>{themeLabel}</Text>
-            </View>
-          </View>
-        </View>
-
         <View style={styles.tabGridCard}>
           <View style={styles.tabGridWrap}>
             {tabs.map((tabId) => {
@@ -817,7 +748,7 @@ const styles = StyleSheet.create({
   },
   tabGridCard: {
     marginHorizontal: 20,
-    marginTop: 14,
+    marginTop: 8,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#dbe7f2',

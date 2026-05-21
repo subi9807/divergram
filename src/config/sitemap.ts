@@ -20,6 +20,7 @@ export type AppRouteId =
   | 'logs'
   | 'devices'
   | 'profile_edit'
+  | 'settings_detail'
   | 'auth_welcome'
   | 'auth_login'
   | 'auth_privacy'
@@ -55,6 +56,7 @@ export const appSitemap: AppRoute[] = [
   { id: 'logs', path: '/(tabs)/logs', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: true },
   { id: 'devices', path: '/(tabs)/devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
   { id: 'profile_edit', path: '/(tabs)/profile-edit', titleKey: 'tabs.profileEdit', section: 'tabs', visibleInTabBar: false },
+  { id: 'settings_detail', path: '/(tabs)/settings-detail', titleKey: 'tabs.settings', section: 'tabs', visibleInTabBar: false },
   { id: 'auth_welcome', path: '/(auth)/welcome', titleKey: 'auth.welcome', section: 'auth' },
   { id: 'auth_login', path: '/(auth)/login', titleKey: 'auth.signIn', section: 'auth' },
   { id: 'auth_privacy', path: '/(auth)/privacy', titleKey: 'auth.privacy', section: 'auth' },

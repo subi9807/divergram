@@ -14,6 +14,9 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID_IOS = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '';
 const GOOGLE_CLIENT_ID_ANDROID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || process.env.GOOGLE_CLIENT_ID_ANDROID || '';
 const GOOGLE_CLIENT_ID_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || process.env.GOOGLE_CLIENT_ID_WEB || '';
+const AUTH_TOKEN_KEY = 'auth_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+const AUTH_USER_KEY = 'auth_user';
 
 function toGoogleIosUrlScheme(clientId: string): string | null {
   const trimmed = clientId.trim();
@@ -29,6 +32,15 @@ interface User {
   email: string;
   name?: string;
   avatar?: string;
+}
+
+function normalizeUser(raw: any): User | null {
+  const id = String(raw?.id || '').trim();
+  const email = String(raw?.email || '').trim().toLowerCase();
+  if (!id || !email) return null;
+  const name = raw?.name ? String(raw.name) : undefined;
+  const avatar = raw?.avatar ? String(raw.avatar) : undefined;
+  return { id, email, name, avatar };
 }
 
 interface AuthContextType {
@@ -86,18 +98,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const persistAuthPayload = useCallback((payload: any, fallback?: Partial<User>) => {
     const token = payload?.token;
     if (!token) throw new Error('missing_auth_token');
-    storage.set('auth_token', token);
-    if (payload?.refreshToken) storage.set('refresh_token', payload.refreshToken);
-    else storage.delete('refresh_token');
+    storage.set(AUTH_TOKEN_KEY, token);
+    if (payload?.refreshToken) storage.set(REFRESH_TOKEN_KEY, payload.refreshToken);
+    else storage.delete(REFRESH_TOKEN_KEY);
 
     const userPayload = payload?.user || {};
     const profilePayload = payload?.profile || {};
-    setUser({
+    const nextUser = normalizeUser({
       id: String(userPayload.id || fallback?.id || ''),
       email: String(userPayload.email || fallback?.email || ''),
       name: profilePayload.full_name || profilePayload.username || fallback?.name,
       avatar: profilePayload.avatar_url || fallback?.avatar,
     });
+    setUser(nextUser);
+    if (nextUser) {
+      storage.set(AUTH_USER_KEY, JSON.stringify(nextUser));
+    }
   }, []);
 
   const sanitizeUsername = useCallback((value: string) => {
@@ -153,16 +169,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const checkAuthState = async () => {
-    try {
-      const token = storage.getString('auth_token');
-      if (token) {
-        const userData = await apiClient.getMe();
-        setUser(userData);
+    const token = storage.getString(AUTH_TOKEN_KEY);
+    const rawUser = storage.getString(AUTH_USER_KEY);
+    let cachedUser: User | null = null;
+    if (rawUser) {
+      try {
+        cachedUser = normalizeUser(JSON.parse(rawUser));
+      } catch {
+        storage.delete(AUTH_USER_KEY);
       }
-    } catch {
-      // Token invalid, clear storage
-      storage.delete('auth_token');
-      storage.delete('refresh_token');
+    }
+
+    if (!token) {
+      storage.delete(AUTH_USER_KEY);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    if (cachedUser) {
+      setUser(cachedUser);
+    }
+
+    try {
+      const userData = normalizeUser(await apiClient.getMe());
+      if (userData) {
+        setUser(userData);
+        storage.set(AUTH_USER_KEY, JSON.stringify(userData));
+      } else if (!cachedUser) {
+        setUser(null);
+      }
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        storage.delete(AUTH_TOKEN_KEY);
+        storage.delete(REFRESH_TOKEN_KEY);
+        storage.delete(AUTH_USER_KEY);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -353,8 +397,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = useCallback(() => {
-    storage.delete('auth_token');
-    storage.delete('refresh_token');
+    storage.delete(AUTH_TOKEN_KEY);
+    storage.delete(REFRESH_TOKEN_KEY);
+    storage.delete(AUTH_USER_KEY);
     setUser(null);
     
     showToast({
@@ -365,7 +410,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [showToast]);
 
   const getAccessToken = () => {
-    return storage.getString('auth_token') || null;
+    return storage.getString(AUTH_TOKEN_KEY) || null;
   };
 
   const value = {

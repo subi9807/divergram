@@ -222,6 +222,31 @@ export const apiClient = {
   authWithEmailSignup: (email: string, password: string, username: string, accountType: 'personal' | 'resort' = 'personal') =>
     axiosInstance.post('/auth/signup', { email, password, username, account_type: accountType }),
 
+  deleteAccount: async () => {
+    const candidates: { method: 'delete' | 'post'; path: string }[] = [
+      { method: 'delete', path: '/auth/account' },
+      { method: 'delete', path: '/auth/me' },
+      { method: 'post', path: '/auth/account/delete' },
+    ];
+
+    for (const candidate of candidates) {
+      try {
+        if (candidate.method === 'delete') {
+          await axiosInstance.delete(candidate.path);
+        } else {
+          await axiosInstance.post(candidate.path, {});
+        }
+        return true;
+      } catch (error: any) {
+        const status = Number(error?.response?.status || 0);
+        if (status === 404 || status === 405) continue;
+        throw error;
+      }
+    }
+
+    return false;
+  },
+
   refreshToken: (_refreshToken: string) => Promise.reject(new Error('refresh_token_not_supported')),
 
   getSession: () => axiosInstance.get('/auth/session').then((res) => res.data?.session || null),
