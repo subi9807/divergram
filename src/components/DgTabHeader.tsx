@@ -5,12 +5,13 @@ import { Bell, Compass, Film, MapPin, Menu, MessageCircle, Search, Settings, Shi
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useResolvedTheme } from '../hooks/useResolvedTheme';
 import { appRouteMap, type AppRouteId } from '../config/sitemap';
 
 const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity', 'saved'];
 const moreRouteIds: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'admin'];
 
-const iconMap: Partial<Record<AppRouteId, React.ComponentType<{ size?: number; color?: string }>>> = {
+const iconMap: Partial<Record<AppRouteId, React.ComponentType<any>>> = {
   settings: Settings,
   messages: MessageCircle,
   activity: UserRoundCog,
@@ -29,7 +30,42 @@ interface DgTabHeaderProps {
 export function DgTabHeader({ title }: DgTabHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isDark } = useResolvedTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const palette = isDark
+    ? {
+        safeBg: '#0b1520',
+        safeBorder: '#1f2f41',
+        title: '#e2e8f0',
+        subtitle: '#94a3b8',
+        iconBg: '#111f2f',
+        iconBorder: '#2a3d54',
+        iconColor: '#dbeafe',
+        sheetBg: '#0c1723',
+        sectionTitle: '#94a3b8',
+        menuCardBg: '#111f2f',
+        menuCardBorder: '#2a3d54',
+        menuTitle: '#e2e8f0',
+        menuSub: '#94a3b8',
+        menuIconBg: '#1c3046',
+      }
+    : {
+        safeBg: '#ffffff',
+        safeBorder: '#e4ecf4',
+        title: '#0f172a',
+        subtitle: '#64748b',
+        iconBg: '#f8fbff',
+        iconBorder: '#dde8f3',
+        iconColor: '#1e293b',
+        sheetBg: '#f7fbff',
+        sectionTitle: '#7d93a8',
+        menuCardBg: '#ffffff',
+        menuCardBorder: '#dee8f2',
+        menuTitle: '#0f172a',
+        menuSub: '#64748b',
+        menuIconBg: '#ecf5ff',
+      };
 
   const menuRows = useMemo(
     () => [
@@ -46,27 +82,27 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
 
   return (
     <>
-      <SafeAreaView edges={['top']} style={styles.headerSafe}>
-        <View style={styles.header}>
+      <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: palette.safeBg, borderBottomColor: palette.safeBorder }]}>
+        <View style={[styles.header, { backgroundColor: palette.safeBg }]}>
           <TouchableOpacity style={styles.brandWrap} activeOpacity={0.85} onPress={() => router.replace(appRouteMap.home.path as never)}>
             <LinearGradient colors={['#0d5fa8', '#1198f5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
               <Text style={styles.logoText}>DG</Text>
             </LinearGradient>
             <View style={styles.brandTextWrap}>
-              <Text style={styles.brandTitle}>Divergram</Text>
+              <Text style={[styles.brandTitle, { color: palette.title }]}>Divergram</Text>
               <View style={styles.subtitleRow}>
                 <View style={styles.liveDot} />
-                <Text numberOfLines={1} style={styles.brandSubtitle}>{title || t('brand.tagline')}</Text>
+                <Text numberOfLines={1} style={[styles.brandSubtitle, { color: palette.subtitle }]}>{title || t('brand.tagline')}</Text>
               </View>
             </View>
           </TouchableOpacity>
 
           <View style={styles.actionWrap}>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85} onPress={() => router.push(appRouteMap.search.path as never)}>
-              <Search size={18} color="#1e293b" />
+            <TouchableOpacity style={[styles.iconBtn, { backgroundColor: palette.iconBg, borderColor: palette.iconBorder }]} activeOpacity={0.85} onPress={() => router.push(appRouteMap.search.path as never)}>
+              <Search size={18} color={palette.iconColor} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85} onPress={() => setMenuOpen(true)}>
-              <Menu size={20} color="#1e293b" />
+            <TouchableOpacity style={[styles.iconBtn, { backgroundColor: palette.iconBg, borderColor: palette.iconBorder }]} activeOpacity={0.85} onPress={() => setMenuOpen(true)}>
+              <Menu size={20} color={palette.iconColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -74,21 +110,21 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
 
       <Modal transparent visible={menuOpen} animationType="slide" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { backgroundColor: palette.sheetBg }]}>
             <View style={styles.sheetHandle} />
             {menuRows.map((section) => (
               <View key={section.label} style={styles.section}>
-                <Text style={styles.sectionTitle}>{section.label}</Text>
+                <Text style={[styles.sectionTitle, { color: palette.sectionTitle }]}>{section.label}</Text>
                 {section.ids.map((id) => {
                   const Icon = iconMap[id] || Compass;
                   return (
-                    <TouchableOpacity key={id} style={styles.menuCard} activeOpacity={0.85} onPress={() => go(id)}>
-                      <View style={styles.menuIconWrap}>
+                    <TouchableOpacity key={id} style={[styles.menuCard, { backgroundColor: palette.menuCardBg, borderColor: palette.menuCardBorder }]} activeOpacity={0.85} onPress={() => go(id)}>
+                      <View style={[styles.menuIconWrap, { backgroundColor: palette.menuIconBg }]}>
                         <Icon size={18} color="#0d5fa8" />
                       </View>
                       <View style={styles.menuTextWrap}>
-                        <Text style={styles.menuTitle}>{t(appRouteMap[id].titleKey)}</Text>
-                        <Text style={styles.menuSub}>{t(`menu.desc.${id}`)}</Text>
+                        <Text style={[styles.menuTitle, { color: palette.menuTitle }]}>{t(appRouteMap[id].titleKey)}</Text>
+                        <Text style={[styles.menuSub, { color: palette.menuSub }]}>{t(`menu.desc.${id}`)}</Text>
                       </View>
                     </TouchableOpacity>
                   );

@@ -2,16 +2,18 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, House, MapPin, Search, User } from 'lucide-react-native';
+import { Bell, BookOpen, Bookmark, House, MapPin, MessageCircle, Search, Store, User } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { DgTabHeader } from '../../src/components/DgTabHeader';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
+import { bottomTabCandidates, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
 
-function tabIcon(Icon: typeof House) {
+function tabIcon(Icon: typeof House, isDark: boolean) {
   function TabBarIcon({ size, color, focused }: { size: number; color: string; focused: boolean }) {
     return (
-      <View style={[styles.iconWrap, focused ? styles.iconWrapActive : null]}>
-        <Icon size={size - 1} color={focused ? '#0d5fa8' : color} />
+      <View style={[styles.iconWrap, focused ? (isDark ? styles.iconWrapActiveDark : styles.iconWrapActive) : null]}>
+        <Icon size={size - 1} color={focused ? (isDark ? '#7dd3fc' : '#0d5fa8') : color} />
       </View>
     );
   }
@@ -22,6 +24,20 @@ function tabIcon(Icon: typeof House) {
 export default function TabLayout() {
   const { t } = useTranslation();
   const { loading, user } = useAuth();
+  const { isDark } = useResolvedTheme();
+  const bottomTabItems = useSettingsStore((state) => state.bottomTabItems);
+
+  const tabMeta: Record<BottomTabRoute, { icon: typeof House; titleKey: string }> = {
+    index: { icon: House, titleKey: appRouteMap.home.titleKey },
+    explore: { icon: Search, titleKey: appRouteMap.explore.titleKey },
+    location: { icon: MapPin, titleKey: appRouteMap.location.titleKey },
+    logs: { icon: BookOpen, titleKey: appRouteMap.logs.titleKey },
+    profile: { icon: User, titleKey: appRouteMap.profile.titleKey },
+    messages: { icon: MessageCircle, titleKey: appRouteMap.messages.titleKey },
+    notifications: { icon: Bell, titleKey: appRouteMap.notifications.titleKey },
+    saved: { icon: Bookmark, titleKey: appRouteMap.saved.titleKey },
+    resorts: { icon: Store, titleKey: appRouteMap.resorts.titleKey },
+  };
 
   if (loading) {
     return (
@@ -40,16 +56,16 @@ export default function TabLayout() {
       initialRouteName="index"
       screenOptions={{
         header: ({ options }) => <DgTabHeader title={String(options.title || '')} />,
-        tabBarActiveTintColor: '#0d5fa8',
-        tabBarInactiveTintColor: '#6f8193',
+        tabBarActiveTintColor: isDark ? '#7dd3fc' : '#0d5fa8',
+        tabBarInactiveTintColor: isDark ? '#94a3b8' : '#6f8193',
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: '#ffffff',
+          backgroundColor: isDark ? '#0b1520' : '#ffffff',
           borderTopWidth: 1,
-          borderTopColor: '#d7e4f1',
+          borderTopColor: isDark ? '#1f2f41' : '#d7e4f1',
           elevation: 10,
-          shadowColor: '#0d5fa8',
-          shadowOpacity: 0.13,
+          shadowColor: isDark ? '#020617' : '#0d5fa8',
+          shadowOpacity: isDark ? 0.4 : 0.13,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
           height: 76,
@@ -65,18 +81,18 @@ export default function TabLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: t(appRouteMap.home.titleKey), tabBarIcon: tabIcon(House) }} />
-      <Tabs.Screen name="explore" options={{ title: t(appRouteMap.explore.titleKey), tabBarIcon: tabIcon(Search) }} />
-      <Tabs.Screen name="location" options={{ title: t(appRouteMap.location.titleKey), tabBarIcon: tabIcon(MapPin) }} />
-      <Tabs.Screen name="logs" options={{ title: t(appRouteMap.logs.titleKey), tabBarIcon: tabIcon(BookOpen) }} />
-      <Tabs.Screen name="profile" options={{ title: t(appRouteMap.profile.titleKey), tabBarIcon: tabIcon(User) }} />
+      {bottomTabItems.map((routeName) => {
+        const meta = tabMeta[routeName];
+        return <Tabs.Screen key={`tab-${routeName}`} name={routeName} options={{ title: t(meta.titleKey), tabBarIcon: tabIcon(meta.icon, isDark) }} />;
+      })}
+      {bottomTabCandidates
+        .filter((routeName) => !bottomTabItems.includes(routeName))
+        .map((routeName) => (
+          <Tabs.Screen key={`hidden-tab-${routeName}`} name={routeName} options={{ href: null }} />
+        ))}
       <Tabs.Screen name="create" options={{ href: null }} />
-      <Tabs.Screen name="messages" options={{ href: null }} />
-      <Tabs.Screen name="resorts" options={{ href: null }} />
       <Tabs.Screen name="reels" options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
-      <Tabs.Screen name="saved" options={{ href: null }} />
       <Tabs.Screen name="activity" options={{ href: null }} />
       <Tabs.Screen name="account" options={{ href: null }} />
       <Tabs.Screen name="admin" options={{ href: null }} />
@@ -102,10 +118,13 @@ const styles = StyleSheet.create({
   iconWrapActive: {
     backgroundColor: '#e8f4ff',
   },
+  iconWrapActiveDark: {
+    backgroundColor: '#1e3a57',
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f172a',
   },
 });

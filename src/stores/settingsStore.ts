@@ -15,6 +15,40 @@ const zustandStorage = {
   },
 };
 
+export type BottomTabRoute = 'index' | 'explore' | 'location' | 'logs' | 'profile' | 'messages' | 'notifications' | 'saved' | 'resorts';
+
+export const bottomTabCandidates: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'saved', 'resorts'];
+export const bottomTabDefault: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile'];
+
+function normalizeBottomTabItems(input: BottomTabRoute[]): BottomTabRoute[] {
+  const seen = new Set<BottomTabRoute>();
+  const ordered: BottomTabRoute[] = [];
+
+  for (const item of input) {
+    if (!bottomTabCandidates.includes(item)) continue;
+    if (seen.has(item)) continue;
+    seen.add(item);
+    ordered.push(item);
+  }
+
+  if (!seen.has('index')) {
+    ordered.unshift('index');
+    seen.add('index');
+  }
+
+  if (ordered.length < 3) {
+    for (const fallback of bottomTabDefault) {
+      if (seen.has(fallback)) continue;
+      ordered.push(fallback);
+      seen.add(fallback);
+      if (ordered.length >= 3) break;
+    }
+  }
+
+  if (ordered.length > 5) return ordered.slice(0, 5);
+  return ordered;
+}
+
 interface SettingsState {
   language: 'ko' | 'en' | 'ja' | 'zh';
   theme: 'light' | 'dark' | 'system';
@@ -41,6 +75,7 @@ interface SettingsState {
   defaultDiveMode: 'recreational' | 'technical';
 
   emergencyShareEnabled: boolean;
+  bottomTabItems: BottomTabRoute[];
 
   updateLanguage: (language: 'ko' | 'en' | 'ja' | 'zh') => void;
   updateTheme: (theme: 'light' | 'dark' | 'system') => void;
@@ -58,6 +93,7 @@ interface SettingsState {
   updatePreferredDiveType: (value: 'scuba' | 'freediving' | 'snorkeling') => void;
   updateDepthUnit: (value: 'm' | 'ft') => void;
   updateTemperatureUnit: (value: 'c' | 'f') => void;
+  updateBottomTabItems: (items: BottomTabRoute[]) => void;
   resetSettings: () => void;
 }
 
@@ -83,6 +119,7 @@ const defaultSettings = {
   units: 'metric' as const,
   defaultDiveMode: 'recreational' as const,
   emergencyShareEnabled: false,
+  bottomTabItems: bottomTabDefault,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -109,6 +146,8 @@ export const useSettingsStore = create<SettingsState>()(
       updateDepthUnit: (value) => set({ depthUnit: value, units: value === 'm' ? 'metric' : 'imperial' }),
 
       updateTemperatureUnit: (value) => set({ temperatureUnit: value }),
+
+      updateBottomTabItems: (items) => set({ bottomTabItems: normalizeBottomTabItems(items) }),
 
       resetSettings: () => set(defaultSettings),
     }),

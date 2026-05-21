@@ -11,7 +11,8 @@
     "previous": "前へ",
     "done": "完了",
     "all": "すべて",
-    "today": "今日"
+    "today": "今日",
+    "back": "戻る"
   },
   "welcome": {
     "subtitle": "ダイビング体験を記録し\nコミュニティと共有しよう",
@@ -197,7 +198,16 @@
       "favoritesLabel": "お気に入り",
       "savedDesc": "保存した投稿とリゾート",
       "activityDesc": "いいね、コメント、フォロー活動",
-      "settingsDesc": "通知、言語、アカウントセキュリティ"
+      "settingsDesc": "通知、言語、アカウントセキュリティ",
+      "tabs": {
+        "favorites": "お気に入り",
+        "feed": "フィード",
+        "reels": "リール"
+      },
+      "resortsDesc": "保存したリゾートとポイントを見る",
+      "feedDesc": "最新のダイバーフィードへ移動",
+      "reelsDesc": "短いダイビング動画を見る",
+      "exploreDesc": "人気ポイントと動画を探す"
     },
     "stats": {
       "totalDives": "総ダイビング数",
@@ -212,7 +222,16 @@
     },
     "completion": {
       "title": "プロフィール完成度",
-      "subtitle": "{{percent}}% 完了。情報を追加するとバディの信頼度が上がります。"
+      "subtitle": "{{percent}}% 完了。情報を追加するとバディの信頼度が上がります。",
+      "helpTitle": "完成度チェック項目",
+      "helpSubtitle": "以下を埋めると完成度が上がります。",
+      "checks": {
+        "avatar": "プロフィール写真を登録",
+        "bio": "自己紹介を入力",
+        "location": "活動地域を設定",
+        "dives": "ダイブログを1件以上追加",
+        "level": "ダイビングレベル/資格を設定"
+      }
     }
   },
   "settings": {
@@ -516,7 +535,17 @@
       "terms": "利用規約",
       "privacyPolicy": "プライバシーポリシー",
       "customerCenter": "カスタマーセンター",
-      "contact": "お問い合わせ"
+      "contact": "お問い合わせ",
+      "bottomMenuManager": "下部メニュー管理",
+      "bottomMenuManagerSubtitle": "下部タブの構成と順序を変更します。",
+      "bottomMenuGuide": "最小3個、最大5個まで選択できます。",
+      "bottomMenuSelected": "選択済み {{count}}/5",
+      "bottomMenuOrder": "下部 {{order}}番目",
+      "bottomMenuNotUsed": "現在は下部メニューで非表示",
+      "bottomMenuSaved": "下部メニュー構成を保存しました。",
+      "bottomMenuRequired": "ホームメニューは必須です。",
+      "bottomMenuMin": "下部メニューは最低3個必要です。",
+      "bottomMenuMax": "下部メニューは最大5個まで選択できます。"
     },
     "safety": {
       "emergencyContact": "緊急連絡先登録",
@@ -709,5 +738,24 @@
     "speed": "速度",
     "accuracy": "精度: ±{{value}}m",
     "altitude": "高度: {{value}}m"
+  },
+  "tutorial": {
+    "stepLabel": "ステップ {{current}} / {{total}}",
+    "skip": "スキップ",
+    "start": "権限を許可して開始",
+    "steps": {
+      "one": {
+        "title": "Divergramへようこそ",
+        "body": "フィード、地図、ログブックでダイビング体験を一か所に記録できます。"
+      },
+      "two": {
+        "title": "自分だけのダイブログを作成",
+        "body": "深度、水温、ポイント、バディ情報を写真と一緒に整理できます。"
+      },
+      "three": {
+        "title": "権限設定を完了して開始",
+        "body": "通知、位置情報、Bluetooth権限を許可すると主要機能を利用できます。"
+      }
+    }
   }
 }

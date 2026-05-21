@@ -11,7 +11,8 @@
     "previous": "이전",
     "done": "완료",
     "all": "전체",
-    "today": "오늘"
+    "today": "오늘",
+    "back": "뒤로가기"
   },
   "welcome": {
     "subtitle": "다이빙 경험을 기록하고\n커뮤니티와 공유하세요",
@@ -197,7 +198,16 @@
       "favoritesLabel": "즐겨찾기",
       "savedDesc": "저장한 게시물과 리조트",
       "activityDesc": "좋아요, 댓글, 팔로우 활동",
-      "settingsDesc": "알림, 언어, 계정 보안"
+      "settingsDesc": "알림, 언어, 계정 보안",
+      "tabs": {
+        "favorites": "즐겨찾기",
+        "feed": "피드",
+        "reels": "릴스"
+      },
+      "resortsDesc": "찜한 리조트와 포인트 보기",
+      "feedDesc": "최신 다이버 피드로 이동",
+      "reelsDesc": "짧은 다이빙 영상 보기",
+      "exploreDesc": "인기 포인트/영상을 탐색"
     },
     "stats": {
       "totalDives": "총 다이빙",
@@ -212,7 +222,16 @@
     },
     "completion": {
       "title": "프로필 완성도",
-      "subtitle": "{{percent}}% 완성. 정보를 더 채우면 버디 신뢰도가 올라갑니다."
+      "subtitle": "{{percent}}% 완성. 정보를 더 채우면 버디 신뢰도가 올라갑니다.",
+      "helpTitle": "완성도 체크 항목",
+      "helpSubtitle": "아래 항목을 채우면 완성도가 올라갑니다.",
+      "checks": {
+        "avatar": "프로필 사진 등록",
+        "bio": "자기소개 입력",
+        "location": "활동 지역 설정",
+        "dives": "다이빙 로그 1개 이상",
+        "level": "다이빙 레벨/자격 설정"
+      }
     }
   },
   "settings": {
@@ -516,7 +535,17 @@
       "terms": "이용약관",
       "privacyPolicy": "개인정보처리방침",
       "customerCenter": "고객센터",
-      "contact": "문의하기"
+      "contact": "문의하기",
+      "bottomMenuManager": "하단메뉴 관리",
+      "bottomMenuManagerSubtitle": "하단 탭 구성과 순서를 변경합니다.",
+      "bottomMenuGuide": "최소 3개, 최대 5개까지 선택할 수 있습니다.",
+      "bottomMenuSelected": "선택됨 {{count}}/5",
+      "bottomMenuOrder": "하단 {{order}}번째",
+      "bottomMenuNotUsed": "현재 하단 메뉴에서 숨김",
+      "bottomMenuSaved": "하단메뉴 구성을 저장했습니다.",
+      "bottomMenuRequired": "홈 메뉴는 필수입니다.",
+      "bottomMenuMin": "하단메뉴는 최소 3개가 필요합니다.",
+      "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다."
     },
     "safety": {
       "emergencyContact": "비상 연락처 등록",
@@ -709,5 +738,24 @@
     "speed": "속도",
     "accuracy": "정확도: ±{{value}}m",
     "altitude": "고도: {{value}}m"
+  },
+  "tutorial": {
+    "stepLabel": "단계 {{current}} / {{total}}",
+    "skip": "건너뛰기",
+    "start": "권한 허용 후 시작",
+    "steps": {
+      "one": {
+        "title": "Divergram에 오신 것을 환영합니다",
+        "body": "피드, 지도, 로그북으로 다이빙 경험을 한곳에서 기록하세요."
+      },
+      "two": {
+        "title": "나만의 다이빙 로그를 남기세요",
+        "body": "수심, 수온, 포인트, 버디 정보를 사진과 함께 정리할 수 있습니다."
+      },
+      "three": {
+        "title": "권한 설정을 마치면 바로 시작됩니다",
+        "body": "알림, 위치, 블루투스 권한을 허용하면 핵심 기능을 모두 사용할 수 있습니다."
+      }
+    }
   }
 }

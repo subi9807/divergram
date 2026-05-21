@@ -279,6 +279,12 @@ export function FeedPost({ post }: FeedPostProps) {
     router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(post.id)}` as never);
   };
 
+  const openAuthorProfile = () => {
+    const targetId = String(post.user?.id || '').trim();
+    if (!targetId) return;
+    router.push(`${appRouteMap.account.path}?userId=${encodeURIComponent(targetId)}` as never);
+  };
+
   const openLocationMap = () => {
     const location = postLocation.trim();
     if (!location) return;
@@ -413,14 +419,16 @@ export function FeedPost({ post }: FeedPostProps) {
 
         <View className="px-4 pb-0 pt-4">
           <View className="mb-4 flex-row items-start">
-            {post.user.avatar ? (
-              <Image source={{ uri: post.user.avatar }} className="mr-3 h-11 w-11 rounded-2xl" resizeMode="cover" />
-            ) : (
-              <View className="mr-3 h-11 w-11 items-center justify-center rounded-2xl bg-brand-600">
-                <Text className="font-semibold text-white">{post.user.name.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
-            <View className="flex-1">
+            <TouchableOpacity activeOpacity={0.86} onPress={openAuthorProfile}>
+              {post.user.avatar ? (
+                <Image source={{ uri: post.user.avatar }} className="mr-3 h-14 w-14 rounded-full" resizeMode="cover" />
+              ) : (
+                <View className="mr-3 h-14 w-14 items-center justify-center rounded-full bg-brand-600">
+                  <Text className="text-base font-semibold text-white">{post.user.name.charAt(0).toUpperCase()}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-1" activeOpacity={0.86} onPress={openAuthorProfile}>
               <Text className="font-semibold text-surface-900">{post.user.name}</Text>
               <Text className="mt-0.5 text-sm text-surface-500">{formatDate(post.createdAt)}</Text>
               {postLocation ? (
@@ -428,7 +436,7 @@ export function FeedPost({ post }: FeedPostProps) {
                   <Text className="mt-1 text-xs font-medium text-brand-700">{postLocation}</Text>
                 </TouchableOpacity>
               ) : null}
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 bg-white"
               onPress={() => setMenuOpen((prev) => !prev)}

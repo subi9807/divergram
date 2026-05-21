@@ -2,8 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Alert, Linking } from 'react-native';
 import { EmptyState } from './EmptyState';
 import { Shield } from 'lucide-react-native';
-import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
+import {
+  checkBluetoothPermission,
+  checkLocationPermission,
+  checkPushPermission,
+  requestBluetoothPermission,
+  requestLocationPermission,
+  requestPushPermission,
+} from '../lib/runtimePermissions';
 
 interface PermissionGateProps {
   children: React.ReactNode;
@@ -21,18 +28,21 @@ export function PermissionGate({ children, permission, title, description }: Per
     setIsLoading(true);
     try {
       switch (permission) {
-        case 'location':
-          const { status } = await Location.getForegroundPermissionsAsync();
-          setHasPermission(status === 'granted');
+        case 'location': {
+          const result = await checkLocationPermission();
+          setHasPermission(result.granted);
           break;
-        case 'bluetooth':
-          // TODO: Implement BLE permission check
-          setHasPermission(true); // Mock for now
+        }
+        case 'bluetooth': {
+          const result = await checkBluetoothPermission();
+          setHasPermission(result.granted);
           break;
-        case 'notifications':
-          // TODO: Implement notification permission check
-          setHasPermission(true); // Mock for now
+        }
+        case 'notifications': {
+          const result = await checkPushPermission();
+          setHasPermission(result.granted);
           break;
+        }
       }
     } catch (error) {
       console.error('Permission check error:', error);
@@ -49,22 +59,33 @@ export function PermissionGate({ children, permission, title, description }: Per
   const requestPermission = async () => {
     try {
       switch (permission) {
-        case 'location':
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted') {
+        case 'location': {
+          const result = await requestLocationPermission();
+          if (result.granted) {
             setHasPermission(true);
           } else {
             showSettingsAlert();
           }
           break;
-        case 'bluetooth':
-          // TODO: Implement BLE permission request
-          setHasPermission(true);
+        }
+        case 'bluetooth': {
+          const result = await requestBluetoothPermission();
+          if (result.granted) {
+            setHasPermission(true);
+          } else {
+            showSettingsAlert();
+          }
           break;
-        case 'notifications':
-          // TODO: Implement notification permission request
-          setHasPermission(true);
+        }
+        case 'notifications': {
+          const result = await requestPushPermission();
+          if (result.granted) {
+            setHasPermission(true);
+          } else {
+            showSettingsAlert();
+          }
           break;
+        }
       }
     } catch (error) {
       console.error('Permission request error:', error);

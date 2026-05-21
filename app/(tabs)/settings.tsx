@@ -524,6 +524,12 @@ export default function SettingsScreen() {
             onPress={pickLanguage}
           />
           <ActionRow
+            icon={<Link2 size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.app.bottomMenuManager', '하단메뉴 관리')}
+            subtitle={tx('settingsPage.app.bottomMenuManagerSubtitle', '하단 탭 구성과 순서를 변경합니다.')}
+            onPress={() => router.push('/(tabs)/settings-detail?mode=bottom-menu' as never)}
+          />
+          <ActionRow
             icon={<HelpCircle size={18} color="#4d5d6b" />}
             title={tx('settingsPage.app.clearCache', '캐시 삭제')}
             onPress={clearCache}

@@ -11,7 +11,8 @@
     "previous": "Previous",
     "done": "Done",
     "all": "All",
-    "today": "Today"
+    "today": "Today",
+    "back": "Back"
   },
   "welcome": {
     "subtitle": "Record your diving experiences\nand share with the community",
@@ -197,7 +198,16 @@
       "favoritesLabel": "Favorites",
       "savedDesc": "Saved posts and resorts",
       "activityDesc": "Likes, comments, and follows",
-      "settingsDesc": "Alerts, language, and account security"
+      "settingsDesc": "Alerts, language, and account security",
+      "tabs": {
+        "favorites": "Favorites",
+        "feed": "Feed",
+        "reels": "Reels"
+      },
+      "resortsDesc": "View bookmarked resorts and points",
+      "feedDesc": "Go to the latest diver feed",
+      "reelsDesc": "Watch short diving videos",
+      "exploreDesc": "Discover trending points and videos"
     },
     "stats": {
       "totalDives": "Total Dives",
@@ -212,7 +222,16 @@
     },
     "completion": {
       "title": "Profile Completion",
-      "subtitle": "{{percent}}% complete. Add more info to improve trust with buddies."
+      "subtitle": "{{percent}}% complete. Add more info to improve trust with buddies.",
+      "helpTitle": "Completion checklist",
+      "helpSubtitle": "Fill these items to raise completion.",
+      "checks": {
+        "avatar": "Add profile photo",
+        "bio": "Write your bio",
+        "location": "Set activity region",
+        "dives": "Add at least one dive log",
+        "level": "Set dive level/certification"
+      }
     }
   },
   "settings": {
@@ -516,7 +535,17 @@
       "terms": "Terms of Service",
       "privacyPolicy": "Privacy Policy",
       "customerCenter": "Customer Center",
-      "contact": "Contact Us"
+      "contact": "Contact Us",
+      "bottomMenuManager": "Bottom Menu Manager",
+      "bottomMenuManagerSubtitle": "Change bottom tab composition and order.",
+      "bottomMenuGuide": "Select at least 3 and up to 5 tabs.",
+      "bottomMenuSelected": "Selected {{count}}/5",
+      "bottomMenuOrder": "Bottom order {{order}}",
+      "bottomMenuNotUsed": "Hidden from bottom menu",
+      "bottomMenuSaved": "Bottom menu settings saved.",
+      "bottomMenuRequired": "Home tab is required.",
+      "bottomMenuMin": "At least 3 tabs are required.",
+      "bottomMenuMax": "You can select up to 5 tabs."
     },
     "safety": {
       "emergencyContact": "Emergency contact",
@@ -709,5 +738,24 @@
     "speed": "Speed",
     "accuracy": "Accuracy: ±{{value}}m",
     "altitude": "Altitude: {{value}}m"
+  },
+  "tutorial": {
+    "stepLabel": "Step {{current}} / {{total}}",
+    "skip": "Skip",
+    "start": "Allow permissions and start",
+    "steps": {
+      "one": {
+        "title": "Welcome to Divergram",
+        "body": "Use Feed, Map, and Logbook to capture your dive experiences in one place."
+      },
+      "two": {
+        "title": "Build your own dive log",
+        "body": "Save depth, water temperature, point, and buddy information with media."
+      },
+      "three": {
+        "title": "Finish permission setup to start",
+        "body": "Enable push, location, and Bluetooth permissions for full functionality."
+      }
+    }
   }
 }

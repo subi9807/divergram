@@ -11,7 +11,8 @@
     "previous": "上一步",
     "done": "完成",
     "all": "全部",
-    "today": "今天"
+    "today": "今天",
+    "back": "返回"
   },
   "welcome": {
     "subtitle": "Record your diving experiences\nand share with the community",
@@ -197,7 +198,16 @@
       "favoritesLabel": "收藏夹",
       "savedDesc": "已保存的帖子与度假村",
       "activityDesc": "点赞、评论与关注动态",
-      "settingsDesc": "通知、语言与账号安全"
+      "settingsDesc": "通知、语言与账号安全",
+      "tabs": {
+        "favorites": "收藏",
+        "feed": "动态",
+        "reels": "短视频"
+      },
+      "resortsDesc": "查看已收藏的度假村与潜点",
+      "feedDesc": "前往最新潜伴动态",
+      "reelsDesc": "观看短潜水视频",
+      "exploreDesc": "发现热门潜点与视频"
     },
     "stats": {
       "totalDives": "总潜水次数",
@@ -212,7 +222,16 @@
     },
     "completion": {
       "title": "资料完整度",
-      "subtitle": "当前 {{percent}}%。完善资料可提升潜伴信任度。"
+      "subtitle": "当前 {{percent}}%。完善资料可提升潜伴信任度。",
+      "helpTitle": "完整度检查项",
+      "helpSubtitle": "补充以下信息可提升完整度。",
+      "checks": {
+        "avatar": "上传头像",
+        "bio": "填写个人简介",
+        "location": "设置活动地区",
+        "dives": "至少新增1条潜水日志",
+        "level": "设置潜水等级/证书"
+      }
     }
   },
   "settings": {
@@ -516,7 +535,17 @@
       "terms": "使用条款",
       "privacyPolicy": "隐私政策",
       "customerCenter": "客服中心",
-      "contact": "联系我们"
+      "contact": "联系我们",
+      "bottomMenuManager": "底部菜单管理",
+      "bottomMenuManagerSubtitle": "调整底部标签的组成和顺序。",
+      "bottomMenuGuide": "最少选择3个，最多选择5个标签。",
+      "bottomMenuSelected": "已选择 {{count}}/5",
+      "bottomMenuOrder": "底部第 {{order}} 位",
+      "bottomMenuNotUsed": "当前在底部菜单中隐藏",
+      "bottomMenuSaved": "底部菜单配置已保存。",
+      "bottomMenuRequired": "首页菜单为必选项。",
+      "bottomMenuMin": "底部菜单至少需要3个。",
+      "bottomMenuMax": "底部菜单最多可选择5个。"
     },
     "safety": {
       "emergencyContact": "紧急联系人",
@@ -709,5 +738,24 @@
     "speed": "Speed",
     "accuracy": "Accuracy: ±{{value}}m",
     "altitude": "Altitude: {{value}}m"
+  },
+  "tutorial": {
+    "stepLabel": "步骤 {{current}} / {{total}}",
+    "skip": "跳过",
+    "start": "授权后开始",
+    "steps": {
+      "one": {
+        "title": "欢迎来到 Divergram",
+        "body": "使用动态、地图和日志本，在一个地方记录你的潜水体验。"
+      },
+      "two": {
+        "title": "创建你的潜水日志",
+        "body": "可配合照片记录深度、水温、潜点与潜伴信息。"
+      },
+      "three": {
+        "title": "完成权限设置即可开始",
+        "body": "开启推送、定位与蓝牙权限后可使用完整功能。"
+      }
+    }
   }
 }

@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { PanResponder, StyleSheet, View } from 'react-native';
 import { useGlobalSearchParams, usePathname, useRouter } from 'expo-router';
 
+type SwipeDirection = 'back' | 'forward';
+
+type GlobalEdgeSwipeNavProps = {
+  onSwipeProgress?: (translateX: number) => void;
+  onSwipeCancel?: () => void;
+  onSwipeCommit?: (direction: SwipeDirection, navigate: () => void) => void;
+};
+
 type HistoryState = {
   items: string[];
   index: number;
@@ -32,12 +40,15 @@ function buildRouteKey(pathname: string, params: Record<string, unknown>): strin
   return qs ? `${pathname}?${qs}` : pathname;
 }
 
-export function GlobalEdgeSwipeNav() {
+export function GlobalEdgeSwipeNav({ onSwipeProgress, onSwipeCancel, onSwipeCommit }: GlobalEdgeSwipeNavProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const globalParams = useGlobalSearchParams<Record<string, string | string[] | undefined>>();
+  const globalParams = useGlobalSearchParams();
 
-  const routeKey = useMemo(() => buildRouteKey(pathname || '/', globalParams || {}), [pathname, globalParams]);
+  const routeKey = useMemo(
+    () => buildRouteKey(pathname || '/', (globalParams || {}) as Record<string, unknown>),
+    [pathname, globalParams]
+  );
 
   const [historyState, setHistoryState] = useState<HistoryState>({ items: [], index: -1 });
   const pendingNavRef = useRef<string | null>(null);
@@ -74,6 +85,7 @@ export function GlobalEdgeSwipeNav() {
 
   const canGoBack = historyState.index > 0;
   const canGoForward = historyState.index >= 0 && historyState.index < historyState.items.length - 1;
+  const canNativeGoBack = typeof (router as any).canGoBack === 'function' ? (router as any).canGoBack() : false;
 
   const navigateToHistory = useCallback(
     (targetIndex: number) => {
@@ -86,46 +98,88 @@ export function GlobalEdgeSwipeNav() {
     [historyState.items, routeKey, router]
   );
 
+  const runSwipeCommit = useCallback(
+    (direction: SwipeDirection, navigate: () => void) => {
+      if (onSwipeCommit) {
+        onSwipeCommit(direction, navigate);
+        return;
+      }
+      navigate();
+    },
+    [onSwipeCommit]
+  );
+
   const leftEdgePanResponder = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_evt, gestureState) => {
+          if (!(canGoBack || canNativeGoBack)) return false;
           const dx = gestureState.dx;
           const dy = gestureState.dy;
           return dx > 8 && Math.abs(dy) < 14;
         },
+        onPanResponderMove: (_evt, gestureState) => {
+          if (!onSwipeProgress) return;
+          const dx = Math.max(0, gestureState.dx);
+          onSwipeProgress(dx);
+        },
+        onPanResponderTerminate: () => {
+          onSwipeCancel?.();
+        },
         onPanResponderRelease: (_evt, gestureState) => {
-          if (!canGoBack) return;
-          const horizontal = gestureState.dx > SWIPE_DISTANCE;
+          const horizontal = gestureState.dx > SWIPE_DISTANCE || gestureState.vx > MIN_HORIZONTAL_VELOCITY;
           const verticalSafe = Math.abs(gestureState.dy) <= MAX_VERTICAL_DRIFT;
-          const velocitySafe = gestureState.vx > MIN_HORIZONTAL_VELOCITY;
-          if (horizontal && verticalSafe && velocitySafe) {
-            navigateToHistory(historyState.index - 1);
+          if (horizontal && verticalSafe) {
+            if (canGoBack) {
+              runSwipeCommit('back', () => navigateToHistory(historyState.index - 1));
+            } else if (canNativeGoBack) {
+              runSwipeCommit('back', () => router.back());
+            }
+            return;
           }
+          onSwipeCancel?.();
         },
       }),
-    [canGoBack, historyState.index, navigateToHistory]
+    [
+      canGoBack,
+      canNativeGoBack,
+      historyState.index,
+      navigateToHistory,
+      onSwipeCancel,
+      onSwipeProgress,
+      router,
+      runSwipeCommit,
+    ]
   );
 
   const rightEdgePanResponder = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_evt, gestureState) => {
+          if (!canGoForward) return false;
           const dx = gestureState.dx;
           const dy = gestureState.dy;
           return dx < -8 && Math.abs(dy) < 14;
         },
+        onPanResponderMove: (_evt, gestureState) => {
+          if (!onSwipeProgress) return;
+          const dx = Math.min(0, gestureState.dx);
+          onSwipeProgress(dx);
+        },
+        onPanResponderTerminate: () => {
+          onSwipeCancel?.();
+        },
         onPanResponderRelease: (_evt, gestureState) => {
-          if (!canGoForward) return;
-          const horizontal = gestureState.dx < -SWIPE_DISTANCE;
+          const horizontal = gestureState.dx < -SWIPE_DISTANCE || gestureState.vx < -MIN_HORIZONTAL_VELOCITY;
           const verticalSafe = Math.abs(gestureState.dy) <= MAX_VERTICAL_DRIFT;
-          const velocitySafe = Math.abs(gestureState.vx) > MIN_HORIZONTAL_VELOCITY;
-          if (horizontal && verticalSafe && velocitySafe) {
-            navigateToHistory(historyState.index + 1);
+          if (horizontal && verticalSafe && canGoForward) {
+            runSwipeCommit('forward', () => navigateToHistory(historyState.index + 1));
+            return;
           }
+          onSwipeCancel?.();
         },
       }),
-    [canGoForward, historyState.index, navigateToHistory]
+    [canGoForward, historyState.index, navigateToHistory, onSwipeCancel, onSwipeProgress, runSwipeCommit]
   );
 
   return (

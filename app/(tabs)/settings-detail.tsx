@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useToast } from '../../src/components/Toast';
 import { useSettingsFeatureStore, type SocialProvider } from '../../src/stores/settingsFeatureStore';
-import { useSettingsStore } from '../../src/stores/settingsStore';
+import { bottomTabCandidates, bottomTabDefault, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
 import { appRouteMap } from '../../src/config/sitemap';
 import { apiClient } from '../../src/lib/api';
 
@@ -25,7 +25,8 @@ type DetailMode =
   | 'customer-center'
   | 'emergency-contact'
   | 'safety-guide'
-  | 'insurance';
+  | 'insurance'
+  | 'bottom-menu';
 
 function asMode(value: string): DetailMode {
   const allowed: DetailMode[] = [
@@ -38,6 +39,7 @@ function asMode(value: string): DetailMode {
     'emergency-contact',
     'safety-guide',
     'insurance',
+    'bottom-menu',
   ];
   return allowed.includes(value as DetailMode) ? (value as DetailMode) : 'customer-center';
 }
@@ -65,7 +67,9 @@ export default function SettingsDetailScreen() {
   const setInsuranceInfo = useSettingsFeatureStore((state) => state.setInsuranceInfo);
 
   const emergencyShareEnabled = useSettingsStore((state) => state.emergencyShareEnabled);
+  const bottomTabItems = useSettingsStore((state) => state.bottomTabItems);
   const updateSafetySetting = useSettingsStore((state) => state.updateSafetySetting);
+  const updateBottomTabItems = useSettingsStore((state) => state.updateBottomTabItems);
 
   const [busy, setBusy] = useState(false);
 
@@ -83,6 +87,7 @@ export default function SettingsDetailScreen() {
   const [insurancePolicyNumber, setInsurancePolicyNumber] = useState('');
   const [insuranceEmergencyPhone, setInsuranceEmergencyPhone] = useState('');
   const [insuranceValidUntil, setInsuranceValidUntil] = useState('');
+  const [menuDraft, setMenuDraft] = useState<BottomTabRoute[]>(bottomTabItems);
 
   useEffect(() => {
     setContactName(savedEmergencyContact.name || '');
@@ -97,6 +102,10 @@ export default function SettingsDetailScreen() {
     setInsuranceValidUntil(savedInsuranceInfo.validUntil || '');
   }, [savedInsuranceInfo.emergencyPhone, savedInsuranceInfo.policyNumber, savedInsuranceInfo.provider, savedInsuranceInfo.validUntil]);
 
+  useEffect(() => {
+    setMenuDraft(bottomTabItems);
+  }, [bottomTabItems]);
+
   const title = useMemo(() => {
     if (mode === 'link-google') return t('settingsPage.account.googleLink', { defaultValue: 'Google 로그인 연동' });
     if (mode === 'link-apple') return t('settingsPage.account.appleLink', { defaultValue: 'Apple 로그인 연동' });
@@ -104,6 +113,7 @@ export default function SettingsDetailScreen() {
     if (mode === 'account-delete') return t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('settingsPage.app.customerCenter', { defaultValue: '고객센터' });
+    if (mode === 'bottom-menu') return t('settingsPage.app.bottomMenuManager', { defaultValue: '하단메뉴 관리' });
     if (mode === 'emergency-contact') return t('settingsPage.safety.emergencyContact', { defaultValue: '비상 연락처 등록' });
     if (mode === 'safety-guide') return t('settingsPage.safety.guide', { defaultValue: '다이빙 안전 가이드 보기' });
     return t('settingsPage.safety.insurance', { defaultValue: '보험 정보 등록' });
@@ -114,6 +124,7 @@ export default function SettingsDetailScreen() {
     if (mode === 'account-delete') return t('settingsPage.account.deleteSubtitle', { defaultValue: '계정 삭제는 복구할 수 없습니다.' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('pages.report.subtitle', { defaultValue: '서비스 문제를 남겨주세요' });
+    if (mode === 'bottom-menu') return t('settingsPage.app.bottomMenuManagerSubtitle', { defaultValue: '하단 탭 구성과 순서를 변경합니다.' });
     if (mode === 'emergency-contact') return t('settingsPage.safety.emergencyShare', { defaultValue: '긴급 상황 공유 설정' });
     if (mode === 'safety-guide') return t('settingsPage.safety.guide', { defaultValue: '다이빙 안전 가이드 보기' });
     return t('settingsPage.safety.insurance', { defaultValue: '보험 정보 등록' });
@@ -304,6 +315,65 @@ export default function SettingsDetailScreen() {
     },
   ];
 
+  const bottomTabTitleKeyMap: Record<BottomTabRoute, string> = {
+    index: appRouteMap.home.titleKey,
+    explore: appRouteMap.explore.titleKey,
+    location: appRouteMap.location.titleKey,
+    logs: appRouteMap.logs.titleKey,
+    profile: appRouteMap.profile.titleKey,
+    messages: appRouteMap.messages.titleKey,
+    notifications: appRouteMap.notifications.titleKey,
+    saved: appRouteMap.saved.titleKey,
+    resorts: appRouteMap.resorts.titleKey,
+  };
+
+  const toggleBottomTab = (routeName: BottomTabRoute) => {
+    const exists = menuDraft.includes(routeName);
+    if (exists) {
+      if (routeName === 'index') {
+        showToast({ type: 'info', title: t('settingsPage.app.bottomMenuRequired', { defaultValue: '홈 메뉴는 필수입니다.' }) });
+        return;
+      }
+      if (menuDraft.length <= 3) {
+        showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMin', { defaultValue: '하단메뉴는 최소 3개가 필요합니다.' }) });
+        return;
+      }
+      setMenuDraft(menuDraft.filter((item) => item !== routeName));
+      return;
+    }
+    if (menuDraft.length >= 5) {
+      showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMax', { defaultValue: '하단메뉴는 최대 5개까지 선택할 수 있습니다.' }) });
+      return;
+    }
+    setMenuDraft([...menuDraft, routeName]);
+  };
+
+  const moveBottomTab = (routeName: BottomTabRoute, direction: 'up' | 'down') => {
+    const currentIndex = menuDraft.indexOf(routeName);
+    if (currentIndex < 0) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= menuDraft.length) return;
+    const next = [...menuDraft];
+    const temp = next[targetIndex];
+    next[targetIndex] = next[currentIndex];
+    next[currentIndex] = temp;
+    setMenuDraft(next);
+  };
+
+  const saveBottomMenu = () => {
+    updateBottomTabItems(menuDraft);
+    showToast({
+      type: 'success',
+      title: t('common.done', { defaultValue: '완료' }),
+      message: t('settingsPage.app.bottomMenuSaved', { defaultValue: '하단메뉴 구성을 저장했습니다.' }),
+    });
+    router.back();
+  };
+
+  const resetBottomMenu = () => {
+    setMenuDraft(bottomTabDefault);
+  };
+
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
@@ -473,6 +543,93 @@ export default function SettingsDetailScreen() {
                     <Text className="text-center text-xs font-semibold text-surface-700">{t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' })}</Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+            </View>
+          ) : null}
+
+          {mode === 'bottom-menu' ? (
+            <View>
+              <View className="rounded-3xl border border-surface-200 bg-white p-4">
+                <Text className="text-sm font-semibold text-surface-900">{t('settingsPage.app.bottomMenuGuide', { defaultValue: '최소 3개, 최대 5개까지 선택할 수 있습니다.' })}</Text>
+                <Text className="mt-1 text-xs text-surface-500">
+                  {t('settingsPage.app.bottomMenuSelected', {
+                    defaultValue: '선택됨 {{count}}/5',
+                    count: menuDraft.length,
+                  })}
+                </Text>
+              </View>
+
+              <View className="mt-3 rounded-3xl border border-surface-200 bg-white p-2">
+                {bottomTabCandidates.map((routeName, idx) => {
+                  const active = menuDraft.includes(routeName);
+                  const position = menuDraft.indexOf(routeName);
+                  const movable = active && routeName !== 'index';
+                  return (
+                    <View
+                      key={routeName}
+                      className={`flex-row items-center px-2 py-2.5 ${idx > 0 ? 'border-t border-surface-100' : ''}`}
+                    >
+                      <View className="flex-1 pr-2">
+                        <Text className="text-sm font-semibold text-surface-900">
+                          {t(bottomTabTitleKeyMap[routeName], { defaultValue: routeName })}
+                        </Text>
+                        <Text className="mt-0.5 text-xs text-surface-500">
+                          {active
+                            ? t('settingsPage.app.bottomMenuOrder', { defaultValue: '하단 {{order}}번째', order: position + 1 })
+                            : t('settingsPage.app.bottomMenuNotUsed', { defaultValue: '현재 하단 메뉴에서 숨김' })}
+                        </Text>
+                      </View>
+
+                      {active ? (
+                        <View className="mr-2 rounded-full bg-brand-50 px-2 py-1">
+                          <Text className="text-xs font-semibold text-brand-700">ON</Text>
+                        </View>
+                      ) : null}
+
+                      <TouchableOpacity
+                        activeOpacity={0.86}
+                        onPress={() => toggleBottomTab(routeName)}
+                        className={`mr-2 rounded-lg border px-2.5 py-1.5 ${active ? 'border-red-200 bg-red-50' : 'border-brand-200 bg-brand-50'}`}
+                      >
+                        <Text className={`text-xs font-semibold ${active ? 'text-red-600' : 'text-brand-700'}`}>
+                          {active ? t('common.delete', { defaultValue: '삭제' }) : t('common.add', { defaultValue: '추가' })}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <View className="flex-row">
+                        <TouchableOpacity
+                          activeOpacity={0.86}
+                          disabled={!movable || position <= 0}
+                          onPress={() => moveBottomTab(routeName, 'up')}
+                          className={`mr-1 rounded-lg border px-2 py-1.5 ${movable && position > 0 ? 'border-surface-200 bg-white' : 'border-surface-200 bg-surface-100'}`}
+                        >
+                          <ArrowUp size={13} color={movable && position > 0 ? '#334155' : '#94a3b8'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          activeOpacity={0.86}
+                          disabled={!movable || position >= menuDraft.length - 1}
+                          onPress={() => moveBottomTab(routeName, 'down')}
+                          className={`rounded-lg border px-2 py-1.5 ${movable && position < menuDraft.length - 1 ? 'border-surface-200 bg-white' : 'border-surface-200 bg-surface-100'}`}
+                        >
+                          <ArrowDown size={13} color={movable && position < menuDraft.length - 1 ? '#334155' : '#94a3b8'} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <View className="mt-3 flex-row">
+                <TouchableOpacity
+                  activeOpacity={0.86}
+                  onPress={resetBottomMenu}
+                  className="mr-2 flex-1 rounded-xl border border-surface-200 bg-white px-3 py-3"
+                >
+                  <Text className="text-center text-sm font-semibold text-surface-700">{t('common.reset', { defaultValue: '초기화' })}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity activeOpacity={0.86} onPress={saveBottomMenu} className="flex-1 rounded-xl bg-brand-600 px-3 py-3">
+                  <Text className="text-center text-sm font-semibold text-white">{t('pages.profileEdit.save', { defaultValue: '변경사항 저장' })}</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ) : null}

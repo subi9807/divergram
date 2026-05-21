@@ -252,7 +252,7 @@ export default function LogsScreen() {
     if (result.canceled || !result.assets?.length) return;
     const assets = result.assets.slice(0, 10);
     const mediaItems: SelectedMediaItem[] = assets
-      .map((asset) => ({
+      .map((asset): SelectedMediaItem => ({
         uri: normalizePickedUri(asset.uri),
         type: asset.type === 'video' ? 'video' : 'image',
       }))
@@ -320,6 +320,54 @@ export default function LogsScreen() {
         </View>
 
         <View className="px-5">
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={pickPhoto}
+            className="mb-4 flex-row items-center justify-center rounded-2xl border border-surface-200 bg-white px-4 py-4"
+          >
+            <Camera size={20} color="#0d5fa8" />
+            <Text className="ml-2 font-semibold text-brand-700">
+              {t('logsForm.photo.selectMultiple', { defaultValue: '사진/동영상 선택 (최대 10개)' })}
+            </Text>
+          </TouchableOpacity>
+
+          {selectedMedia.length ? (
+            <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
+              <View className="flex-row items-center justify-between px-3 py-2">
+                <Text className="text-xs font-semibold text-surface-700">
+                  {t('logsForm.photo.selectedCount', { defaultValue: '{{count}}개 선택됨', count: selectedMedia.length })}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedMedia([]);
+                    setForm((prev) => ({ ...prev, photoUri: '' }));
+                  }}
+                >
+                  <Text className="text-xs font-semibold text-red-500">
+                    {t('logsForm.photo.clear', { defaultValue: '선택 해제' })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}>
+                {selectedMedia.map((item, index) => (
+                  <View key={`${item.uri}-${index}`} className="mr-2 h-28 w-28 overflow-hidden rounded-xl border border-surface-200 bg-surface-50">
+                    {item.type === 'image' ? (
+                      <Image source={{ uri: item.uri }} className="h-full w-full" resizeMode="cover" />
+                    ) : (
+                      <View className="h-full w-full items-center justify-center">
+                        <Camera size={20} color="#64748b" />
+                        <Text className="mt-1 text-[10px] font-semibold text-surface-600">VIDEO</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+              <View className="px-3 py-2">
+                <Text className="text-xs text-surface-500">{t('logsForm.photo.gpsHint')}</Text>
+              </View>
+            </View>
+          ) : null}
+
           <Text className="mb-2 text-sm font-semibold text-surface-700">{t('logsForm.fields.titleLabel')}</Text>
           <TextInput
             className="mb-4 rounded-2xl border border-surface-200 bg-white px-4 py-4 text-base text-surface-900"
@@ -474,54 +522,6 @@ export default function LogsScreen() {
               </View>
             ) : null}
           </View>
-
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={pickPhoto}
-            className="mb-4 flex-row items-center justify-center rounded-2xl border border-surface-200 bg-white px-4 py-4"
-          >
-            <Camera size={20} color="#0d5fa8" />
-            <Text className="ml-2 font-semibold text-brand-700">
-              {t('logsForm.photo.selectMultiple', { defaultValue: '사진/동영상 선택 (최대 10개)' })}
-            </Text>
-          </TouchableOpacity>
-
-          {selectedMedia.length ? (
-            <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
-              <View className="flex-row items-center justify-between px-3 py-2">
-                <Text className="text-xs font-semibold text-surface-700">
-                  {t('logsForm.photo.selectedCount', { defaultValue: '{{count}}개 선택됨', count: selectedMedia.length })}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedMedia([]);
-                    setForm((prev) => ({ ...prev, photoUri: '' }));
-                  }}
-                >
-                  <Text className="text-xs font-semibold text-red-500">
-                    {t('logsForm.photo.clear', { defaultValue: '선택 해제' })}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}>
-                {selectedMedia.map((item, index) => (
-                  <View key={`${item.uri}-${index}`} className="mr-2 h-28 w-28 overflow-hidden rounded-xl border border-surface-200 bg-surface-50">
-                    {item.type === 'image' ? (
-                      <Image source={{ uri: item.uri }} className="h-full w-full" resizeMode="cover" />
-                    ) : (
-                      <View className="h-full w-full items-center justify-center">
-                        <Camera size={20} color="#64748b" />
-                        <Text className="mt-1 text-[10px] font-semibold text-surface-600">VIDEO</Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </ScrollView>
-              <View className="px-3 py-2">
-                <Text className="text-xs text-surface-500">{t('logsForm.photo.gpsHint')}</Text>
-              </View>
-            </View>
-          ) : null}
 
           <View className="flex-row flex-wrap -mx-1">
             <FieldCard
