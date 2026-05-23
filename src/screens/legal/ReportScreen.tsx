@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import type { ReportReason, ReportTargetType, ReportStatus } from '../../models';
 import { useLegalStore } from '../../stores/legalStore';
 import { apiClient } from '../../lib/api';
+import { getLatestPolicyVersionMap } from '../../services/policyService';
 
 const targetOptions: { key: ReportTargetType; label: string }[] = [
   { key: 'user', label: '사용자' },
@@ -121,7 +122,9 @@ export default function ReportScreen() {
   const submitReport = useLegalStore((state) => state.submitReport);
   const markReportSyncStatus = useLegalStore((state) => state.markReportSyncStatus);
   const advanceReportWorkflow = useLegalStore((state) => state.advanceReportWorkflow);
+  const hasRequiredSignupConsents = useLegalStore((state) => state.hasRequiredSignupConsents);
   const reportHistory = useLegalStore((state) => state.reports);
+  const latestPolicyVersionMap = useMemo(() => getLatestPolicyVersionMap('ko'), []);
 
   const initialTargetType = useMemo<ReportTargetType>(() => {
     const raw = String(params.targetType || '').trim();
@@ -228,6 +231,17 @@ export default function ReportScreen() {
   const onSubmit = async () => {
     if (!user?.id) {
       Alert.alert('로그인 필요', '신고 기능은 로그인 후 이용할 수 있습니다.');
+      return;
+    }
+    if (!hasRequiredSignupConsents(user.id, latestPolicyVersionMap)) {
+      Alert.alert('정책 동의 필요', '신고 기능 사용 전 필수 정책 동의가 필요합니다.', [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '동의하러 가기',
+          onPress: () =>
+            router.push(`/(auth)/consent?mode=reconsent&returnTo=${encodeURIComponent('/(tabs)/report')}` as never),
+        },
+      ]);
       return;
     }
     if (!canSubmit) return;

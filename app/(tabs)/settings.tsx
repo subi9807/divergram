@@ -25,11 +25,13 @@ import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { appRouteMap } from '../../src/config/sitemap';
+import { storage } from '../../src/lib/storage';
 
 const languageOptions: ('ko' | 'en' | 'ja' | 'zh')[] = ['ko', 'en', 'ja', 'zh'];
 type SettingsTab = 'account' | 'notifications' | 'privacy' | 'diving' | 'app' | 'safety';
 type IconComponent = React.ComponentType<{ size?: number | string; color?: any }>;
 const settingsTabs: SettingsTab[] = ['account', 'notifications', 'privacy', 'diving', 'app', 'safety'];
+const SETTINGS_LAST_TAB_KEY = 'divergram_settings_last_tab_v1';
 
 type ActionRowProps = {
   icon: React.ReactNode;
@@ -317,9 +319,19 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     const raw = String(params.tab || '').trim();
-    if (!raw) return;
-    if (settingsTabs.includes(raw as SettingsTab)) setActiveTab(raw as SettingsTab);
+    if (raw && settingsTabs.includes(raw as SettingsTab)) {
+      setActiveTab(raw as SettingsTab);
+      return;
+    }
+    const saved = String(storage.getString(SETTINGS_LAST_TAB_KEY) || '').trim();
+    if (saved && settingsTabs.includes(saved as SettingsTab)) {
+      setActiveTab(saved as SettingsTab);
+    }
   }, [params.tab]);
+
+  useEffect(() => {
+    storage.set(SETTINGS_LAST_TAB_KEY, activeTab);
+  }, [activeTab]);
 
   const labelMap = {
     language: {

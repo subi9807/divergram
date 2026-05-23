@@ -19,8 +19,10 @@ const routeByConsentKey: Partial<Record<ConsentKey, string>> = {
 
 export default function ConsentScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ mode?: string | string[] }>();
+  const params = useLocalSearchParams<{ mode?: string | string[]; returnTo?: string | string[] }>();
   const mode = Array.isArray(params.mode) ? String(params.mode[0] || '') : String(params.mode || '');
+  const returnToRaw = Array.isArray(params.returnTo) ? String(params.returnTo[0] || '') : String(params.returnTo || '');
+  const returnTo = returnToRaw.startsWith('/') ? returnToRaw : '';
   const { signupWithEmail, user } = useAuth();
   const registerConsents = useLegalStore((state) => state.registerConsents);
   const draft = getPendingSignupDraft();
@@ -84,7 +86,7 @@ export default function ConsentScreen() {
           versionMap,
         });
         Alert.alert('동의 완료', '최신 약관 동의가 저장되었습니다.');
-        router.replace('/(tabs)/feed');
+        router.replace((returnTo || '/(tabs)/feed') as never);
         return;
       }
 

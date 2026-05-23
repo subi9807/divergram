@@ -26,6 +26,7 @@ const integrationDisplayNameMap: Record<string, string> = {
 };
 
 const managedConnectionTypes = new Set(['garmin', 'suunto', 'shearwater']);
+const DIAGNOSTIC_COOLDOWN_MS = 60 * 1000;
 
 function hasAny(status: string, keywords: string[]) {
   return keywords.some((keyword) => status.includes(keyword));
@@ -79,6 +80,8 @@ export default function IntegrationSettingsScreen() {
   const [showStaleOnly, setShowStaleOnly] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [pendingMediaDeleteCount, setPendingMediaDeleteCount] = useState(0);
+  const [lastDiagnosticRunMs, setLastDiagnosticRunMs] = useState(0);
+  const [diagnosticSummary, setDiagnosticSummary] = useState('');
 
   const isStaleIntegration = (item: UserIntegration) => {
     if (!item.connected) return false;
@@ -142,8 +145,16 @@ export default function IntegrationSettingsScreen() {
   const runIntegrationDiagnostics = useCallback(
     async (silent = false) => {
       if (diagnosing) return;
+      const nowMs = Date.now();
+      if (!silent && lastDiagnosticRunMs && nowMs - lastDiagnosticRunMs < DIAGNOSTIC_COOLDOWN_MS) {
+        const remainSec = Math.max(1, Math.ceil((DIAGNOSTIC_COOLDOWN_MS - (nowMs - lastDiagnosticRunMs)) / 1000));
+        Alert.alert('잠시 후 다시 시도', `연동 상태 점검은 ${remainSec}초 후 다시 실행할 수 있습니다.`);
+        return;
+      }
       setDiagnosing(true);
       const now = new Date().toISOString();
+      const errors: string[] = [];
+      let successCount = 0;
       try {
         try {
           await apiClient.getNotificationSetting();
@@ -152,12 +163,15 @@ export default function IntegrationSettingsScreen() {
             statusMessage: '설정 확인됨',
             lastSyncAt: now,
           });
+          successCount += 1;
         } catch (error: any) {
           const status = Number(error?.response?.status || 0);
           updateIntegration('fcm', {
             connected: false,
             statusMessage: status === 401 ? '로그인 필요' : '설정 점검 필요',
+            lastSyncAt: now,
           });
+          errors.push(`FCM:${status || 'error'}`);
         }
 
         try {
@@ -171,6 +185,7 @@ export default function IntegrationSettingsScreen() {
             statusMessage: '서명 API 정상',
             lastSyncAt: now,
           });
+          successCount += 1;
         } catch (error: any) {
           const status = Number(error?.response?.status || 0);
           const code = String(error?.response?.data?.error || error?.code || '').toLowerCase();
@@ -187,7 +202,9 @@ export default function IntegrationSettingsScreen() {
                     ? `설정 필요(${required})`
                     : '설정 필요(CLOUDINARY 키)'
                   : '서명 API 점검 필요',
+            lastSyncAt: now,
           });
+          errors.push(`Cloudinary:${status || code || 'error'}`);
         }
 
         try {
@@ -195,23 +212,32 @@ export default function IntegrationSettingsScreen() {
           updateIntegration('instagram_share', {
             connected: installed,
             statusMessage: installed ? '공유 사용 가능' : '앱 미설치(공유시트 fallback)',
-            lastSyncAt: installed ? now : undefined,
+            lastSyncAt: now,
           });
+          if (installed) successCount += 1;
+          else errors.push('Instagram:not_installed');
         } catch {
           updateIntegration('instagram_share', {
             connected: false,
             statusMessage: '공유 상태 점검 실패',
+            lastSyncAt: now,
           });
+          errors.push('Instagram:error');
         }
 
+        setDiagnosticSummary(errors.length ? errors.join(' | ') : `정상 ${successCount}개`);
         if (!silent) {
-          Alert.alert('상태 점검 완료', 'Cloudinary, FCM, Instagram 상태를 최신값으로 갱신했습니다.');
+          const summary = errors.length
+            ? `정상 ${successCount}개 · 점검 필요 ${errors.length}개`
+            : 'Cloudinary, FCM, Instagram 상태가 정상입니다.';
+          Alert.alert('상태 점검 완료', summary);
         }
       } finally {
+        setLastDiagnosticRunMs(Date.now());
         setDiagnosing(false);
       }
     },
-    [diagnosing, updateIntegration]
+    [diagnosing, lastDiagnosticRunMs, updateIntegration]
   );
 
   useEffect(() => {
@@ -239,9 +265,13 @@ export default function IntegrationSettingsScreen() {
   };
 
   const clearPendingMediaDeletes = async () => {
-    const result = await flushPendingMediaDeletes(30);
-    setPendingMediaDeleteCount(result.remaining);
-    Alert.alert('정리 실행 완료', `삭제 대기 ${result.attempted}건 점검, ${result.removed}건 정리, ${result.remaining}건 대기`);
+    try {
+      const result = await flushPendingMediaDeletes(30);
+      setPendingMediaDeleteCount(result.remaining);
+      Alert.alert('정리 실행 완료', `삭제 대기 ${result.attempted}건 점검, ${result.removed}건 정리, ${result.remaining}건 대기`);
+    } catch (error: any) {
+      Alert.alert('정리 실패', String(error?.message || error));
+    }
   };
 
   const openIntegrationDetail = (type: string) => {
@@ -296,6 +326,11 @@ export default function IntegrationSettingsScreen() {
           {lastDiagnosticAt ? (
             <Text style={{ marginTop: 2, color: '#64748B', fontSize: 12 }}>
               연동 진단 최신 시각: {lastDiagnosticAt}
+            </Text>
+          ) : null}
+          {diagnosticSummary ? (
+            <Text style={{ marginTop: 2, color: diagnosticSummary.includes('정상') && !diagnosticSummary.includes('|') ? '#0F766E' : '#B45309', fontSize: 12, fontWeight: '700' }}>
+              진단 요약: {diagnosticSummary}
             </Text>
           ) : null}
           {pendingMediaDeleteCount > 0 ? (

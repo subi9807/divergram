@@ -32,6 +32,7 @@
   - Note: 홈/로그 명칭을 `피드`/`로그 작성`으로 통일하고(`tabs.home`, `tabs.logs`), 상단 햄버거 메뉴 라우트는 중복 제거 로직(`uniqueRouteIds`)으로 섹션 간 중복 노출을 방지.
   - Note: 레거시 `/(tabs)/devices` 경로를 `/(tabs)/bluetooth-devices`로 리다이렉트해 다이빙 컴퓨터 관리 진입 경로를 단일화하고, 탭 라벨(`tabs.devices`)을 다국어 기준 `다이빙 컴퓨터` 계열로 통일.
   - Note: 일부 환경에서 리다이렉트 전환 에러를 방지하기 위해 `/(tabs)/devices`는 `BluetoothDeviceScreen` 직접 렌더링 방식으로 안정화.
+  - Note: 설정 화면 마지막 활성 탭을 로컬 저장소(`divergram_settings_last_tab_v1`)에 보존해 재진입 시 동일 섹션으로 복원.
 - [x] DiveLog 관리 화면 UI 생성
   - Evidence: `src/screens/dive-log/DiveLogManagementScreen.tsx`, `src/components/IntegrationStatusCard.tsx`, `src/components/DiveLogCard.tsx`, `src/components/SyncStatusBadge.tsx`
   - Note: `DiveLog 관리` 화면을 로그 검토/편집 중심으로 단순화하고 서비스 연동/전체 동기화 액션을 기기관리 화면으로 분리.
@@ -62,6 +63,7 @@
   - Note: DiveLog 관리 화면에 `전체/수동/연동/실패` 필터와 요약 카운트(전체/수동/연동/실패)를 추가해 운영자가 로그 상태를 빠르게 분류/점검하도록 개선.
   - Note: DiveLog 편집 임시저장/복원을 추가해 앱 종료 후 재진입 시 편집 상태를 복원하고, 복원 시 `uploading` 상태 미디어를 `failed`로 전환해 즉시 재시도 가능하도록 안정화.
   - Note: Cloudinary 삭제 실패 항목을 로컬 큐에 적재하고 편집 화면 진입 시 자동 재시도(`flushPendingMediaDeletes`)해 미디어 orphan 누적 가능성을 낮춤.
+  - Note: 미디어 업로드 큐를 도입해 동시 처리 개수를 2개로 제한(`MAX_PARALLEL_UPLOADS`)하고, 대기 업로드 건수를 화면에 표시해 대량 첨부 시 안정성을 보강.
 - [x] 로그 공개 범위 설정 구현 (편집 화면)
   - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx` (`visibilityType`)
 - [x] 수동 로그 가져오기 동작 구현 (mock)
@@ -90,6 +92,7 @@
   - Note: 관측 시각이 2시간 이상 경과한 경우 추천점수 보정(-8)·신뢰도 강등(high→medium)·추가 경고문을 적용해 준-실시간 데이터의 과신 리스크를 완화.
   - Note: 시간대 예보에서 `위험/비권장` 구간 비중을 계산하는 `horizonRiskPenalty`를 추가해 위험 비율이 높을 때 추천점수 하향·경고·입수 비권장을 강화.
   - Note: 시간대 예보 시각 간격 공백/불규칙성을 `forecastContinuityPenalty`로 반영해 큰 예보 갭(4h+) 발생 시 신뢰도 하향(`low`) 및 입수 보수판단을 강화.
+  - Note: 단시간 수온 변동폭(`thermalShiftPenalty`)을 반영해 수온 급변 시 추천점수 하향과 보온 장비 경고를 추가.
 
 ## 4) 4단계 (외부 API 동기화)
 - [x] Garmin/Suunto/Shearwater 서비스 + 연결/해제 함수
@@ -116,6 +119,7 @@
   - Note: 연동 설정 화면에 `연동 상태 점검` 진단 액션을 추가해 Cloudinary 서명 API/FCM 설정 API/Instagram 설치 상태를 실점검하고 카드 상태(`connected/statusMessage/lastSyncAt`)에 즉시 반영.
   - Note: 연동 요약 카드에 `연동 진단 최신 시각`을 노출해 운영자가 마지막 실점검 시점을 빠르게 확인하도록 개선.
   - Note: 연동 요약 카드에 Cloudinary `미디어 삭제 대기` 건수를 노출하고 `삭제 대기 정리` 액션으로 즉시 재정리할 수 있도록 보강.
+  - Note: 연동 진단 실행에 60초 쿨다운(`DIAGNOSTIC_COOLDOWN_MS`)과 `진단 요약` 표시를 추가해 점검 스팸/중복 호출을 방지하고 실패 원인을 빠르게 식별하도록 개선.
 
 ## 5) 5단계 (Bluetooth BLE)
 - [x] BLE service + adapter 인터페이스/브랜드 어댑터 골격
@@ -198,6 +202,7 @@
   - Note: 저장소 레벨 중복 신고 검증(`submitReport`)에서 대상 ID를 소문자 정규화해 대소문자 우회 중복 신고를 차단.
   - Note: 신고 모델에 `syncStatus/syncError`를 추가하고, 신고 화면에서 `동기화 대기` 목록/개별 재동기화 버튼을 제공해 장애 복구 플로우를 명시화.
   - Note: 신고 화면 진입 시 최근 `동기화 대기` 신고(최대 3건)를 자동 재동기화하도록 보강해 수동 조치 없이 복구되도록 개선.
+  - Note: 신고 접수 전 필수 정책 동의 검증을 추가하고 미동의 사용자를 `재동의` 화면으로 유도해 법적 동의 누락 상태의 신고 제출을 차단.
 
 ## 10) 자격증 관리
 - [x] 자격증 관리 화면(mock)

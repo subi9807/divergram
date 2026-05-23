@@ -177,6 +177,26 @@ function trendPenalty(hourly: { recommendationScore?: number }[]) {
   };
 }
 
+function thermalShiftPenalty(hourly: { waterTempC?: number }[]) {
+  const temps = hourly
+    .map((item) => Number(item.waterTempC))
+    .filter((value) => Number.isFinite(value))
+    .slice(0, 6);
+  if (temps.length < 3) return { penalty: 0, warnings: [] as string[] };
+  const span = Math.max(...temps) - Math.min(...temps);
+  if (span < 2.5) return { penalty: 0, warnings: [] as string[] };
+  if (span >= 4) {
+    return {
+      penalty: 10,
+      warnings: ['단시간 수온 변동폭이 매우 큽니다. 체온 저하와 장비 세팅(보온/가중) 변화를 고려하세요.'],
+    };
+  }
+  return {
+    penalty: 6,
+    warnings: ['수온 변동폭이 커 보온 장비/입수 시간 조정을 권장합니다.'],
+  };
+}
+
 function horizonRiskPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?: boolean }[]) {
   if (!hourly.length) return { penalty: 0, warnings: [] as string[], forceNoDive: false };
   const riskyHours = hourly.filter((item) => item.riskLevel === 'danger' || item.diveAllowed === false).length;
@@ -582,6 +602,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const currentSpan = currentValues.length ? Math.max(...currentValues) - Math.min(...currentValues) : 0;
     const variability = variabilityPenalty({ waveSpan, currentSpan });
     const trend = trendPenalty(hourly);
+    const thermal = thermalShiftPenalty(hourly);
     const horizon = horizonRiskPenalty(hourly);
     const continuity = forecastContinuityPenalty(hourly);
 
@@ -631,9 +652,9 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
       tidePenalty > 0 && nearestTide
         ? `조석 ${nearestTide.type === 'high' ? '만조' : '간조'} 전후 ${Math.round(nearestTide.minutesDiff)}분 구간으로 조류 변화가 클 수 있습니다.`
         : undefined;
-    const adjustedScore = clamp(0, risk.score - tidePenalty - variability.penalty - trend.penalty - horizon.penalty - continuity.penalty, 100);
+    const adjustedScore = clamp(0, risk.score - tidePenalty - variability.penalty - trend.penalty - thermal.penalty - horizon.penalty - continuity.penalty, 100);
     const adjustedLevel = riskLevelFromScore(adjustedScore);
-    const adjustedWarnings = [tideWarning, ...variability.warnings, ...trend.warnings, ...horizon.warnings, ...continuity.warnings, ...risk.warnings]
+    const adjustedWarnings = [tideWarning, ...variability.warnings, ...trend.warnings, ...thermal.warnings, ...horizon.warnings, ...continuity.warnings, ...risk.warnings]
       .filter(Boolean)
       .filter((item, index, arr) => arr.indexOf(item) === index) as string[];
     const adjustedDiveAllowed = risk.diveAllowed && adjustedLevel !== 'danger' && !horizon.forceNoDive && !continuity.severeGap;

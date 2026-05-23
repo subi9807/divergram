@@ -462,3 +462,23 @@
   - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE=200`, `CERT_STATUS_PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
 - [x] 변경 파일 eslint 재검증 통과 (자격증 백엔드 동기화 반영분)
   - Command: `npx eslint src/lib/api.ts src/services/certificationService.ts src/screens/dive-log/CertificationScreen.tsx`
+- [x] 설정 구조 완성도 보강 (마지막 탭 복원)
+  - Evidence: `app/(tabs)/settings.tsx`
+  - 내용: 설정 화면 마지막 활성 탭을 로컬 저장소(`divergram_settings_last_tab_v1`)에 보존하고 재진입 시 동일 탭으로 복원
+- [x] DiveLog 편집/미디어 폴리시 19차 보강 (업로드 큐/병렬 제한)
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 미디어 업로드 큐를 추가해 동시 업로드를 최대 2개로 제한(`MAX_PARALLEL_UPLOADS`)하고 대기 건수를 화면에 표시해 대량 첨부 안정성 개선
+- [x] Stormglass 위험도 로직 16차 고도화 (수온 급변 페널티)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: `thermalShiftPenalty`를 도입해 단시간 수온 변동폭이 큰 경우 추천점수 하향 및 보온/장비 경고를 자동 추가
+- [x] 연동 UX 안정화 20차 (진단 쿨다운/요약)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 진단 호출에 60초 쿨다운을 적용하고 서비스별 실패 코드를 `진단 요약`으로 노출, 실패 진단도 `lastSyncAt`에 반영
+- [x] 법적/신고 플로우 검증 17차 (필수 동의 게이트)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`, `src/screens/legal/ConsentScreen.tsx`
+  - 내용: 신고 접수 전에 필수 정책 동의 여부를 검증하고 미동의 시 재동의 화면으로 유도, 재동의 완료 후 복귀 경로(`returnTo`) 처리
+- [x] 변경 파일 eslint 재검증 통과 (설정/DiveLog/Stormglass/연동/법적 플로우)
+  - Command: `npx eslint 'app/(tabs)/settings.tsx' src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx src/screens/legal/ConsentScreen.tsx`
+- [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:16 UTC 기준)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`

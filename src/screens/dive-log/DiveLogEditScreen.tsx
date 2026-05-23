@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -18,6 +18,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { storage } from '../../lib/storage';
 
 const MAX_MEDIA_COUNT = 10;
+const MAX_PARALLEL_UPLOADS = 2;
 
 type DiveLogDraftSnapshot = {
   memo: string;
@@ -188,6 +189,12 @@ export default function DiveLogEditScreen() {
   const [currentStrengthInput, setCurrentStrengthInput] = useState(safeNumberText(log?.currentStrength));
   const [draftRecoveryReady, setDraftRecoveryReady] = useState(false);
   const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
+  const [queuedUploadCount, setQueuedUploadCount] = useState(0);
+  const mediaRef = useRef<MediaFile[]>(media);
+  const uploadQueueRef = useRef<{ mediaId: string; seed?: MediaFile }[]>([]);
+  const queuedUploadIdsRef = useRef<Set<string>>(new Set());
+  const inFlightUploadIdsRef = useRef<Set<string>>(new Set());
+  const activeUploadCountRef = useRef(0);
 
   useEffect(() => {
     if (!log) return;
@@ -213,6 +220,10 @@ export default function DiveLogEditScreen() {
     }
     setAiEnabled((prev) => prev || aiSummaryEnabled || aiCaptionEnabled);
   }, [aiSummaryEnabled, aiCaptionEnabled]);
+
+  useEffect(() => {
+    mediaRef.current = media;
+  }, [media]);
 
   useEffect(() => {
     let cancelled = false;
@@ -420,8 +431,8 @@ export default function DiveLogEditScreen() {
     router.push(`/(tabs)/location?location=${encodeURIComponent(locationQuery)}` as never);
   };
 
-  const runMediaUpload = async (mediaId: string, seed?: MediaFile) => {
-    const target = seed || media.find((item) => item.id === mediaId);
+  const runMediaUploadNow = useCallback(async (mediaId: string, seed?: MediaFile) => {
+    const target = seed || mediaRef.current.find((item) => item.id === mediaId);
     if (!target || !target.localUri) {
       setMedia((prev) =>
         prev.map((item) =>
@@ -480,7 +491,38 @@ export default function DiveLogEditScreen() {
         )
       );
     }
-  };
+  }, []);
+
+  const flushUploadQueue = useCallback(() => {
+    while (activeUploadCountRef.current < MAX_PARALLEL_UPLOADS && uploadQueueRef.current.length > 0) {
+      const next = uploadQueueRef.current.shift();
+      if (!next) break;
+      queuedUploadIdsRef.current.delete(next.mediaId);
+      inFlightUploadIdsRef.current.add(next.mediaId);
+      activeUploadCountRef.current += 1;
+      setQueuedUploadCount(uploadQueueRef.current.length);
+
+      void runMediaUploadNow(next.mediaId, next.seed).finally(() => {
+        inFlightUploadIdsRef.current.delete(next.mediaId);
+        activeUploadCountRef.current = Math.max(0, activeUploadCountRef.current - 1);
+        setQueuedUploadCount(uploadQueueRef.current.length);
+        flushUploadQueue();
+      });
+    }
+  }, [runMediaUploadNow]);
+
+  const queueMediaUpload = useCallback(
+    (mediaId: string, seed?: MediaFile) => {
+      if (queuedUploadIdsRef.current.has(mediaId) || inFlightUploadIdsRef.current.has(mediaId)) {
+        return;
+      }
+      queuedUploadIdsRef.current.add(mediaId);
+      uploadQueueRef.current.push({ mediaId, seed });
+      setQueuedUploadCount(uploadQueueRef.current.length);
+      flushUploadQueue();
+    },
+    [flushUploadQueue]
+  );
 
   const appendPickedAssets = (assets: ImagePicker.ImagePickerAsset[]) => {
     const remaining = Math.max(0, MAX_MEDIA_COUNT - media.length);
@@ -536,7 +578,7 @@ export default function DiveLogEditScreen() {
 
     setMedia((prev) => [...prev, ...nextMedia]);
     nextMedia.forEach((item) => {
-      void runMediaUpload(item.id, item);
+      void queueMediaUpload(item.id, item);
     });
 
     for (const asset of selected) {
@@ -592,13 +634,21 @@ export default function DiveLogEditScreen() {
   const removeMedia = (mediaId: string) => {
     const target = media.find((item) => item.id === mediaId);
     if (!target) return;
+    const removeFromQueue = () => {
+      uploadQueueRef.current = uploadQueueRef.current.filter((item) => item.mediaId !== mediaId);
+      queuedUploadIdsRef.current.delete(mediaId);
+      setQueuedUploadCount(uploadQueueRef.current.length);
+    };
     if (target.uploadStatus === 'uploading') {
       Alert.alert('업로드 중 삭제', '업로드 중인 미디어를 삭제하면 진행 상태가 사라집니다. 삭제할까요?', [
         { text: '취소', style: 'cancel' },
         {
           text: '삭제',
           style: 'destructive',
-          onPress: () => setMedia((prev) => prev.filter((item) => item.id !== mediaId)),
+          onPress: () => {
+            removeFromQueue();
+            setMedia((prev) => prev.filter((item) => item.id !== mediaId));
+          },
         },
       ]);
       return;
@@ -608,11 +658,18 @@ export default function DiveLogEditScreen() {
         setPendingDeleteCount(getPendingDeleteCount());
       });
     }
+    removeFromQueue();
     setMedia((prev) => prev.filter((item) => item.id !== mediaId));
   };
 
   const retryMediaUpload = (mediaId: string) => {
-    void runMediaUpload(mediaId);
+    const queueIndex = uploadQueueRef.current.findIndex((item) => item.mediaId === mediaId);
+    if (queueIndex >= 0) {
+      uploadQueueRef.current.splice(queueIndex, 1);
+      queuedUploadIdsRef.current.delete(mediaId);
+      setQueuedUploadCount(uploadQueueRef.current.length);
+    }
+    void queueMediaUpload(mediaId);
   };
 
   const retryFailedUploads = () => {
@@ -630,7 +687,7 @@ export default function DiveLogEditScreen() {
       )
     );
     failedIds.forEach((id) => {
-      void runMediaUpload(id);
+      void queueMediaUpload(id);
     });
   };
 
@@ -646,6 +703,9 @@ export default function DiveLogEditScreen() {
         text: '삭제',
         style: 'destructive',
         onPress: () => {
+          uploadQueueRef.current = [];
+          queuedUploadIdsRef.current.clear();
+          setQueuedUploadCount(0);
           media.forEach((item) => {
             if (shouldDeleteFromCloudinary(item)) {
               void deleteMedia(item.url || '').finally(() => {
@@ -691,6 +751,9 @@ export default function DiveLogEditScreen() {
         text: '초기화',
         style: 'destructive',
         onPress: () => {
+          uploadQueueRef.current = [];
+          queuedUploadIdsRef.current.clear();
+          setQueuedUploadCount(0);
           setMemo(log.memo || '');
           setBuddyName(log.buddyName || '');
           setEquipmentInfo(log.equipmentInfo || '');
@@ -844,6 +907,11 @@ export default function DiveLogEditScreen() {
           ) : null}
           {uploadingCount > 0 ? (
             <Text style={{ color: '#1D4ED8', fontSize: 12, fontWeight: '700' }}>업로드 진행중 {uploadingCount}개</Text>
+          ) : null}
+          {queuedUploadCount > 0 ? (
+            <Text style={{ color: '#0F766E', fontSize: 12, fontWeight: '700' }}>
+              업로드 대기 {queuedUploadCount}개 (동시 {MAX_PARALLEL_UPLOADS}개 처리)
+            </Text>
           ) : null}
           {failedCount > 0 ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
