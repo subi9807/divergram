@@ -431,3 +431,11 @@
   - Evidence: `NOTIFICATIONS_GET=200`, `NOTIFICATIONS_PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN=503(cloudinary_not_configured)`, `CLOUDINARY_DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
 - [x] 변경 파일 eslint 재검증 통과 (삭제큐/신고동기화/연동요약 반영)
   - Command: `npx eslint src/models/Report.ts src/stores/legalStore.ts src/screens/legal/ReportScreen.tsx src/services/cloudinaryService.ts src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx`
+- [x] Stormglass 위험도 로직 15차 고도화 (예보 연속성 페널티)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: `forecastContinuityPenalty`를 추가해 시간대 예보 간격이 불규칙하거나 큰 공백(4시간+)이 발생할 때 추천점수 하향, 경고 추가, 신뢰도 저하 및 보수적 입수판단으로 보정
+- [x] 신고 흐름 안정화 16차 (자동 재동기화)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 화면 진입 시 동기화 대기 신고(최대 3건)를 자동 재전송하고 결과를 `syncStatus(synced/pending/failed)`에 반영해 복구 동작을 내장화
+- [x] 변경 파일 eslint 재검증 통과 (Stormglass/Report autosync 반영)
+  - Command: `npx eslint src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx`

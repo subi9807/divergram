@@ -203,6 +203,52 @@ function horizonRiskPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?:
   };
 }
 
+function forecastContinuityPenalty(hourly: { timeIso?: string }[]) {
+  if (hourly.length < 3) {
+    return {
+      penalty: 8,
+      warnings: ['시간대 예보 구간이 짧아 추세 판단 신뢰도가 낮습니다.'],
+      severeGap: true,
+    };
+  }
+
+  const diffs: number[] = [];
+  for (let i = 1; i < hourly.length; i += 1) {
+    const prevMs = parseTimeMs(hourly[i - 1]?.timeIso);
+    const nextMs = parseTimeMs(hourly[i]?.timeIso);
+    if (!Number.isFinite(prevMs) || !Number.isFinite(nextMs)) continue;
+    const diffMin = (nextMs - prevMs) / (1000 * 60);
+    if (Number.isFinite(diffMin) && diffMin > 0) diffs.push(diffMin);
+  }
+
+  if (!diffs.length) {
+    return {
+      penalty: 10,
+      warnings: ['시간대 예보 시각이 비정상적이어서 보수적 판단이 필요합니다.'],
+      severeGap: true,
+    };
+  }
+
+  const largeGapCount = diffs.filter((value) => value >= 120).length;
+  const severeGapCount = diffs.filter((value) => value >= 240).length;
+  if (severeGapCount > 0) {
+    return {
+      penalty: 14,
+      warnings: ['시간대 예보 간격에 큰 공백(4시간+)이 있어 추천 신뢰도가 낮습니다.'],
+      severeGap: true,
+    };
+  }
+  if (largeGapCount >= 2) {
+    return {
+      penalty: 8,
+      warnings: ['시간대 예보 간격이 불규칙해 급변 구간 누락 가능성이 있습니다.'],
+      severeGap: false,
+    };
+  }
+
+  return { penalty: 0, warnings: [] as string[], severeGap: false };
+}
+
 function calculateDataCompleteness(input: {
   waveHeightM?: number;
   currentSpeedKnot?: number;
@@ -537,6 +583,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const variability = variabilityPenalty({ waveSpan, currentSpan });
     const trend = trendPenalty(hourly);
     const horizon = horizonRiskPenalty(hourly);
+    const continuity = forecastContinuityPenalty(hourly);
 
     const bestHourly = [...hourly]
       .filter((item) => item.riskLevel !== 'danger' && item.diveAllowed)
@@ -584,14 +631,14 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
       tidePenalty > 0 && nearestTide
         ? `조석 ${nearestTide.type === 'high' ? '만조' : '간조'} 전후 ${Math.round(nearestTide.minutesDiff)}분 구간으로 조류 변화가 클 수 있습니다.`
         : undefined;
-    const adjustedScore = clamp(0, risk.score - tidePenalty - variability.penalty - trend.penalty - horizon.penalty, 100);
+    const adjustedScore = clamp(0, risk.score - tidePenalty - variability.penalty - trend.penalty - horizon.penalty - continuity.penalty, 100);
     const adjustedLevel = riskLevelFromScore(adjustedScore);
-    const adjustedWarnings = [tideWarning, ...variability.warnings, ...trend.warnings, ...horizon.warnings, ...risk.warnings]
+    const adjustedWarnings = [tideWarning, ...variability.warnings, ...trend.warnings, ...horizon.warnings, ...continuity.warnings, ...risk.warnings]
       .filter(Boolean)
       .filter((item, index, arr) => arr.indexOf(item) === index) as string[];
-    const adjustedDiveAllowed = risk.diveAllowed && adjustedLevel !== 'danger' && !horizon.forceNoDive;
-    const adjustedNoDiveReason = adjustedDiveAllowed ? undefined : tideWarning || horizon.warnings[0] || risk.noDiveReason;
-    const adjustedReason = tideWarning ? tideWarning : horizon.warnings[0] || risk.reason;
+    const adjustedDiveAllowed = risk.diveAllowed && adjustedLevel !== 'danger' && !horizon.forceNoDive && !continuity.severeGap;
+    const adjustedNoDiveReason = adjustedDiveAllowed ? undefined : tideWarning || continuity.warnings[0] || horizon.warnings[0] || risk.noDiveReason;
+    const adjustedReason = tideWarning ? tideWarning : continuity.warnings[0] || horizon.warnings[0] || risk.reason;
     const sparseAdjustedLevel =
       sparseHourly && adjustedLevel !== 'danger'
         ? 'caution'
@@ -624,7 +671,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
       summary: sparseSummary,
       recommendationScore: sparseAdjustedScore,
       dataCompletenessScore,
-      riskConfidence: sparseHourly ? 'low' : inferRiskConfidence(dataCompletenessScore, 'stormglass'),
+      riskConfidence: sparseHourly ? 'low' : continuity.severeGap ? 'low' : inferRiskConfidence(dataCompletenessScore, 'stormglass'),
       diveAllowed: sparseDiveAllowed,
       noDiveReason: sparseNoDiveReason,
       beginnerSafe: risk.beginnerSafe,

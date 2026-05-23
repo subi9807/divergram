@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
@@ -144,6 +144,7 @@ export default function ReportScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [syncingReportId, setSyncingReportId] = useState<string>('');
   const [lastSubmittedAt, setLastSubmittedAt] = useState<number>(0);
+  const [autoSyncDone, setAutoSyncDone] = useState(false);
 
   const myRecentReports = useMemo(
     () => reportHistory.filter((item) => item.reporterUserId === user?.id).slice(0, 3),
@@ -304,6 +305,43 @@ export default function ReportScreen() {
       setSyncingReportId('');
     }
   };
+
+  useEffect(() => {
+    if (!user?.id || autoSyncDone) return;
+    const pendingTargets = reportHistory
+      .filter((item) => item.reporterUserId === user.id && item.syncStatus !== 'synced')
+      .slice(0, 3);
+    if (!pendingTargets.length) {
+      setAutoSyncDone(true);
+      return;
+    }
+
+    let cancelled = false;
+    const runAutoSync = async () => {
+      for (const item of pendingTargets) {
+        try {
+          await apiClient.submitModerationReport({
+            targetType: item.targetType,
+            targetId: item.targetId,
+            reason: item.reason,
+            detail: item.detail,
+            userId: user.id,
+          });
+          if (!cancelled) markReportSyncStatus(item.id, 'synced');
+        } catch (error: any) {
+          if (cancelled) continue;
+          const pending = shouldQueueReportSync(error);
+          markReportSyncStatus(item.id, pending ? 'pending' : 'failed', formatReportError(error));
+        }
+      }
+      if (!cancelled) setAutoSyncDone(true);
+    };
+
+    runAutoSync();
+    return () => {
+      cancelled = true;
+    };
+  }, [autoSyncDone, markReportSyncStatus, reportHistory, user?.id]);
 
   return (
     <Screen>
