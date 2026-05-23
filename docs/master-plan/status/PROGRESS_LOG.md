@@ -439,3 +439,14 @@
   - 내용: 화면 진입 시 동기화 대기 신고(최대 3건)를 자동 재전송하고 결과를 `syncStatus(synced/pending/failed)`에 반영해 복구 동작을 내장화
 - [x] 변경 파일 eslint 재검증 통과 (Stormglass/Report autosync 반영)
   - Command: `npx eslint src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx`
+- [x] 자격증 관리 워크플로우 2차 보강 (OCR 자동 반영)
+  - Evidence: `src/screens/dive-log/CertificationScreen.tsx`, `src/lib/api.ts`
+  - 내용: 자격증 이미지 선택 시 `uploadLicenseImageWithOcr`를 자동 호출해 기관/레벨/번호/취득일을 폼에 선반영하고, OCR 결과/실패 힌트를 화면에 노출
+- [x] AI 서비스 안정화 2차 (응답 파서 + 타임아웃)
+  - Evidence: `src/services/aiService.ts`
+  - 내용: OpenAI 응답 텍스트 추출을 다중 포맷(`output_text`/`output[].content`/`choices`)으로 보강하고 요청 타임아웃(12초) + abort 처리 추가
+- [x] 연동 UX 안정화 19차 (Cloudinary 진단 상세)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: Cloudinary 진단 실패 시 백엔드 `required` 목록을 상태문구로 노출해 누락 환경키를 즉시 확인 가능하도록 개선
+- [x] 변경 파일 eslint 재검증 통과 (자격증/OCR/AI/연동 진단 반영)
+  - Command: `npx eslint src/screens/dive-log/CertificationScreen.tsx src/services/aiService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx`

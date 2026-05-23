@@ -174,13 +174,18 @@ export default function IntegrationSettingsScreen() {
         } catch (error: any) {
           const status = Number(error?.response?.status || 0);
           const code = String(error?.response?.data?.error || error?.code || '').toLowerCase();
+          const required = Array.isArray(error?.response?.data?.required)
+            ? error.response.data.required.join(', ')
+            : '';
           updateIntegration('cloudinary', {
             connected: false,
             statusMessage:
               status === 401
                 ? '로그인 필요'
                 : code.includes('cloudinary_not_configured')
-                  ? '설정 필요(CLOUDINARY 키)'
+                  ? required
+                    ? `설정 필요(${required})`
+                    : '설정 필요(CLOUDINARY 키)'
                   : '서명 API 점검 필요',
           });
         }

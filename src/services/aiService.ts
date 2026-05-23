@@ -2,10 +2,31 @@ import type { DiveLog, MarineWeather } from '../models';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '';
 const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL || 'gpt-4.1-mini';
+const OPENAI_TIMEOUT_MS = 12000;
+
+function extractResponseText(payload: any): string {
+  const direct = String(payload?.output_text || '').trim();
+  if (direct) return direct;
+
+  const output = Array.isArray(payload?.output) ? payload.output : [];
+  for (const item of output) {
+    const content = Array.isArray(item?.content) ? item.content : [];
+    for (const chunk of content) {
+      const text = String(chunk?.text || chunk?.value || '').trim();
+      if (text) return text;
+    }
+  }
+
+  const messageText = String(payload?.choices?.[0]?.message?.content || '').trim();
+  if (messageText) return messageText;
+  return '';
+}
 
 async function callOpenAiText(prompt: string, fallback: string): Promise<string> {
   if (!OPENAI_API_KEY) return fallback;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
   try {
     const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -17,16 +38,19 @@ async function callOpenAiText(prompt: string, fallback: string): Promise<string>
         model: OPENAI_MODEL,
         input: prompt,
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) return fallback;
 
     const json = await response.json();
-    const text = String(json?.output_text || '').trim();
+    const text = extractResponseText(json);
     if (!text) return fallback;
     return text;
   } catch {
     return fallback;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

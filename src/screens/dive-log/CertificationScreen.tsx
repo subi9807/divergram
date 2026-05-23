@@ -6,6 +6,7 @@ import { Screen } from '../../components/Screen';
 import type { Certification, CertificationAgency } from '../../models';
 import { uploadImage } from '../../services/cloudinaryService';
 import { listCertifications, registerCertification, updateCertificationStatus } from '../../services/certificationService';
+import { apiClient } from '../../lib/api';
 
 const statusLabel: Record<Certification['status'], string> = {
   unregistered: '미등록',
@@ -33,6 +34,8 @@ export default function CertificationScreen() {
   const [expiresAt, setExpiresAt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [ocrRunning, setOcrRunning] = useState(false);
+  const [ocrHint, setOcrHint] = useState('');
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -48,6 +51,45 @@ export default function CertificationScreen() {
     void loadList();
   }, [loadList]);
 
+  const applyOcrSuggestion = (ocr: any) => {
+    const agencyRaw = String(ocr?.agency || '').trim().toUpperCase();
+    const levelRaw = String(ocr?.type || '').trim();
+    const numberRaw = String(ocr?.number || '').trim();
+    const issuedAtRaw = String(ocr?.issued_at || '').trim();
+    const nextAgency: CertificationAgency | null = agencyRaw === 'PADI' ? 'PADI' : agencyRaw === 'SSI' ? 'SSI' : null;
+
+    if (nextAgency) setAgency(nextAgency);
+    if (levelRaw) setLevel((prev) => prev || levelRaw);
+    if (numberRaw) setCertificationNumber((prev) => prev || numberRaw);
+    if (issuedAtRaw) setIssuedAt((prev) => prev || issuedAtRaw);
+
+    const applied: string[] = [];
+    if (nextAgency) applied.push(`기관 ${nextAgency}`);
+    if (levelRaw) applied.push(`레벨 ${levelRaw}`);
+    if (numberRaw) applied.push(`번호 ${numberRaw}`);
+    if (issuedAtRaw) applied.push(`취득일 ${issuedAtRaw}`);
+    setOcrHint(applied.length ? `OCR 반영: ${applied.join(' · ')}` : 'OCR 결과를 찾지 못했습니다.');
+  };
+
+  const runLicenseOcr = async (base64?: string | null, mimeType?: string | null) => {
+    const encoded = String(base64 || '').trim();
+    if (!encoded) return;
+    const safeMime = String(mimeType || 'image/jpeg').trim() || 'image/jpeg';
+    const dataUrl = `data:${safeMime};base64,${encoded}`;
+
+    setOcrRunning(true);
+    try {
+      const result = await apiClient.uploadLicenseImageWithOcr(dataUrl);
+      const ocr = result?.ocr || {};
+      applyOcrSuggestion(ocr);
+    } catch (error: any) {
+      const message = String(error?.response?.data?.error || error?.message || '').trim();
+      setOcrHint(message ? `OCR 실패: ${message}` : 'OCR 실패: 서버 연결을 확인해주세요.');
+    } finally {
+      setOcrRunning(false);
+    }
+  };
+
   const handlePickImage = async () => {
     if (uploadingImage) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -58,6 +100,7 @@ export default function CertificationScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
+      base64: true,
       quality: 0.9,
       selectionLimit: 1,
     });
@@ -70,6 +113,9 @@ export default function CertificationScreen() {
       const uploaded = await uploadImage(picked);
       setImageUrl(uploaded.url);
       Alert.alert('업로드 완료', uploaded.source === 'cloudinary' ? '자격증 이미지가 업로드되었습니다.' : '임시 업로드 URL로 저장됩니다.');
+      const base64 = result.assets[0]?.base64 || '';
+      const mimeType = result.assets[0]?.mimeType || 'image/jpeg';
+      void runLicenseOcr(base64, mimeType);
     } catch (error: any) {
       Alert.alert('업로드 실패', String(error?.message || error));
     } finally {
@@ -168,7 +214,7 @@ export default function CertificationScreen() {
             <Text style={{ color: '#334155', fontWeight: '700' }}>자격증 이미지</Text>
             <TouchableOpacity
               onPress={handlePickImage}
-              disabled={uploadingImage}
+              disabled={uploadingImage || ocrRunning}
               style={{
                 borderRadius: 12,
                 borderWidth: 1,
@@ -176,11 +222,18 @@ export default function CertificationScreen() {
                 backgroundColor: '#EFF6FF',
                 paddingVertical: 11,
                 alignItems: 'center',
-                opacity: uploadingImage ? 0.65 : 1,
+                opacity: uploadingImage || ocrRunning ? 0.65 : 1,
               }}
             >
-              {uploadingImage ? <ActivityIndicator color="#1D4ED8" /> : <Text style={{ color: '#1D4ED8', fontWeight: '800' }}>{imageUrl ? '이미지 다시 선택' : '이미지 업로드'}</Text>}
+              {uploadingImage || ocrRunning ? (
+                <ActivityIndicator color="#1D4ED8" />
+              ) : (
+                <Text style={{ color: '#1D4ED8', fontWeight: '800' }}>{imageUrl ? '이미지 다시 선택' : '이미지 업로드'}</Text>
+              )}
             </TouchableOpacity>
+            {ocrHint ? (
+              <Text style={{ color: ocrHint.includes('실패') ? '#B91C1C' : '#0F766E', fontSize: 12, fontWeight: '700' }}>{ocrHint}</Text>
+            ) : null}
             {imageUrl ? (
               <View style={{ borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' }}>
                 <ExpoImage source={{ uri: imageUrl }} style={{ width: '100%', height: 170, backgroundColor: '#E2E8F0' }} contentFit="cover" />

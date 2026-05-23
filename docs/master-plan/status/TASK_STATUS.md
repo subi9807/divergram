@@ -155,6 +155,7 @@
 ## 7) 7단계 (OpenAI)
 - [~] AI service 연동 + 실패 fallback
   - Evidence: `src/services/aiService.ts`
+  - Note: OpenAI 호출에 타임아웃(12s)과 응답 파서 다중 fallback(`output_text`→`output[].content`→`choices`)을 추가해 지연/포맷 차이 상황에서도 안정적으로 기본 문구로 복구되도록 보강.
 - [x] AI 설정 화면(mock)
   - Evidence: `src/screens/dive-log/AISettingsScreen.tsx`, `app/(tabs)/ai-settings.tsx`
 - [~] 실 API 연동 + 실패 fallback + 설정 ON/OFF 연동
@@ -204,6 +205,7 @@
 - [~] PADI/SSI 실등록 + 이미지 업로드 + 검증 상태 워크플로우
   - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`, `src/services/cloudinaryService.ts`
   - Note: 앱 내 등록 폼(기관/레벨/번호/발급일/만료일) + 이미지 업로드 + 상태 전이(`reviewing→verified/rejected`, mock)를 구현. 운영 API/관리자 검수 백엔드 연동은 잔여.
+  - Note: 자격증 이미지 선택 시 OCR(`uploadLicenseImageWithOcr`)을 자동 호출해 기관/레벨/번호/취득일을 폼에 선반영하고, 성공/실패 힌트를 화면에 노출하도록 개선.
 
 ## 11) 검증
 - [x] 신규 변경 파일 대상 eslint 검증
