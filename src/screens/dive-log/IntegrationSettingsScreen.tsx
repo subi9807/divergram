@@ -356,6 +356,14 @@ export default function IntegrationSettingsScreen() {
     return { connected: true, accountLabel: type };
   };
 
+  const isTestModeAccount = (label?: string) => /\(mock\)/i.test(String(label || ''));
+
+  const normalizeAccountLabel = (label?: string) =>
+    String(label || '')
+      .replace(/\(mock\)/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
   const disconnectProvider = async (type: string) => {
     if (type === 'garmin') return disconnectGarminAccount();
     if (type === 'suunto') return disconnectSuuntoAccount();
@@ -548,10 +556,15 @@ export default function IntegrationSettingsScreen() {
                   }
                   updateIntegration(item.type, {
                     connected: item.connected,
-                    statusMessage: '동기화 요청됨',
+                    statusMessage: isTestModeAccount(item.accountLabel) ? '동기화 요청됨 (테스트 모드)' : '동기화 요청됨',
                     lastSyncAt: new Date().toISOString(),
                   });
-                  Alert.alert('동기화', `${displayName} 동기화를 요청했습니다. (mock)`);
+                  Alert.alert(
+                    '동기화',
+                    isTestModeAccount(item.accountLabel)
+                      ? `${displayName} 테스트 동기화를 요청했습니다. 운영 키 연동 후 실데이터 동기화가 활성화됩니다.`
+                      : `${displayName} 동기화를 요청했습니다.`
+                  );
                 } catch (error: any) {
                   Alert.alert('동기화 실패', String(error?.message || error));
                 } finally {
@@ -569,13 +582,18 @@ export default function IntegrationSettingsScreen() {
                   }
                   if (nextConnected) {
                     const connected = await connectProvider(item.type);
-                    const mockMode = connected.accountLabel.toLowerCase().includes('(mock)');
+                    const testMode = isTestModeAccount(connected.accountLabel);
                     updateIntegration(item.type, {
                       connected: connected.connected,
-                      accountLabel: connected.accountLabel,
-                      statusMessage: mockMode ? 'Mock 모드 연결 (운영 API 미지원)' : '연결됨',
+                      accountLabel: normalizeAccountLabel(connected.accountLabel) || connected.accountLabel,
+                      statusMessage: testMode ? '테스트 모드 연결됨 (운영 키 필요)' : '연결됨',
                     });
-                    Alert.alert('연결됨', mockMode ? `${displayName} 연결이 완료되었습니다. (Mock 모드)` : `${displayName} 연결이 완료되었습니다.`);
+                    Alert.alert(
+                      '연결됨',
+                      testMode
+                        ? `${displayName} 테스트 연결이 완료되었습니다. 운영 키 연동 전까지는 샘플 데이터로 동작합니다.`
+                        : `${displayName} 연결이 완료되었습니다.`
+                    );
                     return;
                   }
                   await disconnectProvider(item.type);

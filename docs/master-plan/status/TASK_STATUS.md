@@ -278,3 +278,8 @@
 - [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:34 UTC 기준)
   - Command: `./scripts/test-prod-api-integration.sh`
   - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] 연동 UX 안정화 22차 (mock 문구 제거 + 테스트모드 안내)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/screens/dive-log/BluetoothDeviceScreen.tsx`
+  - Note: 외부 서비스 연결/동기화 안내에서 `mock` 표기를 제거하고 `테스트 모드(운영 키 필요)` 문구로 통일, 계정 라벨의 `(mock)` 접미사를 화면 표기에서 정규화해 사용자 혼선을 완화.
+- [x] 변경 파일 eslint 재검증 통과 (연동 UX 문구 정리 반영분)
+  - Command: `npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/dive-log/BluetoothDeviceScreen.tsx src/screens/dive-log/DiveLogEditScreen.tsx src/models/MediaFile.ts`

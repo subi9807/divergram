@@ -175,13 +175,22 @@ export default function BluetoothDeviceScreen() {
           : provider === 'suunto'
             ? await connectSuuntoAccount()
             : await connectShearwaterAccount();
-      const mockMode = result.accountLabel.toLowerCase().includes('(mock)');
+      const testMode = /\(mock\)/i.test(String(result.accountLabel || ''));
+      const normalizedLabel = String(result.accountLabel || '')
+        .replace(/\(mock\)/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
       updateIntegration(provider, {
         connected: result.connected,
-        accountLabel: result.accountLabel,
-        statusMessage: result.connected ? (mockMode ? 'Mock 연결 (운영 API 미지원)' : '연결됨') : '연결 실패',
+        accountLabel: normalizedLabel || result.accountLabel,
+        statusMessage: result.connected ? (testMode ? '테스트 모드 연결됨 (운영 키 필요)' : '연결됨') : '연결 실패',
       });
-      Alert.alert('연결 완료', mockMode ? `${provider} 계정이 Mock 모드로 연결되었습니다.` : `${provider} 계정이 연결되었습니다.`);
+      Alert.alert(
+        '연결 완료',
+        testMode
+          ? `${provider} 계정이 테스트 모드로 연결되었습니다. 운영 키 연동 전까지는 샘플 데이터로 동작합니다.`
+          : `${provider} 계정이 연결되었습니다.`
+      );
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure(provider, message);
