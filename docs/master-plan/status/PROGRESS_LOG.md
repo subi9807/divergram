@@ -499,3 +499,14 @@
 - [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:23 UTC 기준)
   - Command: `./scripts/test-prod-api-integration.sh`
   - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] DiveLog 편집/미디어 폴리시 21차 보강 (업로드 시도 횟수 추적)
+  - Evidence: `src/models/MediaFile.ts`, `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 미디어 항목에 `uploadAttempts` 필드를 추가하고 업로드 시작/성공/실패 시 시도 횟수를 누적 반영, 리스트에 `시도 n/3`를 노출해 실패 원인 파악과 운영 모니터링을 강화
+- [x] DiveLog 실패 업로드 재시도 상한 적용
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 실패 미디어 단건/일괄 재시도에 `MAX_MEDIA_UPLOAD_ATTEMPTS(3)` 상한을 적용하고 초과 항목은 안내 후 제외해 무한 재시도 루프를 차단
+- [x] 변경 파일 eslint 재검증 통과 (미디어 시도횟수 보강분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/models/MediaFile.ts`
+- [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:34 UTC 기준)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`

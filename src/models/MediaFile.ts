@@ -10,6 +10,7 @@ export interface MediaFile {
   durationSec?: number;
   width?: number;
   height?: number;
+  uploadAttempts?: number;
   uploadStatus?: 'idle' | 'uploading' | 'uploaded' | 'failed';
   createdAt: string;
   updatedAt: string;

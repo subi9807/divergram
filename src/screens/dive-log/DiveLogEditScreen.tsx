@@ -19,6 +19,7 @@ import { storage } from '../../lib/storage';
 
 const MAX_MEDIA_COUNT = 10;
 const MAX_PARALLEL_UPLOADS = 2;
+const MAX_MEDIA_UPLOAD_ATTEMPTS = 3;
 
 type DiveLogDraftSnapshot = {
   memo: string;
@@ -51,9 +52,16 @@ function normalizeRecoveredMedia(items: unknown): MediaFile[] {
       return {
         ...item,
         uploadStatus,
+        uploadAttempts: Number.isFinite(Number(item.uploadAttempts)) ? Number(item.uploadAttempts) : 0,
         updatedAt: new Date().toISOString(),
       } as MediaFile;
     });
+}
+
+function nextUploadAttemptCount(media: MediaFile | undefined) {
+  const attempt = Number(media?.uploadAttempts || 0);
+  if (!Number.isFinite(attempt) || attempt < 0) return 1;
+  return attempt + 1;
 }
 
 function normalizeTags(input: string): string[] {
@@ -433,6 +441,7 @@ export default function DiveLogEditScreen() {
 
   const runMediaUploadNow = useCallback(async (mediaId: string, seed?: MediaFile) => {
     const target = seed || mediaRef.current.find((item) => item.id === mediaId);
+    const attempt = nextUploadAttemptCount(mediaRef.current.find((item) => item.id === mediaId) || target);
     if (!target || !target.localUri) {
       setMedia((prev) =>
         prev.map((item) =>
@@ -440,6 +449,7 @@ export default function DiveLogEditScreen() {
             ? {
                 ...item,
                 uploadStatus: 'failed',
+                uploadAttempts: attempt,
                 updatedAt: new Date().toISOString(),
               }
             : item
@@ -454,6 +464,7 @@ export default function DiveLogEditScreen() {
           ? {
               ...item,
               uploadStatus: 'uploading',
+              uploadAttempts: attempt,
               updatedAt: new Date().toISOString(),
             }
           : item
@@ -473,6 +484,7 @@ export default function DiveLogEditScreen() {
                 url: result.url || item.url,
                 thumbnailUrl: result.thumbnailUrl || item.thumbnailUrl,
                 uploadStatus: 'uploaded',
+                uploadAttempts: attempt,
                 updatedAt: new Date().toISOString(),
               }
             : item
@@ -485,6 +497,7 @@ export default function DiveLogEditScreen() {
             ? {
                 ...item,
                 uploadStatus: 'failed',
+                uploadAttempts: attempt,
                 updatedAt: new Date().toISOString(),
               }
             : item
@@ -567,6 +580,7 @@ export default function DiveLogEditScreen() {
           type: isVideo ? 'video' : 'image',
           localUri: uri,
           durationSec: typeof asset.duration === 'number' ? asset.duration : undefined,
+          uploadAttempts: 0,
           uploadStatus: 'idle' as const,
           createdAt: now,
           updatedAt: now,
@@ -663,6 +677,14 @@ export default function DiveLogEditScreen() {
   };
 
   const retryMediaUpload = (mediaId: string) => {
+    const target = media.find((item) => item.id === mediaId);
+    if ((target?.uploadAttempts || 0) >= MAX_MEDIA_UPLOAD_ATTEMPTS) {
+      Alert.alert(
+        '재시도 제한',
+        `자동/수동 재시도는 최대 ${MAX_MEDIA_UPLOAD_ATTEMPTS}회까지만 지원됩니다. 해당 미디어를 삭제 후 다시 추가해주세요.`
+      );
+      return;
+    }
     const queueIndex = uploadQueueRef.current.findIndex((item) => item.mediaId === mediaId);
     if (queueIndex >= 0) {
       uploadQueueRef.current.splice(queueIndex, 1);
@@ -684,8 +706,18 @@ export default function DiveLogEditScreen() {
   };
 
   const retryFailedUploads = () => {
-    const failedIds = media.filter((item) => item.uploadStatus === 'failed').map((item) => item.id);
+    const failedTargets = media.filter((item) => item.uploadStatus === 'failed');
+    const retryTargets = failedTargets.filter(
+      (item) => item.uploadStatus === 'failed' && (item.uploadAttempts || 0) < MAX_MEDIA_UPLOAD_ATTEMPTS
+    );
+    const failedIds = retryTargets.map((item) => item.id);
     if (!failedIds.length) return;
+    if (failedTargets.length > retryTargets.length) {
+      Alert.alert(
+        '재시도 제한 항목 포함',
+        `실패 항목 중 일부는 최대 재시도(${MAX_MEDIA_UPLOAD_ATTEMPTS}회)를 초과해 제외되었습니다.`
+      );
+    }
     setMedia((prev) =>
       prev.map((item) =>
         failedIds.includes(item.id)
@@ -1012,6 +1044,11 @@ export default function DiveLogEditScreen() {
                       <Text style={{ color: uploadStatusColorMap[item.uploadStatus || 'idle'], fontWeight: '700', fontSize: 12 }}>
                         {uploadStatusLabelMap[item.uploadStatus || 'idle']}
                       </Text>
+                      {!!item.uploadAttempts ? (
+                        <Text style={{ marginTop: 1, color: '#64748B', fontSize: 10 }}>
+                          시도 {Math.min(item.uploadAttempts, MAX_MEDIA_UPLOAD_ATTEMPTS)}/{MAX_MEDIA_UPLOAD_ATTEMPTS}
+                        </Text>
+                      ) : null}
                       {detectMediaUploadSource(item) ? (
                         <Text style={{ marginTop: 2, color: '#64748B', fontSize: 10 }}>
                           {detectMediaUploadSource(item)}

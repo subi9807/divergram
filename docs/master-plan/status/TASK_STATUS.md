@@ -267,3 +267,14 @@
   - Evidence: `prod-server:/home/divergram/api/server/routes/data.js` (`DATA_TABLES.certifications`)
   - Evidence: `prod-server:/home/divergram/api/server/index.js` (`app_certifications` table + index ensure schema)
   - Evidence: `scripts/test-prod-api-integration.sh` 실행 결과 `CERT_CREATE=200`, `CERT_STATUS_PATCH=200`
+
+## 14) 체크리스트 우선 보강 (2026-05-23)
+- [x] DiveLog 편집/미디어 폴리시 21차 (업로드 시도 횟수 추적 + 재시도 상한)
+  - Evidence: `src/models/MediaFile.ts` (`uploadAttempts`)
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx` (`MAX_MEDIA_UPLOAD_ATTEMPTS`, `nextUploadAttemptCount`, 실패 미디어 재시도 제한/시도횟수 표시)
+  - Note: 업로드 상태를 `대기/업로드중/완료/실패`로 유지하면서 항목별 시도 횟수를 노출하고, 실패 재시도는 최대 3회로 제한해 반복 실패 루프를 차단.
+- [x] 변경 파일 eslint 재검증 통과 (미디어 시도횟수 보강분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/models/MediaFile.ts`
+- [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:34 UTC 기준)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
