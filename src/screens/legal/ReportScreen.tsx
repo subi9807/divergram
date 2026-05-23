@@ -148,6 +148,10 @@ export default function ReportScreen() {
   const [syncingReportId, setSyncingReportId] = useState<string>('');
   const [lastSubmittedAt, setLastSubmittedAt] = useState<number>(0);
   const [autoSyncDone, setAutoSyncDone] = useState(false);
+  const hasLegalConsentForReport = useMemo(
+    () => (user?.id ? hasRequiredSignupConsents(user.id, latestPolicyVersionMap) : false),
+    [hasRequiredSignupConsents, latestPolicyVersionMap, user?.id]
+  );
 
   const myRecentReports = useMemo(
     () => reportHistory.filter((item) => item.reporterUserId === user?.id).slice(0, 3),
@@ -178,6 +182,12 @@ export default function ReportScreen() {
     return validateDetailQuality(reason, detail);
   }, [detail, reason]);
   const canSubmit = Boolean(reason) && !submitting && !targetIdError && !detailError && !optionalDetailError;
+
+  useEffect(() => {
+    if (hasLegalConsentForReport) {
+      setAutoSyncDone(false);
+    }
+  }, [hasLegalConsentForReport, user?.id]);
 
   const validateBeforeSubmit = () => {
     if (targetIdError) return targetIdError;
@@ -233,7 +243,7 @@ export default function ReportScreen() {
       Alert.alert('로그인 필요', '신고 기능은 로그인 후 이용할 수 있습니다.');
       return;
     }
-    if (!hasRequiredSignupConsents(user.id, latestPolicyVersionMap)) {
+    if (!hasLegalConsentForReport) {
       Alert.alert('정책 동의 필요', '신고 기능 사용 전 필수 정책 동의가 필요합니다.', [
         { text: '취소', style: 'cancel' },
         {
@@ -300,6 +310,10 @@ export default function ReportScreen() {
   const retryPendingReport = async (reportId: string) => {
     const report = reportHistory.find((item) => item.id === reportId);
     if (!report || !user?.id) return;
+    if (!hasLegalConsentForReport) {
+      Alert.alert('정책 동의 필요', '동기화 재시도 전 필수 정책 동의가 필요합니다.');
+      return;
+    }
     setSyncingReportId(reportId);
     try {
       await apiClient.submitModerationReport({
@@ -322,6 +336,10 @@ export default function ReportScreen() {
 
   useEffect(() => {
     if (!user?.id || autoSyncDone) return;
+    if (!hasLegalConsentForReport) {
+      setAutoSyncDone(true);
+      return;
+    }
     const pendingTargets = reportHistory
       .filter((item) => item.reporterUserId === user.id && item.syncStatus !== 'synced')
       .slice(0, 3);
@@ -355,7 +373,7 @@ export default function ReportScreen() {
     return () => {
       cancelled = true;
     };
-  }, [autoSyncDone, markReportSyncStatus, reportHistory, user?.id]);
+  }, [autoSyncDone, hasLegalConsentForReport, markReportSyncStatus, reportHistory, user?.id]);
 
   return (
     <Screen>

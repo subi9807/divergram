@@ -12,6 +12,7 @@ import type { UserIntegration } from '../../models';
 import { apiClient } from '../../lib/api';
 import { isInstagramShareAvailable } from '../../services/instagramShareService';
 import { flushPendingMediaDeletes, getPendingDeleteCount } from '../../services/cloudinaryService';
+import { checkAiHealth } from '../../services/aiService';
 
 const integrationDisplayNameMap: Record<string, string> = {
   google_maps: 'Google Maps',
@@ -27,6 +28,8 @@ const integrationDisplayNameMap: Record<string, string> = {
 
 const managedConnectionTypes = new Set(['garmin', 'suunto', 'shearwater']);
 const DIAGNOSTIC_COOLDOWN_MS = 60 * 1000;
+const hasGoogleMapsKey = Boolean(process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY);
+const hasStormglassKey = Boolean(process.env.EXPO_PUBLIC_STORMGLASS_API_KEY || process.env.STORMGLASS_API_KEY);
 
 function hasAny(status: string, keywords: string[]) {
   return keywords.some((keyword) => status.includes(keyword));
@@ -82,6 +85,7 @@ export default function IntegrationSettingsScreen() {
   const [pendingMediaDeleteCount, setPendingMediaDeleteCount] = useState(0);
   const [lastDiagnosticRunMs, setLastDiagnosticRunMs] = useState(0);
   const [diagnosticSummary, setDiagnosticSummary] = useState('');
+  const [diagnosticNowMs, setDiagnosticNowMs] = useState(Date.now());
 
   const isStaleIntegration = (item: UserIntegration) => {
     if (!item.connected) return false;
@@ -141,6 +145,12 @@ export default function IntegrationSettingsScreen() {
     if (!latestMs) return '';
     return new Date(latestMs).toLocaleString();
   }, [items]);
+  const diagnosticCooldownSec = useMemo(() => {
+    if (!lastDiagnosticRunMs) return 0;
+    const remainMs = DIAGNOSTIC_COOLDOWN_MS - (diagnosticNowMs - lastDiagnosticRunMs);
+    if (remainMs <= 0) return 0;
+    return Math.max(1, Math.ceil(remainMs / 1000));
+  }, [diagnosticNowMs, lastDiagnosticRunMs]);
 
   const runIntegrationDiagnostics = useCallback(
     async (silent = false) => {
@@ -156,6 +166,22 @@ export default function IntegrationSettingsScreen() {
       const errors: string[] = [];
       let successCount = 0;
       try {
+        updateIntegration('google_maps', {
+          connected: hasGoogleMapsKey,
+          statusMessage: hasGoogleMapsKey ? 'API Key 확인됨' : 'API Key 필요',
+          lastSyncAt: now,
+        });
+        if (hasGoogleMapsKey) successCount += 1;
+        else errors.push('GoogleMaps:key_missing');
+
+        updateIntegration('stormglass', {
+          connected: hasStormglassKey,
+          statusMessage: hasStormglassKey ? 'API Key 확인됨' : 'API Key 필요',
+          lastSyncAt: now,
+        });
+        if (hasStormglassKey) successCount += 1;
+        else errors.push('Stormglass:key_missing');
+
         try {
           await apiClient.getNotificationSetting();
           updateIntegration('fcm', {
@@ -208,6 +234,24 @@ export default function IntegrationSettingsScreen() {
         }
 
         try {
+          const ai = await checkAiHealth();
+          updateIntegration('openai', {
+            connected: ai.status === 'ready',
+            statusMessage: ai.message,
+            lastSyncAt: now,
+          });
+          if (ai.status === 'ready') successCount += 1;
+          else errors.push(`OpenAI:${ai.status}`);
+        } catch {
+          updateIntegration('openai', {
+            connected: false,
+            statusMessage: '응답 점검 실패',
+            lastSyncAt: now,
+          });
+          errors.push('OpenAI:error');
+        }
+
+        try {
           const installed = await isInstagramShareAvailable();
           updateIntegration('instagram_share', {
             connected: installed,
@@ -229,11 +273,13 @@ export default function IntegrationSettingsScreen() {
         if (!silent) {
           const summary = errors.length
             ? `정상 ${successCount}개 · 점검 필요 ${errors.length}개`
-            : 'Cloudinary, FCM, Instagram 상태가 정상입니다.';
+            : 'Maps, Stormglass, Cloudinary, OpenAI, FCM, Instagram 상태가 정상입니다.';
           Alert.alert('상태 점검 완료', summary);
         }
       } finally {
-        setLastDiagnosticRunMs(Date.now());
+        const doneMs = Date.now();
+        setDiagnosticNowMs(doneMs);
+        setLastDiagnosticRunMs(doneMs);
         setDiagnosing(false);
       }
     },
@@ -243,6 +289,15 @@ export default function IntegrationSettingsScreen() {
   useEffect(() => {
     runIntegrationDiagnostics(true);
   }, [runIntegrationDiagnostics]);
+
+  useEffect(() => {
+    if (!lastDiagnosticRunMs) return;
+    if (diagnosticCooldownSec <= 0) return;
+    const timer = setInterval(() => {
+      setDiagnosticNowMs(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [diagnosticCooldownSec, lastDiagnosticRunMs]);
 
   useEffect(() => {
     setPendingMediaDeleteCount(getPendingDeleteCount());
@@ -373,22 +428,22 @@ export default function IntegrationSettingsScreen() {
             </Text>
           </TouchableOpacity>
           <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => runIntegrationDiagnostics(false)}
-              disabled={diagnosing}
-              style={{
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: diagnosing ? '#E2E8F0' : '#93C5FD',
-                backgroundColor: diagnosing ? '#F8FAFC' : '#EFF6FF',
-                paddingHorizontal: 10,
-                paddingVertical: 7,
-              }}
-            >
-              <Text style={{ color: diagnosing ? '#94A3B8' : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
-                {diagnosing ? '점검중...' : '연동 상태 점검'}
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => runIntegrationDiagnostics(false)}
+                disabled={diagnosing || diagnosticCooldownSec > 0}
+                style={{
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: diagnosing || diagnosticCooldownSec > 0 ? '#E2E8F0' : '#93C5FD',
+                  backgroundColor: diagnosing || diagnosticCooldownSec > 0 ? '#F8FAFC' : '#EFF6FF',
+                  paddingHorizontal: 10,
+                  paddingVertical: 7,
+                }}
+              >
+                <Text style={{ color: diagnosing || diagnosticCooldownSec > 0 ? '#94A3B8' : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
+                  {diagnosing ? '점검중...' : diagnosticCooldownSec > 0 ? `연동 상태 점검 (${diagnosticCooldownSec}s)` : '연동 상태 점검'}
+                </Text>
+              </TouchableOpacity>
             <TouchableOpacity
               onPress={retryFailedManagedItems}
               style={{

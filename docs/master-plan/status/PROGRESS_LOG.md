@@ -482,3 +482,20 @@
 - [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:16 UTC 기준)
   - Command: `./scripts/test-prod-api-integration.sh`
   - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] DiveLog 편집/미디어 폴리시 20차 보강 (대기/업로드 상태 분리 + 저장 가드)
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 업로드 큐 적재 항목을 `idle(대기)`로 분리하고 저장 차단 조건에 `queuedUploadCount`를 포함해 큐 대기 중 저장되는 케이스를 차단
+- [x] 연동 UX 안정화 21차 (진단 범위 확장 + 쿨다운 카운트다운)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/services/aiService.ts`
+  - 내용: 연동 진단에 Google Maps/Stormglass 키 상태 및 OpenAI 헬스체크를 추가하고, 진단 버튼에 60초 남은시간 카운트다운/비활성 처리 적용
+- [x] Stormglass 위험도 로직 17차 고도화 (연속 위험 구간 페널티)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: `riskStreakPenalty`를 추가해 위험/주의 구간이 연속될 때 점수 하향 및 입수 연기 권고를 강화
+- [x] 법적/신고 플로우 검증 18차 (재동기화 동의 게이트 일관화)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: `지금 동기화` 및 자동 재동기화 루틴에서도 필수 정책 동의가 없으면 동기화를 중단하도록 게이트를 통일
+- [x] 변경 파일 eslint 재검증 통과 (미디어/연동/Stormglass/신고 추가 보강분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx src/services/aiService.ts`
+- [x] 운영 API 통합 스모크 재검증 (2026-05-23, 13:23 UTC 기준)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`

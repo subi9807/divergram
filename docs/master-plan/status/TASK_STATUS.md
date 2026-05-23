@@ -64,6 +64,7 @@
   - Note: DiveLog 편집 임시저장/복원을 추가해 앱 종료 후 재진입 시 편집 상태를 복원하고, 복원 시 `uploading` 상태 미디어를 `failed`로 전환해 즉시 재시도 가능하도록 안정화.
   - Note: Cloudinary 삭제 실패 항목을 로컬 큐에 적재하고 편집 화면 진입 시 자동 재시도(`flushPendingMediaDeletes`)해 미디어 orphan 누적 가능성을 낮춤.
   - Note: 미디어 업로드 큐를 도입해 동시 처리 개수를 2개로 제한(`MAX_PARALLEL_UPLOADS`)하고, 대기 업로드 건수를 화면에 표시해 대량 첨부 시 안정성을 보강.
+  - Note: 업로드 상태를 `대기(idle)`와 `업로드중(uploading)`으로 분리하고 저장 차단 조건에 대기열을 포함해 큐 적재 직후 저장되는 케이스를 차단.
 - [x] 로그 공개 범위 설정 구현 (편집 화면)
   - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx` (`visibilityType`)
 - [x] 수동 로그 가져오기 동작 구현 (mock)
@@ -93,6 +94,7 @@
   - Note: 시간대 예보에서 `위험/비권장` 구간 비중을 계산하는 `horizonRiskPenalty`를 추가해 위험 비율이 높을 때 추천점수 하향·경고·입수 비권장을 강화.
   - Note: 시간대 예보 시각 간격 공백/불규칙성을 `forecastContinuityPenalty`로 반영해 큰 예보 갭(4h+) 발생 시 신뢰도 하향(`low`) 및 입수 보수판단을 강화.
   - Note: 단시간 수온 변동폭(`thermalShiftPenalty`)을 반영해 수온 급변 시 추천점수 하향과 보온 장비 경고를 추가.
+  - Note: 위험/주의 시간대 연속 구간(`riskStreakPenalty`)을 반영해 연속 리스크가 길어질수록 추천점수 하향과 입수 연기 권고를 강화.
 
 ## 4) 4단계 (외부 API 동기화)
 - [x] Garmin/Suunto/Shearwater 서비스 + 연결/해제 함수
@@ -120,6 +122,7 @@
   - Note: 연동 요약 카드에 `연동 진단 최신 시각`을 노출해 운영자가 마지막 실점검 시점을 빠르게 확인하도록 개선.
   - Note: 연동 요약 카드에 Cloudinary `미디어 삭제 대기` 건수를 노출하고 `삭제 대기 정리` 액션으로 즉시 재정리할 수 있도록 보강.
   - Note: 연동 진단 실행에 60초 쿨다운(`DIAGNOSTIC_COOLDOWN_MS`)과 `진단 요약` 표시를 추가해 점검 스팸/중복 호출을 방지하고 실패 원인을 빠르게 식별하도록 개선.
+  - Note: 연동 진단 범위에 Google Maps/Stormglass 키 상태와 OpenAI 헬스체크를 추가해 핵심 외부 서비스 준비 상태를 화면에서 일괄 점검.
 
 ## 5) 5단계 (Bluetooth BLE)
 - [x] BLE service + adapter 인터페이스/브랜드 어댑터 골격
@@ -155,6 +158,7 @@
 - [~] 실 업로드/푸시/공유 연동 완료
   - Evidence: `scripts/test-prod-api-integration.sh` + `2026-05-23` 실행 결과 (`NOTI_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503 cloudinary_not_configured`)
   - Note: 업로드/푸시/공유 API 경로는 운영서버 기준 동작 검증 완료. 실제 전송은 운영 키(Cloudinary/Push provider) 설정 후 활성화된다.
+  - Note: 2026-05-23 추가 스모크 실행에서도 동일 결과를 재확인해 키 미설정 상황의 실패 fallback이 안정적으로 유지됨을 확인.
 
 ## 7) 7단계 (OpenAI)
 - [x] AI service 연동 + 실패 fallback
@@ -203,6 +207,7 @@
   - Note: 신고 모델에 `syncStatus/syncError`를 추가하고, 신고 화면에서 `동기화 대기` 목록/개별 재동기화 버튼을 제공해 장애 복구 플로우를 명시화.
   - Note: 신고 화면 진입 시 최근 `동기화 대기` 신고(최대 3건)를 자동 재동기화하도록 보강해 수동 조치 없이 복구되도록 개선.
   - Note: 신고 접수 전 필수 정책 동의 검증을 추가하고 미동의 사용자를 `재동의` 화면으로 유도해 법적 동의 누락 상태의 신고 제출을 차단.
+  - Note: 신고 재동기화(`지금 동기화`)와 자동 재동기화 루틴에도 동일한 필수 동의 게이트를 적용해 우회 제출을 방지.
 
 ## 10) 자격증 관리
 - [x] 자격증 관리 화면(mock)

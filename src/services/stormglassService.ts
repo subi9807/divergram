@@ -197,6 +197,44 @@ function thermalShiftPenalty(hourly: { waterTempC?: number }[]) {
   };
 }
 
+function riskStreakPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?: boolean }[]) {
+  if (!hourly.length) return { penalty: 0, warnings: [] as string[], forceNoDive: false };
+  let current = 0;
+  let maxStreak = 0;
+  hourly.forEach((item) => {
+    const risky = item.riskLevel === 'danger' || item.riskLevel === 'caution' || item.diveAllowed === false;
+    if (!risky) {
+      current = 0;
+      return;
+    }
+    current += 1;
+    if (current > maxStreak) maxStreak = current;
+  });
+
+  if (maxStreak >= 4) {
+    return {
+      penalty: 16,
+      warnings: ['위험/주의 시간대가 연속으로 길게 이어집니다. 오늘 다이빙은 연기하는 것이 안전합니다.'],
+      forceNoDive: true,
+    };
+  }
+  if (maxStreak >= 3) {
+    return {
+      penalty: 10,
+      warnings: ['위험/주의 시간대가 연속으로 이어져 입수 타이밍이 제한적입니다.'],
+      forceNoDive: true,
+    };
+  }
+  if (maxStreak >= 2) {
+    return {
+      penalty: 6,
+      warnings: ['연속 위험 구간이 있어 짧은 입수 윈도우만 고려해야 합니다.'],
+      forceNoDive: false,
+    };
+  }
+  return { penalty: 0, warnings: [] as string[], forceNoDive: false };
+}
+
 function horizonRiskPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?: boolean }[]) {
   if (!hourly.length) return { penalty: 0, warnings: [] as string[], forceNoDive: false };
   const riskyHours = hourly.filter((item) => item.riskLevel === 'danger' || item.diveAllowed === false).length;
@@ -604,6 +642,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const trend = trendPenalty(hourly);
     const thermal = thermalShiftPenalty(hourly);
     const horizon = horizonRiskPenalty(hourly);
+    const streak = riskStreakPenalty(hourly);
     const continuity = forecastContinuityPenalty(hourly);
 
     const bestHourly = [...hourly]
@@ -652,12 +691,26 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
       tidePenalty > 0 && nearestTide
         ? `조석 ${nearestTide.type === 'high' ? '만조' : '간조'} 전후 ${Math.round(nearestTide.minutesDiff)}분 구간으로 조류 변화가 클 수 있습니다.`
         : undefined;
-    const adjustedScore = clamp(0, risk.score - tidePenalty - variability.penalty - trend.penalty - thermal.penalty - horizon.penalty - continuity.penalty, 100);
+    const adjustedScore = clamp(
+      0,
+      risk.score - tidePenalty - variability.penalty - trend.penalty - thermal.penalty - horizon.penalty - streak.penalty - continuity.penalty,
+      100
+    );
     const adjustedLevel = riskLevelFromScore(adjustedScore);
-    const adjustedWarnings = [tideWarning, ...variability.warnings, ...trend.warnings, ...thermal.warnings, ...horizon.warnings, ...continuity.warnings, ...risk.warnings]
+    const adjustedWarnings = [
+      tideWarning,
+      ...variability.warnings,
+      ...trend.warnings,
+      ...thermal.warnings,
+      ...horizon.warnings,
+      ...streak.warnings,
+      ...continuity.warnings,
+      ...risk.warnings,
+    ]
       .filter(Boolean)
       .filter((item, index, arr) => arr.indexOf(item) === index) as string[];
-    const adjustedDiveAllowed = risk.diveAllowed && adjustedLevel !== 'danger' && !horizon.forceNoDive && !continuity.severeGap;
+    const adjustedDiveAllowed =
+      risk.diveAllowed && adjustedLevel !== 'danger' && !horizon.forceNoDive && !streak.forceNoDive && !continuity.severeGap;
     const adjustedNoDiveReason = adjustedDiveAllowed ? undefined : tideWarning || continuity.warnings[0] || horizon.warnings[0] || risk.noDiveReason;
     const adjustedReason = tideWarning ? tideWarning : continuity.warnings[0] || horizon.warnings[0] || risk.reason;
     const sparseAdjustedLevel =

@@ -567,7 +567,7 @@ export default function DiveLogEditScreen() {
           type: isVideo ? 'video' : 'image',
           localUri: uri,
           durationSec: typeof asset.duration === 'number' ? asset.duration : undefined,
-          uploadStatus: 'uploading' as const,
+          uploadStatus: 'idle' as const,
           createdAt: now,
           updatedAt: now,
         };
@@ -669,6 +669,17 @@ export default function DiveLogEditScreen() {
       queuedUploadIdsRef.current.delete(mediaId);
       setQueuedUploadCount(uploadQueueRef.current.length);
     }
+    setMedia((prev) =>
+      prev.map((item) =>
+        item.id === mediaId
+          ? {
+              ...item,
+              uploadStatus: 'idle',
+              updatedAt: new Date().toISOString(),
+            }
+          : item
+      )
+    );
     void queueMediaUpload(mediaId);
   };
 
@@ -680,7 +691,7 @@ export default function DiveLogEditScreen() {
         failedIds.includes(item.id)
           ? {
               ...item,
-              uploadStatus: 'uploading',
+              uploadStatus: 'idle',
               updatedAt: new Date().toISOString(),
             }
           : item
@@ -781,6 +792,10 @@ export default function DiveLogEditScreen() {
       Alert.alert('입력 필요', '다이빙 포인트를 입력해주세요.');
       return;
     }
+    if (queuedUploadCount > 0) {
+      Alert.alert('업로드 대기중', '대기 중인 업로드가 완료된 뒤 저장해주세요.');
+      return;
+    }
     if (media.some((item) => item.uploadStatus === 'uploading')) {
       Alert.alert('업로드 진행중', '업로드가 완료된 뒤 저장해주세요.');
       return;
@@ -871,10 +886,11 @@ export default function DiveLogEditScreen() {
   const failedCount = media.filter((item) => item.uploadStatus === 'failed').length;
   const saveBlockedReason = useMemo(() => {
     if (!divePointName.trim()) return '다이빙 포인트를 입력해주세요.';
+    if (queuedUploadCount > 0) return `업로드 대기 ${queuedUploadCount}개가 시작/완료되어야 저장할 수 있습니다.`;
     if (uploadingCount > 0) return `업로드 진행중 ${uploadingCount}개가 완료되어야 저장할 수 있습니다.`;
     if (failedCount > 0) return '실패한 미디어를 재시도하거나 삭제한 뒤 저장해주세요.';
     return '';
-  }, [divePointName, uploadingCount, failedCount]);
+  }, [divePointName, queuedUploadCount, uploadingCount, failedCount]);
   const saveDisabled = Boolean(saveBlockedReason) || saving;
 
   return (

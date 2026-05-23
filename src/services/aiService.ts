@@ -4,6 +4,8 @@ const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPE
 const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL || 'gpt-4.1-mini';
 const OPENAI_TIMEOUT_MS = 12000;
 
+export type AiHealthStatus = 'ready' | 'missing_key' | 'unreachable';
+
 function extractResponseText(payload: any): string {
   const direct = String(payload?.output_text || '').trim();
   if (direct) return direct;
@@ -108,4 +110,23 @@ export async function recommendDivePoint(profile: { level?: string; tags?: strin
     .filter(Boolean)
     .slice(0, 3);
   return items.length ? items : fallback;
+}
+
+export function getAiRuntimeConfig() {
+  return {
+    hasApiKey: Boolean(OPENAI_API_KEY),
+    model: OPENAI_MODEL,
+  };
+}
+
+export async function checkAiHealth(): Promise<{ status: AiHealthStatus; message: string }> {
+  if (!OPENAI_API_KEY) {
+    return { status: 'missing_key', message: 'API Key 필요' };
+  }
+  const fallbackToken = `__ai_health_fallback__${Date.now()}`;
+  const text = await callOpenAiText('Reply with "ok" only.', fallbackToken);
+  if (!text || text === fallbackToken) {
+    return { status: 'unreachable', message: '응답 점검 필요' };
+  }
+  return { status: 'ready', message: `활성 (${OPENAI_MODEL})` };
 }
