@@ -119,6 +119,7 @@ export default function ReportScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ postId?: string; reportedUserId?: string; targetType?: string }>();
   const submitReport = useLegalStore((state) => state.submitReport);
+  const markReportSyncStatus = useLegalStore((state) => state.markReportSyncStatus);
   const advanceReportWorkflow = useLegalStore((state) => state.advanceReportWorkflow);
   const reportHistory = useLegalStore((state) => state.reports);
 
@@ -141,10 +142,18 @@ export default function ReportScreen() {
   const [reason, setReason] = useState<ReportReason>('misinformation');
   const [detail, setDetail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [syncingReportId, setSyncingReportId] = useState<string>('');
   const [lastSubmittedAt, setLastSubmittedAt] = useState<number>(0);
 
   const myRecentReports = useMemo(
     () => reportHistory.filter((item) => item.reporterUserId === user?.id).slice(0, 3),
+    [reportHistory, user?.id]
+  );
+  const myPendingReports = useMemo(
+    () =>
+      reportHistory
+        .filter((item) => item.reporterUserId === user?.id && item.syncStatus !== 'synced')
+        .slice(0, 5),
     [reportHistory, user?.id]
   );
 
@@ -229,16 +238,16 @@ export default function ReportScreen() {
     const normalizedTargetId = targetId.trim();
 
     setSubmitting(true);
-    let localSaved = false;
+    let localReportId = '';
     try {
-      submitReport({
+      const localReport = submitReport({
         reporterUserId: user.id,
         targetType,
         targetId: normalizedTargetId,
         reason,
         detail: detail.trim() || undefined,
       });
-      localSaved = true;
+      localReportId = localReport.id;
 
       await apiClient.submitModerationReport({
         targetType,
@@ -247,13 +256,15 @@ export default function ReportScreen() {
         detail: detail.trim() || undefined,
         userId: user.id,
       });
+      markReportSyncStatus(localReportId, 'synced');
       setLastSubmittedAt(Date.now());
 
       Alert.alert('신고 접수 완료', '신고가 접수되었습니다. 검토 후 조치됩니다.', [
         { text: '확인', onPress: () => router.back() },
       ]);
     } catch (error: any) {
-      if (localSaved && shouldQueueReportSync(error)) {
+      if (localReportId && shouldQueueReportSync(error)) {
+        markReportSyncStatus(localReportId, 'pending', formatReportError(error));
         setLastSubmittedAt(Date.now());
         Alert.alert(
           '신고 접수 완료 (동기화 대기)',
@@ -262,9 +273,35 @@ export default function ReportScreen() {
         );
         return;
       }
+      if (localReportId) {
+        markReportSyncStatus(localReportId, 'failed', formatReportError(error));
+      }
       Alert.alert('신고 실패', formatReportError(error));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const retryPendingReport = async (reportId: string) => {
+    const report = reportHistory.find((item) => item.id === reportId);
+    if (!report || !user?.id) return;
+    setSyncingReportId(reportId);
+    try {
+      await apiClient.submitModerationReport({
+        targetType: report.targetType,
+        targetId: report.targetId,
+        reason: report.reason,
+        detail: report.detail,
+        userId: user.id,
+      });
+      markReportSyncStatus(reportId, 'synced');
+      Alert.alert('동기화 완료', '대기 중이던 신고가 서버에 동기화되었습니다.');
+    } catch (error: any) {
+      const pending = shouldQueueReportSync(error);
+      markReportSyncStatus(reportId, pending ? 'pending' : 'failed', formatReportError(error));
+      Alert.alert('동기화 실패', formatReportError(error));
+    } finally {
+      setSyncingReportId('');
     }
   };
 
@@ -339,6 +376,40 @@ export default function ReportScreen() {
           <Text style={{ marginTop: 2, color: '#475569' }}>사유: {reason}</Text>
           <Text style={{ marginTop: 2, color: '#64748B' }}>상세: {detail.trim() || '(없음)'}</Text>
         </View>
+
+        {myPendingReports.length ? (
+          <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FED7AA', backgroundColor: '#FFFBEB', padding: 12 }}>
+            <Text style={{ color: '#9A3412', fontWeight: '800' }}>동기화 대기 신고 {myPendingReports.length}건</Text>
+            {myPendingReports.map((item) => (
+              <View key={item.id} style={{ marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: '#FDBA74', backgroundColor: '#fff', padding: 10 }}>
+                <Text style={{ color: '#7C2D12', fontWeight: '700' }}>
+                  {item.targetType} / {item.targetId}
+                </Text>
+                <Text style={{ marginTop: 2, color: '#9A3412', fontSize: 12 }}>
+                  상태: {item.syncStatus === 'failed' ? '실패' : '대기'}{item.syncError ? ` · ${item.syncError}` : ''}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => retryPendingReport(item.id)}
+                  disabled={syncingReportId === item.id}
+                  style={{
+                    marginTop: 8,
+                    alignSelf: 'flex-start',
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: syncingReportId === item.id ? '#E2E8F0' : '#F59E0B',
+                    backgroundColor: syncingReportId === item.id ? '#F8FAFC' : '#FEF3C7',
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Text style={{ color: syncingReportId === item.id ? '#94A3B8' : '#92400E', fontWeight: '700', fontSize: 12 }}>
+                    {syncingReportId === item.id ? '동기화중...' : '지금 동기화'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <TouchableOpacity
           style={{ marginTop: 16, borderRadius: 12, backgroundColor: canSubmit ? '#0D5FA8' : '#94A3B8', paddingVertical: 13, alignItems: 'center' }}

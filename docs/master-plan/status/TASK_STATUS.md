@@ -61,6 +61,7 @@
   - Note: 미디어 선택 CTA를 `사진/영상`, `사진만`, `영상만` 3버튼으로 분리하고 업로드 결과에 `cloudinary/mock` 소스 라벨을 노출해 편집/검수 가독성을 개선.
   - Note: DiveLog 관리 화면에 `전체/수동/연동/실패` 필터와 요약 카운트(전체/수동/연동/실패)를 추가해 운영자가 로그 상태를 빠르게 분류/점검하도록 개선.
   - Note: DiveLog 편집 임시저장/복원을 추가해 앱 종료 후 재진입 시 편집 상태를 복원하고, 복원 시 `uploading` 상태 미디어를 `failed`로 전환해 즉시 재시도 가능하도록 안정화.
+  - Note: Cloudinary 삭제 실패 항목을 로컬 큐에 적재하고 편집 화면 진입 시 자동 재시도(`flushPendingMediaDeletes`)해 미디어 orphan 누적 가능성을 낮춤.
 - [x] 로그 공개 범위 설정 구현 (편집 화면)
   - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx` (`visibilityType`)
 - [x] 수동 로그 가져오기 동작 구현 (mock)
@@ -113,6 +114,7 @@
   - Note: 연동 설정에 `장기 미동기화만 보기(24h+)` 필터를 추가해 stale 항목만 빠르게 추출할 수 있도록 점검 UX를 보강.
   - Note: 연동 설정 화면에 `연동 상태 점검` 진단 액션을 추가해 Cloudinary 서명 API/FCM 설정 API/Instagram 설치 상태를 실점검하고 카드 상태(`connected/statusMessage/lastSyncAt`)에 즉시 반영.
   - Note: 연동 요약 카드에 `연동 진단 최신 시각`을 노출해 운영자가 마지막 실점검 시점을 빠르게 확인하도록 개선.
+  - Note: 연동 요약 카드에 Cloudinary `미디어 삭제 대기` 건수를 노출하고 `삭제 대기 정리` 액션으로 즉시 재정리할 수 있도록 보강.
 
 ## 5) 5단계 (Bluetooth BLE)
 - [x] BLE service + adapter 인터페이스/브랜드 어댑터 골격
@@ -192,6 +194,7 @@
   - Note: `사용자` 대상 신고에서 본인 계정 ID를 신고 대상으로 제출하는 케이스를 사전 차단해 잘못된 자가 신고 입력을 방지.
   - Note: 신고 API 실패(네트워크/5xx/타임아웃 계열) 시 로컬 신고 저장분을 유지하고 `동기화 대기` 안내로 전환해 신고 유실을 방지.
   - Note: 저장소 레벨 중복 신고 검증(`submitReport`)에서 대상 ID를 소문자 정규화해 대소문자 우회 중복 신고를 차단.
+  - Note: 신고 모델에 `syncStatus/syncError`를 추가하고, 신고 화면에서 `동기화 대기` 목록/개별 재동기화 버튼을 제공해 장애 복구 플로우를 명시화.
 
 ## 10) 자격증 관리
 - [x] 자격증 관리 화면(mock)
@@ -211,6 +214,7 @@
 - [~] 통합 시나리오 테스트 (로그 연동, BLE, 날씨, AI, 설정)
   - Evidence: `scripts/test-prod-api-integration.sh` (인증 생성→알림설정 조회/저장→푸시 테스트→Cloudinary 서명/삭제→OAuth providers/mobile 실패 경로 검증)
   - Note: 외부 키 미제공 항목(Cloudinary 실제 업로드, FCM/APNS 발송, 외부 API 실데이터)은 환경키 연결 후 최종 E2E 재검증이 필요.
+  - Note: 2026-05-23 재실행 결과 `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE(invalid)=400`.
 
 ## 12) 운영 API 정합화 (2026-05-23)
 - [x] 운영 서버 실 라우트 재확인(SSH) 및 앱 API 경로 정합화

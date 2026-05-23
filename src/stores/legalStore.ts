@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Consent, ConsentKey, LegalAgreement, ModerationAction, ModerationStatus, PolicyType, Report, ReportReason, ReportTargetType } from '../models';
+import type {
+  Consent,
+  ConsentKey,
+  LegalAgreement,
+  ModerationAction,
+  ModerationStatus,
+  PolicyType,
+  Report,
+  ReportReason,
+  ReportTargetType,
+} from '../models';
 import { storage } from '../lib/storage';
 import { signupRequiredConsentKeys, signupRequiredConsentMap } from '../legal/policyCatalog';
 
@@ -36,6 +46,7 @@ interface LegalStoreState {
   submitReport: (input: SubmitReportInput) => Report;
   addModerationAction: (action: Omit<ModerationAction, 'id' | 'createdAt'>) => ModerationAction;
   updateReportStatus: (reportId: string, status: Report['status'], resolutionNote?: string) => void;
+  markReportSyncStatus: (reportId: string, syncStatus: NonNullable<Report['syncStatus']>, syncError?: string) => void;
   advanceReportWorkflow: (reportId: string) => { ok: boolean; status?: Report['status']; message?: string };
 }
 
@@ -139,6 +150,7 @@ export const useLegalStore = create<LegalStoreState>()(
           reason,
           detail,
           status: 'received',
+          syncStatus: 'pending',
           createdAt: nowIso(),
         };
         set((state) => ({ reports: [report, ...state.reports] }));
@@ -170,6 +182,19 @@ export const useLegalStore = create<LegalStoreState>()(
                   status,
                   reviewedAt: status === 'resolved' || status === 'rejected' ? nowIso() : item.reviewedAt,
                   resolutionNote: resolutionNote ?? item.resolutionNote,
+                }
+          ),
+        })),
+
+      markReportSyncStatus: (reportId, syncStatus, syncError) =>
+        set((state) => ({
+          reports: state.reports.map((item) =>
+            item.id !== reportId
+              ? item
+              : {
+                  ...item,
+                  syncStatus,
+                  syncError: syncError || undefined,
                 }
           ),
         })),

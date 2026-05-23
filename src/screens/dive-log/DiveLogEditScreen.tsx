@@ -6,7 +6,13 @@ import { Image as ExpoImage } from 'expo-image';
 import { Screen } from '../../components/Screen';
 import type { DiveLogVisibilityType, MediaFile } from '../../models';
 import { useDiveLogStore } from '../../stores/diveLogStore';
-import { deleteMedia, uploadImage, uploadVideo } from '../../services/cloudinaryService';
+import {
+  deleteMedia,
+  flushPendingMediaDeletes,
+  getPendingDeleteCount,
+  uploadImage,
+  uploadVideo,
+} from '../../services/cloudinaryService';
 import { generateDiveCaption, generateDiveLogSummary } from '../../services/aiService';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { storage } from '../../lib/storage';
@@ -181,6 +187,7 @@ export default function DiveLogEditScreen() {
   const [visibilityMetersInput, setVisibilityMetersInput] = useState(safeNumberText(log?.visibility));
   const [currentStrengthInput, setCurrentStrengthInput] = useState(safeNumberText(log?.currentStrength));
   const [draftRecoveryReady, setDraftRecoveryReady] = useState(false);
+  const [pendingDeleteCount, setPendingDeleteCount] = useState(0);
 
   useEffect(() => {
     if (!log) return;
@@ -206,6 +213,21 @@ export default function DiveLogEditScreen() {
     }
     setAiEnabled((prev) => prev || aiSummaryEnabled || aiCaptionEnabled);
   }, [aiSummaryEnabled, aiCaptionEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const syncPendingDeletes = async () => {
+      const before = getPendingDeleteCount();
+      if (!cancelled) setPendingDeleteCount(before);
+      if (!before) return;
+      const result = await flushPendingMediaDeletes();
+      if (!cancelled) setPendingDeleteCount(result.remaining);
+    };
+    syncPendingDeletes();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!safeLogId) {
@@ -582,7 +604,9 @@ export default function DiveLogEditScreen() {
       return;
     }
     if (shouldDeleteFromCloudinary(target)) {
-      void deleteMedia(target.url || '');
+      void deleteMedia(target.url || '').finally(() => {
+        setPendingDeleteCount(getPendingDeleteCount());
+      });
     }
     setMedia((prev) => prev.filter((item) => item.id !== mediaId));
   };
@@ -624,7 +648,9 @@ export default function DiveLogEditScreen() {
         onPress: () => {
           media.forEach((item) => {
             if (shouldDeleteFromCloudinary(item)) {
-              void deleteMedia(item.url || '');
+              void deleteMedia(item.url || '').finally(() => {
+                setPendingDeleteCount(getPendingDeleteCount());
+              });
             }
           });
           setMedia([]);
@@ -804,6 +830,11 @@ export default function DiveLogEditScreen() {
           <Text style={{ color: '#64748B', fontSize: 12 }}>
             총 {media.length}/{MAX_MEDIA_COUNT} · 사진 {totalImageCount} · 영상 {totalVideoCount}
           </Text>
+          {pendingDeleteCount > 0 ? (
+            <Text style={{ color: '#B45309', fontSize: 12, fontWeight: '700' }}>
+              클라우드 삭제 대기 {pendingDeleteCount}개 (네트워크/연동 상태 복구 시 자동 정리)
+            </Text>
+          ) : null}
           {media.length > 0 ? (
             <View style={{ alignItems: 'flex-start' }}>
               <TouchableOpacity onPress={removeAllMedia}>

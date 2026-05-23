@@ -10,6 +10,7 @@ export type ReportReason =
   | 'spam';
 
 export type ReportStatus = 'received' | 'reviewing' | 'resolved' | 'rejected';
+export type ReportSyncStatus = 'pending' | 'synced' | 'failed';
 
 export interface Report {
   id: string;
@@ -21,5 +22,7 @@ export interface Report {
   status: ReportStatus;
   reviewedAt?: string;
   resolutionNote?: string;
+  syncStatus?: ReportSyncStatus;
+  syncError?: string;
   createdAt: string;
 }

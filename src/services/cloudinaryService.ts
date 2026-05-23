@@ -1,4 +1,5 @@
 import { apiClient } from '../lib/api';
+import { storage } from '../lib/storage';
 
 export type UploadResult = { url: string; thumbnailUrl?: string; source: 'cloudinary' | 'mock' };
 
@@ -139,15 +140,106 @@ function inferDeleteResourceType(url: string): 'image' | 'video' | 'raw' {
   return 'image';
 }
 
+type PendingDeleteItem = {
+  url: string;
+  resourceType: 'image' | 'video' | 'raw';
+  queuedAt: string;
+  attempts: number;
+};
+
+const PENDING_DELETE_STORAGE_KEY = 'cloudinary_pending_deletes_v1';
+
+function readPendingDeletes(): PendingDeleteItem[] {
+  const raw = storage.getString(PENDING_DELETE_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => ({
+        url: String(item?.url || '').trim(),
+        resourceType:
+          item?.resourceType === 'video' || item?.resourceType === 'raw' || item?.resourceType === 'image'
+            ? item.resourceType
+            : 'image',
+        queuedAt: String(item?.queuedAt || new Date().toISOString()),
+        attempts: Number.isFinite(Number(item?.attempts)) ? Math.max(0, Number(item.attempts)) : 0,
+      }))
+      .filter((item) => item.url.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writePendingDeletes(items: PendingDeleteItem[]) {
+  if (!items.length) {
+    storage.delete(PENDING_DELETE_STORAGE_KEY);
+    return;
+  }
+  storage.set(PENDING_DELETE_STORAGE_KEY, JSON.stringify(items.slice(0, 100)));
+}
+
+function enqueuePendingDelete(url: string, resourceType: 'image' | 'video' | 'raw') {
+  const normalized = String(url || '').trim();
+  if (!normalized) return;
+  const current = readPendingDeletes();
+  const key = `${resourceType}:${normalized}`;
+  const hasAlready = current.some((item) => `${item.resourceType}:${item.url}` === key);
+  if (hasAlready) return;
+  current.unshift({
+    url: normalized,
+    resourceType,
+    queuedAt: new Date().toISOString(),
+    attempts: 0,
+  });
+  writePendingDeletes(current);
+}
+
+export function getPendingDeleteCount() {
+  return readPendingDeletes().length;
+}
+
+export async function flushPendingMediaDeletes(limit = 15): Promise<{ attempted: number; removed: number; remaining: number }> {
+  const current = readPendingDeletes();
+  if (!current.length) return { attempted: 0, removed: 0, remaining: 0 };
+  const slice = current.slice(0, Math.max(1, limit));
+  const keep: PendingDeleteItem[] = [];
+  let removed = 0;
+
+  for (const item of slice) {
+    try {
+      await apiClient.deleteCloudinaryMedia({
+        url: item.url,
+        resourceType: item.resourceType,
+      });
+      removed += 1;
+    } catch {
+      keep.push({
+        ...item,
+        attempts: item.attempts + 1,
+      });
+    }
+  }
+
+  const untouched = current.slice(slice.length);
+  writePendingDeletes([...keep, ...untouched]);
+  return {
+    attempted: slice.length,
+    removed,
+    remaining: keep.length + untouched.length,
+  };
+}
+
 export async function deleteMedia(url: string): Promise<void> {
   const normalized = String(url || '').trim();
   if (!normalized) return;
+  const resourceType = inferDeleteResourceType(normalized);
   try {
     await apiClient.deleteCloudinaryMedia({
       url: normalized,
-      resourceType: inferDeleteResourceType(normalized),
+      resourceType,
     });
   } catch {
-    // 삭제 실패는 UX 중단 없이 무시하고, 서버 정책에 따라 정리 작업으로 위임한다.
+    enqueuePendingDelete(normalized, resourceType);
   }
 }

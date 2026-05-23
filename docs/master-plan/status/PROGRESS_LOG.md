@@ -417,3 +417,17 @@
   - Command: `curl -X POST /api/push/test` (no auth) → `401`
 - [x] 변경 파일 eslint 재검증 통과 (2026-05-23 진행분)
   - Command: `npx eslint src/lib/api.ts src/services/cloudinaryService.ts src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx src/services/instagramShareService.ts src/services/stormglassService.ts src/stores/legalStore.ts`
+- [x] DiveLog 편집/미디어 폴리시 18차 보강 (Cloudinary 삭제 대기 큐)
+  - Evidence: `src/services/cloudinaryService.ts`, `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: Cloudinary 삭제 실패 시 로컬 큐 적재(`cloudinary_pending_deletes_v1`) 후 편집 화면 진입 시 자동 재시도(`flushPendingMediaDeletes`)하도록 보강하고, 대기 건수를 편집 화면에 노출
+- [x] 연동 UX 안정화 18차 (삭제 대기 운영 액션)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약에 `미디어 삭제 대기 N건`을 표시하고 `삭제 대기 정리` 버튼으로 즉시 재시도 가능한 운영 액션 추가
+- [x] 신고 흐름 안정화 15차 (동기화 상태 추적/수동 재동기화)
+  - Evidence: `src/models/Report.ts`, `src/stores/legalStore.ts`, `src/screens/legal/ReportScreen.tsx`
+  - 내용: 신고 모델에 `syncStatus/syncError`를 추가하고, 제출 성공 시 `synced`, 장애 시 `pending/failed`로 상태를 기록. 화면에서 동기화 대기 목록과 개별 `지금 동기화` 버튼 제공
+- [x] 운영 API 통합 스모크 재검증 (2026-05-23)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET=200`, `NOTIFICATIONS_PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN=503(cloudinary_not_configured)`, `CLOUDINARY_DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] 변경 파일 eslint 재검증 통과 (삭제큐/신고동기화/연동요약 반영)
+  - Command: `npx eslint src/models/Report.ts src/stores/legalStore.ts src/screens/legal/ReportScreen.tsx src/services/cloudinaryService.ts src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx`

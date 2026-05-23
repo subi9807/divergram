@@ -11,6 +11,7 @@ import { appRouteMap } from '../../config/sitemap';
 import type { UserIntegration } from '../../models';
 import { apiClient } from '../../lib/api';
 import { isInstagramShareAvailable } from '../../services/instagramShareService';
+import { flushPendingMediaDeletes, getPendingDeleteCount } from '../../services/cloudinaryService';
 
 const integrationDisplayNameMap: Record<string, string> = {
   google_maps: 'Google Maps',
@@ -77,6 +78,7 @@ export default function IntegrationSettingsScreen() {
   const [showNeedsOnly, setShowNeedsOnly] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
+  const [pendingMediaDeleteCount, setPendingMediaDeleteCount] = useState(0);
 
   const isStaleIntegration = (item: UserIntegration) => {
     if (!item.connected) return false;
@@ -211,6 +213,10 @@ export default function IntegrationSettingsScreen() {
     runIntegrationDiagnostics(true);
   }, [runIntegrationDiagnostics]);
 
+  useEffect(() => {
+    setPendingMediaDeleteCount(getPendingDeleteCount());
+  }, [integrations]);
+
   const retryFailedManagedItems = () => {
     if (!failedManagedItems.length) {
       Alert.alert('재시도 대상 없음', '현재 실패 상태의 연동 항목이 없습니다.');
@@ -225,6 +231,12 @@ export default function IntegrationSettingsScreen() {
       });
     });
     Alert.alert('재요청 완료', `실패 항목 ${failedManagedItems.length}개를 동기화 재요청 상태로 전환했습니다.`);
+  };
+
+  const clearPendingMediaDeletes = async () => {
+    const result = await flushPendingMediaDeletes(30);
+    setPendingMediaDeleteCount(result.remaining);
+    Alert.alert('정리 실행 완료', `삭제 대기 ${result.attempted}건 점검, ${result.removed}건 정리, ${result.remaining}건 대기`);
   };
 
   const openIntegrationDetail = (type: string) => {
@@ -279,6 +291,11 @@ export default function IntegrationSettingsScreen() {
           {lastDiagnosticAt ? (
             <Text style={{ marginTop: 2, color: '#64748B', fontSize: 12 }}>
               연동 진단 최신 시각: {lastDiagnosticAt}
+            </Text>
+          ) : null}
+          {pendingMediaDeleteCount > 0 ? (
+            <Text style={{ marginTop: 2, color: '#B45309', fontSize: 12, fontWeight: '700' }}>
+              미디어 삭제 대기 {pendingMediaDeleteCount}건
             </Text>
           ) : null}
           <TouchableOpacity
@@ -347,6 +364,21 @@ export default function IntegrationSettingsScreen() {
                 실패 항목 재요청 ({failedManagedItems.length})
               </Text>
             </TouchableOpacity>
+            {pendingMediaDeleteCount > 0 ? (
+              <TouchableOpacity
+                onPress={clearPendingMediaDeletes}
+                style={{
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#F59E0B',
+                  backgroundColor: '#FFFBEB',
+                  paddingHorizontal: 10,
+                  paddingVertical: 7,
+                }}
+              >
+                <Text style={{ color: '#B45309', fontWeight: '700', fontSize: 12 }}>삭제 대기 정리</Text>
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               onPress={() => router.push(appRouteMap.bluetooth_devices.path as never)}
               style={{
