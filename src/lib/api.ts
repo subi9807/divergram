@@ -767,6 +767,46 @@ export const apiClient = {
     return response.data || {};
   },
 
+  listCertifications: async (userId?: string) => {
+    const uid = normalizeString(userId || '');
+    const filters = uid ? [{ column: 'user_id', op: 'eq' as const, value: uid }] : undefined;
+    const result = await dataApi.list<any>('certifications', {
+      filters,
+      order: { column: 'created_at', ascending: false },
+      limit: 200,
+    });
+    return result.data || [];
+  },
+
+  createCertification: async (payload: {
+    id: string;
+    user_id: string;
+    agency: string;
+    certification_number?: string;
+    level?: string;
+    issued_at?: string;
+    expires_at?: string;
+    image_url?: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+  }) => {
+    const [created] = await dataApi.insert<any>('certifications', [payload]);
+    return created || payload;
+  },
+
+  updateCertificationStatus: async (certificationId: string, status: string) => {
+    const certId = normalizeString(certificationId);
+    if (!certId) throw new Error('invalid_certification_id');
+    const updated = await dataApi.update<any>(
+      'certifications',
+      [{ column: 'id', op: 'eq', value: certId }],
+      { status: normalizeString(status), updated_at: new Date().toISOString() }
+    );
+    if (Array.isArray(updated) && updated.length > 0) return updated[0];
+    return null;
+  },
+
   isPostLikedByUser: async (postId: string, userId: string) => {
     const pid = normalizeString(postId);
     const uid = normalizeString(userId);

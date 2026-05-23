@@ -5,8 +5,14 @@ import { Image as ExpoImage } from 'expo-image';
 import { Screen } from '../../components/Screen';
 import type { Certification, CertificationAgency } from '../../models';
 import { uploadImage } from '../../services/cloudinaryService';
-import { listCertifications, registerCertification, updateCertificationStatus } from '../../services/certificationService';
+import {
+  getCertificationSyncState,
+  listCertifications,
+  registerCertification,
+  updateCertificationStatus,
+} from '../../services/certificationService';
 import { apiClient } from '../../lib/api';
+import { useAuth } from '../../hooks/useAuth';
 
 const statusLabel: Record<Certification['status'], string> = {
   unregistered: '미등록',
@@ -23,6 +29,7 @@ const statusColor: Record<Certification['status'], string> = {
 };
 
 export default function CertificationScreen() {
+  const { user } = useAuth();
   const [items, setItems] = useState<Certification[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -36,16 +43,20 @@ export default function CertificationScreen() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrHint, setOcrHint] = useState('');
+  const [syncHint, setSyncHint] = useState('');
 
   const loadList = useCallback(async () => {
     setLoading(true);
     try {
-      const rows = await listCertifications();
+      const rows = await listCertifications(String(user?.id || 'me'));
       setItems(rows);
+      const sync = getCertificationSyncState();
+      const base = sync.source === 'backend' ? '백엔드 동기화' : '로컬 저장소 fallback';
+      setSyncHint(sync.reason ? `${base} (${sync.reason})` : base);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     void loadList();
@@ -137,6 +148,7 @@ export default function CertificationScreen() {
     setSubmitting(true);
     try {
       await registerCertification({
+        userId: String(user?.id || 'me'),
         agency,
         certificationNumber: certificationNumber.trim(),
         level: level.trim(),
@@ -169,6 +181,11 @@ export default function CertificationScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
         <Text style={{ fontSize: 26, fontWeight: '800', color: '#0F172A' }}>자격증 관리</Text>
         <Text style={{ marginTop: 8, color: '#64748B' }}>PADI / SSI 자격증 등록, 이미지 업로드, 인증 상태를 관리합니다.</Text>
+        {syncHint ? (
+          <Text style={{ marginTop: 6, color: syncHint.includes('백엔드') ? '#0F766E' : '#B45309', fontSize: 12, fontWeight: '700' }}>
+            저장 경로: {syncHint}
+          </Text>
+        ) : null}
 
         <TouchableOpacity
           style={{ marginTop: 14, borderRadius: 12, backgroundColor: '#0D5FA8', paddingVertical: 12, alignItems: 'center' }}

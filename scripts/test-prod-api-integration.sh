@@ -76,6 +76,9 @@ request "NOTIFICATIONS_PATCH" "PATCH" "/notifications/settings" '{"pushEnabled":
 request "PUSH_TEST" "POST" "/push/test" '{"title":"QA","body":"test","data":{"source":"script"}}'
 request "CLOUDINARY_SIGN" "POST" "/media/cloudinary/sign-upload" '{"resourceType":"image","fileName":"qa-check.jpg","folder":"divergram"}'
 request "CLOUDINARY_DELETE" "POST" "/media/cloudinary/delete" '{"url":"https://res.cloudinary.com/demo/image/upload/v1234/sample.jpg","resourceType":"image"}'
+cert_id="cert_${rand_suffix}"
+request "CERT_CREATE" "POST" "/data/certifications" "{\"rows\":[{\"id\":\"${cert_id}\",\"user_id\":\"me\",\"agency\":\"PADI\",\"certification_number\":\"QA-${rand_suffix}\",\"level\":\"Open Water\",\"status\":\"reviewing\",\"created_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}]}"
+request "CERT_STATUS_PATCH" "PATCH" "/data/certifications" "{\"filters\":[{\"column\":\"id\",\"op\":\"eq\",\"value\":\"${cert_id}\"}],\"patch\":{\"status\":\"verified\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}"
 request_public "OAUTH_PROVIDERS" "GET" "/auth/oauth/providers"
 request_public "OAUTH_MOBILE_INVALID_TOKEN" "POST" "/auth/oauth/mobile" '{"provider":"google","accessToken":"invalid_test_token","sessionDays":7}'
 

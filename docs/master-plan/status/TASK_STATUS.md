@@ -153,7 +153,7 @@
   - Note: 업로드/푸시/공유 API 경로는 운영서버 기준 동작 검증 완료. 실제 전송은 운영 키(Cloudinary/Push provider) 설정 후 활성화된다.
 
 ## 7) 7단계 (OpenAI)
-- [~] AI service 연동 + 실패 fallback
+- [x] AI service 연동 + 실패 fallback
   - Evidence: `src/services/aiService.ts`
   - Note: OpenAI 호출에 타임아웃(12s)과 응답 파서 다중 fallback(`output_text`→`output[].content`→`choices`)을 추가해 지연/포맷 차이 상황에서도 안정적으로 기본 문구로 복구되도록 보강.
 - [x] AI 설정 화면(mock)
@@ -203,9 +203,11 @@
 - [x] 자격증 관리 화면(mock)
   - Evidence: `src/screens/dive-log/CertificationScreen.tsx`, `app/(tabs)/certifications.tsx`
 - [~] PADI/SSI 실등록 + 이미지 업로드 + 검증 상태 워크플로우
-  - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`, `src/services/cloudinaryService.ts`
+  - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`, `src/services/cloudinaryService.ts`, `src/lib/api.ts`
   - Note: 앱 내 등록 폼(기관/레벨/번호/발급일/만료일) + 이미지 업로드 + 상태 전이(`reviewing→verified/rejected`, mock)를 구현. 운영 API/관리자 검수 백엔드 연동은 잔여.
   - Note: 자격증 이미지 선택 시 OCR(`uploadLicenseImageWithOcr`)을 자동 호출해 기관/레벨/번호/취득일을 폼에 선반영하고, 성공/실패 힌트를 화면에 노출하도록 개선.
+  - Note: `list/create/status update`를 `/api/data/certifications`로 우선 동기화하고 실패 시 로컬 fallback 저장소로 전환하는 백엔드 우선 워크플로우를 반영.
+  - Note: 자격증 목록 상단에 `저장 경로(백엔드/로컬 fallback)` 힌트를 노출해 운영 점검 시 동기화 소스를 즉시 확인 가능하도록 개선.
 
 ## 11) 검증
 - [x] 신규 변경 파일 대상 eslint 검증
@@ -216,9 +218,9 @@
 - [!] 전체 tsc 검증은 기존 레거시/웹 백업 코드 오류로 블로킹
   - Evidence: local command run (`npx tsc --noEmit`) failed in unrelated files (`src/`, `src.bak.*`, `capacitor` related)
 - [~] 통합 시나리오 테스트 (로그 연동, BLE, 날씨, AI, 설정)
-  - Evidence: `scripts/test-prod-api-integration.sh` (인증 생성→알림설정 조회/저장→푸시 테스트→Cloudinary 서명/삭제→OAuth providers/mobile 실패 경로 검증)
+  - Evidence: `scripts/test-prod-api-integration.sh` (인증 생성→알림설정 조회/저장→푸시 테스트→Cloudinary 서명/삭제→자격증 create/status patch→OAuth providers/mobile 실패 경로 검증)
   - Note: 외부 키 미제공 항목(Cloudinary 실제 업로드, FCM/APNS 발송, 외부 API 실데이터)은 환경키 연결 후 최종 E2E 재검증이 필요.
-  - Note: 2026-05-23 재실행 결과 `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE(invalid)=400`.
+  - Note: 2026-05-23 재실행 결과 `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE(invalid)=400`.
 
 ## 12) 운영 API 정합화 (2026-05-23)
 - [x] 운영 서버 실 라우트 재확인(SSH) 및 앱 API 경로 정합화
@@ -251,3 +253,7 @@
   - Evidence: `https://api.divergram.com/api/notifications/settings` `GET/PATCH 200`
   - Evidence: `https://api.divergram.com/api/push/test` `200`
   - Evidence: `https://api.divergram.com/api/media/cloudinary/sign-upload` `503 cloudinary_not_configured` (키 미설정 정상)
+- [x] 자격증 데이터 API 경로 확장 (`/api/data/certifications`)
+  - Evidence: `prod-server:/home/divergram/api/server/routes/data.js` (`DATA_TABLES.certifications`)
+  - Evidence: `prod-server:/home/divergram/api/server/index.js` (`app_certifications` table + index ensure schema)
+  - Evidence: `scripts/test-prod-api-integration.sh` 실행 결과 `CERT_CREATE=200`, `CERT_STATUS_PATCH=200`

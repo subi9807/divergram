@@ -450,3 +450,15 @@
   - 내용: Cloudinary 진단 실패 시 백엔드 `required` 목록을 상태문구로 노출해 누락 환경키를 즉시 확인 가능하도록 개선
 - [x] 변경 파일 eslint 재검증 통과 (자격증/OCR/AI/연동 진단 반영)
   - Command: `npx eslint src/screens/dive-log/CertificationScreen.tsx src/services/aiService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx`
+- [x] 자격증 백엔드 우선 동기화 워크플로우 적용
+  - Evidence: `src/services/certificationService.ts`, `src/lib/api.ts`, `src/screens/dive-log/CertificationScreen.tsx`
+  - 내용: `list/create/status update`를 `/api/data/certifications`로 우선 처리하고 실패 시 로컬 저장소 fallback으로 전환, 화면에 `저장 경로(백엔드/로컬)` 힌트를 노출
+- [x] 운영 백엔드 자격증 테이블/라우트 확장 확인 (SSH)
+  - Evidence: `prod-server:/home/divergram/api/server/routes/data.js` (`DATA_TABLES.certifications`)
+  - Evidence: `prod-server:/home/divergram/api/server/index.js` (`app_certifications` schema/index ensure)
+  - Command: `pm2 restart divergram-api`
+- [x] 운영 API 통합 스모크 재검증 (자격증 포함)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE=200`, `CERT_STATUS_PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] 변경 파일 eslint 재검증 통과 (자격증 백엔드 동기화 반영분)
+  - Command: `npx eslint src/lib/api.ts src/services/certificationService.ts src/screens/dive-log/CertificationScreen.tsx`
