@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useEffect, useState, useCallback, useRef } from 'react';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -9,6 +9,7 @@ import { kakaoAuth } from '../lib/auth/kakao';
 import { naverAuth } from '../lib/auth/naver';
 import i18n from '../lib/i18n';
 import { storage } from '../lib/storage';
+import { notificationManager } from '../lib/notifications';
 
 WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID_IOS = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '';
@@ -72,6 +73,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const pushInitUserIdRef = useRef<string | null>(null);
   const { showToast } = useToast();
   const googleIosUrlScheme = toGoogleIosUrlScheme(GOOGLE_CLIENT_ID_IOS);
 
@@ -232,6 +234,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkAuthState();
   }, [checkAuthState]);
+
+  useEffect(() => {
+    const userId = String(user?.id || '').trim();
+    if (!userId) {
+      pushInitUserIdRef.current = null;
+      return;
+    }
+    if (pushInitUserIdRef.current === userId) return;
+    pushInitUserIdRef.current = userId;
+    notificationManager.initialize().catch((error) => {
+      console.error('Push token init failed:', error);
+    });
+  }, [user?.id]);
 
   const loginWithGoogle = async () => {
     try {
