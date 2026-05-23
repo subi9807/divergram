@@ -39,6 +39,10 @@ export function isGoogleMapsApiConfigured() {
   return hasApiKey();
 }
 
+export function getGoogleMapsApiKey() {
+  return GOOGLE_MAPS_API_KEY;
+}
+
 export function buildGoogleStaticMapUrl(lat?: number, lng?: number) {
   if (!hasApiKey()) return null;
   if (typeof lat !== 'number' || typeof lng !== 'number') return null;

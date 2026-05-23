@@ -1,24 +1,38 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, Image, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../../src/components/Screen';
 import { Card } from '../../src/components/Card';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { ProfileStats } from '../../src/features/profile/ProfileStats';
 import { ProfileAvatar } from '../../src/features/profile/ProfileAvatar';
-import { ChevronRight, Edit3, Film, HelpCircle, MapPin, Settings, ShieldCheck, Star, Waves } from 'lucide-react-native';
+import { Edit3, Film, HelpCircle, MapPin, Settings, ShieldCheck, Star, Waves } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
+import { apiClient } from '../../src/lib/api';
 
 type QuickTab = 'favorites' | 'feed' | 'reels';
-type QuickItem = {
-  key: string;
-  label: string;
-  description: string;
-  path: string;
-  icon: React.ComponentType<{ size?: number | string; color?: any }>;
+
+type GalleryItem = {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  accent: string;
 };
+
+const PAGE_SIZE = 15;
+const MIN_CATALOG_SIZE = 45;
+const IMAGE_POOL = [
+  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200',
+  'https://images.unsplash.com/photo-1583212292454-1fe6229603b7?w=1200',
+  'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=1200',
+  'https://images.unsplash.com/photo-1682687982501-1e58ab814714?w=1200',
+  'https://images.unsplash.com/photo-1530053969600-caed2596d242?w=1200',
+  'https://images.unsplash.com/photo-1583212292454-3f82f0a96f4d?w=1200',
+];
 
 function levelLabel(t: any, mode: 'scuba' | 'freediving', key: string): string {
   const value = String(key || '').trim();
@@ -35,12 +49,88 @@ function levelLabel(t: any, mode: 'scuba' | 'freediving', key: string): string {
   return t(`pages.profileEdit.freedivingLevels.${value}` as any, { defaultValue: value });
 }
 
+function feedRowsToGallery(rows: any[], prefix: string, fallbackLabel: string): GalleryItem[] {
+  return rows.map((row, index) => {
+    const media = Array.isArray(row?.media) ? row.media : [];
+    const firstImage = media.find((item: any) => item?.type === 'image' && String(item.url || '').trim());
+    const fallbackMedia = media.find((item: any) => String(item.url || '').trim());
+    const imageUrl =
+      String(firstImage?.url || fallbackMedia?.url || row?.image || '').trim() ||
+      IMAGE_POOL[index % IMAGE_POOL.length] ||
+      IMAGE_POOL[0];
+
+    return {
+      id: `${prefix}-${String(row?.id || index)}`,
+      title: String(row?.location || row?.diveSite || fallbackLabel || 'Dive').trim() || fallbackLabel,
+      subtitle: String(row?.content || '').trim() || fallbackLabel,
+      imageUrl,
+      accent: index % 2 === 0 ? '#0D5FA8' : '#0EA5A4',
+    };
+  });
+}
+
+function ensureMinCatalog(items: GalleryItem[], prefix: string, label: string): GalleryItem[] {
+  if (items.length >= MIN_CATALOG_SIZE) return items;
+  const source = items.length ? items : [{
+    id: `${prefix}-seed`,
+    title: label,
+    subtitle: label,
+    imageUrl: IMAGE_POOL[0],
+    accent: '#0D5FA8',
+  }];
+
+  const out = [...items];
+  let cursor = 0;
+  while (out.length < MIN_CATALOG_SIZE) {
+    const base = source[cursor % source.length];
+    out.push({
+      ...base,
+      id: `${base.id}-dup-${out.length}`,
+      title: `${base.title}`,
+      imageUrl: IMAGE_POOL[out.length % IMAGE_POOL.length] || base.imageUrl,
+    });
+    cursor += 1;
+  }
+  return out;
+}
+
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const [quickTab, setQuickTab] = useState<QuickTab>('favorites');
+  const [visibleByTab, setVisibleByTab] = useState<Record<QuickTab, number>>({
+    favorites: PAGE_SIZE,
+    feed: PAGE_SIZE,
+    reels: PAGE_SIZE,
+  });
+  const [pagingLock, setPagingLock] = useState(false);
+
+  const { data: savedFeedRaw = [] } = useQuery({
+    queryKey: ['profile-grid-saved', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => apiClient.getSavedFeed(String(user?.id || '')),
+  });
+
+  const { data: ownFeedRaw = [] } = useQuery({
+    queryKey: ['profile-grid-own-feed', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const uid = String(user?.id || '').trim();
+      if (!uid) return [];
+      let cursor: string | null = null;
+      const merged: any[] = [];
+      for (let i = 0; i < 12; i += 1) {
+        const page = await apiClient.getFeed(cursor);
+        const rows = Array.isArray(page?.data) ? page.data : [];
+        merged.push(...rows.filter((row: any) => String(row?.user?.id || '') === uid));
+        if (!page?.nextCursor) break;
+        cursor = String(page.nextCursor);
+      }
+      return merged;
+    },
+  });
 
   const displayName = profile?.full_name || profile?.username || user?.name || t('profile.unnamed');
   const displayAvatar = profile?.avatar_url || user?.avatar;
@@ -87,66 +177,64 @@ export default function ProfileScreen() {
     );
   };
 
-  const quickItemsMap: Record<QuickTab, QuickItem[]> = {
-    favorites: [
-      {
-        key: 'saved',
-        label: t('tabs.saved', { defaultValue: '저장됨' }),
-        description: t('profile.quick.savedDesc', { defaultValue: '저장한 게시물과 리조트' }),
-        icon: Star,
-        path: appRouteMap.saved.path,
-      },
-      {
-        key: 'resorts',
-        label: t('tabs.resorts', { defaultValue: '리조트' }),
-        description: t('profile.quick.resortsDesc', { defaultValue: '찜한 리조트와 포인트 보기' }),
-        icon: MapPin,
-        path: appRouteMap.resorts.path,
-      },
-    ],
-    feed: [
-      {
-        key: 'feed-home',
-        label: t('tabs.feed', { defaultValue: '피드' }),
-        description: t('profile.quick.feedDesc', { defaultValue: '최신 다이버 피드로 이동' }),
-        icon: Waves,
-        path: appRouteMap.feed.path,
-      },
-      {
-        key: 'activity',
-        label: t('tabs.activity', { defaultValue: '내 활동' }),
-        description: t('profile.quick.activityDesc', { defaultValue: '좋아요, 댓글, 팔로우 활동' }),
-        icon: Settings,
-        path: appRouteMap.activity.path,
-      },
-    ],
-    reels: [
-      {
-        key: 'reels',
-        label: t('tabs.reels', { defaultValue: '릴스' }),
-        description: t('profile.quick.reelsDesc', { defaultValue: '짧은 다이빙 영상 보기' }),
-        icon: Film,
-        path: appRouteMap.reels.path,
-      },
-      {
-        key: 'explore',
-        label: t('tabs.explore', { defaultValue: '탐색' }),
-        description: t('profile.quick.exploreDesc', { defaultValue: '인기 포인트/영상을 탐색' }),
-        icon: Star,
-        path: appRouteMap.explore.path,
-      },
-    ],
+  const favoritesCatalog = useMemo(() => {
+    const base = feedRowsToGallery(savedFeedRaw, 'fav', t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }));
+    return ensureMinCatalog(base, 'fav', t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }));
+  }, [savedFeedRaw, t]);
+
+  const feedCatalog = useMemo(() => {
+    const base = feedRowsToGallery(ownFeedRaw, 'feed', t('tabs.feed', { defaultValue: '피드' }));
+    return ensureMinCatalog(base, 'feed', t('tabs.feed', { defaultValue: '피드' }));
+  }, [ownFeedRaw, t]);
+
+  const reelsCatalog = useMemo(() => {
+    const videoRows = ownFeedRaw.filter((row: any) => Array.isArray(row?.media) && row.media.some((item: any) => item?.type === 'video'));
+    const baseRows = videoRows.length ? videoRows : ownFeedRaw;
+    const base = feedRowsToGallery(baseRows, 'reel', t('tabs.reels', { defaultValue: '릴스' }));
+    return ensureMinCatalog(base, 'reel', t('tabs.reels', { defaultValue: '릴스' }));
+  }, [ownFeedRaw, t]);
+
+  const tabCatalogMap: Record<QuickTab, GalleryItem[]> = {
+    favorites: favoritesCatalog,
+    feed: feedCatalog,
+    reels: reelsCatalog,
   };
+
   const quickTabMeta = [
-    { key: 'favorites' as const, label: t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }) },
-    { key: 'feed' as const, label: t('profile.quick.tabs.feed', { defaultValue: '피드' }) },
-    { key: 'reels' as const, label: t('profile.quick.tabs.reels', { defaultValue: '릴스' }) },
+    { key: 'favorites' as const, label: t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }), icon: Star },
+    { key: 'feed' as const, label: t('profile.quick.tabs.feed', { defaultValue: '피드' }), icon: Waves },
+    { key: 'reels' as const, label: t('profile.quick.tabs.reels', { defaultValue: '릴스' }), icon: Film },
   ];
-  const quickItems = quickItemsMap[quickTab];
+
+  const activeCatalog = tabCatalogMap[quickTab];
+  const visibleCount = visibleByTab[quickTab] || PAGE_SIZE;
+  const visibleItems = activeCatalog.slice(0, visibleCount);
+  const hasMore = visibleCount < activeCatalog.length;
+
+  const loadMoreForActiveTab = useCallback(() => {
+    if (!hasMore || pagingLock) return;
+    setPagingLock(true);
+    setVisibleByTab((prev) => ({
+      ...prev,
+      [quickTab]: Math.min((prev[quickTab] || PAGE_SIZE) + PAGE_SIZE, activeCatalog.length),
+    }));
+    setTimeout(() => setPagingLock(false), 220);
+  }, [activeCatalog.length, hasMore, pagingLock, quickTab]);
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const nearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 140;
+    if (nearBottom) loadMoreForActiveTab();
+  };
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
         <View style={styles.pageHeader}>
           <View>
             <Text style={styles.pageTitle}>{t('tabs.profile', { defaultValue: '프로필' })}</Text>
@@ -249,45 +337,56 @@ export default function ProfileScreen() {
         </Card>
 
         <View style={styles.quickSectionWrap}>
-          <Text style={styles.quickSectionTitle}>{t('menu.quick')}</Text>
+          <Text style={styles.quickSectionTitle}>{t('tabs.activity', { defaultValue: '내 활동' })}</Text>
           <View style={styles.quickTabsRow}>
-            {quickTabMeta.map((tab, index) => (
-              <TouchableOpacity
-                key={tab.key}
-                activeOpacity={0.86}
-                onPress={() => setQuickTab(tab.key)}
-                style={[
-                  styles.quickTabChip,
-                  quickTab === tab.key ? styles.quickTabChipActive : undefined,
-                  index === quickTabMeta.length - 1 ? styles.quickTabChipLast : undefined,
-                ]}
-              >
-                <Text style={[styles.quickTabChipText, quickTab === tab.key ? styles.quickTabChipTextActive : undefined]}>{tab.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Card className="p-1">
-            {quickItems.map((item, index) => {
-              const Icon = item.icon;
+            {quickTabMeta.map((tab, index) => {
+              const Icon = tab.icon;
+              const active = quickTab === tab.key;
               return (
                 <TouchableOpacity
-                  key={item.key}
+                  key={tab.key}
                   activeOpacity={0.86}
-                  onPress={() => router.push(item.path as never)}
-                  style={[styles.quickRow, index < quickItems.length - 1 ? styles.quickRowBorder : undefined]}
+                  onPress={() => setQuickTab(tab.key)}
+                  style={[
+                    styles.quickTabChip,
+                    active ? styles.quickTabChipActive : undefined,
+                    index === quickTabMeta.length - 1 ? styles.quickTabChipLast : undefined,
+                  ]}
                 >
-                  <View style={styles.quickIconWrap}>
-                    <Icon size={17} color="#1f3c58" />
-                  </View>
-                  <View style={styles.quickTextWrap}>
-                    <Text style={styles.quickRowTitle}>{item.label}</Text>
-                    <Text style={styles.quickRowDesc}>{item.description}</Text>
-                  </View>
-                  <ChevronRight size={18} color="#8ca0b5" />
+                  <Icon size={14} color={active ? '#fff' : '#47627c'} />
+                  <Text style={[styles.quickTabChipText, active ? styles.quickTabChipTextActive : undefined]}>{tab.label}</Text>
                 </TouchableOpacity>
               );
             })}
-          </Card>
+          </View>
+
+          <View style={styles.gridWrap}>
+            {visibleItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.9}
+                style={[styles.gridItem, index % 3 === 2 ? styles.gridItemLastInRow : undefined]}
+              >
+                <View style={styles.gridImageWrap}>
+                  <Image source={{ uri: item.imageUrl }} resizeMode="cover" style={styles.gridImage} />
+                </View>
+                <View style={styles.gridMetaWrap}>
+                  <Text numberOfLines={1} style={styles.gridTitle}>{item.title}</Text>
+                  <Text numberOfLines={1} style={styles.gridSubtitle}>{item.subtitle}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {hasMore ? (
+            <View style={styles.pagingHintWrap}>
+              <Text style={styles.pagingHintText}>아래로 스크롤하면 다음 15개가 자동으로 로드됩니다.</Text>
+            </View>
+          ) : (
+            <View style={styles.pagingHintWrap}>
+              <Text style={styles.pagingDoneText}>모든 항목을 표시했습니다.</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </Screen>
@@ -528,7 +627,7 @@ const styles = StyleSheet.create({
   },
   quickTabChip: {
     flex: 1,
-    height: 34,
+    height: 36,
     borderRadius: 11,
     borderWidth: 1,
     borderColor: '#dbe8f4',
@@ -536,6 +635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 6,
+    flexDirection: 'row',
   },
   quickTabChipLast: {
     marginRight: 0,
@@ -545,6 +645,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d5fa8',
   },
   quickTabChipText: {
+    marginLeft: 5,
     fontSize: 12,
     fontWeight: '700',
     color: '#47627c',
@@ -552,42 +653,54 @@ const styles = StyleSheet.create({
   quickTabChipTextActive: {
     color: '#ffffff',
   },
-  quickRow: {
-    marginHorizontal: 4,
-    borderRadius: 14,
+  gridWrap: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 12,
+    flexWrap: 'wrap',
   },
-  quickRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#e7eef5',
+  gridItem: {
+    width: '33.333%',
+    paddingHorizontal: 4,
+    marginBottom: 10,
   },
-  quickIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  gridItemLastInRow: {
+    paddingRight: 0,
+  },
+  gridImageWrap: {
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#dce8f4',
-    backgroundColor: '#f8fbff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    overflow: 'hidden',
+    backgroundColor: '#eaf3ff',
   },
-  quickTextWrap: {
-    flex: 1,
-    paddingRight: 8,
+  gridImage: {
+    width: '100%',
+    aspectRatio: 1,
   },
-  quickRowTitle: {
-    fontSize: 15,
+  gridMetaWrap: {
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  gridTitle: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#0f172a',
   },
-  quickRowDesc: {
+  gridSubtitle: {
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748b',
-    lineHeight: 16,
+  },
+  pagingHintWrap: {
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  pagingHintText: {
+    fontSize: 11,
+    color: '#64748b',
+  },
+  pagingDoneText: {
+    fontSize: 11,
+    color: '#94a3b8',
   },
 });

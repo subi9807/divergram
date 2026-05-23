@@ -1,27 +1,44 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bell, Compass, Film, MapPin, Menu, MessageCircle, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
+import { Bell, Compass, Film, Info, MapPin, Menu, MessageCircle, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
+import { useAuth } from '../hooks/useAuth';
 import { appRouteMap, type AppRouteId } from '../config/sitemap';
 
-const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity', 'saved'];
-const moreRouteIds: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'admin'];
+const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity'];
+const moreRouteIdsBase: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'app_info'];
+const ADMIN_EMAILS = new Set(
+  String(process.env.EXPO_PUBLIC_ADMIN_EMAILS || '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+);
 
 const iconMap: Partial<Record<AppRouteId, React.ComponentType<any>>> = {
   settings: Settings,
   messages: MessageCircle,
   activity: UserRoundCog,
-  saved: Compass,
   reels: Film,
   resorts: Store,
   location: MapPin,
   notifications: Bell,
   admin: Shield,
+  app_info: Info,
 };
+
+function uniqueRouteIds(ids: AppRouteId[], used: Set<AppRouteId>): AppRouteId[] {
+  const out: AppRouteId[] = [];
+  for (const id of ids) {
+    if (used.has(id)) continue;
+    used.add(id);
+    out.push(id);
+  }
+  return out;
+}
 
 interface DgTabHeaderProps {
   title?: string;
@@ -31,7 +48,11 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdminUser =
+    String(user?.email || '').toLowerCase().startsWith('admin@') ||
+    ADMIN_EMAILS.has(String(user?.email || '').toLowerCase());
 
   const palette = isDark
     ? {
@@ -68,11 +89,16 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
       };
 
   const menuRows = useMemo(
-    () => [
-      { label: t('menu.quick'), ids: quickRouteIds },
-      { label: t('menu.more'), ids: moreRouteIds },
-    ],
-    [t]
+    () => {
+      const used = new Set<AppRouteId>();
+      const quick = uniqueRouteIds(quickRouteIds, used);
+      const more = uniqueRouteIds(isAdminUser ? [...moreRouteIdsBase, 'admin'] : moreRouteIdsBase, used);
+      return [
+        { label: t('menu.quick'), ids: quick },
+        { label: t('menu.more'), ids: more },
+      ];
+    },
+    [isAdminUser, t]
   );
 
   const go = (routeId: AppRouteId) => {

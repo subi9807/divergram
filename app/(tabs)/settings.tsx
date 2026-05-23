@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   Apple,
@@ -16,17 +16,20 @@ import {
   MapPin,
   Settings,
   Shield,
+  SunMoon,
   User,
   UserRoundCog,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { appRouteMap } from '../../src/config/sitemap';
 
 const languageOptions: ('ko' | 'en' | 'ja' | 'zh')[] = ['ko', 'en', 'ja', 'zh'];
 type SettingsTab = 'account' | 'notifications' | 'privacy' | 'diving' | 'app' | 'safety';
 type IconComponent = React.ComponentType<{ size?: number | string; color?: any }>;
+const settingsTabs: SettingsTab[] = ['account', 'notifications', 'privacy', 'diving', 'app', 'safety'];
 
 type ActionRowProps = {
   icon: React.ReactNode;
@@ -39,19 +42,47 @@ type ActionRowProps = {
 };
 
 function ActionRow({ icon, title, subtitle, value, onPress, border = true, danger = false }: ActionRowProps) {
+  const { isDark } = useResolvedTheme();
+  const colors = isDark
+    ? {
+        rowBorder: '#243447',
+        iconWrap: '#172534',
+        iconDanger: '#3a1b23',
+        title: '#e2e8f0',
+        titleDanger: '#fca5a5',
+        subtitle: '#94a3b8',
+        chipBg: '#1e2d3f',
+        chipText: '#cbd5e1',
+        chevron: '#9fb3c8',
+      }
+    : {
+        rowBorder: '#e8eff5',
+        iconWrap: '#edf3f9',
+        iconDanger: '#fff1f2',
+        title: '#0f172a',
+        titleDanger: '#ef4444',
+        subtitle: '#70859a',
+        chipBg: '#edf3f9',
+        chipText: '#49637c',
+        chevron: '#7c8a99',
+      };
   return (
-    <TouchableOpacity activeOpacity={0.84} onPress={onPress} style={[styles.rowBase, border ? styles.rowBorder : undefined]}>
-      <View style={[styles.rowIconWrap, danger ? styles.rowIconWrapDanger : undefined]}>{icon}</View>
+    <TouchableOpacity
+      activeOpacity={0.84}
+      onPress={onPress}
+      style={[styles.rowBase, border ? styles.rowBorder : undefined, border ? { borderBottomColor: colors.rowBorder } : undefined]}
+    >
+      <View style={[styles.rowIconWrap, { backgroundColor: danger ? colors.iconDanger : colors.iconWrap }]}>{icon}</View>
       <View style={styles.rowTextWrap}>
-        <Text style={[styles.rowTitle, danger ? styles.rowTitleDanger : undefined]}>{title}</Text>
-        {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.rowTitle, { color: danger ? colors.titleDanger : colors.title }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.subtitle }]}>{subtitle}</Text> : null}
       </View>
       {value ? (
-        <View style={styles.valueChip}>
-          <Text style={styles.valueChipText}>{value}</Text>
+        <View style={[styles.valueChip, { backgroundColor: colors.chipBg }]}>
+          <Text style={[styles.valueChipText, { color: colors.chipText }]}>{value}</Text>
         </View>
       ) : null}
-      <ChevronRight size={18} color={danger ? '#ef4444' : '#7c8a99'} />
+      <ChevronRight size={18} color={danger ? colors.titleDanger : colors.chevron} />
     </TouchableOpacity>
   );
 }
@@ -66,14 +97,32 @@ type ToggleRowProps = {
 };
 
 function ToggleRow({ icon, title, subtitle, value, onToggle, border = true }: ToggleRowProps) {
+  const { isDark } = useResolvedTheme();
+  const colors = isDark
+    ? {
+        rowBorder: '#243447',
+        iconWrap: '#172534',
+        title: '#e2e8f0',
+        subtitle: '#94a3b8',
+        trackFalse: '#334155',
+        trackTrue: '#0d5fa8',
+      }
+    : {
+        rowBorder: '#e8eff5',
+        iconWrap: '#edf3f9',
+        title: '#0f172a',
+        subtitle: '#70859a',
+        trackFalse: '#dbe3ec',
+        trackTrue: '#0d5fa8',
+      };
   return (
-    <View style={[styles.rowBase, border ? styles.rowBorder : undefined]}>
-      <View style={styles.rowIconWrap}>{icon}</View>
+    <View style={[styles.rowBase, border ? styles.rowBorder : undefined, border ? { borderBottomColor: colors.rowBorder } : undefined]}>
+      <View style={[styles.rowIconWrap, { backgroundColor: colors.iconWrap }]}>{icon}</View>
       <View style={styles.rowTextWrap}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.rowSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.rowTitle, { color: colors.title }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.subtitle }]}>{subtitle}</Text> : null}
       </View>
-      <Switch value={value} onValueChange={onToggle} trackColor={{ false: '#dbe3ec', true: '#0d5fa8' }} thumbColor="#ffffff" />
+      <Switch value={value} onValueChange={onToggle} trackColor={{ false: colors.trackFalse, true: colors.trackTrue }} thumbColor="#ffffff" />
     </View>
   );
 }
@@ -86,16 +135,42 @@ type SectionChipProps = {
 };
 
 function SectionChip({ active, label, icon: Icon, onPress }: SectionChipProps) {
+  const { isDark } = useResolvedTheme();
+  const colors = isDark
+    ? {
+        bg: '#101b29',
+        border: '#243447',
+        activeBg: '#0d5fa8',
+        activeBorder: '#0d5fa8',
+        iconBg: '#1a2a3a',
+        iconActiveBg: 'rgba(255,255,255,0.2)',
+        label: '#b6c6d8',
+        activeLabel: '#ffffff',
+      }
+    : {
+        bg: '#f8fbff',
+        border: '#dde8f2',
+        activeBg: '#0d5fa8',
+        activeBorder: '#0d5fa8',
+        iconBg: '#e9f2fb',
+        iconActiveBg: 'rgba(255,255,255,0.18)',
+        label: '#45617b',
+        activeLabel: '#ffffff',
+      };
   return (
     <TouchableOpacity
       activeOpacity={0.86}
       onPress={onPress}
-      style={[styles.sectionChip, active ? styles.sectionChipActive : undefined]}
+      style={[
+        styles.sectionChip,
+        { backgroundColor: colors.bg, borderColor: colors.border },
+        active ? { backgroundColor: colors.activeBg, borderColor: colors.activeBorder } : undefined,
+      ]}
     >
-      <View style={[styles.sectionChipIconWrap, active ? styles.sectionChipIconWrapActive : undefined]}>
+      <View style={[styles.sectionChipIconWrap, { backgroundColor: active ? colors.iconActiveBg : colors.iconBg }]}>
         <Icon size={16} color={active ? '#ffffff' : '#4f6275'} />
       </View>
-      <Text style={[styles.sectionChipLabel, active ? styles.sectionChipLabelActive : undefined]} numberOfLines={1}>
+      <Text style={[styles.sectionChipLabel, { color: active ? colors.activeLabel : colors.label }]} numberOfLines={1}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -110,18 +185,34 @@ type SocialButtonProps = {
 };
 
 function SocialButton({ label, actionLabel, badge, onPress }: SocialButtonProps) {
+  const { isDark } = useResolvedTheme();
+  const colors = isDark
+    ? {
+        bg: '#0f1b2a',
+        border: '#243447',
+        label: '#e2e8f0',
+        action: '#94a3b8',
+      }
+    : {
+        bg: '#f8fbff',
+        border: '#e1ebf4',
+        label: '#12263b',
+        action: '#69829a',
+      };
   return (
-    <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={styles.socialButton}>
+    <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={[styles.socialButton, { backgroundColor: colors.bg, borderColor: colors.border }]}>
       {badge}
-      <Text style={styles.socialLabel}>{label}</Text>
-      <Text style={styles.socialAction}>{actionLabel}</Text>
+      <Text style={[styles.socialLabel, { color: colors.label }]}>{label}</Text>
+      <Text style={[styles.socialAction, { color: colors.action }]}>{actionLabel}</Text>
     </TouchableOpacity>
   );
 }
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const { t, i18n } = useTranslation();
+  const { isDark } = useResolvedTheme();
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
@@ -137,24 +228,49 @@ export default function SettingsScreen() {
   const postVisibility = useSettingsStore((state) => state.postVisibility);
   const diveLogVisibility = useSettingsStore((state) => state.diveLogVisibility);
   const locationSharing = useSettingsStore((state) => state.locationSharing);
-  const preferredDiveType = useSettingsStore((state) => state.preferredDiveType);
   const depthUnit = useSettingsStore((state) => state.depthUnit);
   const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
+  const gasPressureUnit = useSettingsStore((state) => state.gasPressureUnit);
   const emergencyShareEnabled = useSettingsStore((state) => state.emergencyShareEnabled);
 
   const updateLanguage = useSettingsStore((state) => state.updateLanguage);
   const updateTheme = useSettingsStore((state) => state.updateTheme);
   const updateNotificationSetting = useSettingsStore((state) => state.updateNotificationSetting);
+  const updateAllNotifications = useSettingsStore((state) => state.updateAllNotifications);
   const updatePrivacySetting = useSettingsStore((state) => state.updatePrivacySetting);
   const updateSafetySetting = useSettingsStore((state) => state.updateSafetySetting);
   const updatePostVisibility = useSettingsStore((state) => state.updatePostVisibility);
   const updateDiveLogVisibility = useSettingsStore((state) => state.updateDiveLogVisibility);
-  const updatePreferredDiveType = useSettingsStore((state) => state.updatePreferredDiveType);
-  const updateDepthUnit = useSettingsStore((state) => state.updateDepthUnit);
-  const updateTemperatureUnit = useSettingsStore((state) => state.updateTemperatureUnit);
 
   const version = Constants.expoConfig?.version || '1.0.0';
   const appYear = new Date().getFullYear();
+  const shellColors = isDark
+    ? {
+        cardBg: '#0f1b2a',
+        cardBorder: '#243447',
+        headerBg: '#172534',
+        headerBorder: '#243447',
+        headerIconBg: '#213247',
+        headerTitle: '#e2e8f0',
+        headerSubtitle: '#9fb3c8',
+        footerTitle: '#e2e8f0',
+        footerValue: '#9fb3c8',
+        footerCopy: '#7f93aa',
+        accountDelete: '#fca5a5',
+      }
+    : {
+        cardBg: '#ffffff',
+        cardBorder: '#dbe7f2',
+        headerBg: '#f4f9ff',
+        headerBorder: '#e8eff5',
+        headerIconBg: '#dcecff',
+        headerTitle: '#0f172a',
+        headerSubtitle: '#69829a',
+        footerTitle: '#12263b',
+        footerValue: '#64809a',
+        footerCopy: '#94a3b8',
+        accountDelete: '#991B1B',
+      };
 
   const tx = (key: string, fallback: string, params?: Record<string, unknown>) =>
     t(key, { defaultValue: fallback, ...(params || {}) });
@@ -169,7 +285,7 @@ export default function SettingsScreen() {
   > = {
     account: {
       label: tx('settingsPage.sections.account', '계정 설정'),
-      subtitle: tx('settingsPage.tabSubtitles.account', '소셜 연동, 로그인 기기, 계정 보안을 설정하세요.'),
+      subtitle: tx('settingsPage.tabSubtitles.account', '소셜 연동, 다이빙 컴퓨터, 계정 보안을 설정하세요.'),
       icon: UserRoundCog,
     },
     notifications: {
@@ -184,12 +300,12 @@ export default function SettingsScreen() {
     },
     diving: {
       label: tx('settingsPage.sections.diving', '다이빙 설정'),
-      subtitle: tx('settingsPage.tabSubtitles.diving', '다이빙 타입과 단위를 활동 방식에 맞게 설정하세요.'),
+      subtitle: tx('settingsPage.tabSubtitles.diving', '단위, 장비, 연동, 포인트 설정을 관리하세요.'),
       icon: MapPin,
     },
     app: {
       label: tx('settingsPage.sections.app', '앱 설정'),
-      subtitle: tx('settingsPage.tabSubtitles.app', '언어, 테마, 정책 및 지원 메뉴를 관리하세요.'),
+      subtitle: tx('settingsPage.tabSubtitles.app', '언어, 테마, AI, 캐시, 하단메뉴를 관리하세요.'),
       icon: Settings,
     },
     safety: {
@@ -199,7 +315,11 @@ export default function SettingsScreen() {
     },
   };
 
-  const tabs: SettingsTab[] = ['account', 'notifications', 'privacy', 'diving', 'app', 'safety'];
+  useEffect(() => {
+    const raw = String(params.tab || '').trim();
+    if (!raw) return;
+    if (settingsTabs.includes(raw as SettingsTab)) setActiveTab(raw as SettingsTab);
+  }, [params.tab]);
 
   const labelMap = {
     language: {
@@ -213,11 +333,6 @@ export default function SettingsScreen() {
       followers: tx('settingsPage.options.followers', '팔로워'),
       private: tx('settingsPage.options.private', '비공개'),
     },
-    diveType: {
-      scuba: tx('settingsPage.options.diveType.scuba', '스쿠버'),
-      freediving: tx('settingsPage.options.diveType.freediving', '프리다이빙'),
-      snorkeling: tx('settingsPage.options.diveType.snorkeling', '스노클링'),
-    },
     depth: {
       m: tx('settingsPage.options.depthUnit.m', 'm'),
       ft: tx('settingsPage.options.depthUnit.ft', 'ft'),
@@ -225,6 +340,15 @@ export default function SettingsScreen() {
     temp: {
       c: tx('settingsPage.options.tempUnit.c', '℃'),
       f: tx('settingsPage.options.tempUnit.f', '℉'),
+    },
+    gas: {
+      bar: tx('settingsPage.options.gasUnit.bar', 'bar'),
+      psi: tx('settingsPage.options.gasUnit.psi', 'psi'),
+    },
+    theme: {
+      system: tx('settingsPage.options.theme.system', '시스템'),
+      dark: tx('settingsPage.options.theme.dark', '다크'),
+      light: tx('settingsPage.options.theme.light', '라이트'),
     },
   };
 
@@ -270,38 +394,14 @@ export default function SettingsScreen() {
     );
   };
 
-  const pickDiveType = () => {
+  const pickThemeMode = () => {
     Alert.alert(
-      tx('settingsPage.diving.diveType', '다이빙 타입 선택'),
+      tx('settingsPage.app.themeMode', '테마 모드'),
       tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
       [
-        { text: labelMap.diveType.scuba, onPress: () => updatePreferredDiveType('scuba') },
-        { text: labelMap.diveType.freediving, onPress: () => updatePreferredDiveType('freediving') },
-        { text: labelMap.diveType.snorkeling, onPress: () => updatePreferredDiveType('snorkeling') },
-        { text: tx('common.cancel', '취소'), style: 'cancel' as const },
-      ]
-    );
-  };
-
-  const pickDepthUnit = () => {
-    Alert.alert(
-      tx('settingsPage.diving.depthUnit', '수심 단위'),
-      tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
-      [
-        { text: labelMap.depth.m, onPress: () => updateDepthUnit('m') },
-        { text: labelMap.depth.ft, onPress: () => updateDepthUnit('ft') },
-        { text: tx('common.cancel', '취소'), style: 'cancel' as const },
-      ]
-    );
-  };
-
-  const pickTempUnit = () => {
-    Alert.alert(
-      tx('settingsPage.diving.tempUnit', '수온 단위'),
-      tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
-      [
-        { text: labelMap.temp.c, onPress: () => updateTemperatureUnit('c') },
-        { text: labelMap.temp.f, onPress: () => updateTemperatureUnit('f') },
+        { text: labelMap.theme.system, onPress: () => updateTheme('system') },
+        { text: labelMap.theme.dark, onPress: () => updateTheme('dark') },
+        { text: labelMap.theme.light, onPress: () => updateTheme('light') },
         { text: tx('common.cancel', '취소'), style: 'cancel' as const },
       ]
     );
@@ -388,17 +488,28 @@ export default function SettingsScreen() {
             </View>
           </View>
           <ActionRow
-            icon={<Bluetooth size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.account.devices', '로그인 기기 관리')}
-            subtitle={tx('settingsPage.account.devicesSubtitle', '현재 로그인된 기기를 확인하고 관리합니다.')}
-            onPress={() => router.push(appRouteMap.devices.path as never)}
+            icon={<User size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.profile.title', '프로필 설정')}
+            subtitle={tx('settingsPage.profile.subtitle', '프로필 이미지, 닉네임, 소개, 연락처 정보를 편집합니다.')}
+            onPress={() => router.push(appRouteMap.profile_edit.path as never)}
           />
           <ActionRow
-            icon={<Shield size={18} color="#ef4444" />}
-            title={tx('settingsPage.account.deleteAccount', '계정 삭제')}
-            subtitle={tx('settingsPage.account.deleteSubtitle', '계정 삭제는 복구할 수 없습니다.')}
-            onPress={handleAccountDelete}
-            danger
+            icon={<Link2 size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.integration', '외부 서비스 연동')}
+            subtitle={tx('settingsPage.diving.integrationSubtitle', 'Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.integration_settings.path as never)}
+          />
+          <ActionRow
+            icon={<MapPin size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.diveLogManagement', 'DiveLog 관리')}
+            subtitle={tx('settingsPage.diving.diveLogManagementSubtitle', '동기화 로그, 실패 기록, 편집 대기 로그를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.dive_log_management.path as never)}
+          />
+          <ActionRow
+            icon={<Bluetooth size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.account.devices', '다이빙 컴퓨터 관리')}
+            subtitle={tx('settingsPage.account.devicesSubtitle', '가민/순토/쉐어워터 기기 연결과 동기화를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.bluetooth_devices.path as never)}
           />
           <ActionRow
             icon={<LogOut size={18} color="#ef4444" />}
@@ -419,12 +530,19 @@ export default function SettingsScreen() {
             title={tx('settingsPage.notifications.pushAll', '푸시 알림 전체')}
             subtitle={tx('settingsPage.notifications.pushAllSubtitle', '모든 앱 알림을 한 번에 켜고 끕니다.')}
             value={pushNotifications}
-            onToggle={(next) => updateNotificationSetting('pushNotifications', next)}
+            onToggle={updateAllNotifications}
           />
           <ToggleRow icon={<Bell size={18} color="#4d5d6b" />} title={tx('settingsPage.notifications.likes', '좋아요 알림')} value={likeNotifications} onToggle={(next) => updateNotificationSetting('likeNotifications', next)} />
           <ToggleRow icon={<Mail size={18} color="#4d5d6b" />} title={tx('settingsPage.notifications.comments', '댓글 알림')} value={commentNotifications} onToggle={(next) => updateNotificationSetting('commentNotifications', next)} />
           <ToggleRow icon={<UserRoundCog size={18} color="#4d5d6b" />} title={tx('settingsPage.notifications.follows', '팔로우 알림')} value={followNotifications} onToggle={(next) => updateNotificationSetting('followNotifications', next)} />
-          <ToggleRow icon={<Bell size={18} color="#4d5d6b" />} title={tx('settingsPage.notifications.events', '이벤트 알림')} value={eventNotifications} onToggle={(next) => updateNotificationSetting('eventNotifications', next)} border={false} />
+          <ToggleRow icon={<Bell size={18} color="#4d5d6b" />} title={tx('settingsPage.notifications.events', '이벤트 알림')} value={eventNotifications} onToggle={(next) => updateNotificationSetting('eventNotifications', next)} />
+          <ActionRow
+            icon={<Settings size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.notifications.detail', '알림 세부 설정')}
+            subtitle={tx('settingsPage.notifications.detailSubtitle', '날씨/동기화 관련 알림을 개별 설정합니다.')}
+            onPress={() => router.push(appRouteMap.notification_settings.path as never)}
+            border={false}
+          />
         </View>
       );
     }
@@ -470,21 +588,27 @@ export default function SettingsScreen() {
       return (
         <View>
           <ActionRow
-            icon={<MapPin size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.diving.diveType', '다이빙 타입 선택')}
-            value={labelMap.diveType[preferredDiveType]}
-            onPress={pickDiveType}
-          />
-          <ActionRow
             icon={<Shield size={18} color="#4d5d6b" />}
             title={tx('settingsPage.diving.certifications', '자격증/레벨 관리')}
             subtitle={tx('settingsPage.diving.certificationsSubtitle', '보유 자격과 레벨을 갱신합니다.')}
-            onPress={() => router.push(appRouteMap.profile_edit.path as never)}
+            onPress={() => router.push(appRouteMap.certifications.path as never)}
           />
           <ActionRow
             icon={<Bluetooth size={18} color="#4d5d6b" />}
             title={tx('settingsPage.diving.equipment', '장비/기기 관리')}
-            onPress={() => router.push(appRouteMap.devices.path as never)}
+            onPress={() => router.push(appRouteMap.bluetooth_devices.path as never)}
+          />
+          <ActionRow
+            icon={<Link2 size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.integration', '외부 서비스 연동')}
+            subtitle={tx('settingsPage.diving.integrationSubtitle', 'Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.integration_settings.path as never)}
+          />
+          <ActionRow
+            icon={<MapPin size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.marineWeather', '해양 날씨')}
+            subtitle={tx('settingsPage.diving.marineWeatherSubtitle', '포인트별 파고/조류/수온을 확인합니다.')}
+            onPress={() => router.push(appRouteMap.marine_weather.path as never)}
           />
           <ActionRow
             icon={<MapPin size={18} color="#4d5d6b" />}
@@ -492,16 +616,17 @@ export default function SettingsScreen() {
             onPress={() => router.push(appRouteMap.location.path as never)}
           />
           <ActionRow
-            icon={<Settings size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.diving.depthUnit', '수심 단위 설정')}
-            value={labelMap.depth[depthUnit]}
-            onPress={pickDepthUnit}
+            icon={<Link2 size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.diveLogManagement', 'DiveLog 관리')}
+            subtitle={tx('settingsPage.diving.diveLogManagementSubtitle', '외부 연동 로그, 동기화 상태, 편집 대기 로그를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.dive_log_management.path as never)}
           />
           <ActionRow
             icon={<Settings size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.diving.tempUnit', '수온 단위 설정')}
-            value={labelMap.temp[temperatureUnit]}
-            onPress={pickTempUnit}
+            title={tx('settingsPage.diving.unitSettings', '단위 설정')}
+            subtitle={tx('settingsPage.diving.unitSettingsSubtitle', '수심/수온/기체 단위를 한 곳에서 설정합니다.')}
+            value={`${labelMap.depth[depthUnit]} · ${labelMap.temp[temperatureUnit]} · ${labelMap.gas[gasPressureUnit]}`}
+            onPress={() => router.push('/(tabs)/settings-detail?mode=unit-settings' as never)}
             border={false}
           />
         </View>
@@ -511,17 +636,23 @@ export default function SettingsScreen() {
     if (activeTab === 'app') {
       return (
         <View>
-          <ToggleRow
-            icon={<Settings size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.darkMode', '다크모드')}
-            value={theme === 'dark'}
-            onToggle={(next) => updateTheme(next ? 'dark' : 'light')}
+          <ActionRow
+            icon={<SunMoon size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.app.themeMode', '테마 모드')}
+            value={labelMap.theme[theme]}
+            onPress={pickThemeMode}
           />
           <ActionRow
             icon={<Globe size={18} color="#4d5d6b" />}
             title={tx('settingsPage.app.language', '언어 설정')}
             value={labelMap.language[language]}
             onPress={pickLanguage}
+          />
+          <ActionRow
+            icon={<Link2 size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.app.aiSettings', 'AI 설정')}
+            subtitle={tx('settingsPage.app.aiSettingsSubtitle', 'AI 요약/캡션/위험도 설명 사용 여부를 관리합니다.')}
+            onPress={() => router.push(appRouteMap.ai_settings.path as never)}
           />
           <ActionRow
             icon={<Link2 size={18} color="#4d5d6b" />}
@@ -533,32 +664,6 @@ export default function SettingsScreen() {
             icon={<HelpCircle size={18} color="#4d5d6b" />}
             title={tx('settingsPage.app.clearCache', '캐시 삭제')}
             onPress={clearCache}
-          />
-          <ActionRow
-            icon={<Settings size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.version', '앱 버전 확인')}
-            value={version}
-            onPress={() => Alert.alert(tx('settingsPage.app.version', '앱 버전 확인'), `Divergram ${version}`)}
-          />
-          <ActionRow
-            icon={<HelpCircle size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.terms', '이용약관')}
-            onPress={() => router.push(appRouteMap.auth_terms.path as never)}
-          />
-          <ActionRow
-            icon={<Shield size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.privacyPolicy', '개인정보처리방침')}
-            onPress={() => router.push(appRouteMap.auth_privacy.path as never)}
-          />
-          <ActionRow
-            icon={<HelpCircle size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.customerCenter', '고객센터')}
-            onPress={() => router.push('/(tabs)/settings-detail?mode=customer-center' as never)}
-          />
-          <ActionRow
-            icon={<Mail size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.contact', '문의하기')}
-            onPress={() => router.push(appRouteMap.report.path as never)}
             border={false}
           />
         </View>
@@ -596,9 +701,9 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-        <View style={styles.tabGridCard}>
+        <View style={[styles.tabGridCard, { backgroundColor: shellColors.cardBg, borderColor: shellColors.cardBorder }]}>
           <View style={styles.tabGridWrap}>
-            {tabs.map((tabId) => {
+            {settingsTabs.map((tabId) => {
               const meta = tabMeta[tabId];
               return (
                 <SectionChip
@@ -613,25 +718,28 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionHeaderIconWrap}>
+        <View style={[styles.sectionCard, { backgroundColor: shellColors.cardBg, borderColor: shellColors.cardBorder }]}>
+          <View style={[styles.sectionHeader, { backgroundColor: shellColors.headerBg, borderBottomColor: shellColors.headerBorder }]}>
+            <View style={[styles.sectionHeaderIconWrap, { backgroundColor: shellColors.headerIconBg }]}>
               <ActiveIcon size={18} color="#0d5fa8" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.sectionHeaderTitle}>{activeMeta.label}</Text>
-              <Text style={styles.sectionHeaderSubtitle}>{activeMeta.subtitle}</Text>
+              <Text style={[styles.sectionHeaderTitle, { color: shellColors.headerTitle }]}>{activeMeta.label}</Text>
+              <Text style={[styles.sectionHeaderSubtitle, { color: shellColors.headerSubtitle }]}>{activeMeta.subtitle}</Text>
             </View>
           </View>
           {renderTabContent()}
         </View>
 
-        <View style={styles.footerCard}>
-          <Text style={styles.footerTitle}>{tx('settingsPage.appInfoTitle', '앱 정보')}</Text>
+        <View style={[styles.footerCard, { backgroundColor: shellColors.cardBg, borderColor: shellColors.cardBorder }]}>
+          <Text style={[styles.footerTitle, { color: shellColors.footerTitle }]}>{tx('settingsPage.appInfoTitle', '앱 정보')}</Text>
           <View style={styles.footerRow}>
-            <Text style={styles.footerValue}>{tx('settingsPage.versionLabel', '버전 {{version}}', { version })}</Text>
-            <Text style={styles.footerCopy}>© {appYear} Divergram</Text>
+            <Text style={[styles.footerValue, { color: shellColors.footerValue }]}>{tx('settingsPage.versionLabel', '버전 {{version}}', { version })}</Text>
+            <Text style={[styles.footerCopy, { color: shellColors.footerCopy }]}>© {appYear} Divergram</Text>
           </View>
+          <TouchableOpacity style={styles.accountDeleteLinkWrap} onPress={handleAccountDelete} activeOpacity={0.84}>
+            <Text style={[styles.accountDeleteLinkText, { color: shellColors.accountDelete }]}>{tx('settingsPage.account.deleteTextLink', '다이버그램 계정탈퇴')}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </Screen>
@@ -972,5 +1080,14 @@ const styles = StyleSheet.create({
   footerCopy: {
     fontSize: 12,
     color: '#94a3b8',
+  },
+  accountDeleteLinkWrap: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  accountDeleteLinkText: {
+    fontSize: 12,
+    color: '#991B1B',
+    fontWeight: '600',
   },
 });

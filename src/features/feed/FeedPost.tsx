@@ -7,7 +7,6 @@ import {
   NativeScrollEvent,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -27,6 +26,7 @@ import { appRouteMap } from '../../config/sitemap';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../components/Toast';
 import { apiClient, type FeedCommentItem, type FeedMediaItem } from '../../lib/api';
+import { shareToInstagramFeed } from '../../services/instagramShareService';
 
 interface FeedPostProps {
   post: {
@@ -166,9 +166,16 @@ export function FeedPost({ post }: FeedPostProps) {
   const sharePost = async () => {
     setMenuOpen(false);
     try {
-      await Share.share({
-        message: `Divergram • ${post.user.name}\nhttps://divergram.com/post/${encodeURIComponent(post.id)}`,
-      });
+      const result = await shareToInstagramFeed(
+        `Divergram • ${post.user.name}`,
+        `https://divergram.com/post/${encodeURIComponent(post.id)}`
+      );
+      if (!result.installed) {
+        showToast({
+          type: 'info',
+          title: 'Instagram 미설치: 기본 공유 시트를 사용했습니다.',
+        });
+      }
     } catch {
       showToast({
         type: 'error',

@@ -34,6 +34,7 @@ import { Screen } from '../../src/components/Screen';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { SocialLinkInput } from '../../src/providers/AuthProvider';
+import { setPendingSignupDraft } from '../../src/services/signupFlowService';
 
 type Provider = 'google' | 'apple' | 'facebook' | 'kakao' | 'naver';
 type FocusedField = 'name' | 'contact' | 'email' | 'password' | null;
@@ -46,7 +47,7 @@ const brandLogo = require('../../assets/images/logo.png');
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const { loginWithGoogle, loginWithApple, loginWithFacebook, loginWithKakao, loginWithNaver, loginWithEmail, signupWithEmail, linkSocialAccount } = useAuth();
+  const { loginWithGoogle, loginWithApple, loginWithFacebook, loginWithKakao, loginWithNaver, loginWithEmail, linkSocialAccount } = useAuth();
   const nameRef = useRef<TextInput>(null);
   const contactRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
@@ -234,15 +235,13 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
-    try {
-      await signupWithEmail(normalizedEmail, password, normalizedName, normalizedContact);
-      router.replace('/(tabs)/feed');
-    } catch (error) {
-      Alert.alert(t('auth.error'), resolveErrorMessage(error, 'signup'));
-    } finally {
-      setLoading(false);
-    }
+    setPendingSignupDraft({
+      email: normalizedEmail,
+      password,
+      name: normalizedName,
+      contact: normalizedContact,
+    });
+    router.push('/(auth)/consent');
   };
 
   return (

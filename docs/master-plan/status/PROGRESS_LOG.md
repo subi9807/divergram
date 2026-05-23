@@ -1,0 +1,371 @@
+# Progress Log
+
+## 2026-05-22
+- [x] 사용자 원문 요구사항 전문 저장
+- [x] 원문 기반 마스터 체크리스트 생성
+- [x] 실행 플랜 문서 생성
+- [x] 모델/서비스/화면 스캐폴드 1차 반영
+- [x] DiveLog 관리 화면 라우팅 및 설정 메뉴 진입 연결
+- [x] 체크리스트 과다 완료 표기 초기화
+- [x] 상태 전용 보드 신설 (`status/TASK_STATUS.md`)
+- [~] 2단계 상세 기능(편집/업로드/공개범위) 구현 진행중
+- [x] DiveLog 편집 상태 저장 스토어 추가 (`src/stores/diveLogStore.ts`)
+- [x] DiveLog 상세/편집 연동 (저장 후 상세 반영)
+- [x] 편집 중 이탈 시 저장 확인 모달 처리
+- [x] 해양 날씨/외부 연동/Bluetooth/자격증/알림상세/AI 설정 화면 스캐폴드 추가
+- [x] 설정 메뉴에서 확장 기능 진입 경로 연결
+- [x] Stormglass 서비스 실연동 구조 + 캐시/fallback 구현
+- [x] 외부 API 동기화 공통 로직(재시도/중복판정) 및 연동 상태 스토어 구현
+- [x] 법적 문서 25종 초안 + 정책 센터/상세 화면 구현
+- [x] 회원가입 동의 화면 및 동의 이력 저장 구조 구현
+- [x] 신고 화면 개편(대상/사유/상세) 및 로컬 신고 저장 구조 반영
+- [x] 외부 연동 API 후보 엔드포인트 계층 + 토큰 refresh 지원 추가 (`src/lib/api.ts`)
+- [x] Garmin/Suunto/Shearwater 토큰 저장/자동갱신 및 로그 매핑 공통화 (`providerTokenService`, `externalDiveLogMapper`)
+- [x] Cloudinary signed upload 경로 반영 + mock fallback 유지
+- [x] FCM 토큰 등록/알림설정 API 연동 경로 반영
+- [x] 정책 재동의 자동 게이트(탭 진입 시 정책 버전 체크) 반영
+- [x] 계정삭제 요청형(유예기간 대응) 흐름으로 설정 상세 화면 업데이트
+- [!] 전체 `tsc`는 기존 레거시/웹 파일 오류로 실패(이번 변경 파일 lint 통과)
+
+## 2026-05-23
+- [x] 운영 서버 실 라우트(SSH) 재검증: `/api/auth/*`, `/api/push/tokens`, `/api/data/:table`
+- [x] 운영 API 스모크 테스트: 지원/미지원 경로 상태 확인
+  - 지원 확인: `GET /api/health (200)`, `GET /api/auth/oauth/providers (200)`, `POST /api/auth/oauth/mobile (400 with invalid token)`, `POST /api/push/tokens (401 without auth)`
+  - 미지원 확인: `POST /api/media/cloudinary/sign-upload (404)`, `POST /api/auth/account/delete-request (404)`, `GET /api/notifications/settings (404)`, `GET /api/auth/refresh (404)`
+- [x] `src/lib/api.ts` 후보 엔드포인트 최적화 및 미지원 API fail-fast 처리 반영
+- [x] 반복 404/405/501 경로 캐시(`unsupportedRouteCache`)로 네트워크 지연 감소
+- [x] OAuth 호출 경로 정리(`/auth/oauth` ↔ `/auth/oauth/mobile` fallback)
+- [x] 계정삭제 API 미지원 시 강제 로그아웃 되던 UX 버그 수정 (`settings-detail.tsx`)
+- [x] 계정삭제 API 미지원 환경 fallback 추가 (`reports` 테이블에 삭제요청 기록)
+  - `src/lib/api.ts`: `requestAccountDeletion()`에서 `/api/data/reports` 기반 요청 생성 + 유예기간 응답
+- [x] 변경 파일 eslint 재검증 통과
+- [x] BLE 연동 mock 플로우 고도화: 검색→연결→정보→동기화→해제
+  - `src/services/diveComputerAdapter.ts`: 브랜드별 BLE 어댑터 + 공통 스캔 집계 + Bluetooth 로그 변환
+  - `src/services/bluetoothDiveService.ts`: 연결 상태/어댑터 캐시/기본기기 동기화/오류 처리
+  - `src/screens/dive-log/BluetoothDeviceScreen.tsx`: 기기 연결/해제 버튼 + 동기화 UX 반영
+  - `src/screens/dive-log/DiveLogManagementScreen.tsx`: Bluetooth 동기화 하드코딩 제거(`dev-suunto-d5` 제거)
+- [x] DiveLog 관리 수동 가져오기 기능 구현(샘플 로그 생성/저장)
+  - `src/services/diveLogSyncService.ts`: `importManualDiveLogs()`
+  - `src/screens/dive-log/DiveLogManagementScreen.tsx`: 버튼 동작 연결
+- [x] 외부 연동 UI에서 mock 연결 상태 문구 명확화
+  - `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/screens/dive-log/DiveLogManagementScreen.tsx`
+- [x] Settings 구조 보강: 계정 탭에서 프로필 설정/외부 연동/DiveLog 관리 바로가기 추가
+  - `app/(tabs)/settings.tsx`
+- [x] DiveLog 편집/미디어 UX 고도화
+  - `src/screens/dive-log/DiveLogEditScreen.tsx`: 미디어 10개 제한, mock 업로드 상태, 대표 순서 이동, 저장 전 필수값 검증
+- [x] Stormglass 위험도 고도화 + 화면 반영
+  - `src/services/stormglassService.ts`: 추천점수, 경고항목, 초보자 경고 산출
+  - `src/screens/dive-log/MarineWeatherScreen.tsx`: 추천도/경고 UI 반영
+- [x] 연동 카드 UX 안정화
+  - `src/components/IntegrationStatusCard.tsx`: 처리중 라벨/비활성 상태
+  - `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/screens/dive-log/DiveLogManagementScreen.tsx`: 동기화/연결 중복탭 방지
+- [x] 신고 플로우 검증 강화 및 저장 경로 일원화
+  - `src/lib/api.ts`: `submitModerationReport()`
+  - `src/screens/legal/ReportScreen.tsx`: 입력 검증, 연속 제출 제한, 신고 미리보기
+- [x] 변경 파일 대상 eslint 재검증 통과
+- [x] 연동 UX 안정화 추가: 마지막 동기화 시간 로컬 포맷 적용
+  - `src/components/IntegrationStatusCard.tsx`: `formatLastSync()` 반영
+- [x] 신고/정책 검증 추가 보강
+  - `src/lib/api.ts`: `submitModerationReport()` 대상 타입 화이트리스트 검증
+  - `src/screens/legal/ReportScreen.tsx`: 최근 신고 이력 표시, 검증 강화 상태 유지
+- [x] 변경 파일 eslint 재검증 통과 (Report/API/Integration 카드)
+- [x] DiveLog 편집 고도화 2차
+  - `src/screens/dive-log/DiveLogEditScreen.tsx`: 입수/출수 좌표, 시야, 조류 강도 입력 및 유효성 검증 추가
+  - `src/screens/dive-log/DiveLogDetailScreen.tsx`: 편집 필드(좌표/시야/조류) 상세 표시 반영
+- [x] Stormglass 위험도/추천 로직 2차 고도화
+  - `src/models/MarineWeather.ts`: `bestDiveTimeIso`, `bestDiveScore`, hourly `recommendationScore` 필드 추가
+  - `src/services/stormglassService.ts`: 시간대별 추천점수 계산 및 최적 입수시간 산출
+  - `src/screens/dive-log/MarineWeatherScreen.tsx`: 추천 입수 시간/점수 노출
+- [x] 연동 UX 안정화 2차
+  - `src/components/IntegrationStatusCard.tsx`: 상태 톤 배지, 마지막 동기화 로컬 포맷, 액션 영역 토글
+  - `src/screens/dive-log/IntegrationSettingsScreen.tsx`: 관리형 연동(Garmin/Suunto/Shearwater)과 read-only 연동 분리, 상세 화면 이동 처리
+- [x] 신고 흐름 검증 2차 강화
+  - `src/lib/api.ts`: `submitModerationReport()` 대상 타입 화이트리스트 검증 유지
+  - `src/screens/legal/ReportScreen.tsx`: 최근 신고 이력 표시로 제출 결과 즉시 확인 가능
+- [x] 변경 파일 대상 eslint 재검증 통과 (DiveLog/Stormglass/Integration/Report/API)
+- [x] 설정 구조 보강 2차: 탭 딥링크 직접 진입 지원
+  - Evidence: `app/(tabs)/settings.tsx` (`useLocalSearchParams`, `settings?tab=` 파싱, 탭 강제 이동)
+- [x] DiveLog 편집/미디어 폴리시 강화
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 라이브러리 다중선택(최대 10), EXIF GPS 자동 반영(입/출수 좌표), 썸네일 표시, 실패 업로드 재시도, 업로드 중/실패 시 저장 차단
+- [x] Stormglass 위험도 로직 3차 강화
+  - Evidence: `src/models/MarineWeather.ts`, `src/services/stormglassService.ts`, `src/screens/dive-log/MarineWeatherScreen.tsx`
+  - 내용: `diveAllowed`, `noDiveReason`, 추천 시간대 윈도우(start/end) 계산 및 화면 표시
+- [x] 연동 UX 안정화 3차
+  - Evidence: `src/screens/dive-log/DiveLogManagementScreen.tsx`
+  - 내용: 미연결 공급자 동기화 차단, 전체동기화 스킵 요약, 실패 항목별 재시도 버튼 추가
+- [x] 신고 플로우 검증 3차
+  - Evidence: `src/stores/legalStore.ts`, `src/screens/legal/ReportScreen.tsx`
+  - 내용: 10분 중복 신고 차단(`duplicate_report_recent`) + 사용자 친화 메시지 매핑
+- [x] 변경 파일 eslint 재검증 통과
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/models/MarineWeather.ts src/services/stormglassService.ts src/screens/dive-log/MarineWeatherScreen.tsx src/screens/dive-log/DiveLogManagementScreen.tsx app/(tabs)/settings.tsx src/stores/legalStore.ts src/screens/legal/ReportScreen.tsx`
+- [x] Stormglass 위험도 로직 4차 보강
+  - Evidence: `src/models/MarineWeather.ts`, `src/services/stormglassService.ts`, `src/screens/dive-log/MarineWeatherScreen.tsx`
+  - 내용: 데이터 완성도(`dataCompletenessScore`) 및 위험도 신뢰도(`riskConfidence`) 계산/표시 추가
+- [x] 연동 UX 안정화 4차
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/screens/dive-log/DiveLogManagementScreen.tsx`
+  - 내용: 미연결 연동 상태에서 동기화 차단(선연결 유도), 마지막 동기화 시각 로컬 포맷 보강
+- [x] 신고 입력 검증 4차 강화
+  - Evidence: `src/lib/api.ts`, `src/screens/legal/ReportScreen.tsx`
+  - 내용: 신고 사유 화이트리스트 검증(`invalid_report_reason`), 신고 대상 타입 변경 시 targetId 초기화
+- [x] 변경 파일 eslint 재검증 통과 (4차)
+  - Command: `npx eslint src/models/MarineWeather.ts src/services/stormglassService.ts src/screens/dive-log/MarineWeatherScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/dive-log/DiveLogManagementScreen.tsx src/lib/api.ts src/screens/legal/ReportScreen.tsx src/screens/dive-log/DiveLogEditScreen.tsx`
+- [x] 설정 IA 정리: 로그인 기기 → 다이빙 컴퓨터 관리
+  - Evidence: `app/(tabs)/settings.tsx`, `src/locales/ko.json`, `src/locales/en.json`, `src/locales/ja.json`, `src/locales/zh.json`
+  - 내용: 계정 탭 문구/동선을 다이빙 컴퓨터 중심으로 교정, 진입 경로를 `/(tabs)/bluetooth-devices`로 통합
+- [x] DiveLog 관리 화면 역할 재정의
+  - Evidence: `src/screens/dive-log/DiveLogManagementScreen.tsx`
+  - 내용: 서비스 연동/전체동기화 제거, 로그 관리/수동 가져오기/편집 중심으로 단순화
+- [x] 다이빙 컴퓨터 관리 화면 확장
+  - Evidence: `src/screens/dive-log/BluetoothDeviceScreen.tsx`, `src/stores/integrationStore.ts`
+  - 내용: 복수 기기 등록, 기기별 연결/동기화/데이터 형식 체크, 외부 서비스(Garmin/Suunto/Shearwater) 동기화 허브 통합
+- [x] Bluetooth 중복 방지 동기화 보강
+  - Evidence: `src/screens/dive-log/BluetoothDeviceScreen.tsx`, `src/stores/integrationStore.ts`
+  - 내용: `lastSyncedAt` + `lastSyncExternalLogIds` 기반 증분 필터링으로 재연결 시 중복 로그 유입 최소화
+- [x] 계정탈퇴 CTA 우선순위 조정
+  - Evidence: `app/(tabs)/settings.tsx`
+  - 내용: 계정 탭 강조 행 제거, 앱 정보 하단 저강도 텍스트 링크(`다이버그램 계정탈퇴`)로 이동
+- [x] 알림 전체 ON/OFF 동작 일관성 보강
+  - Evidence: `src/stores/settingsStore.ts`, `src/screens/dive-log/NotificationSettingsScreen.tsx`
+  - 내용: 설정 탭/알림 상세 양쪽에서 전체 토글 시 개별 알림 동시 반영, 개별 토글 변경 시 전체 상태 동기화
+- [x] 변경 파일 eslint 재검증 통과 (요청 1~4 반영분)
+  - Command: `npx eslint app/(tabs)/settings.tsx src/stores/settingsStore.ts src/screens/dive-log/NotificationSettingsScreen.tsx src/stores/integrationStore.ts src/screens/dive-log/DiveLogManagementScreen.tsx src/screens/dive-log/BluetoothDeviceScreen.tsx`
+- [x] 다이빙 컴퓨터 관리 전체 동기화 UX 안정화(알림 스팸 제거 + 요약 리포트)
+  - Evidence: `src/screens/dive-log/BluetoothDeviceScreen.tsx`
+  - 내용: 공급자/기기 동기화를 `silent` 모드로 배치 실행 후 `서비스 n개/기기 n개/신규/중복/실패` 1회 요약 알림으로 통합
+- [x] Bluetooth 증분 동기화 중복 방지 보강 2차
+  - Evidence: `src/screens/dive-log/BluetoothDeviceScreen.tsx`, `src/stores/integrationStore.ts`
+  - 내용: `lastSyncExternalLogIds`를 "신규 저장된 로그"가 아닌 "당회차에 가져온 전체 externalLogId"로 누적 저장(최근 80개)해 재연결/재동기화 시 중복 재유입 완화
+- [x] 변경 파일 eslint 재검증 통과 (BluetoothDeviceScreen)
+  - Command: `npx eslint src/screens/dive-log/BluetoothDeviceScreen.tsx`
+- [x] 설정 구조 정리 3차: 다이빙 타입 제거 + 단위 설정 통합
+  - Evidence: `app/(tabs)/settings.tsx`, `app/(tabs)/settings-detail.tsx`, `src/stores/settingsStore.ts`
+  - 내용: 다이빙설정에서 타입 선택 제거, 단위설정 메뉴로 수심/수온/기체(bar/psi) 통합 및 상세 선택 화면(`mode=unit-settings`) 추가
+- [x] 앱 설정 테마 모드 고도화 + 다크 카드 톤 정합화
+  - Evidence: `app/(tabs)/settings.tsx`, `src/screens/dive-log/NotificationSettingsScreen.tsx`
+  - 내용: 다크모드 토글을 `시스템/다크/라이트` 선택형으로 전환, 설정/알림상세 카드/텍스트/보더 다크 팔레트 반영
+- [x] 앱정보 메뉴 분리: 햄버거 하단 App Info 신설
+  - Evidence: `app/(tabs)/app-info.tsx`, `src/components/DgTabHeader.tsx`, `src/config/sitemap.ts`, `app/(tabs)/_layout.tsx`
+  - 내용: 약관/정책/고객센터/문의하기 항목을 설정 앱탭에서 제거하고 우상단 햄버거의 `앱 정보` 화면으로 이동
+- [x] 알림 상세 항목 정리
+  - Evidence: `src/screens/dive-log/NotificationSettingsScreen.tsx`
+  - 내용: `자격증 인증 상태`, `Bluetooth 연결 오류`를 목록에서 제거하고 전체 푸시 ON/OFF 계산을 노출 항목 기준으로 정렬
+- [x] 다국어 키/문구 동기화 (KR/EN/JA/ZH)
+  - Evidence: `src/locales/ko.json`, `src/locales/en.json`, `src/locales/ja.json`, `src/locales/zh.json`
+  - 내용: unitSettings/gasUnit/themeMode/appInfo/app_info 관련 키 추가 및 알림 상세 설명 문구 정리
+- [x] 변경 파일 eslint 재검증 통과 (settings/app-info/notification/theme)
+  - Command: `npx eslint app/(tabs)/settings.tsx app/(tabs)/settings-detail.tsx app/(tabs)/app-info.tsx app/(tabs)/_layout.tsx src/components/DgTabHeader.tsx src/screens/dive-log/NotificationSettingsScreen.tsx src/stores/settingsStore.ts src/config/sitemap.ts`
+- [x] DiveLog 편집/미디어 폴리시 추가 고도화
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 실패 업로드 미디어에 대해 `실패 전체 재시도` / `실패 항목 삭제` 액션을 제공해 저장 전 정리 절차 단순화
+- [x] Stormglass 위험도 로직 5차 고도화
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: API 시간축에서 현재 시각에 가장 가까운 관측 hour를 우선 사용하고, 관측 시각 장기 경과(6h+) 데이터는 `riskConfidence=low` + `입수 비권장` 안전 가드 적용
+- [x] 연동 UX 안정화 5차
+  - Evidence: `src/components/IntegrationStatusCard.tsx`, `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 읽기전용 연동 카드에 `연동 상세 보기` CTA 추가, 사용자 알림 문구를 연동 서비스 표시명 기준으로 정리
+- [x] 신고/정책 검증 5차 강화
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 신고 대상 타입별 대상ID placeholder, 공백/최소길이 검증, 상세설명 필수 사유 inline 에러 표시 추가
+- [x] 변경 파일 eslint 재검증 통과 (DiveLog/Stormglass/Integration/Report)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/components/IntegrationStatusCard.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] Stormglass 위험도 로직 6차 고도화 (조석 전환 보정)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 만/간조 근접 시간대 탐지 후 `tideTransitionPenalty`로 추천점수 보정, 조석 전환 경고문을 위험 설명/경고 목록에 반영
+- [x] 연동 UX 안정화 6차 (운영 요약 보드)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 설정 상단에 연결 수/조치 필요/처리중 집계를 보여주는 `연동 요약` 카드 추가
+- [x] 신고 검증 6차 보강 (사전 중복 차단)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 로컬 신고이력 기준 동일 사용자·대상·사유 10분 이내 재신고를 `validateBeforeSubmit` 단계에서 사전 차단
+- [x] 변경 파일 eslint 재검증 통과 (Stormglass/Integration/Report 6차)
+  - Command: `npx eslint src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] DiveLog 편집/미디어 폴리시 7차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 라이브러리 선택 시 중복 URI 자동 제외, 선택 상한 초과/중복 제외 건수 안내, 업로드중 항목 삭제 확인 모달 추가
+- [x] 신고 입력 품질 7차 보강
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 상세 설명 최대 1000자 제한 + 글자수 카운터 + 길이 초과/필수사유 미충족 inline 에러를 동시 지원
+- [x] 변경 파일 eslint 재검증 통과 (DiveLogEdit/Report 7차)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] DiveLog 편집/미디어 폴리시 8차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 다중 선택 한 번에서 동일 URI 중복 등록을 차단(`pickedUriSet`)해 중복 미디어 생성 방지
+- [x] Stormglass 위험도 로직 7차 고도화 (추천시간 안정화)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 추천 입수 시간 산정 시 `diveAllowed=true` 조건을 강제하고 동점 점수는 더 이른 시간 우선으로 정렬
+- [x] 연동 UX 안정화 7차 (조치 항목 필터)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: `조치 필요만 보기` 토글과 빈 상태 메시지를 추가해 운영 점검 동선을 단축
+- [x] 변경 파일 eslint 재검증 통과 (DiveLog/Integration/Stormglass 8차)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts`
+- [x] DiveLog 편집/미디어 폴리시 9차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 미디어 항목별 `대표 설정` 액션 추가로 대표 사진/영상을 즉시 맨 앞으로 지정 가능
+- [x] Stormglass 위험도 로직 8차 고도화 (희소 hourly 안전 가드)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 시간대 데이터가 희소하면 신뢰도 `low`, 입수 비권장, 추천시간/추천윈도우 보류 처리로 보수적 판단 강화
+- [x] 연동 UX 안정화 8차 (운영 우선순위 정렬)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 목록을 실패/미연결/처리중/조치필요/정상 순서로 정렬하여 운영 대응 항목을 상단에 노출
+- [x] 신고 검증 8차 보강 (사유별 최소 상세 길이)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: `detailMinLengthByReason` 기반 사유별 상세 입력 최소치 검증 및 안내문구 동기화
+- [x] 변경 파일 eslint 재검증 통과 (9차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] 설정 구조 정합성 4차 보강
+  - Evidence: `app/(tabs)/settings.tsx`
+  - 내용: 알림 탭의 상세설정 안내 문구를 실제 노출 범위(날씨/동기화)에 맞게 정정해 UX 혼선을 제거
+- [x] DiveLog 편집/미디어 폴리시 10차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 저장 버튼 선검증(`saveBlockedReason`)으로 필수 입력/업로드 상태를 즉시 안내, 영상 항목 재생시간 표시 추가
+- [x] Stormglass 위험도 로직 9차 고도화 (만료 캐시 안전 fallback)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 신선/만료 캐시 분리(`readCacheEntry`), API 실패·키누락 시 만료 캐시를 보수적 상태(`riskConfidence=low`, `diveAllowed=false`)로 노출
+- [x] 연동 UX 안정화 9차 (운영 지표 세분화)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약에 실패 건수/계정연결 필요 건수를 분리 표기해 우선 조치 범위 가시성 강화
+- [x] 신고 검증 9차 보강 (상세 입력 품질 검증)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: `validateDetailQuality` 추가로 무의미 문자 입력 차단, 저작권 사유는 링크 또는 구체 설명(24자+) 요구
+- [x] 알림 상세 UX 안정화 5차 (동기화 토글 그룹 일치)
+  - Evidence: `src/screens/dive-log/NotificationSettingsScreen.tsx`
+  - 내용: `dive_schedule/sync_complete/sync_failed`를 그룹 토글로 동기화해 상세 화면과 설정 스토어 상태 불일치 방지
+- [x] 변경 파일 eslint 재검증 통과 (10차 반영분)
+  - Command: `npx eslint "app/(tabs)/settings.tsx" src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] 변경 파일 eslint 재검증 통과 (10차-알림 확장 반영)
+  - Command: `npx eslint "app/(tabs)/settings.tsx" src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx src/screens/dive-log/NotificationSettingsScreen.tsx`
+- [x] 메뉴 구조 정리 5차 (요청 경로 반영 + 중복 방지)
+  - Evidence: `src/locales/ko.json`, `src/locales/en.json`, `src/locales/ja.json`, `src/locales/zh.json`, `src/components/DgTabHeader.tsx`
+  - 내용: 홈/로그 탭 명칭을 `피드`/`로그 작성`으로 통일하고, 햄버거 메뉴 라우트는 `uniqueRouteIds`로 섹션 간 중복 노출을 차단
+- [x] 탐색/프로필 피드형 그리드 정렬 고정
+  - Evidence: `app/(tabs)/explore.tsx`, `app/(tabs)/profile.tsx`
+  - 내용: 3열 그리드, 기본 15개, 하단 스크롤 페이지네이션(15개 단위)으로 UX를 통일
+- [x] 포인트지도 시각화 정합화
+  - Evidence: `app/(tabs)/location.tsx`, `src/lib/googleMapSearch.ts`
+  - 내용: Google Maps 렌더링에서 포인트/리조트 2종 마커 동시 표시 및 범례/선택지역 중심 이동 반영
+- [x] 변경 파일 eslint 재검증 통과 (메뉴/그리드/지도/문서 반영)
+  - Command: `npx eslint "app/(tabs)/explore.tsx" "app/(tabs)/profile.tsx" "app/(tabs)/location.tsx" "app/(tabs)/settings.tsx" "app/(tabs)/settings-detail.tsx" "app/(tabs)/_layout.tsx" src/components/DgTabHeader.tsx src/stores/settingsStore.ts src/config/sitemap.ts src/lib/googleMapSearch.ts`
+- [x] DiveLog 편집/미디어 폴리시 11차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 다이빙 포인트 입력 구간에 `포인트 위치 찾기 (지도)` 액션을 추가해 위치 검색 버튼 무반응 이슈를 해소하고 `/(tabs)/location` 화면으로 즉시 이동
+- [x] Stormglass 위험도 가시화 10차 보강
+  - Evidence: `src/screens/dive-log/MarineWeatherScreen.tsx`
+  - 내용: 위험도 신뢰도 표시를 한글화(`높음/중간/낮음`)하고 관측 신선도(`최신/보통/지연`, 경과 분)를 노출해 데이터 신선도 기반 의사결정 지원
+- [x] 연동 UX 안정화 10차
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약 카드에 `다이빙 컴퓨터 관리`/`DiveLog 관리` 빠른 이동 버튼을 추가해 운영 동선 단축
+- [x] 신고 검증 10차 보강
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 중복 신고 판정에서 대상 ID를 대소문자/공백 정규화(`normalizeTargetId`)하여 우회형 중복 신고를 차단
+- [x] 변경 파일 eslint 재검증 통과 (11차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/MarineWeatherScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] DiveLog 편집/미디어 폴리시 12차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 편집 상태 배지(`저장되지 않은 변경사항`)와 `편집 초기화`(저장본 복원) 액션을 추가해 실수 입력 복구 시간을 단축
+- [x] Stormglass 위험도 로직 11차 고도화 (급변 리스크 반영)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 시간대별 파고/조류 변동폭(span) 기반 `variabilityPenalty`를 도입해 급변 구간 점수 하향 및 경고문 자동 생성
+- [x] 다이빙 컴퓨터 관리 UX 안정화 11차
+  - Evidence: `src/screens/dive-log/BluetoothDeviceScreen.tsx`
+  - 내용: 동기화 대상(연동/등록) 수 요약 카드 추가, 대상 0건일 때 전체 동기화 실행 차단 가드 추가
+- [x] 신고 검증 11차 보강
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 동일문자 과다 반복 입력 차단, 24시간 신고 상한(20건) 검증 추가로 남용성 제출 억제
+- [x] 변경 파일 eslint 재검증 통과 (12차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/screens/dive-log/BluetoothDeviceScreen.tsx src/screens/legal/ReportScreen.tsx`
+- [x] 설정 구조 정리 6차 (다이빙 컴퓨터 경로 단일화)
+  - Evidence: `app/(tabs)/devices.tsx`, `src/locales/ko.json`, `src/locales/en.json`, `src/locales/ja.json`, `src/locales/zh.json`
+  - 내용: 레거시 `devices` 탭 화면을 `bluetooth-devices` 리다이렉트로 통합하고, 탭 라벨을 다국어 기준 `다이빙 컴퓨터` 계열로 정합화
+- [x] 연동 UX 안정화 12차 (실패 항목 일괄 재요청)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약 카드에 `실패 항목 재요청` 버튼을 추가해 실패 상태(관리형/연결됨) 항목을 일괄적으로 재요청 상태로 전환
+- [x] 변경 파일 eslint 재검증 통과 (경로 통합/연동 UX 반영분)
+  - Command: `npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx "app/(tabs)/devices.tsx"`
+- [x] 오류 화면 대응: `devices` 경로 안정화
+  - Evidence: `app/(tabs)/devices.tsx`
+  - 내용: 리다이렉트 기반 진입 대신 `BluetoothDeviceScreen` 직접 렌더링으로 전환해 라우팅 전환 에러 가능성 제거
+- [x] 변경 파일 eslint 재검증 통과 (`devices` 안정화 반영)
+  - Command: `npx eslint "app/(tabs)/devices.tsx" src/screens/dive-log/BluetoothDeviceScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx`
+- [x] DiveLog 편집/미디어 폴리시 13차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`, `src/services/cloudinaryService.ts`
+  - 내용: 미디어 업로드를 랜덤 mock 처리에서 Cloudinary 실업로드 시도 방식으로 전환하고, 실패 시 fallback URL로 안전하게 저장되도록 개선
+- [x] 변경 파일 eslint 재검증 통과 (13차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx "app/(tabs)/devices.tsx" src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/cloudinaryService.ts`
+- [x] Stormglass 위험도 로직 12차 고도화 (단기 악화 추세 감지)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 초기 3시간 대비 후속 3시간 추천점수 하락을 `trendPenalty`로 반영해 급격한 악화 예보 시 점수 하향 및 경고문 자동 생성
+- [x] 연동 UX 안정화 13차 (실패 로그 스팸 억제)
+  - Evidence: `src/stores/integrationStore.ts`
+  - 내용: `markSyncFailure`에서 동일 타입/메시지 오류를 2분 윈도우 내 병합 갱신해 중복 실패 로그 누적을 완화
+- [x] 신고 검증 12차 보강
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 대상 ID 64자 상한, 동일 대상 연속 신고 30초 쿨다운을 추가해 남용성 반복 제출을 억제
+- [x] 변경 파일 eslint 재검증 통과 (12차-13차 반영분)
+  - Command: `npx eslint src/services/stormglassService.ts src/stores/integrationStore.ts src/screens/legal/ReportScreen.tsx`
+- [x] 화면 미출력 원인 수정 (빌드 의존성/런타임 에러)
+  - Evidence: `package.json`, `package-lock.json`, `src/screens/legal/ReportScreen.tsx`
+  - 내용: 웹 번들 실패 원인인 `autoprefixer` 누락을 devDependency로 추가하고, `ReportScreen`의 `normalizedTargetId` 스코프 오류를 수정해 런타임 에러(`targetId is not defined`) 해소
+- [x] Instagram 공유 연동 1차 연결
+  - Evidence: `src/services/instagramShareService.ts`, `src/features/feed/FeedPost.tsx`
+  - 내용: 피드 공유에서 `shareToInstagramFeed`를 호출하도록 연결하고 Instagram 미설치 시 시스템 공유 fallback 안내를 제공
+- [x] 변경 파일 eslint 재검증 통과 (오류 복구 + Instagram 공유 1차)
+  - Command: `npx eslint src/screens/legal/ReportScreen.tsx src/features/feed/FeedPost.tsx src/services/instagramShareService.ts`
+- [x] 화면 미노출 체감 개선 (시작 로딩 비동기화)
+  - Evidence: `src/providers/AuthProvider.tsx`
+  - 내용: 캐시된 사용자 세션이 있을 때 `setLoading(false)`를 즉시 적용하고 API 검증은 백그라운드로 전환해 앱 재실행 시 초기 빈화면 대기 시간을 단축
+- [x] AI 설정 ON/OFF 실사용 연동 1차 완료
+  - Evidence: `src/stores/settingsStore.ts`, `src/screens/dive-log/AISettingsScreen.tsx`, `src/screens/dive-log/DiveLogEditScreen.tsx`, `src/screens/dive-log/MarineWeatherScreen.tsx`
+  - 내용: AI 설정 토글을 전역 저장소로 영속화하고, DiveLog 저장 시 AI 요약/캡션 생성과 해양날씨 화면 AI 위험도 설명 표시를 설정값에 따라 제어
+- [x] 변경 파일 eslint 재검증 통과 (Auth/AI 설정 연동 반영)
+  - Command: `npx eslint src/providers/AuthProvider.tsx src/stores/settingsStore.ts src/screens/dive-log/AISettingsScreen.tsx src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/MarineWeatherScreen.tsx`
+- [x] 자격증 관리 워크플로우 1차 구현 (등록/이미지/상태)
+  - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`
+  - 내용: PADI/SSI 등록 폼, 자격증 이미지 업로드(Cloudinary service 연동), 검토중/인증완료/반려 상태 전이(mock) 및 로컬 저장소 기반 목록 동기화 구현
+- [x] 변경 파일 eslint 재검증 통과 (자격증 워크플로우 반영)
+  - Command: `npx eslint src/services/certificationService.ts src/screens/dive-log/CertificationScreen.tsx`
+- [x] DiveLog 편집/미디어 폴리시 14차 보강
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 미디어 선택 UI를 `사진/영상`, `사진만`, `영상만`으로 분리하고 업로드된 항목에 `cloudinary/mock` 소스 라벨을 표시해 운영 확인성을 강화
+- [x] Stormglass 위험도 로직 13차 고도화 (관측 시각 2h+ 보정)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 관측 시각이 2시간 이상 경과한 데이터에 추천점수 보정(-8), 신뢰도 강등(high→medium), 경고문 추가를 적용해 준-실시간 데이터 과신 리스크를 완화
+- [x] 연동 UX 안정화 14차 (동기화 경과/장기 미동기화 지표)
+  - Evidence: `src/components/IntegrationStatusCard.tsx`, `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 카드에 `동기화 경과`(분/시간/일) 배지를 추가하고, 요약 보드에 `장기 미동기화(24h+)` 집계를 표시해 운영 점검 우선순위를 강화
+- [x] 신고 검증 13차 보강 (자가 신고 차단)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: `사용자` 대상 신고에서 본인 계정 ID를 제출하는 케이스를 사전 차단해 오입력을 방지
+- [x] 변경 파일 eslint 재검증 통과 (14차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/legal/ReportScreen.tsx src/components/IntegrationStatusCard.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts`
+- [x] DiveLog 관리 UX 15차 보강 (운영 필터/요약)
+  - Evidence: `src/screens/dive-log/DiveLogManagementScreen.tsx`
+  - 내용: `전체/수동/연동/실패` 필터와 요약 카운트, 빈 상태 메시지를 추가해 로그 점검 및 편집 진입 속도를 개선
+- [x] 연동 UX 안정화 15차 (장기 미동기화 필터)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: `장기 미동기화만 보기(24h+)` 토글을 추가해 stale 연동 항목만 빠르게 추출/점검하도록 개선
+- [x] 변경 파일 eslint 재검증 통과 (15차 반영분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogManagementScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx`
+- [x] 운영 백엔드 확장 1차 (SSH 직접 반영)
+  - Evidence: `prod-server:/home/divergram/api/server/routes/integrations.js`
+  - Evidence: `prod-server:/home/divergram/api/server/routes/notificationSettings.js`
+  - Evidence: `prod-server:/home/divergram/api/server/routes/media.js`
+  - Evidence: `prod-server:/home/divergram/api/server/index.js` (신규 라우터 등록)
+  - 내용: 외부 연동(`connect/refresh/disconnect/logs`), 알림설정(`GET/PATCH`), 푸시 테스트(`POST /api/push/test`), Cloudinary 서명 업로드(`POST /api/media/cloudinary/sign-upload`) 라우트 추가
+- [x] 운영 API 프로세스 재기동/구문 검증
+  - Command: `node --check /home/divergram/api/server/index.js`
+  - Command: `node --check /home/divergram/api/server/routes/integrations.js`
+  - Command: `node --check /home/divergram/api/server/routes/notificationSettings.js`
+  - Command: `node --check /home/divergram/api/server/routes/media.js`
+  - Command: `pm2 restart divergram-api`
+- [x] 인증 포함 스모크 테스트 통과
+  - Evidence: `POST /api/integrations/garmin/connect` → `200`
+  - Evidence: `GET /api/integrations/garmin/logs?limit=2` → `200`
+  - Evidence: `GET/PATCH /api/notifications/settings` → `200`
+  - Evidence: `POST /api/push/test` → `200`
+  - Evidence: `POST /api/media/cloudinary/sign-upload` → `503 cloudinary_not_configured` (키 미설정 상태)
+- [x] 앱 API에서 prod 가드 해제(신규 백엔드 라우트 사용)
+  - Evidence: `src/lib/api.ts`
+  - 내용: 외부연동/알림설정/푸시테스트/Cloudinary 서명 요청에서 `isKnownProdApi` 차단 제거
+- [x] 변경 파일 eslint 재검증 통과 (API 가드 해제 반영)
+  - Command: `npx eslint src/lib/api.ts`

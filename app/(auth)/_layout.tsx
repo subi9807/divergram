@@ -9,6 +9,8 @@ export default function AuthLayout() {
       <Stack.Screen name="tutorial" />
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="consent" />
+      <Stack.Screen name="policy-document" />
       <Stack.Screen name="callback" />
       <Stack.Screen name="privacy" options={{ title: t('auth.privacy'), headerShown: true }} />
       <Stack.Screen name="terms" options={{ title: t('auth.terms'), headerShown: true }} />

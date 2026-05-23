@@ -52,7 +52,7 @@ interface AuthContextType {
   loginWithKakao: () => Promise<void>;
   loginWithNaver: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
-  signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<void>;
+  signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<User | null>;
   linkSocialAccount: (link: SocialLinkInput) => Promise<void>;
   logout: () => void;
   getAccessToken: () => string | null;
@@ -91,16 +91,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         default: GOOGLE_CLIENT_ID_WEB,
       });
 
-  useEffect(() => {
-    checkAuthState();
-  }, []);
-
   const persistAuthPayload = useCallback((payload: any, fallback?: Partial<User>) => {
-    const token = payload?.token;
+    const token = String(payload?.token || payload?.accessToken || payload?.access_token || '').trim();
     if (!token) throw new Error('missing_auth_token');
     storage.set(AUTH_TOKEN_KEY, token);
-    if (payload?.refreshToken) storage.set(REFRESH_TOKEN_KEY, payload.refreshToken);
-    else storage.delete(REFRESH_TOKEN_KEY);
+    const nextRefreshToken = String(payload?.refreshToken || payload?.refresh_token || '').trim();
+    if (nextRefreshToken) storage.set(REFRESH_TOKEN_KEY, nextRefreshToken);
+    else if (!storage.getString(REFRESH_TOKEN_KEY)) storage.delete(REFRESH_TOKEN_KEY);
 
     const userPayload = payload?.user || {};
     const profilePayload = payload?.profile || {};
@@ -114,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (nextUser) {
       storage.set(AUTH_USER_KEY, JSON.stringify(nextUser));
     }
+    return nextUser;
   }, []);
 
   const sanitizeUsername = useCallback((value: string) => {
@@ -168,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persistAuthPayload]
   );
 
-  const checkAuthState = async () => {
+  const checkAuthState = useCallback(async () => {
     const token = storage.getString(AUTH_TOKEN_KEY);
     const rawUser = storage.getString(AUTH_USER_KEY);
     let cachedUser: User | null = null;
@@ -189,6 +187,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (cachedUser) {
       setUser(cachedUser);
+      // 캐시 세션이 있으면 즉시 화면을 띄우고 서버 검증은 백그라운드로 진행
+      setLoading(false);
     }
 
     try {
@@ -202,15 +202,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 401 || status === 403) {
+        const refreshToken = storage.getString(REFRESH_TOKEN_KEY);
+        if (refreshToken) {
+          try {
+            const refreshed = await apiClient.refreshToken(refreshToken);
+            persistAuthPayload(refreshed, cachedUser || undefined);
+            const userData = normalizeUser(await apiClient.getMe());
+            if (userData) {
+              setUser(userData);
+              storage.set(AUTH_USER_KEY, JSON.stringify(userData));
+              return;
+            }
+          } catch {
+            // refresh failed -> clear session below
+          }
+        }
         storage.delete(AUTH_TOKEN_KEY);
         storage.delete(REFRESH_TOKEN_KEY);
         storage.delete(AUTH_USER_KEY);
         setUser(null);
       }
     } finally {
-      setLoading(false);
+      if (!cachedUser) {
+        setLoading(false);
+      }
     }
-  };
+  }, [persistAuthPayload]);
+
+  useEffect(() => {
+    checkAuthState();
+  }, [checkAuthState]);
 
   const loginWithGoogle = async () => {
     try {
@@ -331,7 +352,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signupWithEmail = async (email: string, password: string, name: string, contact: string) => {
+  const signupWithEmail = async (email: string, password: string, name: string, contact: string): Promise<User | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim();
     const normalizedContact = contact.trim();
@@ -346,7 +367,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     for (const username of attempts) {
       try {
         const response = await apiClient.authWithEmailSignup(normalizedEmail, password, username, 'personal');
-        persistAuthPayload(response.data, {
+        const createdUser = persistAuthPayload(response.data, {
           email: normalizedEmail,
           name: normalizedName || username,
         });
@@ -355,7 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           title: i18n.t('auth.welcomeTitle'),
           message: i18n.t('auth.welcomeMessage')
         });
-        return;
+        return createdUser;
       } catch (error: any) {
         lastError = error;
         const status = error?.response?.status;

@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Bell, BookOpen, Bookmark, House, MapPin, MessageCircle, Search, Store, User } from 'lucide-react-native';
+import { Bell, BookOpen, House, MapPin, MessageCircle, Search, Store, User } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { DgTabHeader } from '../../src/components/DgTabHeader';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
-import { bottomTabCandidates, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
+import { bottomTabCandidates, bottomTabDefault, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
+import { useLegalStore } from '../../src/stores/legalStore';
+import { getLatestPolicyVersionMap } from '../../src/services/policyService';
 
 function tabIcon(Icon: typeof House, isDark: boolean) {
   function TabBarIcon({ size, color, focused }: { size: number; color: string; focused: boolean }) {
@@ -25,7 +27,34 @@ export default function TabLayout() {
   const { t } = useTranslation();
   const { loading, user } = useAuth();
   const { isDark } = useResolvedTheme();
-  const bottomTabItems = useSettingsStore((state) => state.bottomTabItems);
+  const bottomTabItemsRaw = useSettingsStore((state) => state.bottomTabItems);
+  const bottomTabItems = useMemo(() => {
+    const seen = new Set<BottomTabRoute>();
+    const normalized: BottomTabRoute[] = [];
+    for (const route of bottomTabItemsRaw) {
+      if (!bottomTabCandidates.includes(route)) continue;
+      if (seen.has(route)) continue;
+      seen.add(route);
+      normalized.push(route);
+    }
+    if (!seen.has('index')) {
+      normalized.unshift('index');
+      seen.add('index');
+    }
+    if (normalized.length < 3) {
+      for (const route of bottomTabDefault) {
+        if (!bottomTabCandidates.includes(route)) continue;
+        if (seen.has(route)) continue;
+        normalized.push(route);
+        seen.add(route);
+        if (normalized.length >= 3) break;
+      }
+    }
+    return normalized.slice(0, 5);
+  }, [bottomTabItemsRaw]);
+  const legalHydrated = useLegalStore((state) => state.hydrated);
+  const hasRequiredSignupConsents = useLegalStore((state) => state.hasRequiredSignupConsents);
+  const latestPolicyVersionMap = useMemo(() => getLatestPolicyVersionMap('ko'), []);
 
   const tabMeta: Record<BottomTabRoute, { icon: typeof House; titleKey: string }> = {
     index: { icon: House, titleKey: appRouteMap.home.titleKey },
@@ -35,11 +64,10 @@ export default function TabLayout() {
     profile: { icon: User, titleKey: appRouteMap.profile.titleKey },
     messages: { icon: MessageCircle, titleKey: appRouteMap.messages.titleKey },
     notifications: { icon: Bell, titleKey: appRouteMap.notifications.titleKey },
-    saved: { icon: Bookmark, titleKey: appRouteMap.saved.titleKey },
     resorts: { icon: Store, titleKey: appRouteMap.resorts.titleKey },
   };
 
-  if (loading) {
+  if (loading || !legalHydrated) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#0d5fa8" />
@@ -49,6 +77,10 @@ export default function TabLayout() {
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  if (!hasRequiredSignupConsents(user.id, latestPolicyVersionMap)) {
+    return <Redirect href="/(auth)/consent?mode=reconsent" />;
   }
 
   return (
@@ -99,6 +131,25 @@ export default function TabLayout() {
       <Tabs.Screen name="post" options={{ href: null }} />
       <Tabs.Screen name="report" options={{ href: null }} />
       <Tabs.Screen name="profile-edit" options={{ href: null }} />
+      <Tabs.Screen name="dive-log-management" options={{ href: null }} />
+      <Tabs.Screen name="dive-log-detail" options={{ href: null }} />
+      <Tabs.Screen name="dive-log-edit" options={{ href: null }} />
+      <Tabs.Screen name="integration-settings" options={{ href: null }} />
+      <Tabs.Screen name="marine-weather" options={{ href: null }} />
+      <Tabs.Screen name="bluetooth-devices" options={{ href: null }} />
+      <Tabs.Screen name="certifications" options={{ href: null }} />
+      <Tabs.Screen name="notification-settings" options={{ href: null }} />
+      <Tabs.Screen name="ai-settings" options={{ href: null }} />
+      <Tabs.Screen name="policy-center" options={{ href: null }} />
+      <Tabs.Screen name="policy-document" options={{ href: null }} />
+      <Tabs.Screen name="terms-policy" options={{ href: null }} />
+      <Tabs.Screen name="privacy-policy" options={{ href: null }} />
+      <Tabs.Screen name="location-policy" options={{ href: null }} />
+      <Tabs.Screen name="community-policy" options={{ href: null }} />
+      <Tabs.Screen name="safety-disclaimer" options={{ href: null }} />
+      <Tabs.Screen name="ai-usage-policy" options={{ href: null }} />
+      <Tabs.Screen name="open-source-licenses" options={{ href: null }} />
+      <Tabs.Screen name="app-info" options={{ href: null }} />
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="settings-detail" options={{ href: null }} />

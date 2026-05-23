@@ -90,11 +90,11 @@
   },
   "tabs": {
     "feed": "피드",
-    "logs": "다이빙 로그",
-    "devices": "디바이스",
+    "logs": "로그 작성",
+    "devices": "다이빙 컴퓨터",
     "profile": "프로필",
     "settings": "설정",
-    "home": "홈",
+    "home": "피드",
     "explore": "탐색",
     "resorts": "리조트",
     "reels": "릴스",
@@ -166,8 +166,8 @@
     }
   },
   "logs": {
-    "title": "다이빙 로그",
-    "subtitle": "나의 다이빙 기록",
+    "title": "로그 작성",
+    "subtitle": "나의 다이빙 기록 작성",
     "create": "작성",
     "createFirst": "첫 로그 작성",
     "error": "로그를 불러올 수 없습니다",
@@ -447,11 +447,11 @@
     },
     "tabSubtitles": {
       "profile": "프로필과 계정 정보를 간결하게 관리하세요.",
-      "account": "소셜 연동, 로그인 기기, 계정 보안을 설정하세요.",
+      "account": "소셜 연동, 다이빙 컴퓨터, 계정 보안을 설정하세요.",
       "notifications": "필요한 알림만 정확하게 받아보세요.",
       "privacy": "프로필, 게시물, 로그의 공개 범위를 제어하세요.",
-      "diving": "다이빙 타입과 단위를 활동 방식에 맞게 설정하세요.",
-      "app": "언어, 테마, 정책 및 지원 메뉴를 관리하세요.",
+      "diving": "단위, 장비, 연동, 포인트 설정을 관리하세요.",
+      "app": "언어, 테마, AI, 캐시, 하단메뉴를 관리하세요.",
       "safety": "긴급 연락 및 안전 공유 옵션을 구성하세요."
     },
     "common": {
@@ -475,6 +475,15 @@
       "tempUnit": {
         "c": "℃",
         "f": "℉"
+      },
+      "gasUnit": {
+        "bar": "bar",
+        "psi": "psi"
+      },
+      "theme": {
+        "system": "시스템",
+        "dark": "다크",
+        "light": "라이트"
       }
     },
     "profile": {
@@ -491,19 +500,23 @@
       "googleLink": "Google 로그인 연동",
       "appleLink": "Apple 로그인 연동",
       "kakaoLink": "Kakao 로그인 연동",
-      "devices": "로그인 기기 관리",
+      "devices": "다이빙 컴퓨터 관리",
       "deleteAccount": "계정 삭제",
       "deleteConfirm": "계정 삭제는 되돌릴 수 없습니다. 계속할까요?",
       "socialSubtitle": "소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.",
       "linkAction": "연동하기",
-      "devicesSubtitle": "현재 로그인된 기기를 확인하고 관리합니다.",
-      "deleteSubtitle": "계정 삭제는 복구할 수 없습니다."
+      "devicesSubtitle": "가민/순토/쉐어워터 기기 연결과 동기화를 관리합니다.",
+      "deleteSubtitle": "계정 삭제는 복구할 수 없습니다.",
+      "deleteTextLink": "다이버그램 계정탈퇴"
     },
     "notifications": {
       "likes": "좋아요 알림 ON/OFF",
       "comments": "댓글 알림 ON/OFF",
       "follows": "팔로우 알림 ON/OFF",
       "events": "이벤트 알림 ON/OFF",
+      "detail": "알림 세부 설정",
+      "detailSubtitle": "날씨/동기화 관련 알림을 개별 설정합니다.",
+      "weatherAlert": "해양 날씨 경고",
       "pushAll": "푸시 알림 전체 ON/OFF",
       "pushAllSubtitle": "모든 앱 알림을 한 번에 켜고 끕니다."
     },
@@ -515,18 +528,29 @@
       "blockedUsers": "차단 사용자 관리"
     },
     "diving": {
-      "diveType": "다이빙 타입 선택",
       "certifications": "자격증 관리",
       "certificationsSubtitle": "보유 자격과 레벨을 갱신합니다.",
       "equipment": "장비 정보 등록",
+      "integration": "외부 서비스 연동",
+      "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.",
+      "marineWeather": "해양 날씨",
+      "marineWeatherSubtitle": "포인트별 파고/조류/수온을 확인합니다.",
       "region": "활동 지역 설정",
       "points": "관심 다이빙 포인트 설정",
+      "diveLogManagement": "DiveLog 관리",
+      "diveLogManagementSubtitle": "외부 연동 로그, 동기화 상태, 편집 대기 로그를 관리합니다.",
       "depthUnit": "수심 단위 설정",
-      "tempUnit": "수온 단위 설정"
+      "tempUnit": "수온 단위 설정",
+      "gasUnit": "기체 단위 설정",
+      "unitSettings": "단위 설정",
+      "unitSettingsSubtitle": "수심/수온/기체 단위를 한 곳에서 설정합니다."
     },
     "app": {
       "darkMode": "다크모드",
+      "themeMode": "테마 모드",
       "language": "언어 설정",
+      "aiSettings": "AI 설정",
+      "aiSettingsSubtitle": "AI 요약/캡션/위험도 설명 사용 여부를 관리합니다.",
       "clearCache": "캐시 삭제",
       "clearCacheConfirm": "캐시를 삭제할까요?",
       "cacheClearedTitle": "완료",
@@ -534,6 +558,11 @@
       "version": "앱 버전 확인",
       "terms": "이용약관",
       "privacyPolicy": "개인정보처리방침",
+      "locationTerms": "위치정보 이용약관",
+      "communityPolicy": "커뮤니티 운영정책",
+      "safetyNotice": "안전 고지",
+      "aiNotice": "AI 기능 안내",
+      "policyCenter": "정책 문서 센터",
       "customerCenter": "고객센터",
       "contact": "문의하기",
       "bottomMenuManager": "하단메뉴 관리",
@@ -545,7 +574,10 @@
       "bottomMenuSaved": "하단메뉴 구성을 저장했습니다.",
       "bottomMenuRequired": "홈 메뉴는 필수입니다.",
       "bottomMenuMin": "하단메뉴는 최소 3개가 필요합니다.",
-      "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다."
+      "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다.",
+      "openSourceLicenses": "오픈소스 라이선스",
+      "appInfo": "앱 정보",
+      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다."
     },
     "safety": {
       "emergencyContact": "비상 연락처 등록",
@@ -576,7 +608,8 @@
       "resorts": "다이빙 리조트 탐색",
       "location": "지도에서 포인트 찾기",
       "notifications": "최신 알림과 업데이트",
-      "admin": "운영 전용 화면"
+      "admin": "운영 전용 화면",
+      "app_info": "약관, 정책, 고객 지원"
     }
   },
   "pages": {

@@ -90,11 +90,11 @@
   },
   "tabs": {
     "feed": "动态",
-    "logs": "潜水日志",
-    "devices": "设备",
+    "logs": "日志发布",
+    "devices": "潜水电脑",
     "profile": "个人主页",
     "settings": "设置",
-    "home": "首页",
+    "home": "动态",
     "explore": "探索",
     "resorts": "度假村",
     "reels": "短视频",
@@ -166,14 +166,14 @@
     }
   },
   "logs": {
-    "title": "Dive Logs",
-    "subtitle": "My diving records",
-    "create": "Create",
-    "createFirst": "Create first log",
-    "error": "Unable to load logs",
-    "errorSubtitle": "Please check your network and try again",
-    "empty": "No dive logs yet",
-    "emptySubtitle": "Create your first dive log!"
+    "title": "日志发布",
+    "subtitle": "我的潜水记录发布",
+    "create": "发布",
+    "createFirst": "发布第一条日志",
+    "error": "无法加载日志",
+    "errorSubtitle": "请检查网络后重试",
+    "empty": "暂无潜水日志",
+    "emptySubtitle": "发布你的第一条潜水日志吧"
   },
   "devices": {
     "title": "Dive Devices",
@@ -447,11 +447,11 @@
     },
     "tabSubtitles": {
       "profile": "简洁地管理个人资料与账号信息。",
-      "account": "配置社交登录、登录设备和账号安全。",
+      "account": "配置社交登录、潜水电脑和账号安全。",
       "notifications": "只接收你真正需要的通知。",
       "privacy": "控制资料、帖子与潜水日志的可见范围。",
-      "diving": "按你的活动习惯设置潜水类型和单位。",
-      "app": "管理语言、主题、政策与支持菜单。",
+      "diving": "管理单位、装备、联动与潜点设置。",
+      "app": "管理语言、主题、AI、缓存与底部菜单。",
       "safety": "配置紧急联系人与安全共享选项。"
     },
     "common": {
@@ -475,6 +475,15 @@
       "tempUnit": {
         "c": "℃",
         "f": "℉"
+      },
+      "gasUnit": {
+        "bar": "bar",
+        "psi": "psi"
+      },
+      "theme": {
+        "system": "系统",
+        "dark": "深色",
+        "light": "浅色"
       }
     },
     "profile": {
@@ -491,19 +500,23 @@
       "googleLink": "关联 Google 登录",
       "appleLink": "关联 Apple 登录",
       "kakaoLink": "关联 Kakao 登录",
-      "devices": "登录设备管理",
+      "devices": "潜水电脑管理",
       "deleteAccount": "删除账号",
       "deleteConfirm": "删除账号后无法恢复，是否继续？",
       "socialSubtitle": "关联社交账号以提升登录便捷性与安全性。",
       "linkAction": "立即关联",
-      "devicesSubtitle": "查看并管理当前已登录设备。",
-      "deleteSubtitle": "账号删除后将无法恢复。"
+      "devicesSubtitle": "管理 Garmin/Suunto/Shearwater 设备连接与同步。",
+      "deleteSubtitle": "账号删除后将无法恢复。",
+      "deleteTextLink": "注销 Divergram 账号"
     },
     "notifications": {
       "likes": "点赞通知",
       "comments": "评论通知",
       "follows": "关注通知",
       "events": "活动通知",
+      "detail": "通知详细设置",
+      "detailSubtitle": "分别配置天气与同步相关通知。",
+      "weatherAlert": "海洋天气预警",
       "pushAll": "全部推送通知",
       "pushAllSubtitle": "一键开启或关闭全部应用通知。"
     },
@@ -515,18 +528,29 @@
       "blockedUsers": "黑名单管理"
     },
     "diving": {
-      "diveType": "潜水类型选择",
       "certifications": "证书管理",
       "certificationsSubtitle": "更新你持有的证书和当前等级。",
       "equipment": "装备信息登记",
+      "integration": "外部服务联动",
+      "integrationSubtitle": "管理 Google Maps、Stormglass、Garmin、Suunto、Shearwater 状态。",
+      "marineWeather": "海洋天气",
+      "marineWeatherSubtitle": "按潜点查看浪高/流速/水温。",
       "region": "活动区域设置",
       "points": "关注潜点设置",
+      "diveLogManagement": "DiveLog 管理",
+      "diveLogManagementSubtitle": "管理外部导入日志、同步状态与可编辑日志。",
       "depthUnit": "深度单位设置",
-      "tempUnit": "水温单位设置"
+      "tempUnit": "水温单位设置",
+      "gasUnit": "气体压力单位设置",
+      "unitSettings": "单位设置",
+      "unitSettingsSubtitle": "在一处统一设置深度/水温/气体单位。"
     },
     "app": {
       "darkMode": "深色模式",
+      "themeMode": "主题模式",
       "language": "语言设置",
+      "aiSettings": "AI 设置",
+      "aiSettingsSubtitle": "管理 AI 摘要/文案/风险说明开关。",
       "clearCache": "清除缓存",
       "clearCacheConfirm": "是否清除缓存？",
       "cacheClearedTitle": "完成",
@@ -545,7 +569,15 @@
       "bottomMenuSaved": "底部菜单配置已保存。",
       "bottomMenuRequired": "首页菜单为必选项。",
       "bottomMenuMin": "底部菜单至少需要3个。",
-      "bottomMenuMax": "底部菜单最多可选择5个。"
+      "bottomMenuMax": "底部菜单最多可选择5个。",
+      "locationTerms": "位置信息使用条款",
+      "communityPolicy": "社区运营政策",
+      "safetyNotice": "安全告知",
+      "aiNotice": "AI 功能说明",
+      "policyCenter": "政策文档中心",
+      "openSourceLicenses": "开源许可证",
+      "appInfo": "应用信息",
+      "appInfoSubtitle": "管理条款、政策与客户支持项目。"
     },
     "safety": {
       "emergencyContact": "紧急联系人",
@@ -576,7 +608,8 @@
       "resorts": "潜水度假村探索",
       "location": "地图潜点导航",
       "notifications": "最新提醒与更新",
-      "admin": "运营管理入口"
+      "admin": "运营管理入口",
+      "app_info": "条款、政策、支持"
     }
   },
   "pages": {

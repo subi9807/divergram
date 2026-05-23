@@ -90,11 +90,11 @@
   },
   "tabs": {
     "feed": "Feed",
-    "logs": "Dive Logs",
-    "devices": "Devices",
+    "logs": "Log Write",
+    "devices": "Dive Computers",
     "profile": "Profile",
     "settings": "Settings",
-    "home": "Home",
+    "home": "Feed",
     "explore": "Explore",
     "resorts": "Resorts",
     "reels": "Reels",
@@ -166,7 +166,7 @@
     }
   },
   "logs": {
-    "title": "Dive Logs",
+    "title": "Log Write",
     "subtitle": "My diving records",
     "create": "Create",
     "createFirst": "Create first log",
@@ -447,11 +447,11 @@
     },
     "tabSubtitles": {
       "profile": "Manage your profile and account details cleanly.",
-      "account": "Configure social links, login devices, and account security.",
+      "account": "Configure social links, dive computers, and account security.",
       "notifications": "Receive only the notifications you really need.",
       "privacy": "Control visibility for profile, posts, and dive logs.",
-      "diving": "Set dive type and units to match your activity style.",
-      "app": "Manage language, theme, policies, and support menus.",
+      "diving": "Manage units, gear, integrations, and dive points.",
+      "app": "Manage language, theme, AI, cache, and bottom menu.",
       "safety": "Configure emergency contacts and safety sharing options."
     },
     "common": {
@@ -475,6 +475,15 @@
       "tempUnit": {
         "c": "℃",
         "f": "℉"
+      },
+      "gasUnit": {
+        "bar": "bar",
+        "psi": "psi"
+      },
+      "theme": {
+        "system": "System",
+        "dark": "Dark",
+        "light": "Light"
       }
     },
     "profile": {
@@ -491,19 +500,23 @@
       "googleLink": "Link Google login",
       "appleLink": "Link Apple login",
       "kakaoLink": "Link Kakao login",
-      "devices": "Manage login devices",
+      "devices": "Manage dive computers",
       "deleteAccount": "Delete account",
       "deleteConfirm": "Account deletion cannot be undone. Continue?",
       "socialSubtitle": "Link social accounts to improve sign-in convenience and security.",
       "linkAction": "Link now",
-      "devicesSubtitle": "Review and manage currently signed-in devices.",
-      "deleteSubtitle": "Account deletion is permanent."
+      "devicesSubtitle": "Manage Garmin/Suunto/Shearwater device connection and sync.",
+      "deleteSubtitle": "Account deletion is permanent.",
+      "deleteTextLink": "Delete Divergram Account"
     },
     "notifications": {
       "likes": "Like notifications",
       "comments": "Comment notifications",
       "follows": "Follow notifications",
       "events": "Event notifications",
+      "detail": "Notification details",
+      "detailSubtitle": "Configure weather and sync alerts in detail.",
+      "weatherAlert": "Marine weather alert",
       "pushAll": "All push notifications",
       "pushAllSubtitle": "Turn all app notifications on or off at once."
     },
@@ -515,18 +528,29 @@
       "blockedUsers": "Blocked users"
     },
     "diving": {
-      "diveType": "Dive type",
       "certifications": "Certification management",
       "certificationsSubtitle": "Update your certifications and current level.",
       "equipment": "Equipment registration",
+      "integration": "External integrations",
+      "integrationSubtitle": "Manage Google Maps, Stormglass, Garmin, Suunto, and Shearwater status.",
+      "marineWeather": "Marine weather",
+      "marineWeatherSubtitle": "Check wave/current/temperature by dive point.",
       "region": "Activity region",
       "points": "Favorite dive points",
+      "diveLogManagement": "DiveLog management",
+      "diveLogManagementSubtitle": "Manage imported logs, sync state, and editable dive logs.",
       "depthUnit": "Depth unit",
-      "tempUnit": "Water temperature unit"
+      "tempUnit": "Water temperature unit",
+      "gasUnit": "Gas pressure unit",
+      "unitSettings": "Unit settings",
+      "unitSettingsSubtitle": "Manage depth/temperature/gas units in one place."
     },
     "app": {
       "darkMode": "Dark mode",
+      "themeMode": "Theme mode",
       "language": "Language",
+      "aiSettings": "AI settings",
+      "aiSettingsSubtitle": "Manage AI summary/caption/risk explanation usage.",
       "clearCache": "Clear cache",
       "clearCacheConfirm": "Clear cached data?",
       "cacheClearedTitle": "Done",
@@ -545,7 +569,15 @@
       "bottomMenuSaved": "Bottom menu settings saved.",
       "bottomMenuRequired": "Home tab is required.",
       "bottomMenuMin": "At least 3 tabs are required.",
-      "bottomMenuMax": "You can select up to 5 tabs."
+      "bottomMenuMax": "You can select up to 5 tabs.",
+      "locationTerms": "Location Terms",
+      "communityPolicy": "Community Policy",
+      "safetyNotice": "Safety Notice",
+      "aiNotice": "AI Usage Notice",
+      "policyCenter": "Policy Center",
+      "openSourceLicenses": "Open Source Licenses",
+      "appInfo": "App Info",
+      "appInfoSubtitle": "Manage terms, policies, and customer support items."
     },
     "safety": {
       "emergencyContact": "Emergency contact",
@@ -576,7 +608,8 @@
       "resorts": "Dive resort discovery",
       "location": "Dive points on map",
       "notifications": "Latest alerts and updates",
-      "admin": "Operational dashboard"
+      "admin": "Operational dashboard",
+      "app_info": "Terms, policy, support"
     }
   },
   "pages": {

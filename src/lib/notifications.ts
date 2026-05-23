@@ -3,9 +3,10 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { apiClient } from './api';
 import { analytics } from './analytics';
 import i18n from './i18n';
+import { registerFcmToken } from '../services/notificationService';
+import { useIntegrationStore } from '../stores/integrationStore';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -73,8 +74,17 @@ class NotificationManager {
     if (!this.pushToken) return;
 
     try {
-      await apiClient.updatePushToken(Platform.OS, this.pushToken);
+      await registerFcmToken(this.pushToken, Platform.OS);
+      useIntegrationStore.getState().updateIntegration('fcm', {
+        connected: true,
+        statusMessage: '활성',
+        lastSyncAt: new Date().toISOString(),
+      });
     } catch (error) {
+      useIntegrationStore.getState().updateIntegration('fcm', {
+        connected: false,
+        statusMessage: '토큰 등록 실패',
+      });
       console.error('Failed to register push token:', error);
     }
   }

@@ -30,6 +30,154 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+type CandidateRequest = {
+  method: 'get' | 'post' | 'patch' | 'delete';
+  path: string;
+  data?: any;
+  params?: Record<string, any>;
+  headers?: Record<string, string>;
+};
+
+const unsupportedRouteCache = new Set<string>();
+const isKnownProdApi = /api\.divergram\.com/i.test(API_ROOT);
+
+function routeCacheKey(candidate: CandidateRequest) {
+  return `${candidate.method.toUpperCase()} ${candidate.path}`;
+}
+
+function createUnsupportedFeatureError(code: string, message?: string) {
+  const error: any = new Error(message || code);
+  error.code = code;
+  error.response = {
+    status: 501,
+    data: { error: code },
+  };
+  return error;
+}
+
+async function tryCandidateRequests<T>(candidates: CandidateRequest[]): Promise<T> {
+  const pending = candidates.filter((candidate) => !unsupportedRouteCache.has(routeCacheKey(candidate)));
+  if (!pending.length) {
+    throw createUnsupportedFeatureError('candidate_routes_exhausted');
+  }
+
+  let lastError: any;
+  for (const candidate of pending) {
+    try {
+      const response = await axiosInstance.request({
+        method: candidate.method,
+        url: candidate.path,
+        data: candidate.data,
+        params: candidate.params,
+        headers: candidate.headers,
+      });
+      return response.data as T;
+    } catch (error: any) {
+      const status = Number(error?.response?.status || 0);
+      if (status === 404 || status === 405 || status === 501) {
+        unsupportedRouteCache.add(routeCacheKey(candidate));
+        lastError = error;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError || createUnsupportedFeatureError('candidate_request_failed');
+}
+
+export type ExternalProviderKey = 'garmin' | 'suunto' | 'shearwater';
+
+export type ExternalProviderAuthResult = {
+  provider: ExternalProviderKey;
+  connected: boolean;
+  accountLabel?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: string;
+  providerUserId?: string;
+  raw?: any;
+};
+
+export type CloudinarySignedUploadConfig = {
+  cloudName: string;
+  apiKey?: string;
+  timestamp: number;
+  signature: string;
+  uploadPreset?: string;
+  folder?: string;
+  resourceType?: 'image' | 'video' | 'raw' | 'auto';
+  publicId?: string;
+};
+
+export type AccountDeletionRequestResult = {
+  requested: boolean;
+  deletedImmediately: boolean;
+  status?: 'requested' | 'scheduled' | 'deleted' | 'failed';
+  gracePeriodDays?: number;
+  effectiveAt?: string;
+  message?: string;
+};
+
+function normalizeIsoDate(value: unknown): string | undefined {
+  const raw = normalizeString(value);
+  if (!raw) return undefined;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString();
+}
+
+function normalizeExternalProviderAuthResult(provider: ExternalProviderKey, payload: any): ExternalProviderAuthResult {
+  const data = payload?.data || payload;
+  const connected = Boolean(data?.connected ?? data?.success ?? data?.linked ?? data?.ok ?? true);
+  const expiresAt =
+    normalizeIsoDate(data?.expiresAt) ||
+    normalizeIsoDate(data?.accessTokenExpiresAt) ||
+    normalizeIsoDate(data?.tokenExpiresAt) ||
+    normalizeIsoDate(data?.expires_at);
+  return {
+    provider,
+    connected,
+    accountLabel: normalizeString(
+      data?.accountLabel || data?.account_name || data?.profileName || data?.displayName || data?.username || data?.email
+    ) || undefined,
+    accessToken: normalizeString(data?.accessToken || data?.access_token || data?.token || '') || undefined,
+    refreshToken: normalizeString(data?.refreshToken || data?.refresh_token || '') || undefined,
+    expiresAt,
+    providerUserId: normalizeString(data?.providerUserId || data?.provider_user_id || data?.userId || '') || undefined,
+    raw: data,
+  };
+}
+
+function normalizeAccountDeletionResult(payload: any): AccountDeletionRequestResult {
+  const data = payload?.data || payload || {};
+  const requested = Boolean(data?.requested ?? data?.ok ?? data?.success ?? true);
+  const deletedImmediately = Boolean(data?.deletedImmediately ?? data?.immediateDelete ?? data?.deleted ?? false);
+  const effectiveAt =
+    normalizeIsoDate(data?.effectiveAt) ||
+    normalizeIsoDate(data?.scheduledAt) ||
+    normalizeIsoDate(data?.deleteAt) ||
+    normalizeIsoDate(data?.deletedAt);
+  const gracePeriodDays = normalizeNumber(data?.gracePeriodDays ?? data?.grace_period_days ?? data?.grace);
+  const statusRaw = normalizeString(data?.status || (deletedImmediately ? 'deleted' : requested ? 'scheduled' : 'failed'));
+  const status: AccountDeletionRequestResult['status'] =
+    statusRaw === 'requested' || statusRaw === 'scheduled' || statusRaw === 'deleted' || statusRaw === 'failed'
+      ? statusRaw
+      : deletedImmediately
+        ? 'deleted'
+        : requested
+          ? 'scheduled'
+          : 'failed';
+
+  return {
+    requested,
+    deletedImmediately,
+    status,
+    gracePeriodDays: gracePeriodDays === undefined ? undefined : Math.max(0, Math.round(gracePeriodDays)),
+    effectiveAt,
+    message: normalizeString(data?.message || data?.detail || ''),
+  };
+}
+
 type DataFilter = {
   column: string;
   op: 'eq' | 'neq' | 'in' | 'is' | 'not' | 'ilike' | 'or';
@@ -205,11 +353,22 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
 }
 
 export const apiClient = {
-  authWithOAuth: (provider: string, accessToken: string, userInfo?: any) =>
-    axiosInstance.post('/auth/oauth', { provider, accessToken, userInfo }),
+  authWithOAuth: async (provider: string, accessToken: string, userInfo?: any) => {
+    const body = { provider, accessToken, userInfo };
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/oauth', data: body },
+      { method: 'post', path: '/auth/oauth/mobile', data: body },
+    ]);
+    return { data };
+  },
 
-  authWithOAuthMobile: (provider: string, accessToken: string, sessionDays = 7) =>
-    axiosInstance.post('/auth/oauth/mobile', { provider, accessToken, sessionDays }),
+  authWithOAuthMobile: async (provider: string, accessToken: string, sessionDays = 7) => {
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/oauth/mobile', data: { provider, accessToken, sessionDays } },
+      { method: 'post', path: '/auth/oauth', data: { provider, accessToken, sessionDays } },
+    ]);
+    return { data };
+  },
 
   linkOAuthMobile: (linkToken: string) =>
     axiosInstance.post('/auth/oauth/mobile/link', { linkToken }),
@@ -222,32 +381,212 @@ export const apiClient = {
   authWithEmailSignup: (email: string, password: string, username: string, accountType: 'personal' | 'resort' = 'personal') =>
     axiosInstance.post('/auth/signup', { email, password, username, account_type: accountType }),
 
-  deleteAccount: async () => {
-    const candidates: { method: 'delete' | 'post'; path: string }[] = [
-      { method: 'delete', path: '/auth/account' },
-      { method: 'delete', path: '/auth/me' },
-      { method: 'post', path: '/auth/account/delete' },
-    ];
-
-    for (const candidate of candidates) {
-      try {
-        if (candidate.method === 'delete') {
-          await axiosInstance.delete(candidate.path);
-        } else {
-          await axiosInstance.post(candidate.path, {});
-        }
-        return true;
-      } catch (error: any) {
-        const status = Number(error?.response?.status || 0);
-        if (status === 404 || status === 405) continue;
-        throw error;
-      }
-    }
-
-    return false;
+  connectExternalProvider: async (
+    provider: ExternalProviderKey,
+    payload?: { authCode?: string; redirectUri?: string; state?: string; accessToken?: string; refreshToken?: string }
+  ): Promise<ExternalProviderAuthResult> => {
+    const body = {
+      provider,
+      authCode: normalizeString(payload?.authCode || ''),
+      redirectUri: normalizeString(payload?.redirectUri || ''),
+      state: normalizeString(payload?.state || ''),
+      accessToken: normalizeString(payload?.accessToken || ''),
+      refreshToken: normalizeString(payload?.refreshToken || ''),
+    };
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: `/integrations/${provider}/connect`, data: body },
+      { method: 'post', path: `/dive-logs/integrations/${provider}/connect`, data: body },
+    ]);
+    return normalizeExternalProviderAuthResult(provider, data);
   },
 
-  refreshToken: (_refreshToken: string) => Promise.reject(new Error('refresh_token_not_supported')),
+  refreshExternalProviderToken: async (
+    provider: ExternalProviderKey,
+    payload?: { refreshToken?: string; accessToken?: string; providerUserId?: string }
+  ): Promise<ExternalProviderAuthResult> => {
+    const body = {
+      provider,
+      refreshToken: normalizeString(payload?.refreshToken || ''),
+      accessToken: normalizeString(payload?.accessToken || ''),
+      providerUserId: normalizeString(payload?.providerUserId || ''),
+    };
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: `/integrations/${provider}/refresh`, data: body },
+      { method: 'post', path: `/dive-logs/integrations/${provider}/refresh`, data: body },
+    ]);
+    return normalizeExternalProviderAuthResult(provider, data);
+  },
+
+  disconnectExternalProvider: async (
+    provider: ExternalProviderKey,
+    payload?: { providerUserId?: string; accessToken?: string; refreshToken?: string }
+  ) => {
+    const body = {
+      provider,
+      providerUserId: normalizeString(payload?.providerUserId || ''),
+      accessToken: normalizeString(payload?.accessToken || ''),
+      refreshToken: normalizeString(payload?.refreshToken || ''),
+    };
+    await tryCandidateRequests<any>([
+      { method: 'post', path: `/integrations/${provider}/disconnect`, data: body },
+      { method: 'post', path: `/dive-logs/integrations/${provider}/disconnect`, data: body },
+    ]);
+    return true;
+  },
+
+  getExternalProviderDiveLogs: async (
+    provider: ExternalProviderKey,
+    params?: { cursor?: string; from?: string; to?: string; limit?: number; accessToken?: string }
+  ) => {
+    const query = {
+      cursor: normalizeString(params?.cursor || ''),
+      from: normalizeString(params?.from || ''),
+      to: normalizeString(params?.to || ''),
+      limit: Number(params?.limit || 50),
+    };
+    const headers = params?.accessToken
+      ? {
+          Authorization: `Bearer ${params.accessToken}`,
+        }
+      : undefined;
+
+    const data = await tryCandidateRequests<any>([
+      { method: 'get', path: `/integrations/${provider}/logs`, params: query, headers },
+      { method: 'get', path: `/dive-logs/integrations/${provider}`, params: query, headers },
+    ]);
+
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.logs)) return data.logs;
+    if (Array.isArray(data?.items)) return data.items;
+    return [];
+  },
+
+  requestCloudinarySignedUpload: async (payload: {
+    resourceType: 'image' | 'video' | 'raw' | 'auto';
+    fileName?: string;
+    folder?: string;
+    mimeType?: string;
+  }): Promise<CloudinarySignedUploadConfig> => {
+    const body = {
+      resourceType: payload.resourceType,
+      fileName: normalizeString(payload.fileName || ''),
+      folder: normalizeString(payload.folder || ''),
+      mimeType: normalizeString(payload.mimeType || ''),
+    };
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/media/cloudinary/sign-upload', data: body },
+      { method: 'post', path: '/upload/signature', data: body },
+    ]);
+
+    const row = data?.data || data || {};
+    const timestamp = normalizeNumber(row?.timestamp) || Math.floor(Date.now() / 1000);
+    const signature = normalizeString(row?.signature || '');
+    if (!signature) throw new Error('cloudinary_signature_missing');
+    return {
+      cloudName: normalizeString(row?.cloudName || row?.cloud_name || process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME),
+      apiKey: normalizeString(row?.apiKey || row?.api_key || ''),
+      timestamp: Math.round(timestamp),
+      signature,
+      uploadPreset: normalizeString(row?.uploadPreset || row?.upload_preset || ''),
+      folder: normalizeString(row?.folder || body.folder || ''),
+      publicId: normalizeString(row?.publicId || row?.public_id || ''),
+      resourceType:
+        row?.resourceType === 'image' || row?.resourceType === 'video' || row?.resourceType === 'raw' || row?.resourceType === 'auto'
+          ? row.resourceType
+          : payload.resourceType,
+    };
+  },
+
+  getNotificationSetting: async () => {
+    return tryCandidateRequests<any>([
+      { method: 'get', path: '/notifications/settings' },
+      { method: 'get', path: '/push/settings' },
+    ]);
+  },
+
+  updateNotificationSetting: async (setting: any) => {
+    return tryCandidateRequests<any>([
+      { method: 'patch', path: '/notifications/settings', data: setting },
+      { method: 'patch', path: '/push/settings', data: setting },
+    ]);
+  },
+
+  sendPushTest: async (payload?: { title?: string; body?: string; data?: Record<string, any> }) => {
+    const body = {
+      title: normalizeString(payload?.title || 'Divergram Test'),
+      body: normalizeString(payload?.body || 'Push test message'),
+      data: payload?.data || {},
+    };
+    return tryCandidateRequests<any>([
+      { method: 'post', path: '/push/test', data: body },
+    ]);
+  },
+
+  requestAccountDeletion: async (payload?: { reason?: string; feedback?: string }) => {
+    const body = {
+      reason: normalizeString(payload?.reason || 'user_requested'),
+      feedback: normalizeString(payload?.feedback || ''),
+    };
+    if (isKnownProdApi) {
+      const me = await apiClient.getMe().catch(() => null);
+      const userId = normalizeString(me?.id || '');
+      if (!userId) throw createUnsupportedFeatureError('account_deletion_endpoint_unavailable');
+
+      const now = new Date();
+      const gracePeriodDays = 7;
+      const effectiveAt = new Date(now.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
+      const reason =
+        body.feedback.length > 0
+          ? `account_delete_request:${body.reason}:${body.feedback.slice(0, 180)}`
+          : `account_delete_request:${body.reason}`;
+
+      await dataApi.insert('reports', [
+        {
+          user_id: userId,
+          reason,
+          status: 'requested',
+          created_at: now.toISOString(),
+        },
+      ]);
+
+      return {
+        requested: true,
+        deletedImmediately: false,
+        status: 'requested',
+        gracePeriodDays,
+        effectiveAt,
+        message: 'account_delete_request_created',
+      } satisfies AccountDeletionRequestResult;
+    }
+
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/account/delete-request', data: body },
+      { method: 'delete', path: '/auth/account' },
+    ]);
+    return normalizeAccountDeletionResult(data);
+  },
+
+  deleteAccount: async () => {
+    try {
+      const result = await apiClient.requestAccountDeletion({ reason: 'user_requested' });
+      return Boolean(result.requested || result.deletedImmediately);
+    } catch (error: any) {
+      const status = Number(error?.response?.status || 0);
+      if (status === 404 || status === 405 || status === 501) return false;
+      throw error;
+    }
+  },
+
+  refreshToken: async (refreshToken: string) => {
+    if (isKnownProdApi) throw createUnsupportedFeatureError('auth_refresh_endpoint_unavailable');
+    const token = normalizeString(refreshToken);
+    if (!token) throw new Error('refresh_token_missing');
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/refresh', data: { refreshToken: token } },
+    ]);
+    return data?.data || data;
+  },
 
   getSession: () => axiosInstance.get('/auth/session').then((res) => res.data?.session || null),
 
@@ -613,6 +952,52 @@ export const apiClient = {
     return created;
   },
 
+  submitModerationReport: async (payload: {
+    targetType: 'user' | 'post' | 'comment' | 'dive_log' | 'media';
+    targetId: string;
+    reason: string;
+    detail?: string;
+    userId?: string;
+  }) => {
+    const targetType = normalizeString(payload.targetType || '');
+    const targetId = normalizeString(payload.targetId || '');
+    const reason = normalizeString(payload.reason || '');
+    const detail = normalizeString(payload.detail || '');
+    const userId = normalizeString(payload.userId || '');
+    if (!targetType || !targetId || !reason) throw new Error('invalid_report_payload');
+    const allowedTargetTypes = new Set(['user', 'post', 'comment', 'dive_log', 'media']);
+    if (!allowedTargetTypes.has(targetType)) throw new Error('invalid_report_target_type');
+    const allowedReasons = new Set([
+      'sexual_content',
+      'violence',
+      'hate',
+      'misinformation',
+      'dangerous_behavior',
+      'copyright',
+      'impersonation',
+      'spam',
+    ]);
+    if (!allowedReasons.has(reason)) throw new Error('invalid_report_reason');
+    const packedReason = [
+      `target_type=${targetType}`,
+      `target_id=${targetId}`,
+      `reason=${reason}`,
+      detail ? `detail=${detail.slice(0, 400)}` : '',
+    ]
+      .filter(Boolean)
+      .join(' | ');
+    const [created] = await dataApi.insert<any>('reports', [
+      {
+        post_id: targetType === 'post' ? targetId : null,
+        user_id: userId || null,
+        reason: packedReason,
+        status: 'open',
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    return created;
+  },
+
   getSavedFeed: async (userId: string) => {
     const uid = normalizeString(userId);
     if (!uid) return [];
@@ -754,8 +1139,17 @@ export const apiClient = {
     return { created: createdPosts.length };
   },
 
-  updatePushToken: (platform: string, token: string) =>
-    axiosInstance.post('/push/tokens', { platform, push_token: token }),
+  updatePushToken: async (platform: string, token: string) => {
+    const payload = {
+      platform: normalizeString(platform || ''),
+      push_token: normalizeString(token || ''),
+      token: normalizeString(token || ''),
+    };
+    return tryCandidateRequests<any>([
+      { method: 'post', path: '/push/tokens', data: payload },
+      { method: 'post', path: '/notifications/token', data: payload },
+    ]);
+  },
 
   getFeed: async (cursor: string | null = null) => {
     const pageSize = 10;

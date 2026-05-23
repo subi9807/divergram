@@ -20,6 +20,25 @@ export type AppRouteId =
   | 'logs'
   | 'devices'
   | 'profile_edit'
+  | 'dive_log_management'
+  | 'dive_log_detail'
+  | 'dive_log_edit'
+  | 'integration_settings'
+  | 'marine_weather'
+  | 'bluetooth_devices'
+  | 'certifications'
+  | 'notification_settings'
+  | 'ai_settings'
+  | 'policy_center'
+  | 'policy_document'
+  | 'terms_policy'
+  | 'privacy_policy'
+  | 'location_policy'
+  | 'community_policy'
+  | 'safety_disclaimer'
+  | 'ai_usage_policy'
+  | 'open_source_licenses'
+  | 'app_info'
   | 'settings_detail'
   | 'auth_tutorial'
   | 'auth_welcome'
@@ -57,6 +76,25 @@ export const appSitemap: AppRoute[] = [
   { id: 'logs', path: '/(tabs)/logs', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: true },
   { id: 'devices', path: '/(tabs)/devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
   { id: 'profile_edit', path: '/(tabs)/profile-edit', titleKey: 'tabs.profileEdit', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_log_management', path: '/(tabs)/dive-log-management', titleKey: 'settingsPage.diving.diveLogManagement', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_log_detail', path: '/(tabs)/dive-log-detail', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_log_edit', path: '/(tabs)/dive-log-edit', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: false },
+  { id: 'integration_settings', path: '/(tabs)/integration-settings', titleKey: 'settingsPage.sections.account', section: 'tabs', visibleInTabBar: false },
+  { id: 'marine_weather', path: '/(tabs)/marine-weather', titleKey: 'settingsPage.notifications.weatherAlert', section: 'tabs', visibleInTabBar: false },
+  { id: 'bluetooth_devices', path: '/(tabs)/bluetooth-devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
+  { id: 'certifications', path: '/(tabs)/certifications', titleKey: 'settingsPage.diving.certifications', section: 'tabs', visibleInTabBar: false },
+  { id: 'notification_settings', path: '/(tabs)/notification-settings', titleKey: 'settingsPage.sections.notifications', section: 'tabs', visibleInTabBar: false },
+  { id: 'ai_settings', path: '/(tabs)/ai-settings', titleKey: 'settingsPage.sections.app', section: 'tabs', visibleInTabBar: false },
+  { id: 'policy_center', path: '/(tabs)/policy-center', titleKey: 'settingsPage.app.policyCenter', section: 'tabs', visibleInTabBar: false },
+  { id: 'policy_document', path: '/(tabs)/policy-document', titleKey: 'settingsPage.app.policyCenter', section: 'tabs', visibleInTabBar: false },
+  { id: 'terms_policy', path: '/(tabs)/terms-policy', titleKey: 'settingsPage.app.terms', section: 'tabs', visibleInTabBar: false },
+  { id: 'privacy_policy', path: '/(tabs)/privacy-policy', titleKey: 'settingsPage.app.privacyPolicy', section: 'tabs', visibleInTabBar: false },
+  { id: 'location_policy', path: '/(tabs)/location-policy', titleKey: 'settingsPage.app.locationTerms', section: 'tabs', visibleInTabBar: false },
+  { id: 'community_policy', path: '/(tabs)/community-policy', titleKey: 'settingsPage.app.communityPolicy', section: 'tabs', visibleInTabBar: false },
+  { id: 'safety_disclaimer', path: '/(tabs)/safety-disclaimer', titleKey: 'settingsPage.app.safetyNotice', section: 'tabs', visibleInTabBar: false },
+  { id: 'ai_usage_policy', path: '/(tabs)/ai-usage-policy', titleKey: 'settingsPage.app.aiNotice', section: 'tabs', visibleInTabBar: false },
+  { id: 'open_source_licenses', path: '/(tabs)/open-source-licenses', titleKey: 'settingsPage.app.openSourceLicenses', section: 'tabs', visibleInTabBar: false },
+  { id: 'app_info', path: '/(tabs)/app-info', titleKey: 'settingsPage.app.appInfo', section: 'tabs', visibleInTabBar: false },
   { id: 'settings_detail', path: '/(tabs)/settings-detail', titleKey: 'tabs.settings', section: 'tabs', visibleInTabBar: false },
   { id: 'auth_tutorial', path: '/(auth)/tutorial', titleKey: 'welcome.getStarted', section: 'auth' },
   { id: 'auth_welcome', path: '/(auth)/welcome', titleKey: 'auth.welcome', section: 'auth' },

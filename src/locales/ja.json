@@ -90,11 +90,11 @@
   },
   "tabs": {
     "feed": "フィード",
-    "logs": "ダイブログ",
-    "devices": "デバイス",
+    "logs": "ログ作成",
+    "devices": "ダイブコンピュータ",
     "profile": "プロフィール",
     "settings": "設定",
-    "home": "ホーム",
+    "home": "フィード",
     "explore": "探索",
     "resorts": "リゾート",
     "reels": "リール",
@@ -166,7 +166,7 @@
     }
   },
   "logs": {
-    "title": "ダイブログ",
+    "title": "ログ作成",
     "subtitle": "私のダイビング記録",
     "create": "作成",
     "createFirst": "最初のログを作成",
@@ -447,11 +447,11 @@
     },
     "tabSubtitles": {
       "profile": "プロフィールとアカウント情報をすっきり管理します。",
-      "account": "ソーシャル連携、ログイン端末、アカウント保護を設定します。",
+      "account": "ソーシャル連携、ダイブコンピュータ、アカウント保護を設定します。",
       "notifications": "必要な通知だけを正確に受け取りましょう。",
       "privacy": "プロフィール、投稿、ログの公開範囲を制御します。",
-      "diving": "ダイビングタイプと単位を活動スタイルに合わせて設定します。",
-      "app": "言語、テーマ、ポリシー、サポート項目を管理します。",
+      "diving": "単位・器材・連携・ポイント設定を管理します。",
+      "app": "言語、テーマ、AI、キャッシュ、下部メニューを管理します。",
       "safety": "緊急連絡先と安全共有オプションを設定します。"
     },
     "common": {
@@ -475,6 +475,15 @@
       "tempUnit": {
         "c": "℃",
         "f": "℉"
+      },
+      "gasUnit": {
+        "bar": "bar",
+        "psi": "psi"
+      },
+      "theme": {
+        "system": "システム",
+        "dark": "ダーク",
+        "light": "ライト"
       }
     },
     "profile": {
@@ -491,19 +500,23 @@
       "googleLink": "Google ログイン連携",
       "appleLink": "Apple ログイン連携",
       "kakaoLink": "Kakao ログイン連携",
-      "devices": "ログイン端末管理",
+      "devices": "ダイブコンピュータ管理",
       "deleteAccount": "アカウント削除",
       "deleteConfirm": "アカウント削除は取り消せません。続行しますか？",
       "socialSubtitle": "ソーシャル連携でログインの利便性と安全性を高めます。",
       "linkAction": "連携する",
-      "devicesSubtitle": "現在ログイン中の端末を確認・管理します。",
-      "deleteSubtitle": "アカウント削除は復旧できません。"
+      "devicesSubtitle": "Garmin/Suunto/Shearwater の接続と同期を管理します。",
+      "deleteSubtitle": "アカウント削除は復旧できません。",
+      "deleteTextLink": "Divergram 退会"
     },
     "notifications": {
       "likes": "いいね通知",
       "comments": "コメント通知",
       "follows": "フォロー通知",
       "events": "イベント通知",
+      "detail": "通知詳細設定",
+      "detailSubtitle": "天気と同期関連の通知を個別設定します。",
+      "weatherAlert": "海洋天気警告",
       "pushAll": "プッシュ通知全体",
       "pushAllSubtitle": "アプリ通知を一括でオン/オフします。"
     },
@@ -515,18 +528,29 @@
       "blockedUsers": "ブロックユーザー管理"
     },
     "diving": {
-      "diveType": "ダイビングタイプ選択",
       "certifications": "資格管理",
       "certificationsSubtitle": "保有資格と現在レベルを更新します。",
       "equipment": "器材情報登録",
+      "integration": "外部サービス連携",
+      "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater の状態を管理します。",
+      "marineWeather": "海洋天気",
+      "marineWeatherSubtitle": "ポイント別の波・潮流・水温を確認します。",
       "region": "活動地域設定",
       "points": "関心ダイビングポイント",
+      "diveLogManagement": "DiveLog管理",
+      "diveLogManagementSubtitle": "外部連携ログ、同期状態、編集待機ログを管理します。",
       "depthUnit": "水深単位設定",
-      "tempUnit": "水温単位設定"
+      "tempUnit": "水温単位設定",
+      "gasUnit": "ガス圧単位設定",
+      "unitSettings": "単位設定",
+      "unitSettingsSubtitle": "水深/水温/ガス単位を一括で設定します。"
     },
     "app": {
       "darkMode": "ダークモード",
+      "themeMode": "テーマモード",
       "language": "言語設定",
+      "aiSettings": "AI設定",
+      "aiSettingsSubtitle": "AI要約/キャプション/危険度説明の利用を管理します。",
       "clearCache": "キャッシュ削除",
       "clearCacheConfirm": "キャッシュを削除しますか？",
       "cacheClearedTitle": "完了",
@@ -545,7 +569,15 @@
       "bottomMenuSaved": "下部メニュー構成を保存しました。",
       "bottomMenuRequired": "ホームメニューは必須です。",
       "bottomMenuMin": "下部メニューは最低3個必要です。",
-      "bottomMenuMax": "下部メニューは最大5個まで選択できます。"
+      "bottomMenuMax": "下部メニューは最大5個まで選択できます。",
+      "locationTerms": "位置情報利用規約",
+      "communityPolicy": "コミュニティ運営ポリシー",
+      "safetyNotice": "安全に関する告知",
+      "aiNotice": "AI機能案内",
+      "policyCenter": "ポリシー文書センター",
+      "openSourceLicenses": "オープンソースライセンス",
+      "appInfo": "アプリ情報",
+      "appInfoSubtitle": "利用規約・ポリシー・サポート項目を管理します。"
     },
     "safety": {
       "emergencyContact": "緊急連絡先登録",
@@ -576,7 +608,8 @@
       "resorts": "ダイビングリゾート探索",
       "location": "地図でポイント確認",
       "notifications": "最新通知と更新情報",
-      "admin": "運用専用ページ"
+      "admin": "運用専用ページ",
+      "app_info": "規約・ポリシー・サポート"
     }
   },
   "pages": {

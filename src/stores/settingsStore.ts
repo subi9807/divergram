@@ -15,9 +15,9 @@ const zustandStorage = {
   },
 };
 
-export type BottomTabRoute = 'index' | 'explore' | 'location' | 'logs' | 'profile' | 'messages' | 'notifications' | 'saved' | 'resorts';
+export type BottomTabRoute = 'index' | 'explore' | 'location' | 'logs' | 'profile' | 'messages' | 'notifications' | 'resorts';
 
-export const bottomTabCandidates: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'saved', 'resorts'];
+export const bottomTabCandidates: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'resorts'];
 export const bottomTabDefault: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile'];
 
 function normalizeBottomTabItems(input: BottomTabRoute[]): BottomTabRoute[] {
@@ -71,10 +71,15 @@ interface SettingsState {
   preferredDiveType: 'scuba' | 'freediving' | 'snorkeling';
   depthUnit: 'm' | 'ft';
   temperatureUnit: 'c' | 'f';
+  gasPressureUnit: 'bar' | 'psi';
   units: 'metric' | 'imperial';
   defaultDiveMode: 'recreational' | 'technical';
 
   emergencyShareEnabled: boolean;
+  aiSummaryEnabled: boolean;
+  aiPointRecommendEnabled: boolean;
+  aiCaptionEnabled: boolean;
+  aiRiskDescriptionEnabled: boolean;
   bottomTabItems: BottomTabRoute[];
 
   updateLanguage: (language: 'ko' | 'en' | 'ja' | 'zh') => void;
@@ -83,6 +88,8 @@ interface SettingsState {
     key: 'pushNotifications' | 'likeNotifications' | 'commentNotifications' | 'followNotifications' | 'eventNotifications' | 'diveAlerts' | 'communityUpdates',
     value: boolean
   ) => void;
+  updateAllNotifications: (value: boolean) => void;
+  setPushNotificationMaster: (value: boolean) => void;
   updatePrivacySetting: (
     key: 'profilePublic' | 'locationSharing' | 'locationTracking' | 'analyticsEnabled',
     value: boolean
@@ -93,6 +100,11 @@ interface SettingsState {
   updatePreferredDiveType: (value: 'scuba' | 'freediving' | 'snorkeling') => void;
   updateDepthUnit: (value: 'm' | 'ft') => void;
   updateTemperatureUnit: (value: 'c' | 'f') => void;
+  updateGasPressureUnit: (value: 'bar' | 'psi') => void;
+  updateAiSetting: (
+    key: 'aiSummaryEnabled' | 'aiPointRecommendEnabled' | 'aiCaptionEnabled' | 'aiRiskDescriptionEnabled',
+    value: boolean
+  ) => void;
   updateBottomTabItems: (items: BottomTabRoute[]) => void;
   resetSettings: () => void;
 }
@@ -116,9 +128,14 @@ const defaultSettings = {
   preferredDiveType: 'scuba' as const,
   depthUnit: 'm' as const,
   temperatureUnit: 'c' as const,
+  gasPressureUnit: 'bar' as const,
   units: 'metric' as const,
   defaultDiveMode: 'recreational' as const,
   emergencyShareEnabled: false,
+  aiSummaryEnabled: true,
+  aiPointRecommendEnabled: true,
+  aiCaptionEnabled: true,
+  aiRiskDescriptionEnabled: true,
   bottomTabItems: bottomTabDefault,
 };
 
@@ -131,7 +148,56 @@ export const useSettingsStore = create<SettingsState>()(
       
       updateTheme: (theme) => set({ theme }),
 
-      updateNotificationSetting: (key, value) => set({ [key]: value }),
+      updateNotificationSetting: (key, value) =>
+        set((state) => {
+          if (key === 'pushNotifications') {
+            return {
+              pushNotifications: value,
+              likeNotifications: value,
+              commentNotifications: value,
+              followNotifications: value,
+              eventNotifications: value,
+              diveAlerts: value,
+              communityUpdates: value,
+            };
+          }
+
+          const nextLike = key === 'likeNotifications' ? value : state.likeNotifications;
+          const nextComment = key === 'commentNotifications' ? value : state.commentNotifications;
+          const nextFollow = key === 'followNotifications' ? value : state.followNotifications;
+          const nextEvent = key === 'eventNotifications' ? value : state.eventNotifications;
+          const nextDiveAlerts = key === 'diveAlerts' ? value : state.diveAlerts;
+          const nextCommunityUpdates = key === 'communityUpdates' ? value : state.communityUpdates;
+          const allEnabled =
+            nextLike &&
+            nextComment &&
+            nextFollow &&
+            nextEvent &&
+            nextDiveAlerts &&
+            nextCommunityUpdates;
+          return {
+            likeNotifications: nextLike,
+            commentNotifications: nextComment,
+            followNotifications: nextFollow,
+            eventNotifications: nextEvent,
+            diveAlerts: nextDiveAlerts,
+            communityUpdates: nextCommunityUpdates,
+            pushNotifications: allEnabled,
+          };
+        }),
+
+      updateAllNotifications: (value) =>
+        set(() => ({
+          pushNotifications: value,
+          likeNotifications: value,
+          commentNotifications: value,
+          followNotifications: value,
+          eventNotifications: value,
+          diveAlerts: value,
+          communityUpdates: value,
+        })),
+
+      setPushNotificationMaster: (value) => set({ pushNotifications: value }),
 
       updatePrivacySetting: (key, value) => set({ [key]: value }),
 
@@ -146,6 +212,10 @@ export const useSettingsStore = create<SettingsState>()(
       updateDepthUnit: (value) => set({ depthUnit: value, units: value === 'm' ? 'metric' : 'imperial' }),
 
       updateTemperatureUnit: (value) => set({ temperatureUnit: value }),
+
+      updateGasPressureUnit: (value) => set({ gasPressureUnit: value }),
+
+      updateAiSetting: (key, value) => set({ [key]: value }),
 
       updateBottomTabItems: (items) => set({ bottomTabItems: normalizeBottomTabItems(items) }),
 

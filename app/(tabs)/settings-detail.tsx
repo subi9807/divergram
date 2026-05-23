@@ -23,6 +23,7 @@ type DetailMode =
   | 'account-delete'
   | 'blocked-users'
   | 'customer-center'
+  | 'unit-settings'
   | 'emergency-contact'
   | 'safety-guide'
   | 'insurance'
@@ -36,6 +37,7 @@ function asMode(value: string): DetailMode {
     'account-delete',
     'blocked-users',
     'customer-center',
+    'unit-settings',
     'emergency-contact',
     'safety-guide',
     'insurance',
@@ -67,8 +69,14 @@ export default function SettingsDetailScreen() {
   const setInsuranceInfo = useSettingsFeatureStore((state) => state.setInsuranceInfo);
 
   const emergencyShareEnabled = useSettingsStore((state) => state.emergencyShareEnabled);
+  const depthUnit = useSettingsStore((state) => state.depthUnit);
+  const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
+  const gasPressureUnit = useSettingsStore((state) => state.gasPressureUnit);
   const bottomTabItems = useSettingsStore((state) => state.bottomTabItems);
   const updateSafetySetting = useSettingsStore((state) => state.updateSafetySetting);
+  const updateDepthUnit = useSettingsStore((state) => state.updateDepthUnit);
+  const updateTemperatureUnit = useSettingsStore((state) => state.updateTemperatureUnit);
+  const updateGasPressureUnit = useSettingsStore((state) => state.updateGasPressureUnit);
   const updateBottomTabItems = useSettingsStore((state) => state.updateBottomTabItems);
 
   const [busy, setBusy] = useState(false);
@@ -113,6 +121,7 @@ export default function SettingsDetailScreen() {
     if (mode === 'account-delete') return t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('settingsPage.app.customerCenter', { defaultValue: '고객센터' });
+    if (mode === 'unit-settings') return t('settingsPage.diving.unitSettings', { defaultValue: '단위 설정' });
     if (mode === 'bottom-menu') return t('settingsPage.app.bottomMenuManager', { defaultValue: '하단메뉴 관리' });
     if (mode === 'emergency-contact') return t('settingsPage.safety.emergencyContact', { defaultValue: '비상 연락처 등록' });
     if (mode === 'safety-guide') return t('settingsPage.safety.guide', { defaultValue: '다이빙 안전 가이드 보기' });
@@ -124,6 +133,7 @@ export default function SettingsDetailScreen() {
     if (mode === 'account-delete') return t('settingsPage.account.deleteSubtitle', { defaultValue: '계정 삭제는 복구할 수 없습니다.' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('pages.report.subtitle', { defaultValue: '서비스 문제를 남겨주세요' });
+    if (mode === 'unit-settings') return t('settingsPage.diving.unitSettingsSubtitle', { defaultValue: '수심/수온/기체 단위를 한 곳에서 설정하세요.' });
     if (mode === 'bottom-menu') return t('settingsPage.app.bottomMenuManagerSubtitle', { defaultValue: '하단 탭 구성과 순서를 변경합니다.' });
     if (mode === 'emergency-contact') return t('settingsPage.safety.emergencyShare', { defaultValue: '긴급 상황 공유 설정' });
     if (mode === 'safety-guide') return t('settingsPage.safety.guide', { defaultValue: '다이빙 안전 가이드 보기' });
@@ -208,25 +218,49 @@ export default function SettingsDetailScreen() {
           onPress: async () => {
             setBusy(true);
             try {
-              const deleted = await apiClient.deleteAccount();
+              let result;
+              try {
+                result = await apiClient.requestAccountDeletion({ reason: 'user_requested' });
+              } catch (requestError: any) {
+                const status = Number(requestError?.response?.status || 0);
+                if (status === 404 || status === 405 || status === 501) {
+                  const deleted = await apiClient.deleteAccount();
+                  result = {
+                    requested: deleted,
+                    deletedImmediately: deleted,
+                    status: deleted ? 'deleted' : 'failed',
+                  };
+                } else {
+                  throw requestError;
+                }
+              }
+              if (!result?.requested && !result?.deletedImmediately) {
+                throw new Error('account_delete_not_supported');
+              }
               logout();
               router.replace('/(auth)/login');
+              const scheduleHint =
+                result.effectiveAt && !result.deletedImmediately
+                  ? `\n${new Date(result.effectiveAt).toLocaleString()}`
+                  : '';
               showToast({
-                type: deleted ? 'success' : 'info',
+                type: result.deletedImmediately ? 'success' : 'info',
                 title: t('common.done', { defaultValue: '완료' }),
-                message: deleted
+                message: result.deletedImmediately
                   ? t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' })
-                  : t('settingsPage.common.comingSoonBody', {
-                      defaultValue: '서버 계정 삭제 API가 없어 앱 세션만 정리되었습니다.',
-                      feature: t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' }),
-                    }),
+                  : result.gracePeriodDays
+                    ? `삭제 요청이 접수되었습니다. ${result.gracePeriodDays}일 후 삭제됩니다.${scheduleHint}`
+                    : `삭제 요청이 접수되었습니다.${scheduleHint}`,
               });
             } catch (error: any) {
               const message = String(error?.response?.data?.error || error?.message || '').trim();
               showToast({
                 type: 'error',
                 title: t('auth.error', { defaultValue: '오류' }),
-                message: message || t('settingsPage.account.deleteConfirm', { defaultValue: '계정 삭제 처리에 실패했습니다.' }),
+                message:
+                  message === 'account_delete_not_supported'
+                    ? t('settingsPage.account.deleteUnsupported', { defaultValue: '현재 서버에서 계정 삭제 API를 지원하지 않습니다. 고객센터로 문의해주세요.' })
+                    : message || t('settingsPage.account.deleteConfirm', { defaultValue: '계정 삭제 처리에 실패했습니다.' }),
               });
             } finally {
               setBusy(false);
@@ -323,7 +357,6 @@ export default function SettingsDetailScreen() {
     profile: appRouteMap.profile.titleKey,
     messages: appRouteMap.messages.titleKey,
     notifications: appRouteMap.notifications.titleKey,
-    saved: appRouteMap.saved.titleKey,
     resorts: appRouteMap.resorts.titleKey,
   };
 
@@ -630,6 +663,71 @@ export default function SettingsDetailScreen() {
                 <TouchableOpacity activeOpacity={0.86} onPress={saveBottomMenu} className="flex-1 rounded-xl bg-brand-600 px-3 py-3">
                   <Text className="text-center text-sm font-semibold text-white">{t('pages.profileEdit.save', { defaultValue: '변경사항 저장' })}</Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+
+          {mode === 'unit-settings' ? (
+            <View className="rounded-3xl border border-surface-200 bg-white p-4">
+              <Text className="mb-2 text-xs font-semibold text-surface-500">{t('settingsPage.diving.unitSettings', { defaultValue: '단위 설정' })}</Text>
+              <View className="rounded-2xl border border-surface-200 bg-surface-50 p-3">
+                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.depthUnit', { defaultValue: '수심 단위' })}</Text>
+                <View className="mt-2 flex-row">
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateDepthUnit('m')}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'm' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'm' ? 'text-white' : 'text-surface-700'}`}>m</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateDepthUnit('ft')}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'ft' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'ft' ? 'text-white' : 'text-surface-700'}`}>ft</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="mt-3 rounded-2xl border border-surface-200 bg-surface-50 p-3">
+                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.tempUnit', { defaultValue: '수온 단위' })}</Text>
+                <View className="mt-2 flex-row">
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateTemperatureUnit('c')}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'c' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'c' ? 'text-white' : 'text-surface-700'}`}>℃</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateTemperatureUnit('f')}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'f' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'f' ? 'text-white' : 'text-surface-700'}`}>℉</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="mt-3 rounded-2xl border border-surface-200 bg-surface-50 p-3">
+                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.gasUnit', { defaultValue: '기체 단위' })}</Text>
+                <View className="mt-2 flex-row">
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateGasPressureUnit('bar')}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'bar' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'bar' ? 'text-white' : 'text-surface-700'}`}>bar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => updateGasPressureUnit('psi')}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'psi' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                  >
+                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'psi' ? 'text-white' : 'text-surface-700'}`}>psi</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ) : null}
