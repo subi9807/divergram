@@ -132,6 +132,22 @@ export function generateThumbnail(videoUrl: string): string {
     .replace(/\.(mp4|mov|m4v|webm)(\?.*)?$/i, '.jpg');
 }
 
-export async function deleteMedia(_url: string): Promise<void> {
-  // TODO: backend signed delete endpoint 연동
+function inferDeleteResourceType(url: string): 'image' | 'video' | 'raw' {
+  const lower = String(url || '').toLowerCase();
+  if (lower.includes('/video/upload/')) return 'video';
+  if (lower.match(/\.(mp4|mov|m4v|webm)(\?.*)?$/i)) return 'video';
+  return 'image';
+}
+
+export async function deleteMedia(url: string): Promise<void> {
+  const normalized = String(url || '').trim();
+  if (!normalized) return;
+  try {
+    await apiClient.deleteCloudinaryMedia({
+      url: normalized,
+      resourceType: inferDeleteResourceType(normalized),
+    });
+  } catch {
+    // 삭제 실패는 UX 중단 없이 무시하고, 서버 정책에 따라 정리 작업으로 위임한다.
+  }
 }

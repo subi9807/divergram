@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
@@ -9,6 +9,8 @@ import { connectShearwaterAccount, disconnectShearwaterAccount } from '../../ser
 import { connectSuuntoAccount, disconnectSuuntoAccount } from '../../services/suuntoService';
 import { appRouteMap } from '../../config/sitemap';
 import type { UserIntegration } from '../../models';
+import { apiClient } from '../../lib/api';
+import { isInstagramShareAvailable } from '../../services/instagramShareService';
 
 const integrationDisplayNameMap: Record<string, string> = {
   google_maps: 'Google Maps',
@@ -74,6 +76,7 @@ export default function IntegrationSettingsScreen() {
   const [togglingType, setTogglingType] = useState<string | null>(null);
   const [showNeedsOnly, setShowNeedsOnly] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
+  const [diagnosing, setDiagnosing] = useState(false);
 
   const isStaleIntegration = (item: UserIntegration) => {
     if (!item.connected) return false;
@@ -123,6 +126,90 @@ export default function IntegrationSettingsScreen() {
     () => items.filter((item) => managedConnectionTypes.has(item.type) && item.connected && isFailureStatus(item.statusMessage)),
     [items]
   );
+  const lastDiagnosticAt = useMemo(() => {
+    const targets = items.filter((item) => ['cloudinary', 'fcm', 'instagram_share'].includes(item.type));
+    const latestMs = targets.reduce((best, item) => {
+      const ms = Date.parse(String(item.lastSyncAt || ''));
+      if (!Number.isFinite(ms)) return best;
+      return ms > best ? ms : best;
+    }, 0);
+    if (!latestMs) return '';
+    return new Date(latestMs).toLocaleString();
+  }, [items]);
+
+  const runIntegrationDiagnostics = useCallback(
+    async (silent = false) => {
+      if (diagnosing) return;
+      setDiagnosing(true);
+      const now = new Date().toISOString();
+      try {
+        try {
+          await apiClient.getNotificationSetting();
+          updateIntegration('fcm', {
+            connected: true,
+            statusMessage: '설정 확인됨',
+            lastSyncAt: now,
+          });
+        } catch (error: any) {
+          const status = Number(error?.response?.status || 0);
+          updateIntegration('fcm', {
+            connected: false,
+            statusMessage: status === 401 ? '로그인 필요' : '설정 점검 필요',
+          });
+        }
+
+        try {
+          await apiClient.requestCloudinarySignedUpload({
+            resourceType: 'image',
+            fileName: 'integration-health-check.jpg',
+            folder: 'divergram',
+          });
+          updateIntegration('cloudinary', {
+            connected: true,
+            statusMessage: '서명 API 정상',
+            lastSyncAt: now,
+          });
+        } catch (error: any) {
+          const status = Number(error?.response?.status || 0);
+          const code = String(error?.response?.data?.error || error?.code || '').toLowerCase();
+          updateIntegration('cloudinary', {
+            connected: false,
+            statusMessage:
+              status === 401
+                ? '로그인 필요'
+                : code.includes('cloudinary_not_configured')
+                  ? '설정 필요(CLOUDINARY 키)'
+                  : '서명 API 점검 필요',
+          });
+        }
+
+        try {
+          const installed = await isInstagramShareAvailable();
+          updateIntegration('instagram_share', {
+            connected: installed,
+            statusMessage: installed ? '공유 사용 가능' : '앱 미설치(공유시트 fallback)',
+            lastSyncAt: installed ? now : undefined,
+          });
+        } catch {
+          updateIntegration('instagram_share', {
+            connected: false,
+            statusMessage: '공유 상태 점검 실패',
+          });
+        }
+
+        if (!silent) {
+          Alert.alert('상태 점검 완료', 'Cloudinary, FCM, Instagram 상태를 최신값으로 갱신했습니다.');
+        }
+      } finally {
+        setDiagnosing(false);
+      }
+    },
+    [diagnosing, updateIntegration]
+  );
+
+  useEffect(() => {
+    runIntegrationDiagnostics(true);
+  }, [runIntegrationDiagnostics]);
 
   const retryFailedManagedItems = () => {
     if (!failedManagedItems.length) {
@@ -189,6 +276,11 @@ export default function IntegrationSettingsScreen() {
           <Text style={{ marginTop: 2, color: summary.failed > 0 ? '#B91C1C' : '#64748B', fontSize: 12, fontWeight: '700' }}>
             우선 점검: 실패 {summary.failed} · 장기 미동기화 {summary.stale} · 계정연결 필요 {summary.disconnectedManaged}
           </Text>
+          {lastDiagnosticAt ? (
+            <Text style={{ marginTop: 2, color: '#64748B', fontSize: 12 }}>
+              연동 진단 최신 시각: {lastDiagnosticAt}
+            </Text>
+          ) : null}
           <TouchableOpacity
             onPress={() => setShowNeedsOnly((prev) => !prev)}
             style={{
@@ -224,6 +316,22 @@ export default function IntegrationSettingsScreen() {
             </Text>
           </TouchableOpacity>
           <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={() => runIntegrationDiagnostics(false)}
+              disabled={diagnosing}
+              style={{
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: diagnosing ? '#E2E8F0' : '#93C5FD',
+                backgroundColor: diagnosing ? '#F8FAFC' : '#EFF6FF',
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+              }}
+            >
+              <Text style={{ color: diagnosing ? '#94A3B8' : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
+                {diagnosing ? '점검중...' : '연동 상태 점검'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={retryFailedManagedItems}
               style={{

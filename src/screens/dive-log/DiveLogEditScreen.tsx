@@ -6,11 +6,48 @@ import { Image as ExpoImage } from 'expo-image';
 import { Screen } from '../../components/Screen';
 import type { DiveLogVisibilityType, MediaFile } from '../../models';
 import { useDiveLogStore } from '../../stores/diveLogStore';
-import { uploadImage, uploadVideo } from '../../services/cloudinaryService';
+import { deleteMedia, uploadImage, uploadVideo } from '../../services/cloudinaryService';
 import { generateDiveCaption, generateDiveLogSummary } from '../../services/aiService';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { storage } from '../../lib/storage';
 
 const MAX_MEDIA_COUNT = 10;
+
+type DiveLogDraftSnapshot = {
+  memo: string;
+  buddyName: string;
+  equipmentInfo: string;
+  divePointName: string;
+  visibilityType: DiveLogVisibilityType;
+  tagsInput: string;
+  media: MediaFile[];
+  entryLatInput: string;
+  entryLngInput: string;
+  exitLatInput: string;
+  exitLngInput: string;
+  visibilityMetersInput: string;
+  currentStrengthInput: string;
+  aiEnabled: boolean;
+  updatedAt: string;
+};
+
+function draftStorageKey(logId: string) {
+  return `divelog_edit_draft_${logId}`;
+}
+
+function normalizeRecoveredMedia(items: unknown): MediaFile[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((item) => item && typeof item === 'object')
+    .map((item: any) => {
+      const uploadStatus = item.uploadStatus === 'uploading' ? 'failed' : item.uploadStatus;
+      return {
+        ...item,
+        uploadStatus,
+        updatedAt: new Date().toISOString(),
+      } as MediaFile;
+    });
+}
 
 function normalizeTags(input: string): string[] {
   return input
@@ -89,6 +126,14 @@ function detectMediaUploadSource(media: MediaFile) {
   return '';
 }
 
+function shouldDeleteFromCloudinary(media: MediaFile) {
+  const url = String(media.url || '').toLowerCase();
+  if (!url) return false;
+  if (!url.includes('res.cloudinary.com/')) return false;
+  if (url.includes('res.cloudinary.com/demo/')) return false;
+  return true;
+}
+
 const visibilityLabelMap: Record<DiveLogVisibilityType, string> = {
   public: '전체 공개',
   followers: '팔로워 공개',
@@ -135,6 +180,7 @@ export default function DiveLogEditScreen() {
   const [exitLngInput, setExitLngInput] = useState(safeNumberText(log?.exitLocation?.lng));
   const [visibilityMetersInput, setVisibilityMetersInput] = useState(safeNumberText(log?.visibility));
   const [currentStrengthInput, setCurrentStrengthInput] = useState(safeNumberText(log?.currentStrength));
+  const [draftRecoveryReady, setDraftRecoveryReady] = useState(false);
 
   useEffect(() => {
     if (!log) return;
@@ -160,6 +206,65 @@ export default function DiveLogEditScreen() {
     }
     setAiEnabled((prev) => prev || aiSummaryEnabled || aiCaptionEnabled);
   }, [aiSummaryEnabled, aiCaptionEnabled]);
+
+  useEffect(() => {
+    if (!safeLogId) {
+      setDraftRecoveryReady(true);
+      return;
+    }
+    const key = draftStorageKey(safeLogId);
+    const raw = storage.getString(key);
+    if (!raw) {
+      setDraftRecoveryReady(true);
+      return;
+    }
+
+    let snapshot: DiveLogDraftSnapshot | null = null;
+    try {
+      snapshot = JSON.parse(raw) as DiveLogDraftSnapshot;
+    } catch {
+      storage.delete(key);
+      setDraftRecoveryReady(true);
+      return;
+    }
+
+    if (!snapshot || typeof snapshot !== 'object') {
+      storage.delete(key);
+      setDraftRecoveryReady(true);
+      return;
+    }
+
+    Alert.alert('임시 저장된 편집 내용', '이전에 저장하지 못한 편집 내용을 복원할까요?', [
+      {
+        text: '버리기',
+        style: 'destructive',
+        onPress: () => {
+          storage.delete(key);
+          setDraftRecoveryReady(true);
+        },
+      },
+      {
+        text: '복원',
+        onPress: () => {
+          setMemo(String(snapshot?.memo || ''));
+          setBuddyName(String(snapshot?.buddyName || ''));
+          setEquipmentInfo(String(snapshot?.equipmentInfo || ''));
+          setDivePointName(String(snapshot?.divePointName || ''));
+          setVisibilityType((['public', 'followers', 'private'] as const).includes(snapshot?.visibilityType as any) ? snapshot.visibilityType : 'followers');
+          setTagsInput(String(snapshot?.tagsInput || ''));
+          setMedia(normalizeRecoveredMedia(snapshot?.media));
+          setEntryLatInput(String(snapshot?.entryLatInput || ''));
+          setEntryLngInput(String(snapshot?.entryLngInput || ''));
+          setExitLatInput(String(snapshot?.exitLatInput || ''));
+          setExitLngInput(String(snapshot?.exitLngInput || ''));
+          setVisibilityMetersInput(String(snapshot?.visibilityMetersInput || ''));
+          setCurrentStrengthInput(String(snapshot?.currentStrengthInput || ''));
+          setAiEnabled(Boolean(snapshot?.aiEnabled));
+          setDraftRecoveryReady(true);
+        },
+      },
+    ]);
+  }, [safeLogId]);
 
   const baseline = useMemo(
     () =>
@@ -218,6 +323,51 @@ export default function DiveLogEditScreen() {
   );
 
   const hasUnsavedChanges = baseline !== draft;
+
+  useEffect(() => {
+    if (!draftRecoveryReady || !safeLogId) return;
+    const key = draftStorageKey(safeLogId);
+    if (!hasUnsavedChanges) {
+      storage.delete(key);
+      return;
+    }
+    const snapshot: DiveLogDraftSnapshot = {
+      memo,
+      buddyName,
+      equipmentInfo,
+      divePointName,
+      visibilityType,
+      tagsInput,
+      media,
+      entryLatInput,
+      entryLngInput,
+      exitLatInput,
+      exitLngInput,
+      visibilityMetersInput,
+      currentStrengthInput,
+      aiEnabled,
+      updatedAt: new Date().toISOString(),
+    };
+    storage.set(key, JSON.stringify(snapshot));
+  }, [
+    draftRecoveryReady,
+    safeLogId,
+    hasUnsavedChanges,
+    memo,
+    buddyName,
+    equipmentInfo,
+    divePointName,
+    visibilityType,
+    tagsInput,
+    media,
+    entryLatInput,
+    entryLngInput,
+    exitLatInput,
+    exitLngInput,
+    visibilityMetersInput,
+    currentStrengthInput,
+    aiEnabled,
+  ]);
 
   useEffect(() => {
     const unsub = navigation.addListener('beforeRemove', (event) => {
@@ -431,6 +581,9 @@ export default function DiveLogEditScreen() {
       ]);
       return;
     }
+    if (shouldDeleteFromCloudinary(target)) {
+      void deleteMedia(target.url || '');
+    }
     setMedia((prev) => prev.filter((item) => item.id !== mediaId));
   };
 
@@ -468,7 +621,14 @@ export default function DiveLogEditScreen() {
       {
         text: '삭제',
         style: 'destructive',
-        onPress: () => setMedia([]),
+        onPress: () => {
+          media.forEach((item) => {
+            if (shouldDeleteFromCloudinary(item)) {
+              void deleteMedia(item.url || '');
+            }
+          });
+          setMedia([]);
+        },
       },
     ]);
   };
@@ -600,6 +760,7 @@ export default function DiveLogEditScreen() {
         aiSummary: shouldGenerateSummary ? nextSummary : log?.aiSummary,
         aiCaption: shouldGenerateCaption ? nextCaption : log?.aiCaption,
       });
+      storage.delete(draftStorageKey(safeLogId));
     } catch (error: any) {
       Alert.alert('입력 확인', String(error?.message || error));
       return;

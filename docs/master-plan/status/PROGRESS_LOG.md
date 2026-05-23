@@ -369,3 +369,51 @@
   - 내용: 외부연동/알림설정/푸시테스트/Cloudinary 서명 요청에서 `isKnownProdApi` 차단 제거
 - [x] 변경 파일 eslint 재검증 통과 (API 가드 해제 반영)
   - Command: `npx eslint src/lib/api.ts`
+- [x] 연동 UX 안정화 16차 (실상태 진단 액션 추가)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `src/services/instagramShareService.ts`
+  - 내용: 외부 서비스 연동 화면에 `연동 상태 점검` 버튼/자동 점검을 추가해 Cloudinary 서명 API, FCM 알림설정 API, Instagram 설치 상태를 실제 호출로 확인하고 연동 카드 상태를 즉시 갱신
+- [x] 변경 파일 eslint 재검증 통과 (연동 진단 반영)
+  - Command: `npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/instagramShareService.ts`
+- [x] DiveLog 편집/미디어 폴리시 17차 보강 (임시저장/복원)
+  - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - 내용: 편집 중 입력 상태를 MMKV에 임시저장하고 재진입 시 복원 선택을 제공, 복원 시 `uploading` 미디어를 `failed`로 전환해 재시도 가능한 상태로 안전 복구
+- [x] 신고 흐름 안정화 14차 (동기화 대기 처리)
+  - Evidence: `src/screens/legal/ReportScreen.tsx`
+  - 내용: 신고 API가 네트워크/5xx/타임아웃 계열로 실패할 경우 로컬 저장된 신고를 유지하고 `신고 접수 완료 (동기화 대기)` 안내로 전환해 신고 유실 방지
+- [x] 변경 파일 eslint 재검증 통과 (DiveLog/Report 보강분)
+  - Command: `npx eslint src/screens/dive-log/DiveLogEditScreen.tsx src/screens/legal/ReportScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/instagramShareService.ts`
+- [x] Stormglass 위험도 로직 14차 고도화 (시간대 위험 비율 페널티)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: `horizonRiskPenalty`를 추가해 시간대 예보에서 위험/비권장 비율이 높을 때 추천점수 하향, 경고 강화, 필요 시 입수 비권장으로 강제
+- [x] 연동 UX 안정화 17차 (진단 최신 시각 노출)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약 카드에 Cloudinary/FCM/Instagram 실점검 기준 `연동 진단 최신 시각`을 표시해 운영 점검 이력을 즉시 확인 가능하게 개선
+- [x] 신고 검증 15차 보강 (저장소 레벨 정규화 중복 차단)
+  - Evidence: `src/stores/legalStore.ts`
+  - 내용: `submitReport` 중복 판정에서 대상 ID를 소문자 정규화해 대소문자 변형으로 중복 신고를 우회하는 케이스 차단
+- [x] 변경 파일 eslint 재검증 통과 (Stormglass/Integration/LegalStore 보강분)
+  - Command: `npx eslint src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/stores/legalStore.ts src/screens/dive-log/DiveLogEditScreen.tsx src/screens/legal/ReportScreen.tsx src/services/instagramShareService.ts`
+- [x] Cloudinary 미디어 삭제 경로 추가 (앱+백엔드)
+  - Evidence(app): `src/lib/api.ts`, `src/services/cloudinaryService.ts`, `src/screens/dive-log/DiveLogEditScreen.tsx`
+  - Evidence(backend): `prod-server:/home/divergram/api/server/routes/media.js`
+  - 내용: `POST /api/media/cloudinary/delete` API를 추가하고, DiveLog 편집 화면에서 개별/전체 미디어 삭제 시 실업로드(Cloudinary) 항목을 signed delete 호출로 정리하도록 연결
+- [x] 백엔드 동작 검증 (prod-server 병행 점검)
+  - Command: `pm2 show divergram-api` (online)
+  - Command: `curl https://api.divergram.com/api/health` → `200`
+  - Command: `node --check /home/divergram/api/server/routes/media.js`
+  - Command: `pm2 restart divergram-api`
+  - Command: `POST /api/media/cloudinary/delete` 무인증 → `401`, 인증 호출(키 미설정) → `503 cloudinary_not_configured`
+- [x] 변경 파일 eslint 재검증 통과 (Cloudinary delete 반영분)
+  - Command: `npx eslint src/lib/api.ts src/services/cloudinaryService.ts src/screens/dive-log/DiveLogEditScreen.tsx src/services/stormglassService.ts src/screens/dive-log/IntegrationSettingsScreen.tsx src/stores/legalStore.ts`
+- [x] 운영 API 통합 스모크 스크립트 추가
+  - Evidence: `scripts/test-prod-api-integration.sh`
+  - 내용: 임시 계정 생성→토큰 기반 API 검증(`notifications/settings`, `push/test`, `media/cloudinary/sign-upload|delete`, `auth/oauth/providers|mobile`)을 1회에 수행하는 자동 점검 스크립트 추가
+- [x] 운영 API 통합 스모크 실행 (2026-05-23)
+  - Command: `./scripts/test-prod-api-integration.sh`
+  - Evidence: `NOTI_GET=200`, `NOTI_PATCH=200`, `PUSH_TEST=200`, `CLOUD_SIGN=503(cloudinary_not_configured)`, `CLOUD_DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE(invalid token)=400`
+- [x] 운영 API 인증 기본 동작 재확인
+  - Command: `curl -X POST /api/media/cloudinary/sign-upload` (no auth) → `401`
+  - Command: `curl -X POST /api/media/cloudinary/delete` (no auth) → `401`
+  - Command: `curl -X POST /api/push/test` (no auth) → `401`
+- [x] 변경 파일 eslint 재검증 통과 (2026-05-23 진행분)
+  - Command: `npx eslint src/lib/api.ts src/services/cloudinaryService.ts src/screens/dive-log/DiveLogEditScreen.tsx src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/legal/ReportScreen.tsx src/services/instagramShareService.ts src/services/stormglassService.ts src/stores/legalStore.ts`

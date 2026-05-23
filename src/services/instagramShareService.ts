@@ -16,6 +16,10 @@ async function isInstagramInstalled() {
   }
 }
 
+export async function isInstagramShareAvailable() {
+  return isInstagramInstalled();
+}
+
 export async function shareToInstagramFeed(message: string, mediaUrl?: string) {
   const shareMessage = makeShareMessage(message, mediaUrl);
   const installed = await isInstagramInstalled();

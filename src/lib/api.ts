@@ -109,6 +109,12 @@ export type CloudinarySignedUploadConfig = {
   publicId?: string;
 };
 
+export type CloudinaryDeleteResult = {
+  publicId: string;
+  result: string;
+  resourceType: 'image' | 'video' | 'raw';
+};
+
 export type AccountDeletionRequestResult = {
   requested: boolean;
   deletedImmediately: boolean;
@@ -495,6 +501,36 @@ export const apiClient = {
         row?.resourceType === 'image' || row?.resourceType === 'video' || row?.resourceType === 'raw' || row?.resourceType === 'auto'
           ? row.resourceType
           : payload.resourceType,
+    };
+  },
+
+  deleteCloudinaryMedia: async (payload: {
+    url?: string;
+    publicId?: string;
+    resourceType?: 'image' | 'video' | 'raw' | 'auto';
+    invalidate?: boolean;
+  }): Promise<CloudinaryDeleteResult> => {
+    const body = {
+      url: normalizeString(payload.url || ''),
+      publicId: normalizeString(payload.publicId || ''),
+      resourceType:
+        payload.resourceType === 'image' || payload.resourceType === 'video' || payload.resourceType === 'raw'
+          ? payload.resourceType
+          : 'image',
+      invalidate: payload.invalidate !== false,
+    };
+
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/media/cloudinary/delete', data: body },
+    ]);
+    const row = data?.data || data || {};
+    return {
+      publicId: normalizeString(row.publicId || row.public_id || ''),
+      result: normalizeString(row.result || 'ok') || 'ok',
+      resourceType:
+        row.resourceType === 'image' || row.resourceType === 'video' || row.resourceType === 'raw'
+          ? row.resourceType
+          : body.resourceType,
     };
   },
 

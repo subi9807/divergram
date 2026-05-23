@@ -60,6 +60,7 @@
   - Note: 편집 화면 미디어 업로드를 랜덤 mock 성공/실패에서 `cloudinaryService` 기반 실업로드 시도(실패 시 mock fallback)로 전환해 저장 안정성을 향상.
   - Note: 미디어 선택 CTA를 `사진/영상`, `사진만`, `영상만` 3버튼으로 분리하고 업로드 결과에 `cloudinary/mock` 소스 라벨을 노출해 편집/검수 가독성을 개선.
   - Note: DiveLog 관리 화면에 `전체/수동/연동/실패` 필터와 요약 카운트(전체/수동/연동/실패)를 추가해 운영자가 로그 상태를 빠르게 분류/점검하도록 개선.
+  - Note: DiveLog 편집 임시저장/복원을 추가해 앱 종료 후 재진입 시 편집 상태를 복원하고, 복원 시 `uploading` 상태 미디어를 `failed`로 전환해 즉시 재시도 가능하도록 안정화.
 - [x] 로그 공개 범위 설정 구현 (편집 화면)
   - Evidence: `src/screens/dive-log/DiveLogEditScreen.tsx` (`visibilityType`)
 - [x] 수동 로그 가져오기 동작 구현 (mock)
@@ -86,6 +87,7 @@
   - Note: 시간대별 파고/조류 변동폭(span) 기반 변동성 패널티를 추가해 급변 구간을 위험도/추천점수에 반영하고 관련 경고문을 제공.
   - Note: 초기 3시간 대비 후속 3시간 추천점수 하락 추세를 감지하는 `trendPenalty`를 추가해 단기 악화 예보를 점수/경고에 반영.
   - Note: 관측 시각이 2시간 이상 경과한 경우 추천점수 보정(-8)·신뢰도 강등(high→medium)·추가 경고문을 적용해 준-실시간 데이터의 과신 리스크를 완화.
+  - Note: 시간대 예보에서 `위험/비권장` 구간 비중을 계산하는 `horizonRiskPenalty`를 추가해 위험 비율이 높을 때 추천점수 하향·경고·입수 비권장을 강화.
 
 ## 4) 4단계 (외부 API 동기화)
 - [x] Garmin/Suunto/Shearwater 서비스 + 연결/해제 함수
@@ -109,6 +111,8 @@
   - Note: 동일 오류가 반복될 때 2분 이내 중복 실패 로그를 병합해(`markSyncFailure`) 연동 실패 이력 스팸을 억제.
   - Note: 연동 카드에 `동기화 경과`(분/시간/일) 배지를 추가하고, 요약 카드에 `장기 미동기화(24h+)` 집계를 노출해 운영 점검 우선순위를 강화.
   - Note: 연동 설정에 `장기 미동기화만 보기(24h+)` 필터를 추가해 stale 항목만 빠르게 추출할 수 있도록 점검 UX를 보강.
+  - Note: 연동 설정 화면에 `연동 상태 점검` 진단 액션을 추가해 Cloudinary 서명 API/FCM 설정 API/Instagram 설치 상태를 실점검하고 카드 상태(`connected/statusMessage/lastSyncAt`)에 즉시 반영.
+  - Note: 연동 요약 카드에 `연동 진단 최신 시각`을 노출해 운영자가 마지막 실점검 시점을 빠르게 확인하도록 개선.
 
 ## 5) 5단계 (Bluetooth BLE)
 - [x] BLE service + adapter 인터페이스/브랜드 어댑터 골격
@@ -124,21 +128,26 @@
   - Note: 전체 동기화 실행 전 `동기화 대상 없음` 가드를 추가하고, 상단에 연동/등록/대상 개수 요약을 표시해 운영자 판단을 지원.
 
 ## 6) 6단계 (Cloudinary + FCM + Instagram)
-- [~] Cloudinary signed upload + fallback
+- [x] Cloudinary signed upload + fallback
   - Evidence: `src/services/cloudinaryService.ts`, `src/lib/api.ts`
+  - Evidence: `prod-server:/home/divergram/api/server/routes/media.js` (`POST /api/media/cloudinary/sign-upload`, `POST /api/media/cloudinary/delete`)
   - Note: `DiveLogEditScreen`에서 선택 미디어 업로드 시 `uploadImage/uploadVideo`를 즉시 호출하도록 연결(실패 시 fallback URL 사용).
+  - Note: Cloudinary 미디어 삭제 API(`deleteCloudinaryMedia`)를 추가하고 DiveLog 편집 화면에서 개별/전체 미디어 삭제 시 실업로드 미디어를 백엔드 서명 삭제 경로로 정리하도록 연결.
 - [x] Notification service 확장 (설정 조회/저장 + 토큰 등록 + 테스트 전송 API 경로)
   - Evidence: `src/services/notificationService.ts`, `src/lib/notifications.ts`, `src/lib/api.ts`
 - [x] 알림 상세 설정 화면(mock)
   - Evidence: `src/screens/dive-log/NotificationSettingsScreen.tsx`, `app/(tabs)/notification-settings.tsx`
   - Note: 상세 알림 목록에서 `자격증 인증 상태`, `Bluetooth 연결 오류` 항목 제거(미노출) 및 전체 토글 계산을 노출 항목 기준으로 재정렬.
   - Note: 동기화 알림 3종(`dive_schedule`, `sync_complete`, `sync_failed`)을 그룹 동기화 처리해 토글 상태가 서로 어긋나지 않도록 안정화.
-- [~] Instagram 공유 service 골격
+- [x] Instagram 공유 service 골격
   - Evidence: `src/services/instagramShareService.ts`
   - Note: 피드 공유 액션(`src/features/feed/FeedPost.tsx`)에서 `shareToInstagramFeed`를 사용하도록 연결해 앱 미설치 시 시스템 공유 fallback 안내까지 동작하도록 개선.
+  - Note: `isInstagramShareAvailable`를 노출해 연동 설정 화면의 공유 가능 상태 진단에 재사용.
 - [x] 외부 서비스 연동 상태 화면(mock)
   - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `app/(tabs)/integration-settings.tsx`
-- [ ] 실 업로드/푸시/공유 연동 완료
+- [~] 실 업로드/푸시/공유 연동 완료
+  - Evidence: `scripts/test-prod-api-integration.sh` + `2026-05-23` 실행 결과 (`NOTI_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503 cloudinary_not_configured`)
+  - Note: 업로드/푸시/공유 API 경로는 운영서버 기준 동작 검증 완료. 실제 전송은 운영 키(Cloudinary/Push provider) 설정 후 활성화된다.
 
 ## 7) 7단계 (OpenAI)
 - [~] AI service 연동 + 실패 fallback
@@ -181,6 +190,8 @@
   - Note: 과도한 동일문자 반복 입력 차단과 24시간 신고 건수 상한(20건) 검증을 추가해 남용 패턴을 완화.
   - Note: 대상 ID 최대 길이(64자)와 동일 대상 연속 신고 30초 쿨다운을 추가해 자동화/과다 제출 패턴을 추가 완화.
   - Note: `사용자` 대상 신고에서 본인 계정 ID를 신고 대상으로 제출하는 케이스를 사전 차단해 잘못된 자가 신고 입력을 방지.
+  - Note: 신고 API 실패(네트워크/5xx/타임아웃 계열) 시 로컬 신고 저장분을 유지하고 `동기화 대기` 안내로 전환해 신고 유실을 방지.
+  - Note: 저장소 레벨 중복 신고 검증(`submitReport`)에서 대상 ID를 소문자 정규화해 대소문자 우회 중복 신고를 차단.
 
 ## 10) 자격증 관리
 - [x] 자격증 관리 화면(mock)
@@ -197,7 +208,9 @@
   - Evidence: local `curl` checks (`/api/health`, `/api/auth/oauth/providers`, `/api/auth/oauth/mobile`, `/api/push/tokens`, `/api/media/cloudinary/sign-upload`, `/api/auth/account/delete-request`, `/api/notifications/settings`, `/api/auth/refresh`)
 - [!] 전체 tsc 검증은 기존 레거시/웹 백업 코드 오류로 블로킹
   - Evidence: local command run (`npx tsc --noEmit`) failed in unrelated files (`src/`, `src.bak.*`, `capacitor` related)
-- [ ] 통합 시나리오 테스트 (로그 연동, BLE, 날씨, AI, 설정)
+- [~] 통합 시나리오 테스트 (로그 연동, BLE, 날씨, AI, 설정)
+  - Evidence: `scripts/test-prod-api-integration.sh` (인증 생성→알림설정 조회/저장→푸시 테스트→Cloudinary 서명/삭제→OAuth providers/mobile 실패 경로 검증)
+  - Note: 외부 키 미제공 항목(Cloudinary 실제 업로드, FCM/APNS 발송, 외부 API 실데이터)은 환경키 연결 후 최종 E2E 재검증이 필요.
 
 ## 12) 운영 API 정합화 (2026-05-23)
 - [x] 운영 서버 실 라우트 재확인(SSH) 및 앱 API 경로 정합화
@@ -221,6 +234,7 @@
 - [x] Cloudinary 서명 업로드 API 라우트 추가
   - Evidence: `prod-server:/home/divergram/api/server/routes/media.js`
   - Evidence: `prod-server:/home/divergram/api/server/index.js` (`registerMediaRoutes`)
+  - Note: Cloudinary 삭제 라우트(`POST /api/media/cloudinary/delete`)를 추가해 앱에서 업로드된 미디어를 signed destroy 방식으로 정리 가능하도록 확장.
 - [x] 앱 API 클라이언트의 prod 차단 가드 해제(신규 백엔드 라우트 사용)
   - Evidence: `src/lib/api.ts` (`connectExternalProvider`, `refreshExternalProviderToken`, `disconnectExternalProvider`, `getExternalProviderDiveLogs`, `requestCloudinarySignedUpload`, `getNotificationSetting`, `updateNotificationSetting`, `sendPushTest`)
 - [x] 운영 스모크 검증(인증 포함)

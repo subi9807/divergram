@@ -69,6 +69,14 @@ function formatReportError(error: any) {
   return message || '알 수 없는 오류';
 }
 
+function shouldQueueReportSync(error: any) {
+  const status = Number(error?.response?.status || 0);
+  if (!status) return true;
+  if (status >= 500) return true;
+  if (status === 408 || status === 429) return true;
+  return false;
+}
+
 function validateTargetIdByType(targetType: ReportTargetType, targetId: string) {
   const value = targetId.trim();
   if (value.length < 2) return '대상 ID를 입력해주세요.';
@@ -221,6 +229,7 @@ export default function ReportScreen() {
     const normalizedTargetId = targetId.trim();
 
     setSubmitting(true);
+    let localSaved = false;
     try {
       submitReport({
         reporterUserId: user.id,
@@ -229,6 +238,7 @@ export default function ReportScreen() {
         reason,
         detail: detail.trim() || undefined,
       });
+      localSaved = true;
 
       await apiClient.submitModerationReport({
         targetType,
@@ -243,6 +253,15 @@ export default function ReportScreen() {
         { text: '확인', onPress: () => router.back() },
       ]);
     } catch (error: any) {
+      if (localSaved && shouldQueueReportSync(error)) {
+        setLastSubmittedAt(Date.now());
+        Alert.alert(
+          '신고 접수 완료 (동기화 대기)',
+          '네트워크 또는 서버 상태로 즉시 동기화되지 않았습니다. 신고 내용은 앱에 보관되며 이후 동기화됩니다.',
+          [{ text: '확인', onPress: () => router.back() }]
+        );
+        return;
+      }
       Alert.alert('신고 실패', formatReportError(error));
     } finally {
       setSubmitting(false);

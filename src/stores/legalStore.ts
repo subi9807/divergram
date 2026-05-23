@@ -47,6 +47,10 @@ function makeId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function normalizeReportTargetId(value: string) {
+  return String(value || '').trim().toLowerCase();
+}
+
 function pickModerationStatusByReason(reason: ReportReason): ModerationStatus {
   if (reason === 'sexual_content' || reason === 'violence' || reason === 'hate') return 'suspended';
   if (reason === 'dangerous_behavior' || reason === 'impersonation') return 'temporary_limit';
@@ -113,10 +117,11 @@ export const useLegalStore = create<LegalStoreState>()(
       submitReport: ({ reporterUserId, targetType, targetId, reason, detail }) => {
         const nowMs = Date.now();
         const normalizedTargetId = String(targetId).trim();
+        const dedupeTargetId = normalizeReportTargetId(normalizedTargetId);
         const recentDuplicate = get().reports.find((item) => {
           if (item.reporterUserId !== reporterUserId) return false;
           if (item.targetType !== targetType) return false;
-          if (String(item.targetId).trim() !== normalizedTargetId) return false;
+          if (normalizeReportTargetId(String(item.targetId)) !== dedupeTargetId) return false;
           if (item.reason !== reason) return false;
           const createdMs = Date.parse(item.createdAt || '');
           if (!Number.isFinite(createdMs)) return false;
