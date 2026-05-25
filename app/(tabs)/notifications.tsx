@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { PermissionGate } from '../../src/components/PermissionGate';
 import { notificationSamples } from '../../src/mock/menuSamples';
+import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 
 export default function NotificationsScreen() {
   const { t } = useTranslation();
+  const { isDark } = useResolvedTheme();
   const [rows, setRows] = useState(notificationSamples);
   const unread = useMemo(() => rows.filter((row) => row.unread).length, [rows]);
 
@@ -23,10 +25,13 @@ export default function NotificationsScreen() {
           <View className="px-5 pb-4 pt-4">
             <View className="flex-row items-center justify-between">
               <View>
-                <Text className="text-2xl font-bold text-surface-900">{t('tabs.notifications')}</Text>
-                <Text className="mt-1 text-surface-500">{t('pages.notifications.subtitle')}</Text>
+                <Text className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('tabs.notifications')}</Text>
+                <Text className="mt-1 text-surface-500 dark:text-surface-400">{t('pages.notifications.subtitle')}</Text>
               </View>
-              <TouchableOpacity className="rounded-full bg-brand-600 px-4 py-2" onPress={() => setRows((prev) => prev.map((r) => ({ ...r, unread: false })))}>
+              <TouchableOpacity
+                className="rounded-full bg-brand-600 px-4 py-2 dark:bg-brand-500"
+                onPress={() => setRows((prev) => prev.map((r) => ({ ...r, unread: false })))}
+              >
                 <Text className="text-xs font-semibold text-white">{t('pages.notifications.markAll')}</Text>
               </TouchableOpacity>
             </View>
@@ -44,16 +49,16 @@ export default function NotificationsScreen() {
             {rows.map((row) => {
               const Icon = row.type === 'like' ? Heart : row.type === 'follow' ? UserPlus : Bell;
               return (
-                <View key={row.id} className={`mb-3 rounded-3xl border bg-white p-4 shadow-sm shadow-surface-200 ${row.unread ? 'border-brand-200' : 'border-surface-200'}`}>
+                <View key={row.id} className={`mb-3 rounded-3xl border bg-white p-4 shadow-sm shadow-surface-200 dark:bg-[#0f1b2a] ${row.unread ? 'border-brand-200 dark:border-[#2f5475]' : 'border-surface-200 dark:border-[#243447]'}`}>
                   <View className="flex-row items-center">
-                    <View className={`h-11 w-11 items-center justify-center rounded-2xl ${row.unread ? 'bg-brand-50' : 'bg-surface-100'}`}>
-                      <Icon size={18} color={row.unread ? '#0d5fa8' : '#334155'} />
+                    <View className={`h-11 w-11 items-center justify-center rounded-2xl ${row.unread ? 'bg-brand-50 dark:bg-[#1d3550]' : 'bg-surface-100 dark:bg-[#18283a]'}`}>
+                      <Icon size={18} color={row.unread ? '#0d5fa8' : isDark ? '#c6d3e0' : '#334155'} />
                     </View>
                     <View className="ml-3 flex-1">
-                      <Text className="text-sm text-surface-700">{row.text}</Text>
-                      <Text className="mt-1 text-xs text-surface-400">{row.when}</Text>
+                      <Text className="text-sm text-surface-700 dark:text-surface-200">{row.text}</Text>
+                      <Text className="mt-1 text-xs text-surface-400 dark:text-[#8ea4ba]">{row.when}</Text>
                     </View>
-                    {row.unread ? <View className="h-2.5 w-2.5 rounded-full bg-brand-500" /> : <CheckCircle2 size={16} color="#9ca3af" />}
+                    {row.unread ? <View className="h-2.5 w-2.5 rounded-full bg-brand-500" /> : <CheckCircle2 size={16} color={isDark ? '#8ea4ba' : '#9ca3af'} />}
                   </View>
                 </View>
               );

@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cn } from '../../lib/utils';
+import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 
 interface ProfileAvatarProps {
   user: {
@@ -13,6 +14,7 @@ interface ProfileAvatarProps {
 }
 
 export function ProfileAvatar({ user, size = 'medium', className }: ProfileAvatarProps) {
+  const { isDark } = useResolvedTheme();
   const sizeClasses = {
     small: 'w-8 h-8',
     medium: 'w-12 h-12',
@@ -29,7 +31,7 @@ export function ProfileAvatar({ user, size = 'medium', className }: ProfileAvata
     return (
       <Image
         source={{ uri: user.avatar }}
-        className={cn(sizeClasses[size], 'rounded-full border border-surface-200', className)}
+        className={cn(sizeClasses[size], 'rounded-full border', isDark ? 'border-[#2d4155]' : 'border-surface-200', className)}
       />
     );
   }

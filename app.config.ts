@@ -39,15 +39,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.divergram.app',
+      bundleIdentifier: 'com.divergram.app.ios',
       buildNumber: '1',
       infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
         NSLocationAlwaysAndWhenInUseUsageDescription: '백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.',
         NSPhotoLibraryUsageDescription: '사진 GPS 정보를 읽어 다이빙 포인트를 자동으로 설정합니다.',
         NSPhotoLibraryAddUsageDescription: '다이빙 로그 저장을 위해 사진 접근이 필요합니다.',
         NSBluetoothAlwaysUsageDescription: '다이빙 장비와의 연결을 위해 블루투스 권한이 필요합니다.',
         NSBluetoothPeripheralUsageDescription: '다이빙 디바이스와의 데이터 교환을 위해 블루투스 권한이 필요합니다.',
+        UIBackgroundModes: ['fetch', 'remote-notification'],
         CFBundleURLTypes: [
           {
             CFBundleURLName: 'divergram-app',

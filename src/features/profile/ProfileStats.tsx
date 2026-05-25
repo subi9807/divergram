@@ -23,8 +23,8 @@ export function ProfileStats({ profile, loading }: ProfileStatsProps) {
         <View className="flex-row justify-between">
           {[1, 2, 3].map((i) => (
             <View key={i} className="items-center">
-              <View className="mb-2 h-6 w-12 rounded bg-surface-200" />
-              <View className="h-4 w-16 rounded bg-surface-200" />
+              <View className="mb-2 h-6 w-12 rounded bg-surface-200 dark:bg-surface-700" />
+              <View className="h-4 w-16 rounded bg-surface-200 dark:bg-surface-700" />
             </View>
           ))}
         </View>
@@ -54,12 +54,12 @@ export function ProfileStats({ profile, loading }: ProfileStatsProps) {
     <Card className="mb-5 p-0">
       <View className="flex-row items-center justify-between">
         {items.map((item, index) => (
-          <View key={item.label} className={`flex-1 items-center px-2 py-4 ${index < items.length - 1 ? 'border-r border-surface-200' : ''}`}>
-            <View className="mb-2 h-8 w-8 items-center justify-center rounded-full bg-brand-50">
+          <View key={item.label} className={`flex-1 items-center px-2 py-4 ${index < items.length - 1 ? 'border-r border-surface-200 dark:border-[#2d4155]' : ''}`}>
+            <View className="mb-2 h-8 w-8 items-center justify-center rounded-full bg-brand-50 dark:bg-[#1d3550]">
               <item.icon size={16} color="#0d5fa8" />
             </View>
-            <Text className="text-[22px] font-bold text-surface-900">{item.value}</Text>
-            <Text className="mt-1 text-xs text-surface-600">{item.label}</Text>
+            <Text className="text-[22px] font-bold text-surface-900 dark:text-surface-50">{item.value}</Text>
+            <Text className="mt-1 text-xs text-surface-600 dark:text-surface-400">{item.label}</Text>
           </View>
         ))}
       </View>

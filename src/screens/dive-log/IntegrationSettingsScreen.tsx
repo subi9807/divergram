@@ -13,6 +13,7 @@ import { apiClient } from '../../lib/api';
 import { isInstagramShareAvailable } from '../../services/instagramShareService';
 import { flushPendingMediaDeletes, getPendingDeleteCount } from '../../services/cloudinaryService';
 import { checkAiHealth } from '../../services/aiService';
+import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 
 const integrationDisplayNameMap: Record<string, string> = {
   google_maps: 'Google Maps',
@@ -73,6 +74,7 @@ function priorityScore(item: UserIntegration) {
 
 export default function IntegrationSettingsScreen() {
   const router = useRouter();
+  const { isDark } = useResolvedTheme();
   const integrations = useIntegrationStore((state) => state.integrations);
   const syncFailures = useIntegrationStore((state) => state.syncFailures);
   const clearSyncFailures = useIntegrationStore((state) => state.clearSyncFailures);
@@ -86,6 +88,30 @@ export default function IntegrationSettingsScreen() {
   const [lastDiagnosticRunMs, setLastDiagnosticRunMs] = useState(0);
   const [diagnosticSummary, setDiagnosticSummary] = useState('');
   const [diagnosticNowMs, setDiagnosticNowMs] = useState(Date.now());
+  const colors = useMemo(
+    () => ({
+      title: isDark ? '#F1F5F9' : '#0F172A',
+      subtitle: isDark ? '#9FB3C8' : '#64748B',
+      cardBg: isDark ? '#0F1B2A' : '#ffffff',
+      cardBorder: isDark ? '#2A3E52' : '#D7E4F1',
+      cardTitle: isDark ? '#E2E8F0' : '#0F172A',
+      cardText: isDark ? '#C5D4E2' : '#475569',
+      muted: isDark ? '#8FA5BC' : '#64748B',
+      filterBorder: isDark ? '#2A3E52' : '#CBD5E1',
+      filterBg: isDark ? '#0F1B2A' : '#ffffff',
+      emptyText: isDark ? '#9FB3C8' : '#64748B',
+      failureWrapBg: isDark ? '#2A151B' : '#FFF5F5',
+      failureWrapBorder: isDark ? '#5B2A33' : '#FECACA',
+      failureItemBg: isDark ? '#1D1217' : '#ffffff',
+      failureItemBorder: isDark ? '#4B222B' : '#FEE2E2',
+      failureTitle: isDark ? '#FCA5A5' : '#991B1B',
+      failureText: isDark ? '#FCA5A5' : '#991B1B',
+      neutralBtnBg: isDark ? '#172534' : '#F8FAFC',
+      neutralBtnBorder: isDark ? '#334155' : '#E2E8F0',
+      neutralBtnText: isDark ? '#B6C6D8' : '#64748B',
+    }),
+    [isDark]
+  );
 
   const isStaleIntegration = (item: UserIntegration) => {
     if (!item.connected) return false;
@@ -374,20 +400,20 @@ export default function IntegrationSettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: '#0F172A' }}>외부 서비스 연동</Text>
-        <Text style={{ marginTop: 8, color: '#64748B' }}>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>외부 서비스 연동</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>
           지도, 날씨, 로그 연동, AI/미디어/푸시 연동 상태를 관리할 수 있습니다.
         </Text>
-        <View style={{ marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 12 }}>
-          <Text style={{ color: '#0F172A', fontWeight: '800' }}>연동 요약</Text>
-          <Text style={{ marginTop: 6, color: '#475569' }}>
+        <View style={{ marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
+          <Text style={{ color: colors.cardTitle, fontWeight: '800' }}>연동 요약</Text>
+          <Text style={{ marginTop: 6, color: colors.cardText }}>
             연결 {summary.connected}/{summary.total} · 조치 필요 {summary.needsAction} · 처리중 {summary.syncing}
           </Text>
-          <Text style={{ marginTop: 2, color: summary.failed > 0 ? '#B91C1C' : '#64748B', fontSize: 12, fontWeight: '700' }}>
+          <Text style={{ marginTop: 2, color: summary.failed > 0 ? '#B91C1C' : colors.muted, fontSize: 12, fontWeight: '700' }}>
             우선 점검: 실패 {summary.failed} · 장기 미동기화 {summary.stale} · 계정연결 필요 {summary.disconnectedManaged}
           </Text>
           {lastDiagnosticAt ? (
-            <Text style={{ marginTop: 2, color: '#64748B', fontSize: 12 }}>
+            <Text style={{ marginTop: 2, color: colors.muted, fontSize: 12 }}>
               연동 진단 최신 시각: {lastDiagnosticAt}
             </Text>
           ) : null}
@@ -408,13 +434,13 @@ export default function IntegrationSettingsScreen() {
               alignSelf: 'flex-start',
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: showNeedsOnly ? '#0D5FA8' : '#CBD5E1',
-              backgroundColor: showNeedsOnly ? '#EAF4FF' : '#fff',
+              borderColor: showNeedsOnly ? '#0D5FA8' : colors.filterBorder,
+              backgroundColor: showNeedsOnly ? '#EAF4FF' : colors.filterBg,
               paddingHorizontal: 12,
               paddingVertical: 7,
             }}
           >
-            <Text style={{ color: showNeedsOnly ? '#0D5FA8' : '#475569', fontWeight: '700' }}>
+            <Text style={{ color: showNeedsOnly ? '#0D5FA8' : colors.cardText, fontWeight: '700' }}>
               {showNeedsOnly ? '전체 보기' : '조치 필요만 보기'}
             </Text>
           </TouchableOpacity>
@@ -425,13 +451,13 @@ export default function IntegrationSettingsScreen() {
               alignSelf: 'flex-start',
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: showStaleOnly ? '#B45309' : '#CBD5E1',
-              backgroundColor: showStaleOnly ? '#FFF7ED' : '#fff',
+              borderColor: showStaleOnly ? '#B45309' : colors.filterBorder,
+              backgroundColor: showStaleOnly ? '#FFF7ED' : colors.filterBg,
               paddingHorizontal: 12,
               paddingVertical: 7,
             }}
           >
-            <Text style={{ color: showStaleOnly ? '#B45309' : '#475569', fontWeight: '700' }}>
+            <Text style={{ color: showStaleOnly ? '#B45309' : colors.cardText, fontWeight: '700' }}>
               {showStaleOnly ? '장기 미동기화 전체 보기' : '장기 미동기화만 보기(24h+)'}
             </Text>
           </TouchableOpacity>
@@ -442,13 +468,13 @@ export default function IntegrationSettingsScreen() {
                 style={{
                   borderRadius: 10,
                   borderWidth: 1,
-                  borderColor: diagnosing || diagnosticCooldownSec > 0 ? '#E2E8F0' : '#93C5FD',
-                  backgroundColor: diagnosing || diagnosticCooldownSec > 0 ? '#F8FAFC' : '#EFF6FF',
+                  borderColor: diagnosing || diagnosticCooldownSec > 0 ? colors.neutralBtnBorder : '#93C5FD',
+                  backgroundColor: diagnosing || diagnosticCooldownSec > 0 ? colors.neutralBtnBg : '#EFF6FF',
                   paddingHorizontal: 10,
                   paddingVertical: 7,
                 }}
               >
-                <Text style={{ color: diagnosing || diagnosticCooldownSec > 0 ? '#94A3B8' : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
+                <Text style={{ color: diagnosing || diagnosticCooldownSec > 0 ? colors.neutralBtnText : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
                   {diagnosing ? '점검중...' : diagnosticCooldownSec > 0 ? `연동 상태 점검 (${diagnosticCooldownSec}s)` : '연동 상태 점검'}
                 </Text>
               </TouchableOpacity>
@@ -457,13 +483,13 @@ export default function IntegrationSettingsScreen() {
               style={{
                 borderRadius: 10,
                 borderWidth: 1,
-                borderColor: failedManagedItems.length ? '#FECACA' : '#E2E8F0',
-                backgroundColor: failedManagedItems.length ? '#FFF1F2' : '#F8FAFC',
+                borderColor: failedManagedItems.length ? '#FECACA' : colors.neutralBtnBorder,
+                backgroundColor: failedManagedItems.length ? '#FFF1F2' : colors.neutralBtnBg,
                 paddingHorizontal: 10,
                 paddingVertical: 7,
               }}
             >
-              <Text style={{ color: failedManagedItems.length ? '#B91C1C' : '#64748B', fontWeight: '700', fontSize: 12 }}>
+              <Text style={{ color: failedManagedItems.length ? '#B91C1C' : colors.neutralBtnText, fontWeight: '700', fontSize: 12 }}>
                 실패 항목 재요청 ({failedManagedItems.length})
               </Text>
             </TouchableOpacity>
@@ -512,17 +538,17 @@ export default function IntegrationSettingsScreen() {
         </View>
         <View style={{ marginTop: 16 }}>
           {syncFailures.length ? (
-            <View style={{ marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FFF5F5', padding: 12 }}>
+            <View style={{ marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.failureWrapBorder, backgroundColor: colors.failureWrapBg, padding: 12 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: '#991B1B', fontWeight: '800' }}>최근 동기화 실패</Text>
+                <Text style={{ color: colors.failureTitle, fontWeight: '800' }}>최근 동기화 실패</Text>
                 <TouchableOpacity onPress={clearSyncFailures}>
                   <Text style={{ color: '#B91C1C', fontSize: 12, fontWeight: '700' }}>기록 비우기</Text>
                 </TouchableOpacity>
               </View>
               {syncFailures.slice(0, 3).map((row) => (
-                <View key={row.id} style={{ marginTop: 8, borderRadius: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: '#FEE2E2', padding: 8 }}>
-                  <Text style={{ color: '#7F1D1D', fontWeight: '700', fontSize: 12 }}>{integrationDisplayNameMap[row.integrationType] || row.integrationType}</Text>
-                  <Text style={{ marginTop: 2, color: '#991B1B', fontSize: 12 }}>{row.message}</Text>
+                <View key={row.id} style={{ marginTop: 8, borderRadius: 10, backgroundColor: colors.failureItemBg, borderWidth: 1, borderColor: colors.failureItemBorder, padding: 8 }}>
+                  <Text style={{ color: colors.failureTitle, fontWeight: '700', fontSize: 12 }}>{integrationDisplayNameMap[row.integrationType] || row.integrationType}</Text>
+                  <Text style={{ marginTop: 2, color: colors.failureText, fontSize: 12 }}>{row.message}</Text>
                 </View>
               ))}
             </View>
@@ -612,8 +638,8 @@ export default function IntegrationSettingsScreen() {
             />
           ))}
           {displayItems.length === 0 ? (
-            <View style={{ borderRadius: 14, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 14 }}>
-              <Text style={{ color: '#64748B' }}>현재 조치가 필요한 연동 항목이 없습니다.</Text>
+            <View style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
+              <Text style={{ color: colors.emptyText }}>현재 조치가 필요한 연동 항목이 없습니다.</Text>
             </View>
           ) : null}
         </View>

@@ -13,10 +13,14 @@ export function Card({ children, className, elevated = true }: CardProps) {
   const { isDark } = useResolvedTheme();
   return (
     <View
-      style={[elevated ? styles.elevated : undefined, isDark ? styles.dark : undefined]}
+      style={[
+        styles.base,
+        isDark ? styles.baseDark : styles.baseLight,
+        elevated ? styles.elevated : undefined,
+        isDark ? styles.dark : undefined,
+      ]}
       className={cn(
-        'rounded-3xl border border-surface-100 bg-white/95',
-        isDark ? 'border-surface-700 bg-surface-900/95' : undefined,
+        'rounded-3xl',
         className
       )}
     >
@@ -26,6 +30,17 @@ export function Card({ children, className, elevated = true }: CardProps) {
 }
 
 const styles = StyleSheet.create({
+  base: {
+    borderWidth: 1,
+  },
+  baseLight: {
+    borderColor: '#e6edf6',
+    backgroundColor: '#ffffff',
+  },
+  baseDark: {
+    borderColor: '#243447',
+    backgroundColor: '#0f1b2a',
+  },
   elevated: {
     shadowColor: '#0d5fa8',
     shadowOffset: { width: 0, height: 10 },

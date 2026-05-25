@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, ShieldCheck } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
-import { requestCoreRuntimePermissions } from '../../src/lib/runtimePermissions';
+import { requestCoreRuntimePermissionsOnce } from '../../src/lib/runtimePermissions';
 import { markTutorialCompleted } from '../../src/lib/tutorial';
 
 const heroImage = {
@@ -41,19 +41,23 @@ export default function TutorialScreen() {
     router.replace('/');
   };
 
+  const completeWithPermissions = async () => {
+    setRequesting(true);
+    try {
+      await requestCoreRuntimePermissionsOnce();
+    } finally {
+      setRequesting(false);
+      completeTutorial();
+    }
+  };
+
   const handleNext = async () => {
     if (!isLast) {
       setStep((prev) => prev + 1);
       return;
     }
 
-    setRequesting(true);
-    try {
-      await requestCoreRuntimePermissions();
-    } finally {
-      setRequesting(false);
-      completeTutorial();
-    }
+    await completeWithPermissions();
   };
 
   return (
@@ -81,7 +85,7 @@ export default function TutorialScreen() {
           </View>
 
           <View style={styles.actionRow}>
-            <TouchableOpacity activeOpacity={0.86} onPress={completeTutorial} style={styles.skipButton} disabled={requesting}>
+            <TouchableOpacity activeOpacity={0.86} onPress={completeWithPermissions} style={styles.skipButton} disabled={requesting}>
               <Text style={styles.skipText}>{t('tutorial.skip', { defaultValue: '건너뛰기' })}</Text>
             </TouchableOpacity>
 
@@ -211,4 +215,3 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
 });
-

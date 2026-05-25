@@ -18,6 +18,7 @@ const GOOGLE_CLIENT_ID_WEB = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || pro
 const AUTH_TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const AUTH_USER_KEY = 'auth_user';
+const AUTH_BOOT_TIMEOUT_MS = 10000;
 
 function toGoogleIosUrlScheme(clientId: string): string | null {
   const trimmed = clientId.trim();
@@ -26,6 +27,24 @@ function toGoogleIosUrlScheme(clientId: string): string | null {
   if (!trimmed.endsWith(suffix)) return null;
   const id = trimmed.slice(0, -suffix.length);
   return id ? `com.googleusercontent.apps.${id}` : null;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label}_timeout`));
+    }, timeoutMs);
+    promise.then(
+      (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
 }
 
 interface User {
@@ -194,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const userData = normalizeUser(await apiClient.getMe());
+      const userData = normalizeUser(await withTimeout(apiClient.getMe(), AUTH_BOOT_TIMEOUT_MS, 'auth_get_me'));
       if (userData) {
         setUser(userData);
         storage.set(AUTH_USER_KEY, JSON.stringify(userData));
@@ -207,9 +226,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const refreshToken = storage.getString(REFRESH_TOKEN_KEY);
         if (refreshToken) {
           try {
-            const refreshed = await apiClient.refreshToken(refreshToken);
+            const refreshed = await withTimeout(
+              apiClient.refreshToken(refreshToken),
+              AUTH_BOOT_TIMEOUT_MS,
+              'auth_refresh'
+            );
             persistAuthPayload(refreshed, cachedUser || undefined);
-            const userData = normalizeUser(await apiClient.getMe());
+            const userData = normalizeUser(
+              await withTimeout(apiClient.getMe(), AUTH_BOOT_TIMEOUT_MS, 'auth_get_me_after_refresh')
+            );
             if (userData) {
               setUser(userData);
               storage.set(AUTH_USER_KEY, JSON.stringify(userData));

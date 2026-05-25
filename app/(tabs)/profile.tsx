@@ -7,6 +7,7 @@ import { Screen } from '../../src/components/Screen';
 import { Card } from '../../src/components/Card';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
+import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { ProfileStats } from '../../src/features/profile/ProfileStats';
 import { ProfileAvatar } from '../../src/features/profile/ProfileAvatar';
 import { Edit3, Film, HelpCircle, MapPin, Settings, ShieldCheck, Star, Waves } from 'lucide-react-native';
@@ -98,6 +99,7 @@ export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
+  const { isDark } = useResolvedTheme();
   const { data: profile, isLoading } = useProfile();
   const [quickTab, setQuickTab] = useState<QuickTab>('favorites');
   const [visibleByTab, setVisibleByTab] = useState<Record<QuickTab, number>>({
@@ -227,6 +229,32 @@ export default function ProfileScreen() {
     if (nearBottom) loadMoreForActiveTab();
   };
 
+  const palette = useMemo(
+    () =>
+      isDark
+        ? {
+            cardBg: '#0f1b2a',
+            softBg: '#162436',
+            border: '#243447',
+            borderSoft: '#2d4155',
+            title: '#e2e8f0',
+            text: '#c7d4e1',
+            textMuted: '#8ea4ba',
+            icon: '#b8cada',
+          }
+        : {
+            cardBg: '#ffffff',
+            softBg: '#f8fbff',
+            border: '#dce8f4',
+            borderSoft: '#e3edf7',
+            title: '#0f172a',
+            text: '#324b64',
+            textMuted: '#64748b',
+            icon: '#47627c',
+          },
+    [isDark]
+  );
+
   return (
     <Screen>
       <ScrollView
@@ -237,42 +265,42 @@ export default function ProfileScreen() {
       >
         <View style={styles.pageHeader}>
           <View>
-            <Text style={styles.pageTitle}>{t('tabs.profile', { defaultValue: '프로필' })}</Text>
-            <Text style={styles.pageSubtitle}>{t('profile.summary', { defaultValue: '다이빙 활동과 계정 정보를 관리하세요.' })}</Text>
+            <Text style={[styles.pageTitle, { color: palette.title }]}>{t('tabs.profile', { defaultValue: '프로필' })}</Text>
+            <Text style={[styles.pageSubtitle, { color: palette.textMuted }]}>{t('profile.summary', { defaultValue: '다이빙 활동과 계정 정보를 관리하세요.' })}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.86}
             onPress={() => router.push(appRouteMap.settings.path as never)}
-            style={styles.headerIconButton}
+            style={[styles.headerIconButton, { borderColor: palette.border, backgroundColor: palette.cardBg }]}
           >
-            <Settings size={18} color="#2b4a67" />
+            <Settings size={18} color={palette.icon} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { borderColor: palette.border, backgroundColor: palette.cardBg }]}>
           <View style={styles.badgeRow}>
-            <View style={styles.memberBadge}>
-              <ShieldCheck size={13} color="#1d4f7a" />
-              <Text style={styles.memberBadgeText}>{t('profile.memberBadge', { defaultValue: 'Divergram Member' })}</Text>
+            <View style={[styles.memberBadge, { borderColor: palette.border, backgroundColor: palette.softBg }]}>
+              <ShieldCheck size={13} color={isDark ? '#7dd3fc' : '#1d4f7a'} />
+              <Text style={[styles.memberBadgeText, { color: isDark ? '#c7d4e1' : '#2a5479' }]}>{t('profile.memberBadge', { defaultValue: 'Divergram Member' })}</Text>
             </View>
           </View>
 
           <View style={styles.identityRow}>
             {displayAvatar ? (
-              <ProfileAvatar user={{ name: displayName, avatar: displayAvatar }} size="large" className="border border-surface-200" />
+              <ProfileAvatar user={{ name: displayName, avatar: displayAvatar }} size="large" className="border border-surface-200 dark:border-[#2d4155]" />
             ) : (
-              <View style={styles.logoFallback}>
+              <View style={[styles.logoFallback, { borderColor: palette.border, backgroundColor: palette.softBg }]}>
                 <Image source={require('../../assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
               </View>
             )}
 
             <View style={styles.identityTextWrap}>
-              <Text style={styles.displayName}>{displayName}</Text>
-              {displayHandle ? <Text style={styles.displayHandle}>{displayHandle}</Text> : null}
+              <Text style={[styles.displayName, { color: palette.title }]}>{displayName}</Text>
+              {displayHandle ? <Text style={[styles.displayHandle, { color: palette.textMuted }]}>{displayHandle}</Text> : null}
               {displayLocation ? (
                 <View style={styles.locationRow}>
-                  <MapPin size={13} color="#5f7f9d" />
-                  <Text style={styles.locationText}>{displayLocation}</Text>
+                  <MapPin size={13} color={palette.textMuted} />
+                  <Text style={[styles.locationText, { color: palette.textMuted }]}>{displayLocation}</Text>
                 </View>
               ) : null}
             </View>
@@ -281,27 +309,27 @@ export default function ProfileScreen() {
           {scubaLevelLabel || freedivingLevelLabel || diveLevelLabel ? (
             <View style={styles.levelRow}>
               {scubaLevelLabel ? (
-                <View style={styles.levelPill}>
-                  <Text style={styles.levelPillText}>{t('logsForm.diveTypes.scuba', { defaultValue: 'Scuba' })} · {scubaLevelLabel}</Text>
+                <View style={[styles.levelPill, { borderColor: palette.borderSoft, backgroundColor: palette.softBg }]}>
+                  <Text style={[styles.levelPillText, { color: isDark ? '#b9d8f4' : '#29547b' }]}>{t('logsForm.diveTypes.scuba', { defaultValue: 'Scuba' })} · {scubaLevelLabel}</Text>
                 </View>
               ) : null}
               {freedivingLevelLabel ? (
-                <View style={styles.levelPill}>
-                  <Text style={styles.levelPillText}>
+                <View style={[styles.levelPill, { borderColor: palette.borderSoft, backgroundColor: palette.softBg }]}>
+                  <Text style={[styles.levelPillText, { color: isDark ? '#b9d8f4' : '#29547b' }]}>
                     {t('logsForm.diveTypes.freediving', { defaultValue: 'Freediving' })} · {freedivingLevelLabel}
                   </Text>
                 </View>
               ) : null}
               {!scubaLevelLabel && !freedivingLevelLabel && diveLevelLabel ? (
-                <View style={styles.levelPill}>
-                  <Text style={styles.levelPillText}>{diveLevelLabel}</Text>
+                <View style={[styles.levelPill, { borderColor: palette.borderSoft, backgroundColor: palette.softBg }]}>
+                  <Text style={[styles.levelPillText, { color: isDark ? '#b9d8f4' : '#29547b' }]}>{diveLevelLabel}</Text>
                 </View>
               ) : null}
             </View>
           ) : null}
 
-          <View style={styles.bioWrap}>
-            <Text style={styles.bioText}>{displayBio}</Text>
+          <View style={[styles.bioWrap, { borderColor: palette.borderSoft, backgroundColor: palette.softBg }]}>
+            <Text style={[styles.bioText, { color: palette.text }]}>{displayBio}</Text>
           </View>
 
           <View style={styles.profileActionsRow}>
@@ -321,23 +349,27 @@ export default function ProfileScreen() {
         <Card className="mb-4 p-5">
           <View style={styles.completionHeadRow}>
             <View style={styles.completionTitleRow}>
-              <Text style={styles.sectionLabel}>{t('profile.completion.title')}</Text>
-              <TouchableOpacity activeOpacity={0.86} onPress={showCompletionTooltip} style={styles.completionHelpButton}>
-                <HelpCircle size={15} color="#4f6f8e" />
+              <Text style={[styles.sectionLabel, { color: palette.title }]}>{t('profile.completion.title')}</Text>
+              <TouchableOpacity
+                activeOpacity={0.86}
+                onPress={showCompletionTooltip}
+                style={[styles.completionHelpButton, { borderColor: palette.border, backgroundColor: palette.softBg }]}
+              >
+                <HelpCircle size={15} color={palette.icon} />
               </TouchableOpacity>
             </View>
-            <View style={styles.completionPill}>
+            <View style={[styles.completionPill, { backgroundColor: isDark ? '#1a2f45' : '#eaf3ff' }]}>
               <Text style={styles.completionPillText}>{completion}%</Text>
             </View>
           </View>
-          <View style={styles.progressTrack}>
+          <View style={[styles.progressTrack, { backgroundColor: isDark ? '#334155' : '#e2e8f0' }]}>
             <View style={[styles.progressFill, { width: `${completion}%`, backgroundColor: completionColor }]} />
           </View>
-          <Text style={styles.completionText}>{t('profile.completion.subtitle', { percent: completion })}</Text>
+          <Text style={[styles.completionText, { color: palette.textMuted }]}>{t('profile.completion.subtitle', { percent: completion })}</Text>
         </Card>
 
         <View style={styles.quickSectionWrap}>
-          <Text style={styles.quickSectionTitle}>{t('tabs.activity', { defaultValue: '내 활동' })}</Text>
+          <Text style={[styles.quickSectionTitle, { color: palette.textMuted }]}>{t('tabs.activity', { defaultValue: '내 활동' })}</Text>
           <View style={styles.quickTabsRow}>
             {quickTabMeta.map((tab, index) => {
               const Icon = tab.icon;
@@ -349,12 +381,13 @@ export default function ProfileScreen() {
                   onPress={() => setQuickTab(tab.key)}
                   style={[
                     styles.quickTabChip,
+                    { borderColor: palette.border, backgroundColor: palette.softBg },
                     active ? styles.quickTabChipActive : undefined,
                     index === quickTabMeta.length - 1 ? styles.quickTabChipLast : undefined,
                   ]}
                 >
-                  <Icon size={14} color={active ? '#fff' : '#47627c'} />
-                  <Text style={[styles.quickTabChipText, active ? styles.quickTabChipTextActive : undefined]}>{tab.label}</Text>
+                  <Icon size={14} color={active ? '#fff' : palette.icon} />
+                  <Text style={[styles.quickTabChipText, { color: palette.icon }, active ? styles.quickTabChipTextActive : undefined]}>{tab.label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -367,12 +400,12 @@ export default function ProfileScreen() {
                 activeOpacity={0.9}
                 style={[styles.gridItem, index % 3 === 2 ? styles.gridItemLastInRow : undefined]}
               >
-                <View style={styles.gridImageWrap}>
+                <View style={[styles.gridImageWrap, { borderColor: palette.border, backgroundColor: palette.softBg }]}>
                   <Image source={{ uri: item.imageUrl }} resizeMode="cover" style={styles.gridImage} />
                 </View>
                 <View style={styles.gridMetaWrap}>
-                  <Text numberOfLines={1} style={styles.gridTitle}>{item.title}</Text>
-                  <Text numberOfLines={1} style={styles.gridSubtitle}>{item.subtitle}</Text>
+                  <Text numberOfLines={1} style={[styles.gridTitle, { color: palette.title }]}>{item.title}</Text>
+                  <Text numberOfLines={1} style={[styles.gridSubtitle, { color: palette.textMuted }]}>{item.subtitle}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -380,11 +413,11 @@ export default function ProfileScreen() {
 
           {hasMore ? (
             <View style={styles.pagingHintWrap}>
-              <Text style={styles.pagingHintText}>아래로 스크롤하면 다음 15개가 자동으로 로드됩니다.</Text>
+              <Text style={[styles.pagingHintText, { color: palette.textMuted }]}>아래로 스크롤하면 다음 15개가 자동으로 로드됩니다.</Text>
             </View>
           ) : (
             <View style={styles.pagingHintWrap}>
-              <Text style={styles.pagingDoneText}>모든 항목을 표시했습니다.</Text>
+              <Text style={[styles.pagingDoneText, { color: isDark ? '#7f93aa' : '#94a3b8' }]}>모든 항목을 표시했습니다.</Text>
             </View>
           )}
         </View>

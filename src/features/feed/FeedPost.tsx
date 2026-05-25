@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -24,6 +24,7 @@ import { Bookmark, Building2, Gauge, Heart, MapPin, MessageCircle, MoreHorizonta
 import { formatDate } from '../../lib/utils';
 import { appRouteMap } from '../../config/sitemap';
 import { useAuth } from '../../hooks/useAuth';
+import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 import { useToast } from '../../components/Toast';
 import { apiClient, type FeedCommentItem, type FeedMediaItem } from '../../lib/api';
 import { shareToInstagramFeed } from '../../services/instagramShareService';
@@ -59,6 +60,7 @@ export function FeedPost({ post }: FeedPostProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { isDark } = useResolvedTheme();
   const { showToast } = useToast();
   const { width: screenWidth } = useWindowDimensions();
 
@@ -101,6 +103,20 @@ export function FeedPost({ post }: FeedPostProps) {
   const diveTypeLabel = post.diveType ? t(`logsForm.diveTypes.${post.diveType}` as any, { defaultValue: post.diveType }) : '';
   const gasTypeLabel = post.gasType ? t(`logsForm.gasTypes.${post.gasType}` as any, { defaultValue: post.gasType }) : '';
   const isOwnPost = Boolean(user?.id && post.user?.id && String(user.id) === String(post.user.id));
+  const iconColor = isDark ? '#e2e8f0' : '#1e293b';
+  const placeholderColor = isDark ? '#64748b' : '#94a3b8';
+  const modalSheetStyle = useMemo(
+    () => [styles.sheet, isDark ? styles.sheetDark : null],
+    [isDark]
+  );
+  const modalHandleStyle = useMemo(
+    () => [styles.handle, isDark ? styles.handleDark : null],
+    [isDark]
+  );
+  const modalDialogStyle = useMemo(
+    () => [styles.dialog, isDark ? styles.dialogDark : null],
+    [isDark]
+  );
 
   useEffect(() => {
     setPostContent(post.content);
@@ -413,7 +429,7 @@ export function FeedPost({ post }: FeedPostProps) {
 
   return (
     <>
-      <View className="relative mb-5 overflow-hidden border-y border-surface-200 bg-white">
+      <View className="relative mb-5 overflow-hidden border-y border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
         {menuOpen ? (
           <TouchableOpacity
             className="absolute inset-0 z-20"
@@ -436,8 +452,8 @@ export function FeedPost({ post }: FeedPostProps) {
               )}
             </TouchableOpacity>
             <TouchableOpacity className="flex-1" activeOpacity={0.86} onPress={openAuthorProfile}>
-              <Text className="font-semibold text-surface-900">{post.user.name}</Text>
-              <Text className="mt-0.5 text-sm text-surface-500">{formatDate(post.createdAt)}</Text>
+              <Text className="font-semibold text-surface-900 dark:text-surface-50">{post.user.name}</Text>
+              <Text className="mt-0.5 text-sm text-surface-500 dark:text-surface-400">{formatDate(post.createdAt)}</Text>
               {postLocation ? (
                 <TouchableOpacity activeOpacity={0.72} onPress={openLocationMap}>
                   <Text className="mt-1 text-xs font-medium text-brand-700">{postLocation}</Text>
@@ -445,28 +461,28 @@ export function FeedPost({ post }: FeedPostProps) {
               ) : null}
             </TouchableOpacity>
             <TouchableOpacity
-              className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 bg-white"
+              className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900"
               onPress={() => setMenuOpen((prev) => !prev)}
               accessibilityRole="button"
               accessibilityLabel={t('menu.more')}
             >
-              <MoreHorizontal size={19} color="#1e293b" />
+              <MoreHorizontal size={19} color={iconColor} />
             </TouchableOpacity>
           </View>
 
-          <Text className="mb-4 text-[15px] leading-6 text-surface-800">{postContent}</Text>
+          <Text className="mb-4 text-[15px] leading-6 text-surface-800 dark:text-surface-100">{postContent}</Text>
         </View>
 
         {menuOpen ? (
-          <View className="absolute right-4 top-14 z-30 w-44 overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-lg">
+          <View className="absolute right-4 top-14 z-30 w-44 overflow-hidden rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 shadow-lg">
             {menuItems.map((item, index) => (
               <View key={item.key}>
                 <TouchableOpacity className="px-4 py-3" onPress={item.onPress} accessibilityRole="button">
-                  <Text className={`text-sm ${item.tone === 'danger' ? 'font-semibold text-red-600' : 'font-medium text-surface-900'}`}>
+                  <Text className={`text-sm ${item.tone === 'danger' ? 'font-semibold text-red-600' : 'font-medium text-surface-900 dark:text-surface-50'}`}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
-                {index < menuItems.length - 1 ? <View className="h-px bg-surface-100" /> : null}
+                {index < menuItems.length - 1 ? <View className="h-px bg-surface-100 dark:bg-surface-800" /> : null}
               </View>
             ))}
           </View>
@@ -525,7 +541,7 @@ export function FeedPost({ post }: FeedPostProps) {
 
                 if (isSvg) {
                   return (
-                    <View key={media.id} style={{ height: imageHeight, width: screenWidth }} className="overflow-hidden bg-surface-50">
+                    <View key={media.id} style={{ height: imageHeight, width: screenWidth }} className="overflow-hidden bg-surface-50 dark:bg-surface-800">
                       <SvgUri uri={media.url} width="100%" height="100%" />
                     </View>
                   );
@@ -548,7 +564,7 @@ export function FeedPost({ post }: FeedPostProps) {
                 {mediaItems.map((media, index) => (
                   <View
                     key={`${media.id}-dot`}
-                    className={`mx-1 h-1.5 rounded-full ${index === mediaIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`}
+                    className={`mx-1 h-1.5 rounded-full ${index === mediaIndex ? 'w-5 bg-white dark:bg-surface-900' : 'w-1.5 bg-white dark:bg-surface-900/50'}`}
                   />
                 ))}
               </View>
@@ -577,30 +593,30 @@ export function FeedPost({ post }: FeedPostProps) {
             {post.visibility ? <MetaChip icon={Waves} text={t('feed.meta.visibility', { value: post.visibility })} /> : null}
           </View>
 
-          <View className="flex-row items-center justify-between border-t border-surface-100 pt-3">
+          <View className="flex-row items-center justify-between border-t border-surface-100 dark:border-surface-800 pt-3">
             <View className="flex-row items-center">
               <TouchableOpacity
-                className={`mr-2 h-10 flex-row items-center rounded-full px-3 ${isLiked ? 'bg-red-50' : 'bg-surface-50'}`}
+                className={`mr-2 h-10 flex-row items-center rounded-full px-3 ${isLiked ? 'bg-red-50' : 'bg-surface-50 dark:bg-surface-800'}`}
                 onPress={handleLikePress}
                 disabled={likePending || interactionLoading}
               >
-                <Heart size={19} color={isLiked ? '#dc2626' : '#1e293b'} fill={isLiked ? '#dc2626' : 'transparent'} />
-                <Text className={`ml-2 font-semibold ${isLiked ? 'text-red-600' : 'text-surface-700'}`}>{likeCount}</Text>
+                <Heart size={19} color={isLiked ? '#dc2626' : iconColor} fill={isLiked ? '#dc2626' : 'transparent'} />
+                <Text className={`ml-2 font-semibold ${isLiked ? 'text-red-600' : 'text-surface-700 dark:text-surface-200'}`}>{likeCount}</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="mr-2 h-10 flex-row items-center rounded-full bg-surface-50 px-3" onPress={openComments}>
-                <MessageCircle size={19} color="#1e293b" />
-                <Text className="ml-2 font-semibold text-surface-700">{commentCount}</Text>
+              <TouchableOpacity className="mr-2 h-10 flex-row items-center rounded-full bg-surface-50 dark:bg-surface-800 px-3" onPress={openComments}>
+                <MessageCircle size={19} color={iconColor} />
+                <Text className="ml-2 font-semibold text-surface-700 dark:text-surface-200">{commentCount}</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-surface-50" onPress={sharePost}>
-                <Send size={19} color="#1e293b" />
+              <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-surface-50 dark:bg-surface-800" onPress={sharePost}>
+                <Send size={19} color={iconColor} />
               </TouchableOpacity>
             </View>
             <TouchableOpacity
-              className={`h-10 w-10 items-center justify-center rounded-full ${isSaved ? 'bg-amber-50' : 'bg-surface-50'}`}
+              className={`h-10 w-10 items-center justify-center rounded-full ${isSaved ? 'bg-amber-50' : 'bg-surface-50 dark:bg-surface-800'}`}
               onPress={handleBookmarkPress}
               disabled={savePending || interactionLoading}
             >
-              <Bookmark size={19} color={isSaved ? '#b45309' : '#1e293b'} fill={isSaved ? '#f59e0b' : 'transparent'} />
+              <Bookmark size={19} color={isSaved ? '#b45309' : iconColor} fill={isSaved ? '#f59e0b' : 'transparent'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -609,9 +625,9 @@ export function FeedPost({ post }: FeedPostProps) {
       <Modal transparent visible={commentsOpen} animationType="slide" onRequestClose={() => setCommentsOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdrop} onPress={() => setCommentsOpen(false)} />
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text className="px-5 pb-3 text-lg font-semibold text-surface-900">
+          <View style={modalSheetStyle}>
+            <View style={modalHandleStyle} />
+            <Text className="px-5 pb-3 text-lg font-semibold text-surface-900 dark:text-surface-50">
               {t('feed.comments.title', { defaultValue: '댓글' })}
             </Text>
 
@@ -624,14 +640,14 @@ export function FeedPost({ post }: FeedPostProps) {
                 <ScrollView showsVerticalScrollIndicator={false}>
                   {comments.length ? (
                     comments.map((item) => (
-                      <View key={item.id} className="mb-3 rounded-2xl border border-surface-200 bg-surface-50 p-3">
-                        <Text className="text-sm font-semibold text-surface-900">{item.user.name}</Text>
-                        <Text className="mt-1 text-sm text-surface-700">{item.content}</Text>
-                        <Text className="mt-1 text-xs text-surface-500">{formatDate(item.createdAt)}</Text>
+                      <View key={item.id} className="mb-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-3">
+                        <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.user.name}</Text>
+                        <Text className="mt-1 text-sm text-surface-700 dark:text-surface-200">{item.content}</Text>
+                        <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{formatDate(item.createdAt)}</Text>
                       </View>
                     ))
                   ) : (
-                    <Text className="py-6 text-center text-surface-500">
+                    <Text className="py-6 text-center text-surface-500 dark:text-surface-400">
                       {t('feed.comments.empty', { defaultValue: '아직 댓글이 없습니다.' })}
                     </Text>
                   )}
@@ -644,8 +660,8 @@ export function FeedPost({ post }: FeedPostProps) {
                 value={commentDraft}
                 onChangeText={setCommentDraft}
                 placeholder={t('feed.comments.placeholder', { defaultValue: '댓글을 입력하세요' })}
-                placeholderTextColor="#94a3b8"
-                className="rounded-2xl border border-surface-200 bg-white px-4 py-3 text-surface-900"
+                placeholderTextColor={placeholderColor}
+                className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-900 dark:text-surface-50"
               />
               <TouchableOpacity
                 className={`mt-3 h-11 items-center justify-center rounded-2xl ${commentDraft.trim() ? 'bg-brand-700' : 'bg-surface-300'}`}
@@ -666,25 +682,25 @@ export function FeedPost({ post }: FeedPostProps) {
       <Modal transparent visible={editOpen} animationType="fade" onRequestClose={() => setEditOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdrop} onPress={() => setEditOpen(false)} />
-          <View style={styles.dialog}>
-            <Text className="text-lg font-semibold text-surface-900">{t('feed.menu.edit', { defaultValue: '수정' })}</Text>
+          <View style={modalDialogStyle}>
+            <Text className="text-lg font-semibold text-surface-900 dark:text-surface-50">{t('feed.menu.edit', { defaultValue: '수정' })}</Text>
             <TextInput
               value={editCaption}
               onChangeText={setEditCaption}
-              className="mt-3 min-h-28 rounded-2xl border border-surface-200 bg-white px-4 py-3 text-surface-900"
+              className="mt-3 min-h-28 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-900 dark:text-surface-50"
               multiline
               textAlignVertical="top"
             />
             <TextInput
               value={editLocation}
               onChangeText={setEditLocation}
-              className="mt-3 rounded-2xl border border-surface-200 bg-white px-4 py-3 text-surface-900"
+              className="mt-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-surface-900 dark:text-surface-50"
               placeholder={t('feed.menu.locationPlaceholder', { defaultValue: '위치' })}
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={placeholderColor}
             />
             <View className="mt-4 flex-row">
-              <TouchableOpacity className="mr-2 h-11 flex-1 items-center justify-center rounded-2xl border border-surface-200" onPress={() => setEditOpen(false)}>
-                <Text className="font-semibold text-surface-700">{t('common.cancel')}</Text>
+              <TouchableOpacity className="mr-2 h-11 flex-1 items-center justify-center rounded-2xl border border-surface-200 dark:border-surface-700" onPress={() => setEditOpen(false)}>
+                <Text className="font-semibold text-surface-700 dark:text-surface-200">{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 className={`ml-2 h-11 flex-1 items-center justify-center rounded-2xl ${editCaption.trim() ? 'bg-brand-700' : 'bg-surface-300'}`}
@@ -702,10 +718,12 @@ export function FeedPost({ post }: FeedPostProps) {
 }
 
 function MetaChip({ icon: Icon, text }: { icon: typeof MapPin; text: string }) {
+  const { isDark } = useResolvedTheme();
+  const iconColor = isDark ? '#9fb3c8' : '#4d5d6b';
   return (
-    <View className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 bg-surface-50 px-3 py-2">
-      <Icon size={14} color="#4d5d6b" />
-      <Text className="ml-1 text-xs font-medium text-surface-700">{text}</Text>
+    <View className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2">
+      <Icon size={14} color={iconColor} />
+      <Text className="ml-1 text-xs font-medium text-surface-700 dark:text-surface-200">{text}</Text>
     </View>
   );
 }
@@ -731,6 +749,9 @@ const styles = StyleSheet.create({
     maxHeight: '82%',
     paddingTop: 10,
   },
+  sheetDark: {
+    backgroundColor: '#0f1b2a',
+  },
   handle: {
     width: 46,
     height: 5,
@@ -738,6 +759,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#d8e3ef',
     alignSelf: 'center',
     marginBottom: 10,
+  },
+  handleDark: {
+    backgroundColor: '#30465f',
   },
   dialog: {
     marginHorizontal: 22,
@@ -751,5 +775,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 10 },
+  },
+  dialogDark: {
+    borderColor: '#2a3e52',
+    backgroundColor: '#0f1b2a',
+    shadowColor: '#020617',
+    shadowOpacity: 0.3,
   },
 });

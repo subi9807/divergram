@@ -301,8 +301,8 @@ export default function LogsScreen() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="px-5 pb-5 pt-4">
-          <Text className="text-2xl font-bold text-surface-900">{t('logsForm.title')}</Text>
-          <Text className="mt-1 text-surface-500">{t('logsForm.subtitle')}</Text>
+          <Text className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('logsForm.title')}</Text>
+          <Text className="mt-1 text-surface-500 dark:text-surface-400">{t('logsForm.subtitle')}</Text>
         </View>
 
         <View className="px-5 py-5">
@@ -323,7 +323,7 @@ export default function LogsScreen() {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={pickPhoto}
-            className="mb-4 flex-row items-center justify-center rounded-2xl border border-surface-200 bg-white px-4 py-4"
+            className="mb-4 flex-row items-center justify-center rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-4"
           >
             <Camera size={20} color="#0d5fa8" />
             <Text className="ml-2 font-semibold text-brand-700">
@@ -332,9 +332,9 @@ export default function LogsScreen() {
           </TouchableOpacity>
 
           {selectedMedia.length ? (
-            <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 bg-white">
+            <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
               <View className="flex-row items-center justify-between px-3 py-2">
-                <Text className="text-xs font-semibold text-surface-700">
+                <Text className="text-xs font-semibold text-surface-700 dark:text-surface-200">
                   {t('logsForm.photo.selectedCount', { defaultValue: '{{count}}개 선택됨', count: selectedMedia.length })}
                 </Text>
                 <TouchableOpacity
@@ -350,7 +350,7 @@ export default function LogsScreen() {
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 8 }}>
                 {selectedMedia.map((item, index) => (
-                  <View key={`${item.uri}-${index}`} className="mr-2 h-28 w-28 overflow-hidden rounded-xl border border-surface-200 bg-surface-50">
+                  <View key={`${item.uri}-${index}`} className="mr-2 h-28 w-28 overflow-hidden rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
                     {item.type === 'image' ? (
                       <Image source={{ uri: item.uri }} className="h-full w-full" resizeMode="cover" />
                     ) : (
@@ -363,22 +363,22 @@ export default function LogsScreen() {
                 ))}
               </ScrollView>
               <View className="px-3 py-2">
-                <Text className="text-xs text-surface-500">{t('logsForm.photo.gpsHint')}</Text>
+                <Text className="text-xs text-surface-500 dark:text-surface-400">{t('logsForm.photo.gpsHint')}</Text>
               </View>
             </View>
           ) : null}
 
-          <Text className="mb-2 text-sm font-semibold text-surface-700">{t('logsForm.fields.titleLabel')}</Text>
+          <Text className="mb-2 text-sm font-semibold text-surface-700 dark:text-surface-200">{t('logsForm.fields.titleLabel')}</Text>
           <TextInput
-            className="mb-4 rounded-2xl border border-surface-200 bg-white px-4 py-4 text-base text-surface-900"
+            className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-4 text-base text-surface-900 dark:text-surface-50"
             placeholder={t('logsForm.fields.titlePlaceholder')}
             placeholderTextColor="#9ca3af"
             value={form.title}
             onChangeText={(value) => update('title', value)}
           />
 
-          <View className="mb-4 rounded-2xl border border-surface-200 bg-white p-4">
-            <Text className="mb-3 text-xs font-semibold text-surface-500">{t('logsForm.fields.diveTypeLabel')}</Text>
+          <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+            <Text className="mb-3 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.diveTypeLabel')}</Text>
             <View className="flex-row">
               <ChoiceChip
                 active={form.diveType === 'freediving'}
@@ -394,7 +394,7 @@ export default function LogsScreen() {
 
             {form.diveType === 'scuba' ? (
               <>
-                <Text className="mb-2 mt-4 text-xs font-semibold text-surface-500">{t('logsForm.fields.gasTypeLabel')}</Text>
+                <Text className="mb-2 mt-4 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.gasTypeLabel')}</Text>
                 <View className="flex-row flex-wrap">
                   <ChoiceChip active={form.gasType === 'air'} label={t('logsForm.gasTypes.air')} onPress={() => update('gasType', 'air')} />
                   <ChoiceChip active={form.gasType === 'nitrox'} label={t('logsForm.gasTypes.nitrox')} onPress={() => update('gasType', 'nitrox')} />
@@ -402,19 +402,19 @@ export default function LogsScreen() {
                 </View>
 
                 {needsGasPercent ? (
-                  <View className="mt-3 rounded-xl border border-surface-200 bg-surface-50 px-3 py-2">
-                    <Text className="text-xs font-semibold text-surface-500">{t('logsForm.fields.gasPercentLabel')}</Text>
+                  <View className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2">
+                    <Text className="text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.gasPercentLabel')}</Text>
                     <View className="mt-1 flex-row items-center">
                       <Droplets size={15} color="#64748b" />
                       <TextInput
-                        className="ml-2 flex-1 py-1 text-base font-semibold text-surface-900"
+                        className="ml-2 flex-1 py-1 text-base font-semibold text-surface-900 dark:text-surface-50"
                         placeholder="32"
                         placeholderTextColor="#9ca3af"
                         keyboardType="numeric"
                         value={form.gasPercent}
                         onChangeText={(value) => update('gasPercent', value)}
                       />
-                      <Text className="text-sm text-surface-500">%</Text>
+                      <Text className="text-sm text-surface-500 dark:text-surface-400">%</Text>
                     </View>
                   </View>
                 ) : null}
@@ -422,20 +422,20 @@ export default function LogsScreen() {
             ) : null}
           </View>
 
-          <View className="mb-4 rounded-2xl border border-surface-200 bg-white p-4">
-            <Text className="mb-2 text-xs font-semibold text-surface-500">{t('logsForm.fields.pointNameLabel')}</Text>
+          <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+            <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.pointNameLabel')}</Text>
             <TextInput
-              className="mb-3 rounded-xl border border-surface-200 bg-surface-50 px-3 py-3 text-base text-surface-900"
+              className="mb-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-base text-surface-900 dark:text-surface-50"
               placeholder={t('logsForm.fields.pointNamePlaceholder')}
               placeholderTextColor="#9ca3af"
               value={form.pointName}
               onChangeText={(value) => update('pointName', value)}
             />
 
-            <Text className="mb-2 text-xs font-semibold text-surface-500">{t('logsForm.fields.pointSearchLabel')}</Text>
+            <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.pointSearchLabel')}</Text>
             <View className="flex-row items-center">
               <TextInput
-                className="flex-1 rounded-xl border border-surface-200 bg-surface-50 px-3 py-3 text-base text-surface-900"
+                className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-base text-surface-900 dark:text-surface-50"
                 placeholder={t('logsForm.fields.pointSearchPlaceholder')}
                 placeholderTextColor="#9ca3af"
                 value={pointQuery}
@@ -454,43 +454,43 @@ export default function LogsScreen() {
             {pointSearchError ? <Text className="mt-2 text-xs text-red-500">{pointSearchError}</Text> : null}
 
             {pointResults.length ? (
-              <View className="mt-3 rounded-xl border border-surface-200 bg-surface-50">
+              <View className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
                 {pointResults.map((item) => (
                   <TouchableOpacity
                     key={item.id}
                     activeOpacity={0.86}
                     onPress={() => choosePoint(item)}
-                    className="border-b border-surface-200 px-3 py-3 last:border-b-0"
+                    className="border-b border-surface-200 dark:border-surface-700 px-3 py-3 last:border-b-0"
                   >
-                    <Text className="text-sm font-semibold text-surface-900">{item.name}</Text>
-                    <Text className="mt-1 text-xs text-surface-500">{item.address}</Text>
+                    <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.name}</Text>
+                    <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{item.address}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             ) : null}
 
-            <Text className="mb-2 mt-4 text-xs font-semibold text-surface-500">{t('logsForm.fields.selectedPointLabel')}</Text>
-            <View className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-3">
-              <Text className="text-sm text-surface-700">{form.pointAddress || t('logsForm.fields.selectedPointPlaceholder')}</Text>
+            <Text className="mb-2 mt-4 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.selectedPointLabel')}</Text>
+            <View className="rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3">
+              <Text className="text-sm text-surface-700 dark:text-surface-200">{form.pointAddress || t('logsForm.fields.selectedPointPlaceholder')}</Text>
               {latNum != null && lngNum != null ? (
-                <Text className="mt-1 text-xs text-surface-500">{latNum.toFixed(6)}, {lngNum.toFixed(6)}</Text>
+                <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{latNum.toFixed(6)}, {lngNum.toFixed(6)}</Text>
               ) : null}
             </View>
 
             {mapPreview ? (
               <ExpoImage source={{ uri: mapPreview }} className="mt-3 h-40 w-full rounded-2xl" contentFit="cover" />
             ) : (
-              <View className="mt-3 h-24 w-full items-center justify-center rounded-2xl bg-surface-50">
+              <View className="mt-3 h-24 w-full items-center justify-center rounded-2xl bg-surface-50 dark:bg-surface-800">
                 <MapPin size={22} color="#64748b" />
-                <Text className="mt-1 text-xs text-surface-500">{t('logsForm.map.previewPlaceholder')}</Text>
+                <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{t('logsForm.map.previewPlaceholder')}</Text>
               </View>
             )}
           </View>
 
-          <View className="mb-4 rounded-2xl border border-surface-200 bg-white p-4">
-            <Text className="mb-2 text-xs font-semibold text-surface-500">{t('logsForm.fields.resortLabel')}</Text>
+          <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+            <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.resortLabel')}</Text>
             <TextInput
-              className="rounded-xl border border-surface-200 bg-surface-50 px-3 py-3 text-base text-surface-900"
+              className="rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-base text-surface-900 dark:text-surface-50"
               placeholder={t('logsForm.fields.resortPlaceholder')}
               placeholderTextColor="#9ca3af"
               value={resortQuery}
@@ -503,11 +503,11 @@ export default function LogsScreen() {
             />
 
             {resortFocus && resortCandidates.length ? (
-              <View className="mt-2 rounded-xl border border-surface-200 bg-surface-50">
+              <View className="mt-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800">
                 {resortCandidates.map((item: any) => (
                   <TouchableOpacity
                     key={String(item.id)}
-                    className="border-b border-surface-200 px-3 py-3 last:border-b-0"
+                    className="border-b border-surface-200 dark:border-surface-700 px-3 py-3 last:border-b-0"
                     onPress={() => {
                       const text = String(item.name || '').trim();
                       setResortQuery(text);
@@ -515,8 +515,8 @@ export default function LogsScreen() {
                       setResortFocus(false);
                     }}
                   >
-                    <Text className="text-sm font-semibold text-surface-900">{item.name}</Text>
-                    <Text className="mt-1 text-xs text-surface-500">{item.area}</Text>
+                    <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.name}</Text>
+                    <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{item.area}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -570,9 +570,9 @@ export default function LogsScreen() {
             />
           </View>
 
-          <Text className="mb-2 mt-4 text-sm font-semibold text-surface-700">{t('logsForm.fields.notesLabel')}</Text>
+          <Text className="mb-2 mt-4 text-sm font-semibold text-surface-700 dark:text-surface-200">{t('logsForm.fields.notesLabel')}</Text>
           <TextInput
-            className="min-h-28 rounded-2xl border border-surface-200 bg-white px-4 py-4 text-base text-surface-900"
+            className="min-h-28 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-4 text-base text-surface-900 dark:text-surface-50"
             multiline
             textAlignVertical="top"
             placeholder={t('logsForm.fields.notesPlaceholder')}
@@ -603,9 +603,9 @@ function ChoiceChip({ active, label, onPress }: { active: boolean; label: string
     <TouchableOpacity
       activeOpacity={0.88}
       onPress={onPress}
-      className={`mb-2 mr-2 rounded-full px-4 py-2 ${active ? 'bg-brand-600' : 'border border-surface-200 bg-surface-50'}`}
+      className={`mb-2 mr-2 rounded-full px-4 py-2 ${active ? 'bg-brand-600' : 'border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800'}`}
     >
-      <Text className={`font-semibold ${active ? 'text-white' : 'text-surface-700'}`}>{label}</Text>
+      <Text className={`font-semibold ${active ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -629,21 +629,21 @@ function FieldCard({
 }) {
   return (
     <View className="w-1/2 p-1">
-      <View className="rounded-2xl border border-surface-200 bg-white p-3">
+      <View className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-3">
         <View className="mb-2 flex-row items-center">
           {icon}
-          <Text className="ml-1 text-xs font-semibold text-surface-500">{label}</Text>
+          <Text className="ml-1 text-xs font-semibold text-surface-500 dark:text-surface-400">{label}</Text>
         </View>
         <View className="flex-row items-center">
           <TextInput
-            className="flex-1 py-1 text-base font-semibold text-surface-900"
+            className="flex-1 py-1 text-base font-semibold text-surface-900 dark:text-surface-50"
             placeholder={placeholder}
             placeholderTextColor="#9ca3af"
             keyboardType={keyboardType}
             value={value}
             onChangeText={onChangeText}
           />
-          {suffix ? <Text className="ml-1 text-sm text-surface-500">{suffix}</Text> : null}
+          {suffix ? <Text className="ml-1 text-sm text-surface-500 dark:text-surface-400">{suffix}</Text> : null}
         </View>
       </View>
     </View>

@@ -11,7 +11,7 @@ export default function ActivityScreen() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
         <View className="px-5 py-4 border-b border-gray-100">
-          <Text className="text-2xl font-semibold text-gray-950">{t('tabs.activity')}</Text>
+          <Text className="text-2xl font-semibold text-gray-950 dark:text-surface-50">{t('tabs.activity')}</Text>
           <Text className="mt-1 text-gray-500">{t('pages.activity.subtitle')}</Text>
         </View>
 
@@ -19,9 +19,9 @@ export default function ActivityScreen() {
           {activitySamples.map((row) => {
             const Icon = row.type === 'like' ? Heart : row.type === 'comment' ? MessageCircle : UserPlus;
             return (
-              <View key={row.id} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
+              <View key={row.id} className="mb-3 rounded-3xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
                 <View className="flex-row items-center">
-                  <View className="h-11 w-11 rounded-2xl bg-gray-100 items-center justify-center">
+                  <View className="h-11 w-11 rounded-2xl bg-gray-100 dark:bg-surface-800 items-center justify-center">
                     <Icon size={18} color="#111827" />
                   </View>
                   <View className="ml-3 flex-1">

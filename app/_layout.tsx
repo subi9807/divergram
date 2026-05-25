@@ -1,11 +1,12 @@
 import '../global.css';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Animated, Easing, StyleSheet, useWindowDimensions } from 'react-native';
+import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { ToastProvider } from '../src/components/Toast';
 import { AuthProvider } from '../src/providers/AuthProvider';
@@ -14,7 +15,7 @@ import { useResolvedTheme } from '../src/hooks/useResolvedTheme';
 import i18n from '../src/lib/i18n';
 import { useSettingsStore } from '../src/stores/settingsStore';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient();
 
@@ -22,22 +23,42 @@ export default function RootLayout() {
   useFrameworkReady();
   const language = useSettingsStore((state) => state.language);
   const { resolvedTheme } = useResolvedTheme();
+  const { setColorScheme } = useNativewindColorScheme();
   const { width } = useWindowDimensions();
   const swipeTranslateX = useRef(new Animated.Value(0)).current;
+  const [splashHidden, setSplashHidden] = useState(false);
+
+  const hideSplash = useCallback(async () => {
+    if (splashHidden) return;
+    try {
+      await SplashScreen.hideAsync();
+    } catch {
+      // no-op: splash can be already hidden
+    } finally {
+      setSplashHidden(true);
+    }
+  }, [splashHidden]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 3000);
+    const fallback = setTimeout(() => {
+      hideSplash();
+    }, 1800);
+    return () => clearTimeout(fallback);
+  }, [hideSplash]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleRootLayout = useCallback(() => {
+    hideSplash();
+  }, [hideSplash]);
 
   useEffect(() => {
     if (language && i18n.language !== language) {
       i18n.changeLanguage(language);
     }
   }, [language]);
+
+  useEffect(() => {
+    setColorScheme(resolvedTheme === 'dark' ? 'dark' : 'light');
+  }, [resolvedTheme, setColorScheme]);
 
   const handleSwipeProgress = useCallback(
     (dragX: number) => {
@@ -80,31 +101,36 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <AuthProvider>
-            <Animated.View style={[styles.stackShell, { transform: [{ translateX: swipeTranslateX }] }]}>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="+not-found" />
-              </Stack>
-            </Animated.View>
-            <GlobalEdgeSwipeNav
-              onSwipeProgress={handleSwipeProgress}
-              onSwipeCancel={handleSwipeCancel}
-              onSwipeCommit={handleSwipeCommit}
-            />
-            <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
-          </AuthProvider>
-        </ToastProvider>
-      </QueryClientProvider>
+      <View style={styles.root} onLayout={handleRootLayout}>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AuthProvider>
+              <Animated.View style={[styles.stackShell, { transform: [{ translateX: swipeTranslateX }] }]}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="+not-found" />
+                </Stack>
+              </Animated.View>
+              <GlobalEdgeSwipeNav
+                onSwipeProgress={handleSwipeProgress}
+                onSwipeCancel={handleSwipeCancel}
+                onSwipeCommit={handleSwipeCommit}
+              />
+              <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
+            </AuthProvider>
+          </ToastProvider>
+        </QueryClientProvider>
+      </View>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   stackShell: {
     flex: 1,
   },

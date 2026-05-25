@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
+import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useToast } from '../../src/components/Toast';
 import { useSettingsFeatureStore, type SocialProvider } from '../../src/stores/settingsFeatureStore';
 import { bottomTabCandidates, bottomTabDefault, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
@@ -47,12 +48,13 @@ function asMode(value: string): DetailMode {
 }
 
 function cardInputBaseClassName(error = false) {
-  return `rounded-xl border px-3 py-3 text-surface-900 ${error ? 'border-red-300 bg-red-50/40' : 'border-surface-200 bg-white'}`;
+  return `rounded-xl border px-3 py-3 text-surface-900 dark:text-surface-50 ${error ? 'border-red-300 bg-red-50/40' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`;
 }
 
 export default function SettingsDetailScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isDark } = useResolvedTheme();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ mode?: string | string[] }>();
   const mode = asMode(pickParam(params.mode));
@@ -410,31 +412,31 @@ export default function SettingsDetailScreen() {
   return (
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-        <View className="border-b border-surface-100 px-5 py-4">
+        <View className="border-b border-surface-100 dark:border-surface-800 px-5 py-4">
           <TouchableOpacity
             activeOpacity={0.86}
             onPress={() => router.back()}
-            className="mb-3 h-9 w-9 items-center justify-center rounded-xl border border-surface-200 bg-white"
+            className="mb-3 h-9 w-9 items-center justify-center rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900"
           >
-            <ChevronLeft size={18} color="#0f172a" />
+            <ChevronLeft size={18} color={isDark ? '#e2e8f0' : '#0f172a'} />
           </TouchableOpacity>
-          <Text className="text-2xl font-bold text-surface-900">{title}</Text>
-          <Text className="mt-1 text-surface-500">{subtitle}</Text>
+          <Text className="text-2xl font-bold text-surface-900 dark:text-surface-50">{title}</Text>
+          <Text className="mt-1 text-surface-500 dark:text-surface-400">{subtitle}</Text>
         </View>
 
         <View className="px-5 py-5">
           {socialProvider ? (
-            <View className="rounded-3xl border border-surface-200 bg-white p-4">
+            <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
               <View className="mb-3 flex-row items-center">
                 {socialLinked ? <CircleCheck size={18} color="#0d5fa8" /> : <CircleAlert size={18} color="#f59e0b" />}
-                <Text className="ml-2 text-sm font-semibold text-surface-800">
+                <Text className="ml-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
                   {socialLinked
                     ? `${socialLabel} ${t('settingsPage.account.linkAction', { defaultValue: '연동하기' })} ${t('common.done', { defaultValue: '완료' })}`
                     : `${socialLabel} ${t('settingsPage.account.linkAction', { defaultValue: '연동하기' })}`}
                 </Text>
               </View>
               {socialLinkedAt ? (
-                <Text className="mb-3 text-xs text-surface-500">Linked at: {new Date(socialLinkedAt).toLocaleString()}</Text>
+                <Text className="mb-3 text-xs text-surface-500 dark:text-surface-400">Linked at: {new Date(socialLinkedAt).toLocaleString()}</Text>
               ) : null}
               <View className="flex-row">
                 <TouchableOpacity
@@ -451,9 +453,9 @@ export default function SettingsDetailScreen() {
                   activeOpacity={0.86}
                   disabled={!socialLinked || busy}
                   onPress={handleUnlinkProvider}
-                  className={`flex-1 rounded-xl border px-3 py-3 ${socialLinked ? 'border-red-200 bg-red-50' : 'border-surface-200 bg-surface-100'}`}
+                  className={`flex-1 rounded-xl border px-3 py-3 ${socialLinked ? 'border-red-200 bg-red-50' : 'border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800'}`}
                 >
-                  <Text className={`text-center text-sm font-semibold ${socialLinked ? 'text-red-600' : 'text-surface-400'}`}>
+                  <Text className={`text-center text-sm font-semibold ${socialLinked ? 'text-red-600' : 'text-surface-400 dark:text-surface-500'}`}>
                     {t('common.delete', { defaultValue: '삭제' })}
                   </Text>
                 </TouchableOpacity>
@@ -462,12 +464,12 @@ export default function SettingsDetailScreen() {
           ) : null}
 
           {mode === 'account-delete' ? (
-            <View className="rounded-3xl border border-red-200 bg-white p-4">
+            <View className="rounded-3xl border border-red-200 bg-white dark:bg-surface-900 p-4">
               <View className="mb-3 flex-row items-center">
                 <Trash2 size={18} color="#ef4444" />
                 <Text className="ml-2 text-sm font-semibold text-red-600">{t('settingsPage.account.deleteSubtitle', { defaultValue: '계정 삭제는 복구할 수 없습니다.' })}</Text>
               </View>
-              <Text className="mb-2 text-xs text-surface-500">Type DELETE to continue</Text>
+              <Text className="mb-2 text-xs text-surface-500 dark:text-surface-400">Type DELETE to continue</Text>
               <TextInput
                 value={confirmDeleteText}
                 onChangeText={setConfirmDeleteText}
@@ -489,8 +491,8 @@ export default function SettingsDetailScreen() {
 
           {mode === 'blocked-users' ? (
             <View>
-              <View className="rounded-3xl border border-surface-200 bg-white p-4">
-                <Text className="mb-2 text-sm font-semibold text-surface-800">{t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' })}</Text>
+              <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+                <Text className="mb-2 text-sm font-semibold text-surface-800 dark:text-surface-100">{t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' })}</Text>
                 <TextInput
                   className={cardInputBaseClassName(false)}
                   value={blockedName}
@@ -512,16 +514,16 @@ export default function SettingsDetailScreen() {
 
               <View className="mt-3">
                 {blockedUsers.length === 0 ? (
-                  <View className="rounded-3xl border border-surface-200 bg-white p-4">
-                    <Text className="text-sm text-surface-500">{t('pages.saved.empty', { defaultValue: '차단된 사용자가 없습니다.' })}</Text>
+                  <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+                    <Text className="text-sm text-surface-500 dark:text-surface-400">{t('pages.saved.empty', { defaultValue: '차단된 사용자가 없습니다.' })}</Text>
                   </View>
                 ) : (
                   blockedUsers.map((item) => (
-                    <View key={item.id} className="mb-2 rounded-2xl border border-surface-200 bg-white p-3">
+                    <View key={item.id} className="mb-2 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-3">
                       <View className="flex-row items-start justify-between">
                         <View className="flex-1 pr-3">
-                          <Text className="text-sm font-semibold text-surface-900">{item.name}</Text>
-                          {item.reason ? <Text className="mt-1 text-xs text-surface-500">{item.reason}</Text> : null}
+                          <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.name}</Text>
+                          {item.reason ? <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{item.reason}</Text> : null}
                         </View>
                         <TouchableOpacity activeOpacity={0.86} onPress={() => removeBlockedUser(item.id)} className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5">
                           <Text className="text-xs font-semibold text-red-600">{t('common.delete', { defaultValue: '삭제' })}</Text>
@@ -536,16 +538,16 @@ export default function SettingsDetailScreen() {
 
           {mode === 'customer-center' ? (
             <View>
-              <View className="rounded-3xl border border-surface-200 bg-white p-4">
+              <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
                 {faqItems.map((item, index) => (
-                  <View key={`${item.q}-${index}`} className={`${index > 0 ? 'mt-3 border-t border-surface-100 pt-3' : ''}`}>
-                    <Text className="text-sm font-semibold text-surface-900">Q. {item.q}</Text>
-                    <Text className="mt-1 text-sm text-surface-600">A. {item.a}</Text>
+                  <View key={`${item.q}-${index}`} className={`${index > 0 ? 'mt-3 border-t border-surface-100 dark:border-surface-800 pt-3' : ''}`}>
+                    <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">Q. {item.q}</Text>
+                    <Text className="mt-1 text-sm text-surface-600 dark:text-surface-300">A. {item.a}</Text>
                   </View>
                 ))}
               </View>
 
-              <View className="mt-3 rounded-3xl border border-surface-200 bg-white p-4">
+              <View className="mt-3 rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
                 <TouchableOpacity
                   activeOpacity={0.86}
                   onPress={() => router.push(appRouteMap.report.path as never)}
@@ -556,24 +558,24 @@ export default function SettingsDetailScreen() {
                 <TouchableOpacity
                   activeOpacity={0.86}
                   onPress={handleOpenMail}
-                  className="mt-2 rounded-xl border border-surface-200 bg-surface-50 px-3 py-3"
+                  className="mt-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3"
                 >
-                  <Text className="text-center text-sm font-semibold text-surface-700">support@divergram.com</Text>
+                  <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">support@divergram.com</Text>
                 </TouchableOpacity>
                 <View className="mt-2 flex-row">
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => router.push(appRouteMap.auth_terms.path as never)}
-                    className="mr-2 flex-1 rounded-xl border border-surface-200 bg-white px-3 py-3"
+                    className="mr-2 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
                   >
-                    <Text className="text-center text-xs font-semibold text-surface-700">{t('settingsPage.app.terms', { defaultValue: '이용약관' })}</Text>
+                    <Text className="text-center text-xs font-semibold text-surface-700 dark:text-surface-200">{t('settingsPage.app.terms', { defaultValue: '이용약관' })}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => router.push(appRouteMap.auth_privacy.path as never)}
-                    className="flex-1 rounded-xl border border-surface-200 bg-white px-3 py-3"
+                    className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
                   >
-                    <Text className="text-center text-xs font-semibold text-surface-700">{t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' })}</Text>
+                    <Text className="text-center text-xs font-semibold text-surface-700 dark:text-surface-200">{t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' })}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -582,9 +584,9 @@ export default function SettingsDetailScreen() {
 
           {mode === 'bottom-menu' ? (
             <View>
-              <View className="rounded-3xl border border-surface-200 bg-white p-4">
-                <Text className="text-sm font-semibold text-surface-900">{t('settingsPage.app.bottomMenuGuide', { defaultValue: '최소 3개, 최대 5개까지 선택할 수 있습니다.' })}</Text>
-                <Text className="mt-1 text-xs text-surface-500">
+              <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+                <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{t('settingsPage.app.bottomMenuGuide', { defaultValue: '최소 3개, 최대 5개까지 선택할 수 있습니다.' })}</Text>
+                <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">
                   {t('settingsPage.app.bottomMenuSelected', {
                     defaultValue: '선택됨 {{count}}/5',
                     count: menuDraft.length,
@@ -592,7 +594,7 @@ export default function SettingsDetailScreen() {
                 </Text>
               </View>
 
-              <View className="mt-3 rounded-3xl border border-surface-200 bg-white p-2">
+              <View className="mt-3 rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-2">
                 {bottomTabCandidates.map((routeName, idx) => {
                   const active = menuDraft.includes(routeName);
                   const position = menuDraft.indexOf(routeName);
@@ -600,13 +602,13 @@ export default function SettingsDetailScreen() {
                   return (
                     <View
                       key={routeName}
-                      className={`flex-row items-center px-2 py-2.5 ${idx > 0 ? 'border-t border-surface-100' : ''}`}
+                      className={`flex-row items-center px-2 py-2.5 ${idx > 0 ? 'border-t border-surface-100 dark:border-surface-800' : ''}`}
                     >
                       <View className="flex-1 pr-2">
-                        <Text className="text-sm font-semibold text-surface-900">
+                        <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">
                           {t(bottomTabTitleKeyMap[routeName], { defaultValue: routeName })}
                         </Text>
-                        <Text className="mt-0.5 text-xs text-surface-500">
+                        <Text className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
                           {active
                             ? t('settingsPage.app.bottomMenuOrder', { defaultValue: '하단 {{order}}번째', order: position + 1 })
                             : t('settingsPage.app.bottomMenuNotUsed', { defaultValue: '현재 하단 메뉴에서 숨김' })}
@@ -634,7 +636,7 @@ export default function SettingsDetailScreen() {
                           activeOpacity={0.86}
                           disabled={!movable || position <= 0}
                           onPress={() => moveBottomTab(routeName, 'up')}
-                          className={`mr-1 rounded-lg border px-2 py-1.5 ${movable && position > 0 ? 'border-surface-200 bg-white' : 'border-surface-200 bg-surface-100'}`}
+                          className={`mr-1 rounded-lg border px-2 py-1.5 ${movable && position > 0 ? 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900' : 'border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800'}`}
                         >
                           <ArrowUp size={13} color={movable && position > 0 ? '#334155' : '#94a3b8'} />
                         </TouchableOpacity>
@@ -642,7 +644,7 @@ export default function SettingsDetailScreen() {
                           activeOpacity={0.86}
                           disabled={!movable || position >= menuDraft.length - 1}
                           onPress={() => moveBottomTab(routeName, 'down')}
-                          className={`rounded-lg border px-2 py-1.5 ${movable && position < menuDraft.length - 1 ? 'border-surface-200 bg-white' : 'border-surface-200 bg-surface-100'}`}
+                          className={`rounded-lg border px-2 py-1.5 ${movable && position < menuDraft.length - 1 ? 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900' : 'border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800'}`}
                         >
                           <ArrowDown size={13} color={movable && position < menuDraft.length - 1 ? '#334155' : '#94a3b8'} />
                         </TouchableOpacity>
@@ -656,9 +658,9 @@ export default function SettingsDetailScreen() {
                 <TouchableOpacity
                   activeOpacity={0.86}
                   onPress={resetBottomMenu}
-                  className="mr-2 flex-1 rounded-xl border border-surface-200 bg-white px-3 py-3"
+                  className="mr-2 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
                 >
-                  <Text className="text-center text-sm font-semibold text-surface-700">{t('common.reset', { defaultValue: '초기화' })}</Text>
+                  <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">{t('common.reset', { defaultValue: '초기화' })}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity activeOpacity={0.86} onPress={saveBottomMenu} className="flex-1 rounded-xl bg-brand-600 px-3 py-3">
                   <Text className="text-center text-sm font-semibold text-white">{t('pages.profileEdit.save', { defaultValue: '변경사항 저장' })}</Text>
@@ -668,64 +670,64 @@ export default function SettingsDetailScreen() {
           ) : null}
 
           {mode === 'unit-settings' ? (
-            <View className="rounded-3xl border border-surface-200 bg-white p-4">
-              <Text className="mb-2 text-xs font-semibold text-surface-500">{t('settingsPage.diving.unitSettings', { defaultValue: '단위 설정' })}</Text>
-              <View className="rounded-2xl border border-surface-200 bg-surface-50 p-3">
-                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.depthUnit', { defaultValue: '수심 단위' })}</Text>
+            <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+              <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('settingsPage.diving.unitSettings', { defaultValue: '단위 설정' })}</Text>
+              <View className="rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-3">
+                <Text className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('settingsPage.diving.depthUnit', { defaultValue: '수심 단위' })}</Text>
                 <View className="mt-2 flex-row">
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateDepthUnit('m')}
-                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'm' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'm' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'm' ? 'text-white' : 'text-surface-700'}`}>m</Text>
+                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'm' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>m</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateDepthUnit('ft')}
-                    className={`flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'ft' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${depthUnit === 'ft' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'ft' ? 'text-white' : 'text-surface-700'}`}>ft</Text>
+                    <Text className={`text-center text-sm font-semibold ${depthUnit === 'ft' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>ft</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View className="mt-3 rounded-2xl border border-surface-200 bg-surface-50 p-3">
-                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.tempUnit', { defaultValue: '수온 단위' })}</Text>
+              <View className="mt-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-3">
+                <Text className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('settingsPage.diving.tempUnit', { defaultValue: '수온 단위' })}</Text>
                 <View className="mt-2 flex-row">
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateTemperatureUnit('c')}
-                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'c' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'c' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'c' ? 'text-white' : 'text-surface-700'}`}>℃</Text>
+                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'c' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>℃</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateTemperatureUnit('f')}
-                    className={`flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'f' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${temperatureUnit === 'f' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'f' ? 'text-white' : 'text-surface-700'}`}>℉</Text>
+                    <Text className={`text-center text-sm font-semibold ${temperatureUnit === 'f' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>℉</Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View className="mt-3 rounded-2xl border border-surface-200 bg-surface-50 p-3">
-                <Text className="text-sm font-semibold text-surface-800">{t('settingsPage.diving.gasUnit', { defaultValue: '기체 단위' })}</Text>
+              <View className="mt-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-3">
+                <Text className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('settingsPage.diving.gasUnit', { defaultValue: '기체 단위' })}</Text>
                 <View className="mt-2 flex-row">
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateGasPressureUnit('bar')}
-                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'bar' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`mr-2 flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'bar' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'bar' ? 'text-white' : 'text-surface-700'}`}>bar</Text>
+                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'bar' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>bar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.86}
                     onPress={() => updateGasPressureUnit('psi')}
-                    className={`flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'psi' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-3 ${gasPressureUnit === 'psi' ? 'border-brand-600 bg-brand-600' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   >
-                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'psi' ? 'text-white' : 'text-surface-700'}`}>psi</Text>
+                    <Text className={`text-center text-sm font-semibold ${gasPressureUnit === 'psi' ? 'text-white' : 'text-surface-700 dark:text-surface-200'}`}>psi</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -733,8 +735,8 @@ export default function SettingsDetailScreen() {
           ) : null}
 
           {mode === 'emergency-contact' ? (
-            <View className="rounded-3xl border border-surface-200 bg-white p-4">
-              <Text className="mb-2 text-xs font-semibold text-surface-500">{t('settingsPage.safety.emergencyContact', { defaultValue: '비상 연락처 등록' })}</Text>
+            <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+              <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('settingsPage.safety.emergencyContact', { defaultValue: '비상 연락처 등록' })}</Text>
               <TextInput
                 className={cardInputBaseClassName(false)}
                 value={contactName}
@@ -757,8 +759,8 @@ export default function SettingsDetailScreen() {
                 placeholder={t('pages.account.security', { defaultValue: '관계 (예: 버디, 가족)' })}
                 placeholderTextColor="#9ca3af"
               />
-              <View className="mt-3 flex-row items-center justify-between rounded-xl border border-surface-200 bg-surface-50 px-3 py-3">
-                <Text className="text-sm font-semibold text-surface-700">{t('settingsPage.safety.emergencyShare', { defaultValue: '긴급 상황 공유 설정' })}</Text>
+              <View className="mt-3 flex-row items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3">
+                <Text className="text-sm font-semibold text-surface-700 dark:text-surface-200">{t('settingsPage.safety.emergencyShare', { defaultValue: '긴급 상황 공유 설정' })}</Text>
                 <Switch
                   value={emergencyShareEnabled}
                   onValueChange={(next) => updateSafetySetting('emergencyShareEnabled', next)}
@@ -773,19 +775,19 @@ export default function SettingsDetailScreen() {
           ) : null}
 
           {mode === 'safety-guide' ? (
-            <View className="rounded-3xl border border-surface-200 bg-white p-4">
+            <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
               {safetyGuideItems.map((item, index) => (
-                <View key={`${item.title}-${index}`} className={`${index > 0 ? 'mt-3 border-t border-surface-100 pt-3' : ''}`}>
-                  <Text className="text-sm font-semibold text-surface-900">{index + 1}. {item.title}</Text>
-                  <Text className="mt-1 text-sm text-surface-600">{item.body}</Text>
+                <View key={`${item.title}-${index}`} className={`${index > 0 ? 'mt-3 border-t border-surface-100 dark:border-surface-800 pt-3' : ''}`}>
+                  <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{index + 1}. {item.title}</Text>
+                  <Text className="mt-1 text-sm text-surface-600 dark:text-surface-300">{item.body}</Text>
                 </View>
               ))}
             </View>
           ) : null}
 
           {mode === 'insurance' ? (
-            <View className="rounded-3xl border border-surface-200 bg-white p-4">
-              <Text className="mb-2 text-xs font-semibold text-surface-500">{t('settingsPage.safety.insurance', { defaultValue: '보험 정보 등록' })}</Text>
+            <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+              <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('settingsPage.safety.insurance', { defaultValue: '보험 정보 등록' })}</Text>
               <TextInput
                 className={cardInputBaseClassName(false)}
                 value={insuranceProvider}
@@ -824,14 +826,14 @@ export default function SettingsDetailScreen() {
           <TouchableOpacity
             activeOpacity={0.86}
             onPress={() => router.back()}
-            className="mt-3 rounded-xl border border-surface-200 bg-white px-3 py-3"
+            className="mt-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
           >
-            <Text className="text-center text-sm font-semibold text-surface-700">{t('common.back', { defaultValue: '뒤로가기' })}</Text>
+            <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">{t('common.back', { defaultValue: '뒤로가기' })}</Text>
           </TouchableOpacity>
 
-          <View className="mt-5 flex-row items-center rounded-2xl border border-surface-200 bg-surface-50 px-3 py-3">
+          <View className="mt-5 flex-row items-center rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3">
             <Link2 size={16} color="#5f7286" />
-            <Text className="ml-2 flex-1 text-xs text-surface-500">{t('brand.tagline', { defaultValue: 'Real logs. Real ocean. Real divers.' })}</Text>
+            <Text className="ml-2 flex-1 text-xs text-surface-500 dark:text-surface-400">{t('brand.tagline', { defaultValue: 'Real logs. Real ocean. Real divers.' })}</Text>
           </View>
         </View>
       </ScrollView>

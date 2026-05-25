@@ -1,0 +1,3 @@
+app_identifier(ENV.fetch('APP_IDENTIFIER', 'com.divergram.app.ios'))
+itc_team_id(ENV['APPSTORE_PROVIDER_ID'])
+team_id('6G5RCDLQLG')

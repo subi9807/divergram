@@ -7,6 +7,7 @@ import { clearPendingSignupDraft, getPendingSignupDraft } from '../../services/s
 import type { ConsentKey } from '../../models';
 import { useLegalStore } from '../../stores/legalStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 
 const routeByConsentKey: Partial<Record<ConsentKey, string>> = {
   terms_required: '/(auth)/terms',
@@ -18,6 +19,7 @@ const routeByConsentKey: Partial<Record<ConsentKey, string>> = {
 };
 
 export default function ConsentScreen() {
+  const { isDark } = useResolvedTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string | string[]; returnTo?: string | string[] }>();
   const mode = Array.isArray(params.mode) ? String(params.mode[0] || '') : String(params.mode || '');
@@ -43,6 +45,15 @@ export default function ConsentScreen() {
     values.terms_required && values.privacy_required && values.location_required && values.age14_required;
 
   const allChecked = Object.values(values).every(Boolean);
+  const colors = {
+    title: isDark ? '#F1F5F9' : '#0F172A',
+    body: isDark ? '#A8B5C4' : '#64748B',
+    cardBg: isDark ? '#0F1B2A' : '#FFFFFF',
+    cardBorder: isDark ? '#2A3E52' : '#D7E4F1',
+    rowBorder: isDark ? '#223345' : '#EDF2F7',
+    rowTitle: isDark ? '#E2E8F0' : '#0F172A',
+    sectionTitle: isDark ? '#CBD5E1' : '#334155',
+  };
 
   const toggleAll = (next: boolean) => {
     setValues({
@@ -116,24 +127,24 @@ export default function ConsentScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 44 }}>
-        <Text style={{ fontSize: 27, fontWeight: '800', color: '#0F172A' }}>{isReconsentMode ? '정책 재동의' : '회원가입 동의'}</Text>
-        <Text style={{ marginTop: 8, color: '#64748B' }}>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{isReconsentMode ? '정책 재동의' : '회원가입 동의'}</Text>
+        <Text style={{ marginTop: 8, color: colors.body }}>
           {isReconsentMode ? '서비스 이용을 위해 최신 정책 동의가 필요합니다.' : '필수 약관 동의 후 회원가입을 진행할 수 있습니다.'}
         </Text>
 
-        <View style={{ marginTop: 14, borderRadius: 16, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 14 }}>
+        <View style={{ marginTop: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#0F172A', fontWeight: '800' }}>전체 동의</Text>
+            <Text style={{ color: colors.rowTitle, fontWeight: '800' }}>전체 동의</Text>
             <Switch value={allChecked} onValueChange={toggleAll} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
           </View>
         </View>
 
-        <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 12 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>필수 동의</Text>
+        <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>필수 동의</Text>
           {consentDef.required.map((item, idx) => (
-            <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.required.length - 1 ? 0 : 1, borderBottomColor: '#EDF2F7' }}>
+            <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.required.length - 1 ? 0 : 1, borderBottomColor: colors.rowBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#0F172A', flex: 1 }}>[필수] {item.policy.title}</Text>
+                <Text style={{ color: colors.rowTitle, flex: 1 }}>[필수] {item.policy.title}</Text>
                 <Switch value={values[item.key]} onValueChange={(next) => updateOne(item.key, next)} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
               </View>
               <TouchableOpacity onPress={() => openDoc(item.key)} style={{ marginTop: 6 }}>
@@ -143,12 +154,12 @@ export default function ConsentScreen() {
           ))}
         </View>
 
-        <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 12 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>선택 동의</Text>
+        <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>선택 동의</Text>
           {consentDef.optional.map((item, idx) => (
-            <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.optional.length - 1 ? 0 : 1, borderBottomColor: '#EDF2F7' }}>
+            <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.optional.length - 1 ? 0 : 1, borderBottomColor: colors.rowBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: '#0F172A', flex: 1 }}>[선택] {item.policy.title}</Text>
+                <Text style={{ color: colors.rowTitle, flex: 1 }}>[선택] {item.policy.title}</Text>
                 <Switch value={values[item.key]} onValueChange={(next) => updateOne(item.key, next)} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
               </View>
               <TouchableOpacity onPress={() => openDoc(item.key)} style={{ marginTop: 6 }}>

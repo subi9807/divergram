@@ -186,22 +186,22 @@ export default function LocationScreen() {
         description={t('permissions.location.description')}
       >
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
-          <View className="px-5 py-4 border-b border-gray-100">
-            <Text className="text-2xl font-semibold text-gray-950">{t('tabs.location')}</Text>
-            <Text className="mt-1 text-gray-500">{t('pages.location.subtitle')}</Text>
+          <View className="border-b border-surface-200 dark:border-[#243447] px-5 py-4">
+            <Text className="text-2xl font-semibold text-gray-950 dark:text-surface-50">{t('tabs.location')}</Text>
+            <Text className="mt-1 text-surface-500 dark:text-[#9fb3c8]">{t('pages.location.subtitle')}</Text>
           </View>
 
           <View className="px-5 py-5">
             {selectedLocation ? (
-              <View className="mb-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3">
+              <View className="mb-3 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 dark:border-[#2a4a67] dark:bg-[#12263a]">
                 <Text className="text-xs font-semibold text-brand-700">
                   {t('pages.location.selectedRegion', { location: selectedLocation, defaultValue: `선택 지역: ${selectedLocation}` })}
                 </Text>
               </View>
             ) : null}
 
-            <View className="mb-4 rounded-3xl border border-gray-200 bg-white p-3 overflow-hidden">
-              <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.location.mapTitle')}</Text>
+            <View className="mb-4 overflow-hidden rounded-3xl border border-surface-200 bg-white p-3 dark:border-[#243447] dark:bg-[#0f1b2a]">
+              <Text className="mb-2 text-sm font-semibold text-surface-700 dark:text-surface-100">{t('pages.location.mapTitle')}</Text>
               {hasGoogleMap ? (
                 <View style={{ height: 260, borderRadius: 16, overflow: 'hidden' }}>
                   <WebView
@@ -221,19 +221,19 @@ export default function LocationScreen() {
               <View className="mt-3 flex-row items-center">
                 <View className="mr-3 flex-row items-center">
                   <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#0D5FA8', marginRight: 6 }} />
-                  <Text className="text-xs text-gray-600">포인트 마커</Text>
+                  <Text className="text-xs text-surface-600 dark:text-[#9fb3c8]">포인트 마커</Text>
                 </View>
                 <View className="flex-row items-center">
                   <View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: '#F97316', marginRight: 6 }} />
-                  <Text className="text-xs text-gray-600">리조트 마커</Text>
+                  <Text className="text-xs text-surface-600 dark:text-[#9fb3c8]">리조트 마커</Text>
                 </View>
               </View>
             </View>
 
-            <View className="rounded-3xl border border-gray-200 bg-white p-4">
-              <Text className="mb-3 text-sm font-semibold text-gray-700">표시된 마커</Text>
+            <View className="rounded-3xl border border-surface-200 bg-white p-4 dark:border-[#243447] dark:bg-[#0f1b2a]">
+              <Text className="mb-3 text-sm font-semibold text-surface-700 dark:text-surface-100">표시된 마커</Text>
               {markers.map((item) => (
-                <View key={item.id} className="mb-2 flex-row items-center rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2">
+                <View key={item.id} className="mb-2 flex-row items-center rounded-2xl border border-surface-200 bg-surface-50 px-3 py-2 dark:border-[#2b3f54] dark:bg-[#162436]">
                   <View
                     style={{
                       width: 8,
@@ -244,12 +244,12 @@ export default function LocationScreen() {
                     }}
                   />
                   <View className="flex-1">
-                    <Text className="text-sm font-semibold text-gray-900">{item.name}</Text>
-                    <Text className="text-xs text-gray-500">{item.description}</Text>
+                    <Text className="text-sm font-semibold text-gray-900 dark:text-surface-50">{item.name}</Text>
+                    <Text className="text-xs text-surface-500 dark:text-[#9fb3c8]">{item.description}</Text>
                   </View>
                 </View>
               ))}
-              {!markers.length ? <Text className="text-sm text-gray-500">표시할 마커가 없습니다.</Text> : null}
+              {!markers.length ? <Text className="text-sm text-surface-500 dark:text-[#9fb3c8]">표시할 마커가 없습니다.</Text> : null}
             </View>
           </View>
         </ScrollView>

@@ -258,6 +258,22 @@
 - [x] 앱 API 클라이언트의 prod 차단 가드 해제(신규 백엔드 라우트 사용)
   - Evidence: `src/lib/api.ts` (`connectExternalProvider`, `refreshExternalProviderToken`, `disconnectExternalProvider`, `getExternalProviderDiveLogs`, `requestCloudinarySignedUpload`, `getNotificationSetting`, `updateNotificationSetting`, `sendPushTest`)
 - [x] 운영 스모크 검증(인증 포함)
+
+## 14) 다크모드/가독성 안정화 (2026-05-23)
+- [x] 설정/동의/피드 다크모드 카드 톤 정합화
+  - Evidence: `tailwind.config.js`, `app/_layout.tsx`, `app/(tabs)/settings-detail.tsx`, `src/features/feed/FeedHeader.tsx`, `src/features/feed/FeedPost.tsx`, `src/screens/legal/ConsentScreen.tsx`
+  - Note: NativeWind `darkMode: 'class'` + 앱 테마 동기화(`setColorScheme`)를 연결해 시스템/다크/라이트 변경 시 즉시 반영.
+- [x] 정책/신고 화면 다크모드 반영으로 법적 플로우 가독성 안정화
+  - Evidence: `src/screens/legal/PolicyDocumentView.tsx`, `src/screens/legal/PolicyCenterScreen.tsx`, `src/screens/legal/OpenSourceLicenseScreen.tsx`, `src/screens/legal/ReportScreen.tsx`
+  - Note: 문서/신고 폼의 배경·보더·텍스트를 다크 팔레트로 전환해 야간 사용 시 흰 카드 잔존 제거.
+- [x] 연동 설정 화면 다크모드 및 상태 요약 카드 대비 개선
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - Note: 연동 요약/필터칩/실패 로그/빈상태를 테마 연동 색상으로 통일해 운영 점검 UX 안정화.
+- [x] Stormglass 위험도 로직 복합위험 조건 보강
+  - Evidence: `src/services/stormglassService.ts` (`calculateMarineRisk`)
+  - Note: `파고+조류`, `저시야+강조류`, `저수온+강조류`, `강풍+파고` 조합 패널티 및 경고문을 추가해 보수적 판단 강화.
+- [x] 관련 변경 파일 타깃 lint 통과
+  - Evidence: local command run (`npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx`)
   - Evidence: `https://api.divergram.com/api/integrations/garmin/connect` `200`
   - Evidence: `https://api.divergram.com/api/integrations/garmin/logs?limit=2` `200`
   - Evidence: `https://api.divergram.com/api/notifications/settings` `GET/PATCH 200`

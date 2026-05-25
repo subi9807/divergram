@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>1.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -42,7 +42,9 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>4</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSMinimumSystemVersion</key>
 	<string>12.0</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -62,13 +64,18 @@
 	<string>백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>위치 정보는 다이빙 로그 기록에 사용됩니다.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>프로필 및 라이선스 사진을 선택하려면 사진 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>다이빙 기록 이미지를 저장하려면 사진 접근 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>프로필 및 라이선스 사진을 선택하려면 사진 접근 권한이 필요합니다.</string>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>

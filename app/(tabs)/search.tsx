@@ -35,11 +35,11 @@ export default function SearchScreen() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
         <View className="px-5 py-4 border-b border-gray-100">
-          <Text className="text-2xl font-semibold text-gray-950">{t('tabs.search')}</Text>
-          <View className="mt-3 h-12 rounded-2xl bg-gray-100 px-4 flex-row items-center">
+          <Text className="text-2xl font-semibold text-gray-950 dark:text-surface-50">{t('tabs.search')}</Text>
+          <View className="mt-3 h-12 rounded-2xl bg-gray-100 dark:bg-surface-800 px-4 flex-row items-center">
             <Search size={18} color="#6b7280" />
             <TextInput
-              className="ml-2 flex-1 text-gray-950"
+              className="ml-2 flex-1 text-gray-950 dark:text-surface-50"
               placeholder={t('pages.search.placeholder')}
               placeholderTextColor="#9ca3af"
               value={q}
@@ -51,8 +51,8 @@ export default function SearchScreen() {
 
         <View className="px-5 py-5">
           {results.map((item) => (
-            <TouchableOpacity key={item.key} className="mb-3 rounded-3xl border border-gray-200 bg-white p-4">
-              <Text className="text-base font-semibold text-gray-950">{item.title}</Text>
+            <TouchableOpacity key={item.key} className="mb-3 rounded-3xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+              <Text className="text-base font-semibold text-gray-950 dark:text-surface-50">{item.title}</Text>
               <Text className="mt-1 text-sm text-gray-500">{item.meta}</Text>
               <Text className="mt-2 text-sm text-gray-600">📍 {item.location}</Text>
             </TouchableOpacity>

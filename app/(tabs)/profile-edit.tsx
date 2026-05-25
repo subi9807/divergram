@@ -339,13 +339,13 @@ export default function ProfileEditScreen() {
     <Screen>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
         <View className="border-b border-gray-100 px-5 py-4">
-          <Text className="text-2xl font-semibold text-gray-950">{t('tabs.profileEdit')}</Text>
+          <Text className="text-2xl font-semibold text-gray-950 dark:text-surface-50">{t('tabs.profileEdit')}</Text>
           <Text className="mt-1 text-gray-500">{t('pages.profileEdit.subtitle')}</Text>
         </View>
 
         <View className="px-5 py-5">
           <View className="mb-5 items-center">
-            <View className="h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+            <View className="h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-gray-200 dark:border-surface-700 bg-gray-100 dark:bg-surface-800">
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} className="h-full w-full" resizeMode="cover" />
               ) : (
@@ -354,18 +354,18 @@ export default function ProfileEditScreen() {
             </View>
             <View className="mt-3 flex-row">
               <TouchableOpacity
-                className="mr-2 flex-row items-center rounded-xl border border-gray-200 bg-white px-3 py-2"
+                className="mr-2 flex-row items-center rounded-xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2"
                 activeOpacity={0.88}
                 onPress={pickAvatar}
                 disabled={pickerBusy}
               >
                 <ImagePlus size={15} color="#0f172a" />
-                <Text className="ml-1 text-xs font-semibold text-gray-900">
+                <Text className="ml-1 text-xs font-semibold text-gray-900 dark:text-surface-50">
                   {t('pages.profileEdit.photoSelect', { defaultValue: '사진 선택' })}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="rounded-xl border border-gray-200 bg-white px-3 py-2"
+                className="rounded-xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2"
                 activeOpacity={0.88}
                 onPress={() => setAvatarUri('')}
                 disabled={pickerBusy}
@@ -379,7 +379,7 @@ export default function ProfileEditScreen() {
 
           <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.profileEdit.name')}</Text>
           <TextInput
-            className="mb-4 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-950"
+            className="mb-4 rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-gray-950 dark:text-surface-50"
             value={name}
             onChangeText={setName}
             maxLength={40}
@@ -387,7 +387,7 @@ export default function ProfileEditScreen() {
 
           <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.profileEdit.bio')}</Text>
           <TextInput
-            className="min-h-28 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-950"
+            className="min-h-28 rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-gray-950 dark:text-surface-50"
             multiline
             textAlignVertical="top"
             value={bio}
@@ -404,7 +404,7 @@ export default function ProfileEditScreen() {
               return (
                 <TouchableOpacity
                   key={item.key}
-                  className={`mb-2 mr-2 rounded-full border px-4 py-2 ${active ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}
+                  className={`mb-2 mr-2 rounded-full border px-4 py-2 ${active ? 'border-brand-500 bg-brand-50' : 'border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   onPress={() => setScubaLevel(item.key)}
                   activeOpacity={0.88}
                 >
@@ -423,7 +423,7 @@ export default function ProfileEditScreen() {
               return (
                 <TouchableOpacity
                   key={item.key}
-                  className={`mb-2 mr-2 rounded-full border px-4 py-2 ${active ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}
+                  className={`mb-2 mr-2 rounded-full border px-4 py-2 ${active ? 'border-brand-500 bg-brand-50' : 'border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                   onPress={() => setFreedivingLevel(item.key)}
                   activeOpacity={0.88}
                 >
@@ -433,7 +433,7 @@ export default function ProfileEditScreen() {
             })}
           </View>
 
-          <View className="mt-5 rounded-2xl border border-gray-200 bg-white p-4">
+          <View className="mt-5 rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
             <Text className="text-sm font-semibold text-gray-700">
               {t('pages.profileEdit.license.title', { defaultValue: '라이선스 검증' })}
             </Text>
@@ -443,20 +443,20 @@ export default function ProfileEditScreen() {
 
             <View className="mt-3 flex-row items-center">
               <TouchableOpacity
-                className={`mr-2 flex-row items-center rounded-xl border px-3 py-2 ${ocrPending ? 'border-gray-300 bg-gray-100' : 'border-gray-200 bg-white'}`}
+                className={`mr-2 flex-row items-center rounded-xl border px-3 py-2 ${ocrPending ? 'border-gray-300 bg-gray-100 dark:bg-surface-800' : 'border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
                 activeOpacity={0.88}
                 onPress={pickLicenseImageWithOcr}
                 disabled={ocrPending || pickerBusy}
               >
                 {ocrPending ? <ActivityIndicator size="small" color="#0f172a" /> : <ImagePlus size={15} color="#0f172a" />}
-                <Text className="ml-1 text-xs font-semibold text-gray-900">
+                <Text className="ml-1 text-xs font-semibold text-gray-900 dark:text-surface-50">
                   {ocrPending
                     ? t('pages.profileEdit.license.processing', { defaultValue: '인식 중...' })
                     : t('pages.profileEdit.license.upload', { defaultValue: '라이선스 사진 업로드 + OCR' })}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="rounded-xl border border-gray-200 bg-white px-3 py-2"
+                className="rounded-xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2"
                 activeOpacity={0.88}
                 onPress={() => {
                   setLicenseImageUrl('');
@@ -470,7 +470,7 @@ export default function ProfileEditScreen() {
             </View>
 
             {licenseImagePreviewUri ? (
-              <View className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+              <View className="mt-3 overflow-hidden rounded-xl border border-gray-200 dark:border-surface-700 bg-gray-50">
                 <Image source={{ uri: licenseImagePreviewUri }} className="h-36 w-full" resizeMode="contain" />
               </View>
             ) : null}
@@ -481,7 +481,7 @@ export default function ProfileEditScreen() {
               {t('pages.profileEdit.license.agency', { defaultValue: '단체명' })}
             </Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-surface-50 px-3 py-3 text-sm text-surface-900"
+              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
               placeholder={t('pages.profileEdit.license.agencyPlaceholder', { defaultValue: '예: PADI, SSI, AIDA' })}
               placeholderTextColor="#9ca3af"
               value={licenseAgency}
@@ -493,7 +493,7 @@ export default function ProfileEditScreen() {
               {t('pages.profileEdit.license.number', { defaultValue: '라이선스 번호' })}
             </Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-surface-50 px-3 py-3 text-sm text-surface-900"
+              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
               placeholder={t('pages.profileEdit.license.numberPlaceholder', { defaultValue: '예: 12345678' })}
               placeholderTextColor="#9ca3af"
               value={licenseNumber}
@@ -505,7 +505,7 @@ export default function ProfileEditScreen() {
               {t('pages.profileEdit.license.issuedAt', { defaultValue: '취득일' })}
             </Text>
             <TextInput
-              className="rounded-xl border border-gray-200 bg-surface-50 px-3 py-3 text-sm text-surface-900"
+              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
               placeholder={t('pages.profileEdit.license.issuedAtPlaceholder', { defaultValue: 'YYYY-MM-DD' })}
               placeholderTextColor="#9ca3af"
               value={licenseIssuedAt}

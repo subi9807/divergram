@@ -3,6 +3,7 @@ import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'reac
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../hooks/useAuth';
+import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 import type { ReportReason, ReportTargetType, ReportStatus } from '../../models';
 import { useLegalStore } from '../../stores/legalStore';
 import { apiClient } from '../../lib/api';
@@ -118,6 +119,7 @@ function validateDetailQuality(reason: ReportReason, detailText: string) {
 export default function ReportScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isDark } = useResolvedTheme();
   const params = useLocalSearchParams<{ postId?: string; reportedUserId?: string; targetType?: string }>();
   const submitReport = useLegalStore((state) => state.submitReport);
   const markReportSyncStatus = useLegalStore((state) => state.markReportSyncStatus);
@@ -182,6 +184,26 @@ export default function ReportScreen() {
     return validateDetailQuality(reason, detail);
   }, [detail, reason]);
   const canSubmit = Boolean(reason) && !submitting && !targetIdError && !detailError && !optionalDetailError;
+  const colors = useMemo(
+    () => ({
+      title: isDark ? '#F1F5F9' : '#0F172A',
+      subtitle: isDark ? '#9FB3C8' : '#64748B',
+      sectionTitle: isDark ? '#CBD5E1' : '#334155',
+      chipBorder: isDark ? '#2A3E52' : '#CBD5E1',
+      chipBg: isDark ? '#0F1B2A' : '#ffffff',
+      chipText: isDark ? '#CBD5E1' : '#334155',
+      inputBg: isDark ? '#0F1B2A' : '#ffffff',
+      inputBorder: isDark ? '#2A3E52' : '#CBD5E1',
+      inputText: isDark ? '#E2E8F0' : '#0F172A',
+      previewBg: isDark ? '#0F1B2A' : '#F8FBFF',
+      previewBorder: isDark ? '#2A3E52' : '#D9E4F1',
+      previewTitle: isDark ? '#E2E8F0' : '#0F172A',
+      previewText: isDark ? '#B6C6D8' : '#475569',
+      historyBg: isDark ? '#0F1B2A' : '#ffffff',
+      historyBorder: isDark ? '#2A3E52' : '#D9E4F1',
+    }),
+    [isDark]
+  );
 
   useEffect(() => {
     if (hasLegalConsentForReport) {
@@ -378,11 +400,11 @@ export default function ReportScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 44 }}>
-        <Text style={{ fontSize: 27, fontWeight: '800', color: '#0F172A' }}>신고하기</Text>
-        <Text style={{ marginTop: 8, color: '#64748B' }}>커뮤니티 정책 위반 콘텐츠를 신고할 수 있습니다.</Text>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>신고하기</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>커뮤니티 정책 위반 콘텐츠를 신고할 수 있습니다.</Text>
 
         <View style={{ marginTop: 16 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>신고 대상</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>신고 대상</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {targetOptions.map((item) => (
               <TouchableOpacity
@@ -391,44 +413,45 @@ export default function ReportScreen() {
                   setTargetType(item.key);
                   if (item.key !== targetType) setTargetId('');
                 }}
-                style={{ borderRadius: 999, borderWidth: 1, borderColor: targetType === item.key ? '#0D5FA8' : '#CBD5E1', backgroundColor: targetType === item.key ? '#EAF4FF' : '#fff', paddingHorizontal: 13, paddingVertical: 8 }}
+                style={{ borderRadius: 999, borderWidth: 1, borderColor: targetType === item.key ? '#0D5FA8' : colors.chipBorder, backgroundColor: targetType === item.key ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
               >
-                <Text style={{ color: targetType === item.key ? '#0D5FA8' : '#334155', fontWeight: '700' }}>{item.label}</Text>
+                <Text style={{ color: targetType === item.key ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>대상 ID</Text>
-          <TextInput value={targetId} onChangeText={setTargetId} placeholder={targetIdPlaceholderMap[targetType]} style={{ borderWidth: 1, borderColor: targetIdError ? '#FCA5A5' : '#CBD5E1', borderRadius: 12, backgroundColor: '#fff', padding: 12 }} />
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>대상 ID</Text>
+          <TextInput value={targetId} onChangeText={setTargetId} placeholder={targetIdPlaceholderMap[targetType]} placeholderTextColor="#94A3B8" style={{ borderWidth: 1, borderColor: targetIdError ? '#FCA5A5' : colors.inputBorder, borderRadius: 12, backgroundColor: colors.inputBg, color: colors.inputText, padding: 12 }} />
           {targetIdError ? <Text style={{ marginTop: 6, color: '#B91C1C', fontSize: 12 }}>{targetIdError}</Text> : null}
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>신고 사유</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>신고 사유</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {reasonOptions.map((item) => (
               <TouchableOpacity
                 key={item.key}
                 onPress={() => setReason(item.key)}
-                style={{ borderRadius: 999, borderWidth: 1, borderColor: reason === item.key ? '#0D5FA8' : '#CBD5E1', backgroundColor: reason === item.key ? '#EAF4FF' : '#fff', paddingHorizontal: 13, paddingVertical: 8 }}
+                style={{ borderRadius: 999, borderWidth: 1, borderColor: reason === item.key ? '#0D5FA8' : colors.chipBorder, backgroundColor: reason === item.key ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
               >
-                <Text style={{ color: reason === item.key ? '#0D5FA8' : '#334155', fontWeight: '700' }}>{item.label}</Text>
+                <Text style={{ color: reason === item.key ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: '#334155', fontWeight: '700' }}>상세 설명 (선택)</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>상세 설명 (선택)</Text>
           <TextInput
             value={detail}
             onChangeText={(next) => setDetail(next.slice(0, MAX_DETAIL_LENGTH))}
             multiline
             textAlignVertical="top"
             placeholder="추가 설명을 입력해주세요."
-            style={{ borderWidth: 1, borderColor: detailError || optionalDetailError ? '#FCA5A5' : '#CBD5E1', borderRadius: 12, backgroundColor: '#fff', padding: 12, minHeight: 120 }}
+            placeholderTextColor="#94A3B8"
+            style={{ borderWidth: 1, borderColor: detailError || optionalDetailError ? '#FCA5A5' : colors.inputBorder, borderRadius: 12, backgroundColor: colors.inputBg, color: colors.inputText, padding: 12, minHeight: 120 }}
           />
           <Text style={{ marginTop: 4, color: '#94A3B8', fontSize: 12, textAlign: 'right' }}>{detail.length}/{MAX_DETAIL_LENGTH}</Text>
           {requiredDetailLength(reason) > 0 ? (
@@ -440,18 +463,18 @@ export default function ReportScreen() {
           ) : null}
         </View>
 
-        <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: '#D9E4F1', backgroundColor: '#F8FBFF', padding: 12 }}>
-          <Text style={{ color: '#0F172A', fontWeight: '700' }}>접수 미리보기</Text>
-          <Text style={{ marginTop: 6, color: '#475569' }}>대상: {targetType} / {targetId.trim() || '-'}</Text>
-          <Text style={{ marginTop: 2, color: '#475569' }}>사유: {reason}</Text>
-          <Text style={{ marginTop: 2, color: '#64748B' }}>상세: {detail.trim() || '(없음)'}</Text>
+        <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.previewBorder, backgroundColor: colors.previewBg, padding: 12 }}>
+          <Text style={{ color: colors.previewTitle, fontWeight: '700' }}>접수 미리보기</Text>
+          <Text style={{ marginTop: 6, color: colors.previewText }}>대상: {targetType} / {targetId.trim() || '-'}</Text>
+          <Text style={{ marginTop: 2, color: colors.previewText }}>사유: {reason}</Text>
+          <Text style={{ marginTop: 2, color: colors.subtitle }}>상세: {detail.trim() || '(없음)'}</Text>
         </View>
 
         {myPendingReports.length ? (
           <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FED7AA', backgroundColor: '#FFFBEB', padding: 12 }}>
             <Text style={{ color: '#9A3412', fontWeight: '800' }}>동기화 대기 신고 {myPendingReports.length}건</Text>
             {myPendingReports.map((item) => (
-              <View key={item.id} style={{ marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: '#FDBA74', backgroundColor: '#fff', padding: 10 }}>
+              <View key={item.id} style={{ marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: '#FDBA74', backgroundColor: colors.chipBg, padding: 10 }}>
                 <Text style={{ color: '#7C2D12', fontWeight: '700' }}>
                   {item.targetType} / {item.targetId}
                 </Text>
@@ -493,15 +516,15 @@ export default function ReportScreen() {
           <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>커뮤니티 운영정책 보기</Text>
         </TouchableOpacity>
 
-        <View style={{ marginTop: 16, borderRadius: 12, borderWidth: 1, borderColor: '#D9E4F1', backgroundColor: '#fff', padding: 12 }}>
-          <Text style={{ color: '#0F172A', fontWeight: '700' }}>최근 신고 이력 (로컬 확인용)</Text>
+        <View style={{ marginTop: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.historyBorder, backgroundColor: colors.historyBg, padding: 12 }}>
+          <Text style={{ color: colors.title, fontWeight: '700' }}>최근 신고 이력 (로컬 확인용)</Text>
           {myRecentReports.length === 0 ? (
-            <Text style={{ marginTop: 6, color: '#64748B' }}>최근 신고 이력이 없습니다.</Text>
+            <Text style={{ marginTop: 6, color: colors.subtitle }}>최근 신고 이력이 없습니다.</Text>
           ) : (
             myRecentReports.map((item) => (
               <View key={item.id} style={{ marginTop: 8 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ color: '#334155', fontWeight: '700' }}>
+                  <Text style={{ color: colors.sectionTitle, fontWeight: '700' }}>
                     {item.targetType} / {item.targetId}
                   </Text>
                   <Text style={{ color: reportStatusColorMap[item.status], fontWeight: '800', fontSize: 12 }}>

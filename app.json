@@ -18,12 +18,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.divergram.app",
+      "bundleIdentifier": "com.divergram.app.ios",
       "associatedDomains": [
         "applinks:divergram.com",
         "applinks:*.divergram.com"
       ],
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "위치 정보는 다이빙 로그 기록에 사용됩니다.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.",
         "NSPhotoLibraryUsageDescription": "프로필 및 라이선스 사진을 선택하려면 사진 접근 권한이 필요합니다.",

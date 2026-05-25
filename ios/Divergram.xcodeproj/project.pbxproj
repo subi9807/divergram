@@ -146,6 +146,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				3515279601005FCA865FB696 /* [CP] Embed Pods Frameworks */,
+				A1F3B479F0A94F1A8D0E6C72 /* Generate Hermes dSYM for Archive */,
 			);
 			buildRules = (
 			);
@@ -328,6 +329,23 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Divergram/expo-configure-project.sh\"\n";
 		};
+		A1F3B479F0A94F1A8D0E6C72 /* Generate Hermes dSYM for Archive */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework/hermes",
+			);
+			name = "Generate Hermes dSYM for Archive";
+			outputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/hermes.framework.dSYM",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CONFIGURATION\" != \"Release\" ] || [ \"$ACTION\" != \"install\" ]; then\n  exit 0\nfi\n\nHERMES_BIN=\"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework/hermes\"\nHERMES_DSYM=\"${DWARF_DSYM_FOLDER_PATH}/hermes.framework.dSYM\"\n\nif [ ! -f \"$HERMES_BIN\" ]; then\n  echo \"warning: Hermes binary not found: $HERMES_BIN\"\n  exit 0\nfi\n\nif [ -d \"$HERMES_DSYM\" ]; then\n  echo \"Hermes dSYM already exists: $HERMES_DSYM\"\n  exit 0\nfi\n\necho \"Generating Hermes dSYM at: $HERMES_DSYM\"\n/usr/bin/xcrun dsymutil \"$HERMES_BIN\" -o \"$HERMES_DSYM\" || {\n  echo \"warning: Failed to generate Hermes dSYM\"\n  exit 0\n}\n/usr/bin/xcrun dwarfdump --uuid \"$HERMES_DSYM\" || true\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -351,7 +369,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Divergram/Divergram.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 6G5RCDLQLG;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -373,7 +391,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.divergram.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.divergram.app.ios;
 				PRODUCT_NAME = Divergram;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -394,7 +412,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Divergram/Divergram.entitlements;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = 6G5RCDLQLG;
 				INFOPLIST_FILE = Divergram/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = divergram;
@@ -411,7 +429,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.divergram.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.divergram.app.ios;
 				PRODUCT_NAME = Divergram;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -478,10 +496,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -536,10 +551,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

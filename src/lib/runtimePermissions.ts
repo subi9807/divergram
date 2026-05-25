@@ -2,12 +2,15 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { BleManager } from 'react-native-ble-plx';
+import { storage } from './storage';
 
 export type RuntimePermissionStatus = 'granted' | 'denied' | 'unavailable' | 'unknown';
 export type RuntimePermissionResult = {
   status: RuntimePermissionStatus;
   granted: boolean;
 };
+
+const CORE_RUNTIME_PERMISSION_REQUESTED_KEY = 'divergram_core_runtime_permission_requested_v1';
 
 function normalizeStatus(input: unknown): RuntimePermissionStatus {
   const value = String(input || '').toLowerCase();
@@ -151,4 +154,18 @@ export async function requestCoreRuntimePermissions() {
   const location = await requestLocationPermission();
   const bluetooth = await requestBluetoothPermission();
   return { push, location, bluetooth };
+}
+
+export function hasRequestedCoreRuntimePermissionsOnce() {
+  return storage.getString(CORE_RUNTIME_PERMISSION_REQUESTED_KEY) === '1';
+}
+
+export async function requestCoreRuntimePermissionsOnce(options?: { force?: boolean }) {
+  const force = Boolean(options?.force);
+  if (!force && hasRequestedCoreRuntimePermissionsOnce()) {
+    return null;
+  }
+  const result = await requestCoreRuntimePermissions();
+  storage.set(CORE_RUNTIME_PERMISSION_REQUESTED_KEY, '1');
+  return result;
 }

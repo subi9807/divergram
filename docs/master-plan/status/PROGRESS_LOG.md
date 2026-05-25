@@ -278,6 +278,21 @@
   - Evidence: `app/(tabs)/devices.tsx`, `src/locales/ko.json`, `src/locales/en.json`, `src/locales/ja.json`, `src/locales/zh.json`
   - 내용: 레거시 `devices` 탭 화면을 `bluetooth-devices` 리다이렉트로 통합하고, 탭 라벨을 다국어 기준 `다이빙 컴퓨터` 계열로 정합화
 - [x] 연동 UX 안정화 12차 (실패 항목 일괄 재요청)
+
+- [x] 다크모드 정합화(설정/동의/피드) 적용
+  - Evidence: `tailwind.config.js`, `app/_layout.tsx`, `app/(tabs)/settings-detail.tsx`, `src/features/feed/FeedHeader.tsx`, `src/features/feed/FeedPost.tsx`, `src/screens/legal/ConsentScreen.tsx`
+  - 내용: NativeWind dark class 동기화 및 흰 카드 잔존 구간 정리
+- [x] 정책/신고 플로우 다크모드 가독성 보강
+  - Evidence: `src/screens/legal/PolicyDocumentView.tsx`, `src/screens/legal/PolicyCenterScreen.tsx`, `src/screens/legal/OpenSourceLicenseScreen.tsx`, `src/screens/legal/ReportScreen.tsx`
+  - 내용: 법적 문서/신고 폼 전반 카드/텍스트 팔레트를 다크 대응으로 통일
+- [x] 연동 UX 안정화 13차 (다크모드 대응)
+  - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
+  - 내용: 연동 요약/필터/실패로그/빈상태 색상을 테마 연동으로 전환
+- [x] Stormglass 위험도 로직 12차 고도화 (복합 위험 패널티)
+  - Evidence: `src/services/stormglassService.ts`
+  - 내용: 파고·조류·시야·수온·풍속의 동시 악화 조합을 별도 패널티와 경고문으로 반영
+- [x] 타깃 lint 재검증 통과
+  - Command: `npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx src/services/stormglassService.ts src/screens/legal/ReportScreen.tsx`
   - Evidence: `src/screens/dive-log/IntegrationSettingsScreen.tsx`
   - 내용: 연동 요약 카드에 `실패 항목 재요청` 버튼을 추가해 실패 상태(관리형/연결됨) 항목을 일괄적으로 재요청 상태로 전환
 - [x] 변경 파일 eslint 재검증 통과 (경로 통합/연동 UX 반영분)

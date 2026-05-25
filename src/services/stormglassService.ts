@@ -390,6 +390,26 @@ export function calculateMarineRisk(input: {
     else if (windSpeedMps > 9) score -= 12;
   }
 
+  // 복합 위험(파고/조류/시야/수온/풍속 동시 악화)을 별도 반영해 단일지표 과신을 방지
+  let compoundPenalty = 0;
+  if (waveHeightM > 1.8 && currentSpeedKnot > 2.0) {
+    compoundPenalty += 14;
+    warnings.push('파고와 조류가 동시에 높아 입출수 및 수중 이동 리스크가 큽니다.');
+  }
+  if (visibilityM < 4 && currentSpeedKnot > 1.6) {
+    compoundPenalty += 12;
+    warnings.push('저시야+강조류 조합으로 버디 이탈 및 방향 상실 위험이 높습니다.');
+  }
+  if (waterTempC != null && waterTempC < 16 && currentSpeedKnot > 1.6) {
+    compoundPenalty += 8;
+    warnings.push('저수온과 강한 조류가 겹쳐 피로/체온 저하 리스크가 증가할 수 있습니다.');
+  }
+  if (windSpeedMps != null && windSpeedMps > 11 && waveHeightM > 1.5) {
+    compoundPenalty += 8;
+    warnings.push('강풍과 파고 상승이 동반되어 수면 대기 안정성이 낮습니다.');
+  }
+  score -= clamp(0, compoundPenalty, 28);
+
   score = Math.round(clamp(0, score, 100));
 
   if (waveHeightM > 1.8) warnings.push('파고가 높아 입출수 구간 충격이 커질 수 있습니다.');
@@ -412,7 +432,8 @@ export function calculateMarineRisk(input: {
     waveHeightM > 2.6 ||
     currentSpeedKnot > 2.8 ||
     visibilityM < 2.5 ||
-    (windSpeedMps != null && windSpeedMps > 14);
+    (windSpeedMps != null && windSpeedMps > 14) ||
+    compoundPenalty >= 24;
 
   const level = riskLevelFromScore(score);
 

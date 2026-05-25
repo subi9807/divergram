@@ -1,0 +1,26 @@
+app_identifier ENV.fetch('APP_IDENTIFIER', 'com.divergram.app.ios')
+
+# 카테고리/배포 정보
+primary_category 'SOCIAL_NETWORKING'
+secondary_category 'TRAVEL'
+
+# 리뷰 정보 (필요시 환경변수로 덮어쓰기)
+submission_information({
+  add_id_info_uses_idfa: false,
+  add_id_info_serves_ads: false,
+  add_id_info_tracks_install: false,
+  add_id_info_tracks_action: false,
+  add_id_info_limits_tracking: true,
+  add_id_info_limits_tracking_to_custom_audience: true,
+  export_compliance_uses_encryption: false
+})
+
+# fastlane deliver 공통값
+force true
+automatic_release false
+skip_binary_upload true
+skip_metadata false
+skip_screenshots false
+overwrite_screenshots true
+run_precheck_before_submit false
+precheck_include_in_app_purchases false
