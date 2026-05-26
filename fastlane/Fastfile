@@ -13,6 +13,9 @@ end
 platform :ios do
   desc 'App Store Connect 메타데이터/스크린샷/미리보기 업로드 (빌드 업로드 제외)'
   lane :upload_store_assets do
+    skip_screenshots_env = ENV['SKIP_SCREENSHOTS'] == '1'
+    skip_metadata_env = ENV['SKIP_METADATA'] == '1'
+
     options = {
       app_identifier: ENV.fetch('APP_IDENTIFIER', 'com.divergram.app.ios'),
       force: true,
@@ -20,8 +23,8 @@ platform :ios do
       automatic_release: false,
       run_precheck_before_submit: false,
       skip_binary_upload: true,
-      skip_metadata: false,
-      skip_screenshots: false,
+      skip_metadata: skip_metadata_env,
+      skip_screenshots: skip_screenshots_env,
       overwrite_screenshots: true,
       app_previews_path: 'fastlane/preview',
       overwrite_preview_videos: true,
@@ -30,6 +33,13 @@ platform :ios do
       metadata_path: 'fastlane/metadata',
       screenshots_path: 'fastlane/screenshots'
     }
+
+    if skip_screenshots_env
+      options.delete(:screenshots_path)
+      options.delete(:overwrite_screenshots)
+      options.delete(:app_previews_path)
+      options.delete(:overwrite_preview_videos)
+    end
 
     api_key = app_store_api_key
     if api_key
