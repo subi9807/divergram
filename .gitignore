@@ -9,6 +9,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+**/node_modules/
+**/dist/
+**/build/
 *.local
 
 .vscode/*
@@ -24,16 +27,29 @@ dist-ssr
 .env.local
 .env.server.local
 .env.backups/
+**/.env*
+!**/.env.example
+!**/.env.local.example
+!**/.env.server.example
 expo-env.d.ts
 .expo/
+**/.expo/
 
 .firebase/
 
 .secrets/
+**/android/keys/*.json
+**/*service-account*.json
+**/*.p8
 
 # native/generated
 ios/Pods/
 ios/build/
+app/ios/Pods/
+app/ios/build/
+app/android/.gradle/
+app/android/build/
+app/android/app/build/
 
 # local env / helper scripts
 .env.server.local

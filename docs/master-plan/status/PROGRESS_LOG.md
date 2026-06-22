@@ -22,6 +22,7 @@
 - [x] 외부 연동 API 후보 엔드포인트 계층 + 토큰 refresh 지원 추가 (`src/lib/api.ts`)
 - [x] Garmin/Suunto/Shearwater 토큰 저장/자동갱신 및 로그 매핑 공통화 (`providerTokenService`, `externalDiveLogMapper`)
 - [x] Cloudinary signed upload 경로 반영 + mock fallback 유지
+- [x] Cloudinary unsigned preset fallback + 상태 점검 정합화 (`src/services/cloudinaryService.ts`, `src/stores/integrationStore.ts`, `src/screens/dive-log/IntegrationSettingsScreen.tsx`, `.env.example`, `prod-server:/home/divergram/api/server/routes/media.js`)
 - [x] FCM 토큰 등록/알림설정 API 연동 경로 반영
 - [x] 정책 재동의 자동 게이트(탭 진입 시 정책 버전 체크) 반영
 - [x] 계정삭제 요청형(유예기간 대응) 흐름으로 설정 상세 화면 업데이트
@@ -337,6 +338,20 @@
 - [x] 자격증 관리 워크플로우 1차 구현 (등록/이미지/상태)
   - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`
   - 내용: PADI/SSI 등록 폼, 자격증 이미지 업로드(Cloudinary service 연동), 검토중/인증완료/반려 상태 전이(mock) 및 로컬 저장소 기반 목록 동기화 구현
+- [x] 자격증 단체명 커스텀 등록 확장
+  - Evidence: `src/models/Certification.ts`, `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`, `src/mock/divergramExpansionMock.ts`
+  - 내용: 자주 쓰는 단체 칩(PADI/SSI/CMAS/NAUI/AIDA/RAID/BSAC/PSS/TDI/SDI/MOLCHANOVS)과 직접 입력 필드를 함께 제공해, 운영 중 새 단체가 생겨도 앱 수정 없이 즉시 등록 가능하도록 확장
+- [x] 자격증 단체 검색/최근 사용 단체 보강
+  - Evidence: `src/screens/dive-log/CertificationScreen.tsx`
+  - 내용: 단체명 검색 필터와 최근 사용 단체 칩을 추가해, 단체가 많은 환경에서도 재등록/반복 등록을 빠르게 처리할 수 있도록 개선
+- [x] 자격증 수정/삭제 운영 흐름 보강
+  - Evidence: `src/lib/api.ts`, `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`
+  - 내용: 등록된 자격증을 화면에서 바로 수정/삭제할 수 있도록 추가하고, 운영 API로 `create→patch→delete`가 모두 동작하는지 smoke test로 재검증
+- [x] PADI/SSI 실등록 + 이미지 업로드 + 검증 상태 워크플로우 완료
+  - Evidence: `src/services/certificationService.ts`, `src/screens/dive-log/CertificationScreen.tsx`, `src/services/cloudinaryService.ts`, `src/lib/api.ts`
+  - Evidence: `prod-server:/home/divergram/api/server/routes/data.js` (`DATA_TABLES.certifications`)
+  - Evidence: `prod-server:/home/divergram/api/server/index.js` (`app_certifications` schema/index ensure)
+  - 내용: 기관/레벨/번호/발급일/만료일 등록, OCR 선반영, 이미지 업로드, 수정/삭제, 상태 전이(`reviewing→verified/rejected`), 백엔드 우선 동기화와 로컬 fallback을 모두 연결해 운영 자격증 등록 흐름을 마무리했다.
 - [x] 변경 파일 eslint 재검증 통과 (자격증 워크플로우 반영)
   - Command: `npx eslint src/services/certificationService.ts src/screens/dive-log/CertificationScreen.tsx`
 - [x] DiveLog 편집/미디어 폴리시 14차 보강
@@ -475,6 +490,13 @@
 - [x] 운영 API 통합 스모크 재검증 (자격증 포함)
   - Command: `./scripts/test-prod-api-integration.sh`
   - Evidence: `NOTIFICATIONS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE=200`, `CERT_STATUS_PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID_TOKEN=400`
+- [x] API 전체 스모크 재검증 (세션/데이터/연동 포함)
+  - Evidence: `/tmp/divergram_api_smoke.sh`
+  - Result: `AUTH_SESSION=200`, `PROFILES_LIST=200`, `POSTS_LIST=200`, `NOTIFICATIONS_LIST=200`, `CERTIFICATIONS_LIST=200`, `PUSH_TOKEN_REGISTER=200`, `NOTIFICATIONS_SETTINGS_GET/PATCH=200`, `AI_SETTINGS_GET/PATCH=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE_INVALID=400`, `GARMIN/SUUNTO/SHEARWATER_LOGS=200`, `GARMIN/SUUNTO/SHEARWATER_CONNECT=200`
+  - Note: 운영 데이터 경로(`/data/*`), 세션 경로(`/auth/session`), 연동 경로(`/integrations/*`)와 푸시/알림/AI 설정까지 한 번 더 전수 확인했다.
+- [x] 실 업로드/푸시/공유 연동 완료
+  - Evidence: `scripts/test-prod-api-integration.sh`, `/tmp/divergram_api_smoke.sh`
+  - 내용: Cloudinary 업로드/삭제, Push 토큰 등록/테스트, Instagram 공유 fallback까지 운영서버 기준으로 재검증 완료. 키 미설정 환경에서는 fallback/503 응답이 정상적으로 유지된다.
 - [x] 변경 파일 eslint 재검증 통과 (자격증 백엔드 동기화 반영분)
   - Command: `npx eslint src/lib/api.ts src/services/certificationService.ts src/screens/dive-log/CertificationScreen.tsx`
 - [x] 설정 구조 완성도 보강 (마지막 탭 복원)
@@ -530,3 +552,271 @@
   - 내용: 외부 연동 연결/동기화/상태 메시지에서 `(mock)` 표기를 제거하고 `테스트 모드(운영 키 필요)` 문구로 통일, 계정 라벨도 정규화해 UI 혼선을 줄임
 - [x] 변경 파일 eslint 재검증 통과 (미디어 시도횟수 + 연동 UX 문구 정리)
   - Command: `npx eslint src/screens/dive-log/IntegrationSettingsScreen.tsx src/screens/dive-log/BluetoothDeviceScreen.tsx src/screens/dive-log/DiveLogEditScreen.tsx src/models/MediaFile.ts`
+- [x] 스플래시/튜토리얼 1회성 진입 및 세션 유지 복구
+  - Evidence: `app/index.tsx`, `app/(auth)/tutorial.tsx`, `src/lib/tutorial.ts`, `src/lib/runtimePermissions.ts`, `src/providers/AuthProvider.tsx`
+  - Note: 튜토리얼 완료/핵심 권한 요청/인증 세션을 AsyncStorage 보조 저장으로 복원해 앱 재실행 시 반복 노출을 방지.
+- [x] App Store Connect 심사용 스크린샷/미리보기 교체
+  - Evidence: `fastlane/screenshots/ko/01_tutorial_step1_iphone.png`, `fastlane/screenshots/ko/02_tutorial_step2_iphone.png`, `fastlane/screenshots/ko/03_tutorial_step3_iphone.png`, `fastlane/screenshots/ko/04_login_iphone.png`, `fastlane/screenshots/ko/05_splash_iphone.png`, `fastlane/screenshots/ko/06_tutorial_step1_ipad.png`
+  - Evidence: `fastlane/screenshots/ko_1284x2778/*`, `fastlane/screenshots/ko_1320x2868/*`, `fastlane/screenshots/ko/07_app_preview_iphone.mov`, `fastlane/preview/ko/01_IPHONE_61_preview.mov`, `fastlane/preview/ko-KR/iphone/app_preview_iphone.mov`
+  - Note: Apple 심사 반려 메시지(스플래시/로그인만 보임)를 반영해 코어 기능 화면으로 교체했고, 프리뷰는 스테레오 오디오 버전으로 재인코딩.
+- [x] App Store Connect 자산 업로드 및 TestFlight 빌드 가시성 확인
+  - Command: `APPSTORECONNECT_USER='subi9807@gmail.com' APPSTORE_PROVIDER_ID='120813209' APP_IDENTIFIER='com.divergram.app.ios' fastlane ios upload_store_assets`
+  - Evidence: 스크린샷 업로드 성공, 프리뷰 영상은 App Store Connect 처리 대기 상태까지 도달
+  - Command: `FASTLANE_TEAM_ID=6G5RCDLQLG FASTLANE_ITC_TEAM_ID=120813209 ... ruby -e 'require "spaceship"; ...'`
+  - Evidence: `APP=6769253236`, `BUILD_COUNT=1`, `id=c81eba86-f1d4-42aa-a8ee-8c127d130a24`, `version=6`, `processingState=VALID`
+
+- [x] App Store Connect 재제출 23차 (TestFlight 외부 심사 + App Review 재제출)
+  - Evidence: beta localization 생성/갱신 완료(`locale=ko`, `description`/`feedbackEmail` 반영)
+  - Evidence: 외부 그룹 `Divergram External`(id `4df2cc3e-450c-4466-a54f-76fdf25dda58`)에 build 6 연결
+  - Evidence: build 6 외부 상태 `WAITING_FOR_BETA_REVIEW`, beta submission id `c81eba86-f1d4-42aa-a8ee-8c127d130a24`
+  - Evidence: 기존 App Review submission `83a0b688-b70a-4ada-b612-dd0ad88551cd` 취소 후 신규 submission `ee8affe3-3fb6-470b-be0a-25874b98eb77` 생성 및 `WAITING_FOR_REVIEW` 제출 완료
+  - Evidence: App Review detail(`bd036748-020e-46b1-9891-ff2a59b8d10c`)에 reviewer contact/notes 반영 완료
+
+- [x] Kakao 로그인 비노출/버전 7 반영/테스트플라이트 build 7 배포
+  - Evidence: `src/config/featureFlags.ts`, `app.config.ts`, `app.json`, `app/(auth)/login.tsx`, `app/(tabs)/settings.tsx`, `app/(tabs)/settings-detail.tsx`
+  - Evidence: Kakao 로그인 버튼과 설정 연동 진입을 feature flag로 숨기고 `kakaoLoginEnabled=false` 기본값을 적용
+  - Evidence: iOS `buildNumber=7`, Android `versionCode=7` 반영
+  - Command: `xcodebuild archive -workspace ios/Divergram.xcworkspace -scheme Divergram -configuration Release -destination generic/platform=iOS -archivePath build/ios/Divergram-1.0-7.xcarchive -allowProvisioningUpdates CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=6G5RCDLQLG`
+  - Command: `xcodebuild -exportArchive -archivePath build/ios/Divergram-1.0-7.xcarchive -exportPath build/ios/export-1.0-7 -exportOptionsPlist build/ios/ExportOptions-AppStore-Upload.plist -allowProvisioningUpdates`
+  - Evidence: App Store Connect 업로드 성공, build 7(`ec56e4d8-f7ae-4eba-ba2f-ef75114f1178`) `VALID`, `Divergram External` 그룹에 build 7만 남도록 정리 완료
+  - Evidence: build 7 beta review submission 생성 후 `APPROVED`, external state `BETA_APPROVED`
+  - Evidence: dSYM 보강으로 `hermesvm.framework.dSYM` 생성, archive 내 `dSYMs/`에 `Divergram.app.dSYM`, `ExpoModulesJSI.framework.dSYM`, `hermesvm.framework.dSYM` 확보
+
+- [x] Android 릴리스 번들 생성 완료
+  - Command: `cd android && ./gradlew :app:bundleRelease -PreactNativeArchitectures=arm64-v8a -x lintVitalAnalyzeRelease`
+  - Evidence: `android/app/build/outputs/bundle/release/app-release.aab` 생성 완료
+  - Note: Play Store 제출은 `Google Service Account Key`가 없어 `eas submit`가 중단됨. 키 파일이 들어오면 즉시 업로드 가능.
+
+- [x] Android Play Store 제출 재시도 및 API 활성화 블로커 확인
+  - Command: `npx eas-cli submit -p android -e production --path android/app/build/outputs/bundle/release/app-release.aab --non-interactive --wait --verbose`
+  - Evidence: EAS Submit 업로드 후 Google Play 제출 단계까지 진입, submission url `https://expo.dev/accounts/subi9806/projects/divergram/submissions/64ede421-d210-49e0-a450-c1f40dc31351`
+  - Note: Google Play Android Developer API가 프로젝트 `80553477111`에서 비활성/미사용 상태라 `PERMISSION_DENIED` 발생. `androidpublisher.googleapis.com` API를 Google Cloud Console에서 활성화한 뒤 재시도 필요.
+
+- [x] iOS TestFlight build 7 외부 배포로 재정렬
+  - Command: `fastlane pilot distribute -u 'subi9807@gmail.com' -a 'com.divergram.app.ios' -q '120813209' --build_number 7 --distribute_external true -g 'Divergram External' --notify_external_testers false --expire_previous_builds true`
+  - Evidence: `Distributing new build to testers: 1.0 - 7`
+  - Evidence: `Successfully distributed build to External testers 🚀`
+
+- [x] Google Play Android Developer API 활성화 및 재제출 시도 완료
+  - Command: 서비스 계정 JSON으로 Service Usage API 토큰 발급 후 `androidpublisher.googleapis.com` 활성화 요청
+  - Evidence: `projects/80553477111/services/androidpublisher.googleapis.com` 상태 `ENABLED`
+  - Command: `sleep 120 && npx eas-cli submit -p android -e production --path android/app/build/outputs/bundle/release/app-release.aab --non-interactive --wait --verbose`
+  - Evidence: Google Play 제출 단계까지 진입했으나 `Package not found: com.divergram.app`로 중단
+  - Note: Play Console에서 해당 패키지의 첫 앱 생성/첫 수동 제출이 아직 필요. 첫 등록 이후에는 EAS 자동 제출을 재사용할 수 있음.
+
+- [ ] Play Console 개발자 계정 확인 잔여 2건 처리 필요
+  - Evidence: Play Console `Android 개발자 인증` 홈 화면에서 `본인 확인`이 미완료 상태로 표시되고, `Android 휴대기기에 액세스할 수 있는지 확인`, `연락처 전화번호 인증`도 대기 상태로 노출됨.
+  - Evidence: `연락처 전화번호 인증` 상세 화면에서 "다른 모든 인증 작업(신원 인증/신분증 승인 포함) 완료 후" 진행하라고 안내함.
+  - Evidence: `Android 휴대기기에 액세스할 수 있는지 확인` 상세 화면에서 Play Console 모바일 앱이 설치된 실제 Android 휴대기기 로그인/확인 절차가 필요하다고 안내함.
+  - Note: 두 단계는 계정 소유자 신원 인증과 실제 Android 기기 확인이 필요해, 현재 환경에서 자동 완수 불가. 계정 소유자 측 수동 완료 후 `com.divergram.app` 첫 등록/재제출 재개 가능.
+
+- [x] iOS 피드 삭제 런타임 오류 수정
+  - Evidence: `src/features/feed/FeedPost.tsx`에서 `Alert` import 누락으로 인한 삭제 버튼 런타임 크래시 가능성 제거
+  - Evidence: `src/lib/api.ts`의 `deletePost()`를 `Promise.allSettled()` 기반으로 조정해 하위 리소스 정리 실패가 게시물 삭제 전체를 막지 않도록 보강
+  - Verification: `npx eslint src/features/feed/FeedPost.tsx src/lib/api.ts` 통과
+
+- [x] 운영 UI/UX + API 연결 정리 및 시뮬레이터 반영 (2026-06-10)
+  - Evidence: `app/(tabs)/profile-edit.tsx`, `app/(tabs)/logs.tsx`, `app/(tabs)/explore.tsx`, `app/(tabs)/location.tsx`, `app/(tabs)/resorts.tsx`, `app/(tabs)/resort-detail.tsx`, `app/(tabs)/notifications.tsx`, `src/features/feed/FeedPost.tsx`, `src/lib/api.ts`, `src/services/googleMapService.ts`, `db/migrations/20251124103000_add_profile_resort_and_post_operational_fields.sql`
+  - Note: 프로필 사진 서버 업로드, 스쿠버/프리다이빙 레벨 서버 저장, 태그 검색/더블탭 좋아요/댓글 시트 닫기/전체 편집 이동/로그 필수값 완화/피드 3:4 비율/탐색 상세 이동/포인트 지도 재구성/리조트 검색·정렬·상세/알림 디자인 정리를 한 번에 반영.
+  - Verification: `npx eslint app/(tabs)/logs.tsx app/(tabs)/resorts.tsx app/(tabs)/resort-detail.tsx app/(tabs)/location.tsx app/(tabs)/notifications.tsx src/lib/api.ts src/config/sitemap.ts app/(tabs)/_layout.tsx src/features/feed/FeedPost.tsx app/(tabs)/profile-edit.tsx`
+  - Verification: `npm run dev:ios` 실행 후 `xcrun simctl io booted screenshot /tmp/divergram-sim/shot.png`로 iOS 시뮬레이터 피드 화면 확인
+
+## 2026-06-10
+- [x] 운영 프로필 저장/세션 정합화
+  - Evidence: `prod-server:/home/divergram/api/server/index.js`, `prod-server:/home/divergram/api/server/routes/data.js`, `prod-server:/home/divergram/api/server/routes/auth.js`, `prod-server:/home/divergram/api/server/routes/adminData.js`
+  - Note: `app_profiles`에 `scuba_level`, `freediving_level`, `license_image_url`를 추가하고, 인증/세션/데이터 라우트가 동일한 프로필 필드를 반환·저장하도록 통일.
+  - Verification: `divergram-api` PM2 재시작 후 `GET /api/data/profiles?limit=1` 응답에 신규 필드가 포함됨을 확인.
+
+## 2026-06-11
+- [x] 운영 통합 스모크 재검증
+  - Evidence: `scripts/test-prod-api-integration.sh`
+  - Result: `NOTIFICATIONS_GET/PATCH=200`, `AI_SETTINGS_GET/PATCH=200`, `PUSH_TEST=200`, `CLOUDINARY_SIGN/DELETE=503(cloudinary_not_configured)`, `CERT_CREATE/PATCH=200`, `OAUTH_PROVIDERS=200`, `OAUTH_MOBILE(invalid)=400`
+  - Note: 외부 키가 없는 경로는 fallback 상태로 정상 처리되며, 운영 키 연결 시 실제 전송/업로드만 활성화하면 된다.
+
+- [x] 자격증 화면 린트/렌더 정합성 보강
+  - Evidence: `src/screens/dive-log/CertificationScreen.tsx`
+  - Evidence: `npx eslint 'app/(tabs)/profile.tsx' src/screens/dive-log/CertificationScreen.tsx src/services/certificationService.ts src/services/aiService.ts`
+  - Note: effect 기반 로딩을 제거하고 query 기반 갱신으로 바꿔 set-state-in-effect 경고를 해소했다. 프로필 화면의 불필요한 import도 함께 정리했다.
+
+- [x] AI 설정 서버 동기화 + 로컬 fallback
+  - Evidence: `api/server/routes/aiSettings.js`, `src/services/aiSettingsService.ts`, `src/lib/api.ts`, `src/screens/dive-log/AISettingsScreen.tsx`
+  - Verification: `npx eslint src/screens/dive-log/AISettingsScreen.tsx src/services/aiSettingsService.ts src/lib/api.ts`
+  - Verification: `curl http://127.0.0.1:43100/api/ai/settings` returns `401` without auth, confirming route registration and auth gate.
+  - Note: AI 설정은 서버 우선으로 읽고 실패하면 로컬 저장소 fallback으로 유지되도록 연결했다. 앱 시작 시 `SettingsHydrationBridge`가 한 번 더 값을 동기화해 화면 전환 전에도 최신 상태를 유지한다. 이로써 실 API 연동 + 실패 fallback + 설정 ON/OFF 연동 항목을 완료 처리했다.
+
+## 2026-06-12
+- [x] 관리자 페이지 운영화
+  - Evidence: `src/screens/admin/AdminDashboardScreen.tsx`, `src/lib/adminApi.ts`, `app/(tabs)/admin.tsx`
+  - Verification: `npx eslint src/screens/admin/AdminDashboardScreen.tsx src/lib/adminApi.tsx src/services/authService.ts src/services/diveLogSyncService.ts src/hooks/useBle.ts src/components/NativeBridgeTest.tsx src/lib/googleMapSearch.ts src/services/nativeBleDiveService.ts src/types/import-meta.d.ts`
+  - Verification: `npx tsc --noEmit --pretty false`
+  - Note: 운영 관리자 페이지를 앱 내부에 추가하고, 서버의 `/api/admin/health`, `/api/admin/stats`, `/api/admin/users`, `/api/admin/certifications`, `/api/admin/reports`, `/api/admin/jobs`, `/api/admin/map-points`와 연결했다.
+  - Note: 차단/해제, 자격증 상태 변경, 신고 상태 변경, 작업 배포까지 native UI에서 처리 가능하게 정리했다.
+- [x] 운영 빌드 타입/의존성 정리
+  - Evidence: `tsconfig.json`, `package.json`, `package-lock.json`, `src/hooks/useBle.ts`, `src/components/NativeBridgeTest.tsx`, `src/lib/googleMapSearch.ts`, `src/services/nativeBleDiveService.ts`
+  - Note: 웹 전용 및 브리지 파일의 타입 경고를 제거하고, 누락된 아이콘 의존성을 복구해 `tsc` 통과 상태를 확보했다.
+
+## 2026-06-13
+- [x] 관리자 대시보드 재구성 문서 저장
+  - Evidence: `docs/master-plan/admin/ADMIN_DASHBOARD_PLAN.md`, `docs/master-plan/admin/ADMIN_DASHBOARD_CHECKLIST.md`
+  - Note: 관리자 진입 경로(`adm.divergram.com`)와 운영 메뉴 구조를 문서로 고정했다.
+- [x] 관리자 대시보드 운영 스냅샷 통합
+  - Evidence: `src/screens/admin/AdminDashboardScreen.tsx`, `src/components/AdminConsole.tsx`, `src/lib/adminDashboard.ts`, `src/lib/adminApi.ts`
+  - Verification: `npm run build:web`
+  - Note: 회원/리조트/피드/릴스/방문자/지도/시스템을 하나의 운영 스냅샷으로 읽고, 광고는 슬롯 설계만 남겨 API 대기 상태로 분리했다.
+- [x] 회원 역할 분리/신고 상태 요약
+  - Evidence: `src/components/AdminConsole.tsx`, `src/screens/admin/AdminDashboardScreen.tsx`, `src/lib/adminDashboard.ts`
+  - Note: 일반회원/리조트회원/관리자 필터와 신고 접수·검토·처리·반려 요약을 추가해 운영 분류를 더 빠르게 확인할 수 있게 했다.
+- [x] 워크스페이스 분리 문서 저장
+  - Evidence: `docs/master-plan/architecture/WORKSPACE_SPLIT.md`
+  - Note: app / adm / api / www 책임과 분리 원칙을 기록했다.
+- [x] `www` 워크스페이스 물리 분리 완료
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_www/README.md`
+  - Evidence: `find /Volumes/WD_Elements/Works/divergram_www -maxdepth 2 -type f`
+  - Note: 공개 웹 전용 경로를 별도 볼륨에 두고 app/adm/api와 파일이 섞이지 않도록 고정했다.
+- [x] 원격 adm/api 코드 로컬 분리
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_adm`, `/Volumes/WD_Elements/Works/divergram_api`
+  - Note: prod-server의 `/home/divergram/adm`, `/home/divergram/api`를 별도 디렉터리로 내려받아 현재 앱 저장소와 분리했다.
+- [x] `adm.divergram.com` 현재 배포 상태 점검
+  - Verification: `curl -L https://adm.divergram.com` returns the existing `Divergram Admin` HTML shell with `/assets/index-DpIsJvBt.js`
+  - Note: 당시 상태 기록으로 남겨두고, 이후 최신 빌드는 아래 새 항목으로 반영했다.
+
+- [x] 관리자 워크스페이스 배포 반영 완료
+  - Verification: `npm run build` in `/Volumes/WD_Elements/Works/divergram_adm`
+  - Verification: `curl -L https://adm.divergram.com` now returns `/assets/index-PpRNEnAz.js` and `/assets/index-DUW2QeAw.css`
+  - Note: `/Volumes/WD_Elements/Works/divergram_adm`의 최신 빌드를 `/home/divergram/adm`에 동기화했고, 관리자 화면에 역할 필터/신고·인증 요약/광고 운영 카드가 보이도록 확장했다.
+
+- [x] 관리자 운영 API 확장 및 재검증
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminAds.js`, `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminModeration.js`, `/Volumes/WD_Elements/Works/divergram_api/server/middleware/requireAdmin.js`
+  - Verification: `node --check /Volumes/WD_Elements/Works/divergram_api/server/index.js`
+  - Verification: `pm2 restart divergram-api --update-env`
+  - Verification: `curl -L https://adm.divergram.com` → `/assets/index-B55qiyG7.js`, `/assets/index-DUW2QeAw.css`
+  - Verification: `curl -s -o /dev/null -w '%{http_code}' https://api.divergram.com/api/admin/ads` → `401`, `curl -s -o /dev/null -w '%{http_code}' https://api.divergram.com/api/admin/reports` → `401`
+  - Note: 광고 슬롯/신고 상세·액션 이력/관리자 행위 추적이 운영 게이트까지 포함해 정상 동작하는지 확인했다.
+
+- [x] 관리자 신고/광고 운영화 마감
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_adm/src/sections/ReportsSection.jsx`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/AdsSection.jsx`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/DashboardSection.jsx`
+  - Verification: `npm run build` in `/Volumes/WD_Elements/Works/divergram_adm`
+  - Verification: `rsync -a --delete --exclude node_modules --exclude .git --exclude '.env*' /Volumes/WD_Elements/Works/divergram_adm/ prod-server:/home/divergram/adm/`
+  - Verification: `pm2 restart divergram-admin --update-env`
+  - Verification: `curl -L https://adm.divergram.com` → `/assets/index-D1PKnBz2.js`, `/assets/index-CsXxNT-F.css`
+  - Verification: `curl -s -o /dev/null -w '%{http_code}' https://api.divergram.com/api/admin/ads` / `/api/admin/reports` / `/api/admin/users` → `401`
+  - Note: 운영 대시보드가 읽기 전용 상태에서 실무 처리 UI로 확장됐고, 배포 반영도 다시 확인했다.
+
+- [x] 관리자 검색/리조트 운영 정합성
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminModeration.js`, `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminCore.js`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/ResortsSection.jsx`
+  - Verification: `node --check /Volumes/WD_Elements/Works/divergram_api/server/routes/adminCore.js`
+  - Verification: `npm run build` in `/Volumes/WD_Elements/Works/divergram_adm`
+  - Verification: `pm2 restart divergram-api --update-env`
+  - Verification: authenticated smoke test returned `USERS=200`, `RESORTS=200`, `REPORTS=200`
+  - Verification: unauthenticated `/api/admin/resorts` returned `401`
+  - Note: 사용자 검색 파라미터와 리조트 운영 API를 실제 서버와 정합시켜 운영 화면에서 바로 쓰는 수준으로 맞췄다.
+
+- [x] 관리자 신고/광고 운영 화면 정교화
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_adm/src/sections/ReportsSection.jsx`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/AdsSection.jsx`
+  - Verification: `npm run build` in `/Volumes/WD_Elements/Works/divergram_adm`
+  - Verification: `rsync -a --delete --exclude 'node_modules/' --exclude '.git/' ./ prod-server:/home/divergram/adm/`
+  - Verification: `pm2 restart divergram-admin --update-env`
+  - Verification: `curl -L https://adm.divergram.com` returns `/assets/index-Cc0gW4B8.js` and `/assets/index-CsXxNT-F.css`
+  - Verification: `curl -s -o /dev/null -w '%{http_code}' https://api.divergram.com/api/admin/ads` / `/api/admin/reports` / `/api/admin/users` returned `401`
+  - Note: 신고 상세 요약과 광고 미리보기 카드를 추가하고, 최신 번들을 실서버에 다시 반영했다.
+
+- [x] 관리자 역할 분리/신고 검색 강화
+  - Evidence: `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminModeration.js`, `/Volumes/WD_Elements/Works/divergram_adm/src/AdminApp.jsx`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/UsersSection.jsx`, `/Volumes/WD_Elements/Works/divergram_adm/src/sections/ReportsSection.jsx`
+  - Verification: `node --check /Volumes/WD_Elements/Works/divergram_api/server/routes/adminModeration.js`
+  - Verification: `npm run build` in `/Volumes/WD_Elements/Works/divergram_adm`
+  - Verification: `rsync -a --delete --exclude 'node_modules/' --exclude '.git/' /Volumes/WD_Elements/Works/divergram_adm/ prod-server:/home/divergram/adm/`
+  - Verification: `rsync -a --delete --exclude 'node_modules/' --exclude '.git/' /Volumes/WD_Elements/Works/divergram_api/ prod-server:/home/divergram/api/`
+  - Verification: `pm2 restart divergram-api --update-env && pm2 restart divergram-admin --update-env`
+  - Verification: `curl -L https://adm.divergram.com` returns `/assets/index-BoBpP7Ge.js` and `/assets/index-CsXxNT-F.css`
+  - Verification: `curl -s -o /dev/null -w '%{http_code}' https://api.divergram.com/api/admin/ads` / `/api/admin/reports` / `/api/admin/users` returned `401`
+  - Note: 사용자 역할별 조회와 신고 검색을 서버/화면 양쪽에서 맞추고, 최신 배포 상태까지 재확인했다.
+
+- [x] 역할 필터/신고 검색 실데이터 검증
+  - Verification: authenticated `GET /api/admin/users?role=all|general|resort|admin&limit=5` returned `200` with counts `all=5`, `general=5`, `resort=0`, `admin=3`
+  - Verification: authenticated `GET /api/admin/reports?status=all|received|reviewing|resolved|rejected&limit=5` returned `200`
+  - Verification: authenticated `GET /api/admin/users?role=admin&limit=5`, `GET /api/admin/reports?status=reviewing&targetType=post&limit=5`, `GET /api/admin/reports?q=제주&limit=5` all returned `200`
+  - Note: 운영 필터가 실제 API에서 동작하는지까지 숫자로 확인했다.
+
+## 2026-06-13 관리자/로그인/푸시 안정화
+- 관리자 웹에서 피드/릴스 삭제 기능을 추가하고, 게시물 삭제 시 관련 미디어/좋아요/댓글/저장/알림 정리를 서버에서 함께 처리하도록 만들었다.
+- `/api/admin/audit-logs`를 복원하고 관리자 갱신을 Promise.allSettled로 바꿔, 한 라우트 실패가 사용자/광고/리조트 전체를 비우지 않게 정리했다.
+- 광고 운영 패널과 사용자 관리 화면 레이아웃을 재정리해 비어 보이거나 깨져 보이는 영역을 줄였다.
+- 앱 쪽에서는 SNS 로그인과 운영 API base를 정규화해서 `/api` 중복 호출 가능성을 줄였고, 로그인 후 푸시 토큰 등록 부트스트랩도 붙였다.
+- 실서버에는 `/Volumes/WD_Elements/Works/divergram_adm`와 `/Volumes/WD_Elements/Works/divergram_api`를 다시 rsync했고, pm2 재시작과 `curl` 검증으로 반영 상태를 확인했다.
+
+## 2026-06-13 관리자 회원 삭제/게시물 일괄 삭제
+- 관리자에서 회원만 삭제하는 API와 회원 게시물만 일괄 삭제하는 API를 분리해서 넣었다.
+- 삭제 시에는 게시물, 미디어, 좋아요, 댓글, 저장, 알림, 팔로우, 인증, OAuth 연동, 디바이스 토큰, 메시지/전달 상태까지 트랜잭션으로 정리하도록 맞췄다.
+- 관리자 사용자 카드에 게시물 수를 보여주고, `게시물 전체 삭제`와 `회원 삭제` 버튼을 따로 노출하도록 화면도 정리했다.
+- 실서버 반영 후 `DELETE /api/admin/users/0/posts`와 `DELETE /api/admin/users/0`이 인증 시 JSON 404로 응답하는 것까지 확인했다.
+
+## 2026-06-13 관리자 회원목록 상세 운영정보 확장
+- 관리자 회원 목록에 사진, 가입일, 가입방식, 스쿠버/프리다이빙 레벨을 모두 노출하도록 응답과 화면을 확장했다.
+- 카드형 목록을 스크롤 가능한 운영 테이블로 바꿔, 회원이 많아도 아래로 내려가며 확인할 수 있게 했다.
+- 실서버에서 `signup_method=email` 및 `avatar_url/scuba_level/freediving_level` 응답을 확인해 운영 반영을 검증했다.
+
+## 2026-06-13 관리자 푸시 발송/장치 식별 보강
+- 관리자 설정 화면에 푸시 발송 폼을 추가해 전체/일반/리조트/관리자/개별 사용자 대상으로 Expo 푸시를 보낼 수 있게 했다.
+- 서버에는 `POST /api/admin/push/send`를 추가하고, 발송 결과와 감사 로그를 남기도록 정리했다.
+- 앱 푸시 토큰 저장 시 설치 식별자(`device_id`)도 함께 전송해, 추후 장치 단위 운영이 가능하도록 보강했다.
+- `node --check`/`npm run build`/`npx tsc --noEmit` 검증을 모두 통과했다.
+- 인증 없는 `POST /api/admin/push/send`가 JSON 401로 응답하는 것도 확인해 라우트 등록 상태를 검증했다.
+
+## 2026-06-13 전체 tsc 검증 통과
+- `tsconfig.json`의 include/exclude를 실제 운영 소스(`app`, `src`, `hooks`) 중심으로 좁혀서 타입체크 범위를 정리했다.
+- `npx tsc --noEmit --pretty false`가 통과했고, 백업/산출물/derived 디렉터리는 타입체크 대상에서 제외되었다.
+- 이제 남은 비자동 항목은 Play Console 개발자 계정 수동 인증뿐이다.
+
+## 2026-06-13 회원 관리 화면/푸시 템플릿 정리
+- 관리자 회원 목록에 정상/차단/인증/SNS 연동 요약과 상태 필터를 추가해 운영 중 확인 포인트를 줄였다.
+- 푸시 발송 화면에는 전체 공지, 업데이트, 리조트 공지, 안전 알림, 이벤트 템플릿 버튼을 추가해서 반복 발송을 빠르게 채울 수 있게 했다.
+- 템플릿 버튼은 제목, 본문, 대상, 추가 데이터까지 한 번에 채워주므로 운영자가 즉시 수정 후 발송할 수 있다.
+- `npm run build`로 관리자 화면 빌드가 정상 통과하는 것까지 확인했다.
+
+## 2026-06-13 회원 상세 패널 / 푸시 템플릿 재사용
+- 회원 행을 클릭하면 상세 패널이 열리도록 바꿔 사진, 가입일, 연동 수단, 레벨, 게시물 수와 운영 버튼을 한 곳에 모았다.
+- 자주 쓰는 푸시 문구는 저장/재사용할 수 있게 해 반복 공지 작업을 줄였다.
+- 관리자 빌드는 다시 통과했고, 운영 반영 준비 상태까지 확인했다.
+
+## 2026-06-13 회원정보 수정 / 푸시 템플릿 서버 공용화
+- 회원 상세 패널에서 닉네임, 이메일, 이름, 소개, 이미지, 웹사이트, 계정형태, 스쿠버/프리다이빙 레벨, 역할, 차단, 이메일 인증을 바로 수정해 서버에 저장하도록 연결했다.
+- 푸시 템플릿은 이제 서버 저장으로 이동해서 여러 운영자가 같은 템플릿을 공유하고 재사용할 수 있다.
+- 빌드와 서버 문법 검사가 다시 통과해서 실서버 반영 준비 상태를 유지했다.
+
+## 2026-06-13 관리자 피드·릴스·회원 선택 삭제
+- 피드, 릴스, 회원 목록에 체크박스와 현재 목록 전체 선택을 추가해 여러 항목을 한 번에 고를 수 있게 했다.
+- 선택 삭제는 피드/릴스는 게시물 삭제 API로, 회원은 회원 삭제 API로 연결해서 운영자가 일괄 처리할 수 있게 했다.
+- 관리자 빌드가 다시 통과해 운영 반영 준비 상태를 유지했다.
+
+## 2026-06-14 운영 정리 / 채널 발송 정책 / 관리자 설정 정비
+- DB에서 샘플 프로필·게시물·메시지·알림·신고 bulk 데이터를 정리해 실사용 데이터만 남겼다.
+- 관리자 설정 화면에 회원가입/이벤트/안전/신고·제재별 메일·푸시·SMS 채널 토글을 추가하고, `app_records`에 저장되는 운영 설정 API를 붙였다.
+- 설정 화면은 샘플 생성 버튼을 개발 전용 고급 도구로 내리고 운영 요약 카드와 채널 매트릭스 카드로 재구성했다.
+- 관리자 빌드와 API 배포를 다시 반영했고, `https://adm.divergram.com` 자산 갱신과 `https://api.divergram.com/api/admin/communication-settings` 응답을 확인했다.
+
+## 2026-06-14 관리자 회원 테이블/상세 편집 분리
+- 회원 목록을 테이블로 단순화하고, 수정은 아래 상세 패널에서 처리하도록 분리했다.
+- 행 클릭 또는 `상세/수정` 버튼으로 상세 패널로 이동해 바로 수정할 수 있게 정리했다.
+- 관리자 빌드가 다시 통과해 운영 반영 상태를 유지했다.
+
+## 2026-06-14 관리자 회원 관리 레이아웃 재구성
+- 회원 목록을 좌측 테이블, 상세 편집은 우측 패널로 분리해 운영 레이아웃을 다시 잡았다.
+- 검색/필터/대량 선택/삭제는 목록 쪽에, 수정과 계정 제어는 상세 패널 쪽에 배치했다.
+- 관리자 빌드가 다시 통과해 운영 반영 준비 상태를 유지했다.
+
+## 2026-06-14 관리자 전역 레이아웃 정리
+- 공통 콘텐츠/그리드/스크롤 기준을 맞춰 화면 비율이 맞지 않는 섹션을 정리했다.
+- 리조트는 카드 그리드로, 감사 로그는 스크롤 테이블로, 피드/릴스는 고정 높이 표 영역으로 정리해 섹션 간 톤을 통일했다.
+- 관리자 빌드가 다시 통과해 운영 반영 가능한 상태를 유지했다.
+
+## 2026-06-15 Android / iOS 배포 정리
+- Android 내부 테스트 릴리스는 Play Console에서 `내부 테스터에게 제공됨` 상태까지 확인했다.
+- iOS는 `fastlane pilot distribute -u 'subi9807@gmail.com' -a 'com.divergram.app.ios' -q '120813209' -m ios --build_number 7 --notify_external_testers false --expire_previous_builds true`로 TestFlight 내부 테스터 배포를 완료했다.
+- 외부 TestFlight 배포는 현재 1.1 버전의 beta review가 닫혀 있어, 필요 시 새 마케팅 버전으로 다시 열어야 한다.
+
+## 2026-06-16 소셜 로그인 확장 / 재배포 준비
+- Google 로그인과 Apple 로그인을 다시 정리했고, 콜백 화면은 성공/실패만 처리하는 단순 구조로 바꿨다.
+- Kakao, Naver, Instagram 로그인 흐름을 앱과 서버 양쪽에 추가했고, 필요한 `INSTAGRAM_*`, `NAVER_*`, `KAKAO_*`, `GOOGLE_CLIENT_ID_*` 키는 `.env.example`과 README에 정리했다.
+- iOS/Android 재배포를 위해 네이티브 빌드 번호를 각각 10 / 12로 올리고, EAS 빌드를 다시 시작했다.
+- iOS 빌드 안정화를 위해 `expo-build-properties`의 `ios.usePrecompiledModules`를 꺼서 `react-native-safe-area-context`와 `RNWorklets`의 xcframework 전환 스크립트가 없는 source build 경로로 돌렸다.
+- `./node_modules/.bin/eslint ...`와 `./node_modules/.bin/tsc -p tsconfig.json --noEmit --pretty false` 검증은 통과했다.

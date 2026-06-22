@@ -1,0 +1,802 @@
+{
+  "common": {
+    "loading": "로딩 중...",
+    "cancel": "취소",
+    "retry": "다시 시도",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "편집",
+    "close": "닫기",
+    "next": "다음",
+    "previous": "이전",
+    "done": "완료",
+    "all": "전체",
+    "today": "오늘",
+    "back": "뒤로가기"
+  },
+  "welcome": {
+    "subtitle": "다이빙 경험을 기록하고\n커뮤니티와 공유하세요",
+    "getStarted": "시작하기",
+    "title": "다이빙을 기록하고 공유하세요",
+    "badge": "Dive community"
+  },
+  "auth": {
+    "welcome": "환영합니다",
+    "loginSubtitle": "계정에 로그인하세요",
+    "continueWithGoogle": "Google로 계속하기",
+    "continueWithApple": "Apple로 계속하기",
+    "continueWithFacebook": "Facebook으로 계속하기",
+    "continueWithKakao": "카카오로 계속하기",
+    "continueWithNaver": "네이버로 계속하기",
+    "continueWithEmail": "이메일로 계속하기",
+    "or": "또는",
+    "email": "이메일",
+    "emailPlaceholder": "your@email.com",
+    "password": "비밀번호",
+    "passwordPlaceholder": "비밀번호를 입력하세요",
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "name": "이름",
+    "namePlaceholder": "홍길동",
+    "contact": "연락처",
+    "contactPlaceholder": "010-1234-5678",
+    "backToSocial": "소셜 로그인으로 돌아가기",
+    "noAccount": "계정이 없으신가요?",
+    "hasAccount": "이미 계정이 있으신가요?",
+    "error": "오류",
+    "loginFailed": "로그인에 실패했습니다",
+    "signupFailed": "회원가입에 실패했습니다",
+    "fillAllFields": "모든 필드를 채워주세요",
+    "passwordTooShort": "비밀번호는 8자 이상이어야 합니다.",
+    "emailAlreadyExists": "이미 가입된 이메일입니다.",
+    "processing": "처리 중...",
+    "privacy": "개인정보처리방침",
+    "terms": "이용약관",
+    "welcomeBackTitle": "환영합니다",
+    "welcomeBackMessage": "로그인에 성공했습니다",
+    "welcomeTitle": "환영합니다",
+    "welcomeMessage": "로그인에 성공했습니다",
+    "signedOutTitle": "로그아웃",
+    "signedOutMessage": "정상적으로 로그아웃되었습니다",
+    "googleConfigMissing": "Google 로그인 설정이 누락되었습니다.",
+    "oauthConfigInvalid": "로그인 설정이 올바르지 않습니다. 앱 설정을 확인한 뒤 다시 시도해주세요.",
+    "googleRequiresDevBuild": "Expo Go에서는 Google 로그인이 제한됩니다. iOS/Android 개발 빌드에서 다시 시도해주세요.",
+    "googleProfileMissing": "Google 계정 정보(이메일/ID)를 확인할 수 없습니다.",
+    "oauthBackendMissing": "현재 서버에서 OAuth 토큰 교환을 지원하지 않습니다.",
+    "googleUserInfoFailed": "Google 사용자 정보 조회에 실패했습니다.",
+    "socialEmailExists": "이미 가입된 이메일입니다.",
+    "socialEmailExistsPrompt": "{{email}} 은(는) 이미 이메일 계정으로 가입되어 있습니다. 소셜 계정을 연동할까요?",
+    "socialSignupRequiredTitle": "회원정보 없음",
+    "socialSignupRequiredPrompt": "가입된 회원정보가 없습니다. {{provider}} 계정으로 회원가입하시겠습니까?",
+    "socialSignupCompleteTitle": "회원가입 완료",
+    "socialSignupCompleteMessage": "소셜 계정으로 회원가입하고 로그인했습니다.",
+    "socialSignupFailed": "소셜 회원가입에 실패했습니다. 다시 시도해주세요.",
+    "socialLinkedEmailLoginRequired": "연동된 계정입니다. 이메일 비밀번호로 로그인하면 소셜 연동이 완료됩니다.",
+    "socialLinkFailed": "소셜 계정 연동에 실패했습니다. 다시 시도해주세요.",
+    "socialLinkEmailMismatch": "현재 로그인한 계정 이메일과 소셜 계정 이메일이 달라 연동할 수 없습니다.",
+    "socialLinkPendingNotice": "{{provider}} 연동 진행 중입니다. {{email}} 계정 비밀번호로 로그인해주세요.",
+    "linkNow": "연동하기",
+    "ssoLinkedTitle": "연동 완료",
+    "ssoLinkedMessage": "{{provider}} 계정이 이메일 계정에 연동되었습니다.",
+    "kakaoCancelled": "카카오 로그인이 취소되었습니다.",
+    "kakaoTokenExchangeFailed": "카카오 토큰 교환 실패: {{message}}",
+    "kakaoUserInfoFailed": "카카오 사용자 정보 조회 실패",
+    "naverCancelled": "네이버 로그인이 취소되었습니다.",
+    "naverTokenExchangeFailed": "네이버 토큰 교환 실패: {{message}}",
+    "naverUserInfoFailed": "네이버 사용자 정보 조회 실패"
+  },
+  "privacy": {
+    "content1": "Divergram은 사용자의 개인정보 보호를 중요하게 생각합니다.",
+    "content2": "수집된 정보는 서비스 제공 목적으로만 사용되며, 제3자에게 제공되지 않습니다.",
+    "content3": "자세한 내용은 웹사이트의 개인정보처리방침을 참조하세요."
+  },
+  "terms": {
+    "content1": "본 약관은 Divergram 서비스 이용에 관한 조건을 규정합니다.",
+    "content2": "서비스를 이용함으로써 본 약관에 동의한 것으로 간주됩니다.",
+    "content3": "자세한 내용은 웹사이트의 이용약관을 참조하세요."
+  },
+  "tabs": {
+    "feed": "피드",
+    "logs": "로그 작성",
+    "devices": "다이빙 컴퓨터",
+    "profile": "프로필",
+    "settings": "설정",
+    "home": "피드",
+    "explore": "탐색",
+    "resorts": "리조트",
+    "reels": "릴스",
+    "create": "작성",
+    "messages": "메시지",
+    "notifications": "알림",
+    "location": "포인트 지도",
+    "activity": "내 활동",
+    "saved": "저장됨",
+    "admin": "관리자",
+    "search": "검색",
+    "account": "계정",
+    "post": "게시물",
+    "report": "신고",
+    "profileEdit": "프로필 편집"
+  },
+  "feed": {
+    "error": "피드를 불러올 수 없습니다",
+    "errorSubtitle": "네트워크를 확인하고 다시 시도해주세요",
+    "empty": "아직 게시물이 없습니다",
+    "emptySubtitle": "첫 번째 다이빙 로그를 작성해보세요!",
+    "header": {
+      "subtitle": "다이버들의 최신 기록",
+      "tabs": {
+        "following": "팔로잉",
+        "forYou": "추천",
+        "nearby": "근처"
+      }
+    },
+    "meta": {
+      "visibility": "시야 {{value}}m",
+      "gasWithPercent": "{{gas}} {{percent}}%",
+      "resort": "리조트 {{name}}"
+    },
+    "menu": {
+      "edit": "수정",
+      "share": "공유",
+      "report": "신고",
+      "follow": "팔로우",
+      "unfollow": "팔로우 취소",
+      "addFavorite": "즐겨찾기 추가",
+      "cancelFavorite": "즐겨찾기 취소",
+      "openPost": "게시물로 이동",
+      "accountInfo": "계정정보",
+      "followed": "팔로우했습니다.",
+      "unfollowed": "팔로우를 취소했습니다.",
+      "followFailed": "팔로우 처리에 실패했습니다.",
+      "favoriteAdded": "즐겨찾기에 추가했습니다.",
+      "favoriteRemoved": "즐겨찾기에서 제거했습니다.",
+      "favoriteFailed": "즐겨찾기 처리에 실패했습니다.",
+      "likeFailed": "좋아요 처리에 실패했습니다.",
+      "shareFailed": "공유에 실패했습니다.",
+      "editSaved": "게시물을 수정했습니다.",
+      "editFailed": "게시물 수정에 실패했습니다.",
+      "locationPlaceholder": "위치",
+      "delete": "삭제",
+      "deleteTitle": "게시물 삭제",
+      "deleteMessage": "정말 이 게시물을 삭제하시겠습니까?",
+      "deleteDone": "게시물을 삭제했습니다.",
+      "deleteFailed": "게시물 삭제에 실패했습니다."
+    },
+    "comments": {
+      "title": "댓글",
+      "empty": "아직 댓글이 없습니다.",
+      "placeholder": "댓글을 입력하세요",
+      "submit": "댓글 등록",
+      "loadFailed": "댓글을 불러오지 못했습니다.",
+      "submitFailed": "댓글 등록에 실패했습니다."
+    }
+  },
+  "logs": {
+    "title": "로그 작성",
+    "subtitle": "나의 다이빙 기록 작성",
+    "create": "작성",
+    "createFirst": "첫 로그 작성",
+    "error": "로그를 불러올 수 없습니다",
+    "errorSubtitle": "네트워크를 확인하고 다시 시도해주세요",
+    "empty": "아직 다이빙 로그가 없습니다",
+    "emptySubtitle": "첫 번째 다이빙 로그를 작성해보세요!"
+  },
+  "devices": {
+    "title": "다이빙 디바이스",
+    "subtitle": "BLE 다이빙 장비 연결",
+    "nearby": "주변 디바이스",
+    "startScan": "스캔 시작",
+    "stopScan": "스캔 중지",
+    "liveData": "실시간 데이터",
+    "empty": "주변에 디바이스가 없습니다",
+    "emptySubtitle": "다이빙 장비를 켜고 스캔을 시작해보세요",
+    "connect": "연결",
+    "disconnect": "연결 해제",
+    "connected": "연결됨"
+  },
+  "profile": {
+    "unnamed": "이름 없음",
+    "edit": "프로필 편집",
+    "memberBadge": "Divergram Member",
+    "about": "소개",
+    "noBio": "아직 소개가 없습니다",
+    "quick": {
+      "favoritesLabel": "즐겨찾기",
+      "savedDesc": "저장한 게시물과 리조트",
+      "activityDesc": "좋아요, 댓글, 팔로우 활동",
+      "settingsDesc": "알림, 언어, 계정 보안",
+      "tabs": {
+        "favorites": "즐겨찾기",
+        "feed": "피드",
+        "reels": "릴스"
+      },
+      "resortsDesc": "찜한 리조트와 포인트 보기",
+      "feedDesc": "최신 다이버 피드로 이동",
+      "reelsDesc": "짧은 다이빙 영상 보기",
+      "exploreDesc": "인기 포인트/영상을 탐색"
+    },
+    "stats": {
+      "totalDives": "총 다이빙",
+      "maxDepth": "최대 깊이",
+      "totalTime": "총 시간"
+    },
+    "diveLevels": {
+      "beginner": "입문",
+      "intermediate": "중급",
+      "advanced": "상급",
+      "pro": "프로"
+    },
+    "completion": {
+      "title": "프로필 완성도",
+      "subtitle": "{{percent}}% 완성. 정보를 더 채우면 버디 신뢰도가 올라갑니다.",
+      "helpTitle": "완성도 체크 항목",
+      "helpSubtitle": "아래 항목을 채우면 완성도가 올라갑니다.",
+      "checks": {
+        "avatar": "프로필 사진 등록",
+        "bio": "자기소개 입력",
+        "location": "활동 지역 설정",
+        "dives": "다이빙 로그 1개 이상",
+        "level": "다이빙 레벨/자격 설정"
+      }
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "notifications": "알림",
+    "pushNotifications": "푸시 알림",
+    "pushNotificationsDesc": "새로운 활동에 대한 알림 받기",
+    "preferences": "환경설정",
+    "language": "언어",
+    "languageDesc": "앱 언어 변경",
+    "permissions": "권한",
+    "permissionsDesc": "앱 권한 관리",
+    "data": "데이터",
+    "exportData": "데이터 내보내기",
+    "exportDataDesc": "내 데이터를 파일로 저장",
+    "logout": "로그아웃",
+    "logoutTitle": "로그아웃",
+    "logoutMessage": "정말 로그아웃 하시겠습니까?"
+  },
+  "permissions": {
+    "grant": "권한 허용",
+    "settingsTitle": "설정으로 이동",
+    "settingsMessage": "설정에서 권한을 허용해주세요",
+    "openSettings": "설정 열기",
+    "location": {
+      "title": "위치 권한 필요",
+      "description": "다이빙 로그에 위치 정보를 기록하기 위해 권한이 필요합니다"
+    },
+    "bluetooth": {
+      "title": "블루투스 권한 필요",
+      "description": "다이빙 장비와 연결하기 위해 블루투스 권한이 필요합니다"
+    },
+    "notifications": {
+      "title": "알림 권한 필요",
+      "description": "중요한 알림을 받기 위해 권한이 필요합니다"
+    }
+  },
+  "ble": {
+    "permissionDenied": "권한이 거부됨",
+    "permissionDeniedMessage": "블루투스 권한이 필요합니다",
+    "connected": "연결 완료",
+    "connectedMessage": "{{name}}에 연결되었습니다",
+    "connectionFailed": "연결 실패",
+    "connectionFailedMessage": "디바이스 연결에 실패했습니다",
+    "disconnected": "연결 해제",
+    "disconnectedMessage": "디바이스 연결이 해제되었습니다"
+  },
+  "brand": {
+    "tagline": "Dive, record, share"
+  },
+  "home": {
+    "heroTitle": "기록할 다이빙이 있나요?",
+    "heroSubtitle": "로그, 사진, 위치와 버디를 한 번에 남기고 커뮤니티에 공유하세요.",
+    "quickTitle": "둘러보기",
+    "recentTitle": "최근 활동",
+    "noticeTitle": "운영 웹 기준 화면을 앱으로 맞추는 중",
+    "noticeSubtitle": "탐색, 리조트, 릴스 화면부터 모바일 스타일을 정리했습니다.",
+    "quick": {
+      "exploreLabel": "탐색",
+      "exploreDesc": "새 다이빙 피드",
+      "resortsLabel": "리조트",
+      "resortsDesc": "샵과 숙소",
+      "devicesLabel": "디바이스",
+      "devicesDesc": "BLE 장비 연결",
+      "reelsLabel": "릴스",
+      "reelsDesc": "짧은 영상"
+    },
+    "activity": {
+      "item1Title": "서귀포 문섬",
+      "item1Meta": "18m / 45분 / 시야 12m",
+      "item2Title": "부산 태종대",
+      "item2Meta": "12m / 35분 / 야간 다이빙"
+    },
+    "createLog": "로그 작성"
+  },
+  "explore": {
+    "title": "탐색",
+    "subtitle": "장소, 다이버, 로그를 찾아보세요.",
+    "searchPlaceholder": "다이빙 포인트 검색",
+    "loadingTitle": "인기 포인트를 불러오는 중",
+    "loadingMeta": "운영 서버 데이터 연결됨",
+    "topics": {
+      "jeju": "제주",
+      "freediving": "프리다이빙",
+      "scuba": "스쿠버",
+      "night": "야간",
+      "beginner": "초보",
+      "photo": "수중사진"
+    }
+  },
+  "resorts": {
+    "title": "리조트",
+    "subtitle": "운영 웹의 리조트 탐색 흐름을 모바일에 맞췄습니다.",
+    "heroTitle": "검증된 다이빙 리조트",
+    "heroSubtitle": "지역, 평점, 운영 프로그램을 기준으로 빠르게 비교하세요.",
+    "loadingName": "리조트 정보를 불러오는 중",
+    "loadingTag": "운영 서버 데이터 연결됨",
+    "reviews": "리뷰 {{count}}개",
+    "cta": "상세 보기",
+    "filters": {
+      "all": "전체",
+      "top": "평점순",
+      "reviewed": "리뷰 있음"
+    }
+  },
+  "reels": {
+    "likesSummary": "좋아요 {{count}} · Divergram Reels",
+    "items": {
+      "item1": "문섬 하강 라인",
+      "item2": "태종대 야간 시야",
+      "item3": "관음도 수중 절벽"
+    }
+  },
+  "logsForm": {
+    "saveSuccessTitle": "저장 완료",
+    "saveSuccessMessage": "다이빙 로그가 피드에 반영됐습니다.",
+    "saveFailTitle": "저장 실패",
+    "saveFailMessage": "로그 저장을 다시 시도해주세요.",
+    "title": "작성",
+    "subtitle": "운영 웹의 다이빙 게시물 필드를 모바일 입력으로 정리했습니다.",
+    "heroTitle": "새 다이빙 로그",
+    "heroSubtitle": "위치, 수심, 시간, 버디를 기록하세요.",
+    "diveTypes": {
+      "scuba": "스쿠버다이빙",
+      "freediving": "프리다이빙"
+    },
+    "gasTypes": {
+      "air": "에어",
+      "nitrox": "나이트록스",
+      "heliox": "헬리옥스"
+    },
+    "fields": {
+      "titleLabel": "제목",
+      "titlePlaceholder": "오늘의 다이빙",
+      "diveTypeLabel": "다이빙 타입",
+      "gasTypeLabel": "기체 상태",
+      "gasPercentLabel": "블렌딩 %",
+      "pointNameLabel": "다이빙 포인트명",
+      "pointNamePlaceholder": "문섬 하강 포인트",
+      "pointSearchLabel": "Google Maps 포인트 검색",
+      "pointSearchPlaceholder": "제주 문섬",
+      "selectedPointLabel": "선택된 포인트",
+      "selectedPointPlaceholder": "검색 후 포인트를 선택하세요",
+      "resortLabel": "다이빙 리조트",
+      "resortPlaceholder": "리조트 검색 또는 직접 입력",
+      "locationLabel": "포인트",
+      "locationPlaceholder": "제주 문섬",
+      "depthLabel": "최대 수심",
+      "durationLabel": "시간",
+      "temperatureLabel": "수온",
+      "visibilityLabel": "시야",
+      "buddyLabel": "버디",
+      "buddyPlaceholder": "@diver",
+      "notesLabel": "메모",
+      "notesPlaceholder": "장비, 조류, 느낀 점"
+    },
+    "buttons": {
+      "saving": "저장 중",
+      "save": "로그 저장"
+    },
+    "validation": {
+      "gasPercentRequired": "나이트록스/헬리옥스는 블렌딩 % 입력이 필요합니다."
+    },
+    "map": {
+      "apiKeyMissing": "Google Maps API 키가 설정되지 않았습니다.",
+      "apiKeyGuide": ".env 에 EXPO_PUBLIC_GOOGLE_MAPS_API_KEY 값을 설정해 주세요.",
+      "queryRequired": "검색어를 입력한 뒤 버튼을 눌러주세요.",
+      "searchFailed": "포인트 검색에 실패했습니다. 다시 시도해 주세요.",
+      "noResult": "검색 결과가 없습니다.",
+      "resultFound": "{{count}}개의 포인트를 찾았습니다.",
+      "previewPlaceholder": "포인트를 선택하면 지도 미리보기가 표시됩니다."
+    },
+    "photo": {
+      "select": "사진 선택",
+      "permissionTitle": "사진 권한 필요",
+      "permissionMessage": "사진의 GPS 정보를 불러오려면 접근 권한이 필요합니다.",
+      "gpsNotFoundTitle": "GPS 정보 없음",
+      "gpsNotFoundMessage": "선택한 사진에 GPS 메타데이터가 없습니다.",
+      "gpsAppliedTitle": "GPS 적용 완료",
+      "gpsAppliedMessage": "사진 GPS 위치를 다이빙 포인트에 반영했습니다.",
+      "gpsHint": "사진에 GPS 정보가 있으면 포인트 위치가 자동으로 입력됩니다."
+    },
+    "units": {
+      "minute": "분"
+    }
+  },
+  "settingsPage": {
+    "title": "설정",
+    "subtitle": "앱 설정 및 계정 관리",
+    "profileEdit": "프로필 편집",
+    "items": {
+      "profileTitle": "프로필 설정",
+      "profileSubtitle": "개인정보 및 프로필 관리",
+      "notificationsTitle": "알림 설정",
+      "notificationsSubtitle": "푸시 알림 및 이메일 설정",
+      "languageTitle": "언어 설정",
+      "privacyTitle": "개인정보 보호",
+      "privacySubtitle": "데이터 및 개인정보 설정",
+      "supportTitle": "도움말 및 지원",
+      "supportSubtitle": "자주 묻는 질문 및 고객지원"
+    },
+    "appInfoTitle": "앱 정보",
+    "versionLabel": "버전 {{version}}",
+    "logout": "로그아웃",
+    "sections": {
+      "profile": "프로필 설정",
+      "account": "계정 설정",
+      "notifications": "알림 설정",
+      "privacy": "공개 범위 설정",
+      "diving": "다이빙 설정",
+      "app": "앱 설정",
+      "safety": "안전 설정"
+    },
+    "tabSubtitles": {
+      "profile": "프로필과 계정 정보를 간결하게 관리하세요.",
+      "account": "소셜 연동, 다이빙 컴퓨터, 계정 보안을 설정하세요.",
+      "notifications": "필요한 알림만 정확하게 받아보세요.",
+      "privacy": "프로필, 게시물, 로그의 공개 범위를 제어하세요.",
+      "diving": "단위, 장비, 연동, 포인트 설정을 관리하세요.",
+      "app": "언어, 테마, AI, 캐시, 하단메뉴를 관리하세요.",
+      "safety": "긴급 연락 및 안전 공유 옵션을 구성하세요."
+    },
+    "common": {
+      "comingSoonTitle": "준비 중",
+      "comingSoonBody": "{{feature}} 기능은 곧 지원됩니다.",
+      "selectOption": "옵션을 선택하세요."
+    },
+    "options": {
+      "public": "공개",
+      "followers": "팔로워",
+      "private": "비공개",
+      "diveType": {
+        "scuba": "스쿠버",
+        "freediving": "프리다이빙",
+        "snorkeling": "스노클링"
+      },
+      "depthUnit": {
+        "m": "m",
+        "ft": "ft"
+      },
+      "tempUnit": {
+        "c": "℃",
+        "f": "℉"
+      },
+      "gasUnit": {
+        "bar": "bar",
+        "psi": "psi"
+      },
+      "theme": {
+        "system": "시스템",
+        "dark": "다크",
+        "light": "라이트"
+      }
+    },
+    "profile": {
+      "image": "프로필 이미지 변경",
+      "nickname": "닉네임 변경",
+      "bio": "자기소개 수정",
+      "email": "이메일 수정",
+      "phoneVerify": "휴대폰 번호 인증",
+      "password": "비밀번호 변경",
+      "profileEditSubtitle": "프로필 이미지, 닉네임, 자기소개를 수정합니다.",
+      "accountEditSubtitle": "이메일, 휴대폰 인증, 비밀번호를 관리합니다."
+    },
+    "account": {
+      "googleLink": "Google 로그인 연동",
+      "appleLink": "Apple 로그인 연동",
+      "kakaoLink": "Kakao 로그인 연동",
+      "devices": "다이빙 컴퓨터 관리",
+      "deleteAccount": "계정 삭제",
+      "deleteConfirm": "계정 삭제는 되돌릴 수 없습니다. 계속할까요?",
+      "socialSubtitle": "소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.",
+      "linkAction": "연동하기",
+      "unlinkAction": "연동끊기",
+      "devicesSubtitle": "가민/순토/쉐어워터 기기 연결과 동기화를 관리합니다.",
+      "deleteSubtitle": "계정 삭제는 복구할 수 없습니다.",
+      "deleteTextLink": "다이버그램 계정탈퇴"
+    },
+    "notifications": {
+      "likes": "좋아요 알림 ON/OFF",
+      "comments": "댓글 알림 ON/OFF",
+      "follows": "팔로우 알림 ON/OFF",
+      "events": "이벤트 알림 ON/OFF",
+      "detail": "알림 세부 설정",
+      "detailSubtitle": "날씨/동기화 관련 알림을 개별 설정합니다.",
+      "weatherAlert": "해양 날씨 경고",
+      "pushAll": "푸시 알림 전체 ON/OFF",
+      "pushAllSubtitle": "모든 앱 알림을 한 번에 켜고 끕니다."
+    },
+    "privacy": {
+      "profilePublic": "프로필 공개 여부",
+      "postVisibility": "게시글 공개 범위",
+      "logVisibility": "다이빙 로그 공개 범위",
+      "locationSharing": "위치 정보 공유 ON/OFF",
+      "blockedUsers": "차단 사용자 관리"
+    },
+    "diving": {
+      "certifications": "자격증 관리",
+      "certificationsSubtitle": "보유 자격과 레벨을 갱신합니다.",
+      "equipment": "장비 정보 등록",
+      "integration": "외부 서비스 연동",
+      "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.",
+      "marineWeather": "해양 날씨",
+      "marineWeatherSubtitle": "포인트별 파고/조류/수온을 확인합니다.",
+      "region": "활동 지역 설정",
+      "points": "관심 다이빙 포인트 설정",
+      "diveLogManagement": "DiveLog 관리",
+      "diveLogManagementSubtitle": "외부 연동 로그, 동기화 상태, 편집 대기 로그를 관리합니다.",
+      "depthUnit": "수심 단위 설정",
+      "tempUnit": "수온 단위 설정",
+      "gasUnit": "기체 단위 설정",
+      "unitSettings": "단위 설정",
+      "unitSettingsSubtitle": "수심/수온/기체 단위를 한 곳에서 설정합니다."
+    },
+    "app": {
+      "darkMode": "다크모드",
+      "themeMode": "테마 모드",
+      "language": "언어 설정",
+      "aiSettings": "AI 설정",
+      "aiSettingsSubtitle": "AI 요약/캡션/위험도 설명 사용 여부를 관리합니다.",
+      "clearCache": "캐시 삭제",
+      "clearCacheConfirm": "캐시를 삭제할까요?",
+      "cacheClearedTitle": "완료",
+      "cacheClearedBody": "캐시를 정리했습니다.",
+      "version": "앱 버전 확인",
+      "terms": "이용약관",
+      "privacyPolicy": "개인정보처리방침",
+      "locationTerms": "위치정보 이용약관",
+      "communityPolicy": "커뮤니티 운영정책",
+      "safetyNotice": "안전 고지",
+      "aiNotice": "AI 기능 안내",
+      "policyCenter": "정책 문서 센터",
+      "customerCenter": "고객센터",
+      "contact": "문의하기",
+      "bottomMenuManager": "하단메뉴 관리",
+      "bottomMenuManagerSubtitle": "하단 탭 구성과 순서를 변경합니다.",
+      "bottomMenuGuide": "최소 3개, 최대 5개까지 선택할 수 있습니다.",
+      "bottomMenuSelected": "선택됨 {{count}}/5",
+      "bottomMenuOrder": "하단 {{order}}번째",
+      "bottomMenuNotUsed": "현재 하단 메뉴에서 숨김",
+      "bottomMenuSaved": "하단메뉴 구성을 저장했습니다.",
+      "bottomMenuRequired": "홈 메뉴는 필수입니다.",
+      "bottomMenuMin": "하단메뉴는 최소 3개가 필요합니다.",
+      "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다.",
+      "openSourceLicenses": "오픈소스 라이선스",
+      "appInfo": "앱 정보",
+      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다."
+    },
+    "safety": {
+      "emergencyContact": "비상 연락처 등록",
+      "emergencyShare": "긴급 상황 공유 설정",
+      "guide": "다이빙 안전 가이드 보기",
+      "insurance": "보험 정보 등록"
+    },
+    "language": {
+      "title": "언어 설정",
+      "subtitle": "앱에서 사용할 언어를 선택하세요."
+    },
+    "languages": {
+      "ko": "한국어",
+      "en": "영어",
+      "ja": "일본어",
+      "zh": "중국어"
+    }
+  },
+  "menu": {
+    "quick": "빠른 설정",
+    "more": "더보기",
+    "desc": {
+      "messages": "버디와 채팅, 약속 조율",
+      "settings": "언어, 테마, 개인정보",
+      "activity": "내 활동과 기록",
+      "saved": "저장한 게시물/릴스",
+      "reels": "짧은 다이빙 영상",
+      "resorts": "다이빙 리조트 탐색",
+      "location": "지도에서 포인트 찾기",
+      "notifications": "최신 알림과 업데이트",
+      "admin": "운영 전용 화면",
+      "app_info": "약관, 정책, 고객 지원"
+    }
+  },
+  "pages": {
+    "messages": {
+      "subtitle": "다이빙 일정과 버디 대화를 관리하세요",
+      "unread": "읽지 않음",
+      "rooms": "대화방",
+      "members": "{{count}}명",
+      "active": "활동 중",
+      "idle": "대기 중"
+    },
+    "notifications": {
+      "subtitle": "좋아요, 팔로우, 서비스 소식을 확인하세요",
+      "markAll": "모두 읽음"
+    },
+    "location": {
+      "subtitle": "지도 중심으로 다이빙 포인트를 탐색하세요",
+      "mapTitle": "다이빙 맵 미리보기",
+      "mapPlaceholder": "지도 SDK 영역"
+    },
+    "search": {
+      "placeholder": "포인트, 다이버, 리조트 검색",
+      "empty": "검색 결과가 없습니다."
+    },
+    "activity": {
+      "subtitle": "최근 반응과 활동 내역"
+    },
+    "saved": {
+      "subtitle": "저장한 게시물과 릴스",
+      "empty": "저장한 콘텐츠가 없습니다.",
+      "noCaption": "제목 없는 게시물"
+    },
+    "account": {
+      "subtitle": "프로필, 계정, 보안 설정",
+      "email": "이메일 설정",
+      "security": "보안 및 연동 계정"
+    },
+    "admin": {
+      "subtitle": "운영 전용 관리 화면",
+      "restricted": "접근 권한 필요",
+      "note": "운영 계정에서만 접근 가능한 페이지입니다."
+    },
+    "post": {
+      "subtitle": "단일 게시물 상세 보기",
+      "empty": "게시물을 찾을 수 없습니다."
+    },
+    "report": {
+      "subtitle": "서비스 문제를 남겨주세요",
+      "placeholder": "문제 상황을 자세히 작성해주세요",
+      "submit": "제출",
+      "doneTitle": "접수 완료",
+      "doneBody": "신고가 정상적으로 접수되었습니다."
+    },
+    "profileEdit": {
+      "subtitle": "프로필 정보를 수정하세요",
+      "name": "표시 이름",
+      "bio": "소개",
+      "diveLevel": "다이빙 레벨",
+      "scubaLevel": "스쿠버다이빙 레벨",
+      "freedivingLevel": "프리다이빙 레벨",
+      "photoSelect": "사진 선택",
+      "photoRemove": "사진 제거",
+      "photoPermissionTitle": "사진 권한이 필요합니다.",
+      "photoSelectFailTitle": "사진 선택 실패",
+      "photoSelectFailBody": "사진을 불러오는 중 오류가 발생했습니다.",
+      "nameRequired": "표시 이름을 입력해주세요.",
+      "saveFailTitle": "저장 실패",
+      "saveFailBody": "프로필 저장 중 오류가 발생했습니다.",
+      "save": "변경사항 저장",
+      "doneTitle": "저장 완료",
+      "doneBody": "프로필 정보가 업데이트되었습니다.",
+      "scubaLevels": {
+        "none": "라이선스 없음",
+        "open_water": "오픈워터",
+        "advanced": "어드벤스",
+        "rescue": "레스큐",
+        "master": "마스터"
+      },
+      "freedivingLevels": {
+        "none": "라이선스 없음",
+        "level_1": "Level 1",
+        "level_2": "Level 2",
+        "level_3": "Level 3",
+        "level_4": "Level 4"
+      },
+      "commonLevels": {
+        "instructor": "강사",
+        "trainer": "트레이너",
+        "course_director": "코스디렉터"
+      },
+      "license": {
+        "title": "라이선스 검증",
+        "subtitle": "라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.",
+        "upload": "라이선스 사진 업로드 + OCR",
+        "remove": "사진 제거",
+        "processing": "인식 중...",
+        "agency": "단체명",
+        "agencyPlaceholder": "예: PADI, SSI, AIDA",
+        "number": "라이선스 번호",
+        "numberPlaceholder": "예: 12345678",
+        "issuedAt": "취득일",
+        "issuedAtPlaceholder": "YYYY-MM-DD",
+        "ocrDoneTitle": "OCR 인식 완료",
+        "uploadDone": "라이선스 사진 등록 완료",
+        "ocrApplied": "OCR 인식 결과를 라이선스 정보에 반영했습니다. 저장 전에 확인해주세요.",
+        "ocrFailed": "사진은 등록되었지만 OCR 인식에 실패했습니다. 값을 직접 입력해주세요.",
+        "ocrNotConfigured": "라이선스 이미지는 등록되었지만 OCR 설정이 없어 자동 입력이 비활성화되어 있습니다.",
+        "ocrNoBase64Title": "자동 인식 불가",
+        "ocrNoBase64": "이미지를 선택했지만 자동 인식 데이터가 없어 수동 입력이 필요합니다.",
+        "uploadFailTitle": "라이선스 업로드 실패",
+        "uploadFailBody": "라이선스 사진 업로드 중 오류가 발생했습니다.",
+        "uploadFailNotice": "자동 인식에 실패했습니다. 수동으로 입력해주세요.",
+        "fileTooLarge": "8MB 이하 이미지를 선택해주세요.",
+        "ocrTooLargeTitle": "자동 인식 생략",
+        "ocrTooLarge": "이미지가 커서 자동 인식을 생략했습니다. 수동으로 입력해주세요."
+      }
+    }
+  },
+  "api": {
+    "explore": {
+      "defaultTitle": "인기 다이빙 포인트",
+      "postsMeta": "게시물 {{count}}개",
+      "avgVisibility": "평균 시야 {{value}}m"
+    },
+    "resorts": {
+      "defaultName": "Divergram Resort",
+      "noArea": "지역 정보 없음"
+    },
+    "logs": {
+      "defaultTitle": "다이빙 로그",
+      "defaultCaption": "다이빙 로그"
+    }
+  },
+  "notifications": {
+    "diveReminderTitle": "다이빙 준비 알림",
+    "diveReminderBodyWithLocation": "내일 {{location}}에서 다이빙 예정입니다. 장비를 확인하세요!",
+    "diveReminderBody": "내일 다이빙 예정입니다. 장비를 확인하세요!",
+    "viewDive": "다이빙 보기",
+    "remindLater": "나중에 알림"
+  },
+  "diveMode": {
+    "bgPermissionDescription": "다이빙 모드에서는 백그라운드 위치 권한이 필요합니다.",
+    "startTitle": "다이빙 모드 시작",
+    "startMessage": "GPS 추적이 시작되었습니다.",
+    "startFailTitle": "추적 시작 실패",
+    "startFailMessage": "GPS 추적을 시작할 수 없습니다.",
+    "stopTitle": "다이빙 모드 종료",
+    "stopMessage": "{{count}}개의 위치 데이터가 저장되었습니다.",
+    "loading": "GPS 초기화 중...",
+    "title": "다이빙 모드",
+    "tracking": "GPS 추적 중...",
+    "idle": "GPS 추적을 시작하여 다이빙 경로를 기록하세요",
+    "stopButton": "추적 중지",
+    "startButton": "추적 시작",
+    "points": "기록된 포인트: {{count}}개",
+    "currentLocation": "현재 위치 정보",
+    "coordinate": "좌표",
+    "heading": "방향",
+    "speed": "속도",
+    "accuracy": "정확도: ±{{value}}m",
+    "altitude": "고도: {{value}}m"
+  },
+  "tutorial": {
+    "stepLabel": "단계 {{current}} / {{total}}",
+    "skip": "건너뛰기",
+    "start": "권한 허용 후 시작",
+    "steps": {
+      "one": {
+        "title": "Divergram에 오신 것을 환영합니다",
+        "body": "피드, 지도, 로그북으로 다이빙 경험을 한곳에서 기록하세요."
+      },
+      "two": {
+        "title": "나만의 다이빙 로그를 남기세요",
+        "body": "수심, 수온, 포인트, 버디 정보를 사진과 함께 정리할 수 있습니다."
+      },
+      "three": {
+        "title": "권한 설정을 마치면 바로 시작됩니다",
+        "body": "알림, 위치, 블루투스 권한을 허용하면 핵심 기능을 모두 사용할 수 있습니다."
+      }
+    }
+  }
+}

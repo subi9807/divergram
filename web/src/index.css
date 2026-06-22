@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #ffffff;
+  overscroll-behavior-y: none;
+}
+
+:root {
+  --dg-safe-top: env(safe-area-inset-top, 0px);
+  --dg-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body {
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  background: #ffffff;
+  color: #111827;
+  padding-bottom: var(--dg-safe-bottom);
+}
+
+#root {
+  min-height: calc(100vh - var(--dg-safe-bottom));
+}
+
+.dg-auth-active,
+.dg-auth-active body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.dg-auth-active body {
+  padding-bottom: 0;
+}
+
+.dg-auth-active #root {
+  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.dg-mobile-header {
+  padding-top: var(--dg-safe-top);
+}
+
+.dg-mobile-main {
+  padding-top: calc(4rem + var(--dg-safe-top)) !important;
+}
+
+.dg-mobile-menu-header {
+  padding-top: var(--dg-safe-top);
+  height: calc(4rem + var(--dg-safe-top));
+}
+
+@media (min-width: 1280px) {
+  .dg-mobile-main {
+    padding-top: 0 !important;
+  }
+}
+
+.dark html,
+.dark body {
+  background: #18181b;
+  color: #f3f4f6;
+}
+
+/* dark:bg-[#121212] 사용 영역을 살짝 밝게 통일 */
+.dark .dark\:bg-\[\#121212\] {
+  background-color: #18181b;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+
+.dg-surface {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 231 235);
+  background: #fff;
+}
+.dark .dg-surface {
+  border-color: #262626;
+  background: #18181b;
+}
+.dg-input {
+  border-radius: 0.5rem;
+  border: 1px solid rgb(209 213 219);
+  padding: 0.5rem 0.75rem;
+}
+.dark .dg-input {
+  border-color: #3f3f46;
+  background: #262626;
+  color: #f3f4f6;
+}
+
+@keyframes mobileMenuSlideIn {
+  0% { transform: translateX(110%); opacity: 0.75; }
+  78% { transform: translateX(-2%); opacity: 1; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.animate-mobile-menu-slide-in {
+  animation: mobileMenuSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dgNavBack {
+  0% { transform: translateX(-14px); opacity: 0.92; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+@keyframes dgNavForward {
+  0% { transform: translateX(14px); opacity: 0.92; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+#root.dg-nav-back { animation: dgNavBack 220ms ease-out; }
+#root.dg-nav-forward { animation: dgNavForward 220ms ease-out; }
+
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(180deg, #0896c0 0%, #0f5cba 100%);
+  transition: opacity 320ms ease, visibility 320ms ease;
+}
+
+.app-splash--leaving {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.app-splash__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
