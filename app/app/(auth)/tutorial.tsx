@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ImageBackground, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, ShieldCheck } from 'lucide-react-native';
@@ -36,34 +36,47 @@ export default function TutorialScreen() {
 
   const isLast = step === steps.length - 1;
 
-  const completeTutorial = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (requesting) return;
+      if (isLast) {
+        void completeWithPermissions();
+        return;
+      }
+      setStep((prev) => Math.min(prev + 1, steps.length - 1));
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [completeWithPermissions, isLast, requesting, steps.length, step]);
+
+  const completeTutorial = useCallback(async () => {
     await markTutorialCompleted();
     router.replace('/');
-  };
+  }, []);
 
-  const completeWithPermissions = async () => {
+  const completeWithPermissions = useCallback(async () => {
     setRequesting(true);
     try {
-      await requestCoreRuntimePermissionsOnce();
+      await completeTutorial();
+      void requestCoreRuntimePermissionsOnce({ force: true }).catch(() => undefined);
     } finally {
       setRequesting(false);
-      await completeTutorial();
     }
-  };
+  }, [completeTutorial]);
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (!isLast) {
       setStep((prev) => prev + 1);
       return;
     }
 
     await completeWithPermissions();
-  };
+  }, [completeWithPermissions, isLast]);
 
   return (
     <Screen safe={false}>
       <ImageBackground source={heroImage} style={styles.hero} resizeMode="cover">
-        <View style={styles.overlay} />
+        <View pointerEvents="none" style={styles.overlay} />
         <View style={styles.inner}>
           <View style={styles.badge}>
             <ShieldCheck size={15} color="#ffffff" />
@@ -84,12 +97,23 @@ export default function TutorialScreen() {
             ))}
           </View>
 
-          <View style={styles.actionRow}>
-            <TouchableOpacity activeOpacity={0.86} onPress={completeWithPermissions} style={styles.skipButton} disabled={requesting}>
-              <Text style={styles.skipText}>{t('tutorial.skip', { defaultValue: '건너뛰기' })}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity activeOpacity={0.86} onPress={handleNext} style={styles.nextButton} disabled={requesting}>
+          <View pointerEvents="box-none" style={styles.actionRow}>
+            <View style={styles.skipRow}>
+              <Pressable
+                hitSlop={12}
+                onPress={completeWithPermissions}
+                style={({ pressed }) => [styles.skipButton, pressed ? styles.pressed : undefined]}
+                disabled={requesting}
+              >
+                <Text style={styles.skipText}>{t('tutorial.skip', { defaultValue: '건너뛰기' })}</Text>
+              </Pressable>
+            </View>
+            <Pressable
+              hitSlop={12}
+              onPress={handleNext}
+              style={({ pressed }) => [styles.nextButton, pressed ? styles.pressed : undefined]}
+              disabled={requesting}
+            >
               {requesting ? (
                 <ActivityIndicator color="#111827" />
               ) : (
@@ -100,7 +124,7 @@ export default function TutorialScreen() {
                   <ChevronRight size={16} color="#111827" />
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </ImageBackground>
@@ -120,7 +144,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 22,
     paddingTop: 70,
-    paddingBottom: 36,
+    paddingBottom: 96,
     justifyContent: 'space-between',
   },
   badge: {
@@ -178,31 +202,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: 'absolute',
+    left: 22,
+    right: 22,
+    bottom: 148,
+    flexDirection: 'column',
+    gap: 10,
+  },
+  skipRow: {
+    alignItems: 'flex-end',
   },
   skipButton: {
-    height: 54,
-    paddingHorizontal: 18,
-    borderRadius: 16,
+    minWidth: 88,
+    height: 38,
+    paddingHorizontal: 14,
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
   },
   skipText: {
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   nextButton: {
-    flex: 1,
-    height: 54,
+    width: '100%',
+    height: 58,
     borderRadius: 16,
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pressed: {
+    opacity: Platform.OS === 'ios' ? 0.78 : 0.85,
   },
   nextContent: {
     flexDirection: 'row',

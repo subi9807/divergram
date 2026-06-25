@@ -109,6 +109,10 @@ export function FeedPost({ post }: FeedPostProps) {
     [hasRenderableImage, post.id, post.media, postImageUri]
   );
   const imageHeight = Math.min(Math.max(screenWidth * 1.33, 360), 640);
+  const postTags = useMemo(
+    () => (Array.isArray(post.tags) ? post.tags.map((tag) => String(tag || '').replace(/^#/, '').trim()).filter(Boolean) : []),
+    [post.tags]
+  );
   const diveTypeLabel = post.diveType ? t(`logsForm.diveTypes.${post.diveType}` as any, { defaultValue: post.diveType }) : '';
   const gasTypeLabel = post.gasType ? t(`logsForm.gasTypes.${post.gasType}` as any, { defaultValue: post.gasType }) : '';
   const isOwnPost = Boolean(user?.id && post.user?.id && String(user.id) === String(post.user.id));
@@ -144,7 +148,7 @@ export function FeedPost({ post }: FeedPostProps) {
     const raw = String(tag || '').replace(/^#/, '').trim();
     if (!raw) return;
     setMenuOpen(false);
-    router.push(`${appRouteMap.explore.path}?q=${encodeURIComponent(`#${raw}`)}` as never);
+    router.push(`${appRouteMap.explore.path}?tag=${encodeURIComponent(raw)}` as never);
   };
 
   const renderContent = (text: string) => {
@@ -287,7 +291,7 @@ export function FeedPost({ post }: FeedPostProps) {
       if (!result.installed) {
         showToast({
           type: 'info',
-          title: 'Instagram 미설치: 기본 공유 시트를 사용했습니다.',
+          title: t('feed.media.instagramFallback', { defaultValue: 'Instagram 미설치: 기본 공유 시트를 사용했습니다.' }),
         });
       }
     } catch {
@@ -737,6 +741,21 @@ export function FeedPost({ post }: FeedPostProps) {
         ) : null}
 
         <View className="px-4 pb-4 pt-4">
+          {postTags.length ? (
+            <View className="mb-3 flex-row flex-wrap">
+              {postTags.map((tag) => (
+                <TouchableOpacity
+                  key={`${post.id}-${tag}`}
+                  className="mb-2 mr-2 rounded-full border border-brand-200 dark:border-brand-900/40 bg-brand-50 dark:bg-brand-950/30 px-3 py-2"
+                  onPress={() => openTagSearch(tag)}
+                  activeOpacity={0.86}
+                >
+                  <Text className="text-xs font-semibold text-brand-700 dark:text-brand-200">#{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+
           <View className="mb-3 flex-row flex-wrap">
             {postLocation ? <MetaChip icon={MapPin} text={postLocation} /> : null}
             {post.diveSite && post.diveSite !== postLocation ? <MetaChip icon={MapPin} text={post.diveSite} /> : null}

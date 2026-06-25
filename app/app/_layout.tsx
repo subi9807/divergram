@@ -2,7 +2,7 @@ import '../global.css';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -14,6 +14,7 @@ import { AuthProvider } from '../src/providers/AuthProvider';
 import { GlobalEdgeSwipeNav } from '../src/components/GlobalEdgeSwipeNav';
 import { useAuth } from '../src/hooks/useAuth';
 import { useResolvedTheme } from '../src/hooks/useResolvedTheme';
+import { isAdMobEnabled } from '../src/config/ads';
 import { loadAiSettings } from '../src/services/aiSettingsService';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -54,6 +55,22 @@ export default function RootLayout() {
   useEffect(() => {
     setColorScheme(resolvedTheme === 'dark' ? 'dark' : 'light');
   }, [resolvedTheme, setColorScheme]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    if (!isAdMobEnabled()) return;
+    import('react-native-google-mobile-ads')
+      .then(({ default: mobileAdsModule }) =>
+        mobileAdsModule()
+          .initialize()
+          .catch(() => {
+            // 광고 초기화 실패는 앱 실행을 막지 않는다.
+          })
+      )
+      .catch(() => {
+        // 광고 SDK가 없더라도 앱 진입은 유지한다.
+      });
+  }, []);
 
   const handleSwipeProgress = useCallback(
     (dragX: number) => {

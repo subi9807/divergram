@@ -334,6 +334,20 @@ export interface NotificationFeedItem {
   commentId?: string;
 }
 
+export interface ActiveAdSlot {
+  id: string;
+  title: string;
+  placement: string;
+  status: string;
+  note: string;
+  actionLabel: string;
+  targetUrl?: string;
+  sortOrder: number;
+  isActive: boolean;
+  startAt?: string;
+  endAt?: string;
+}
+
 function normalizeFeedMedia(post: any): FeedMediaItem[] {
   const rows = Array.isArray(post?.post_media) ? post.post_media : [];
   const fromRows = rows
@@ -398,6 +412,22 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
     publishToFeed: post.publish_to_feed !== false,
     publishToReels: post.publish_to_reels === true,
     tags: extractHashtags(caption),
+  };
+}
+
+function normalizeAdSlot(row: any): ActiveAdSlot {
+  return {
+    id: normalizeString(row?.id || ''),
+    title: normalizeString(row?.title || '') || '광고 슬롯',
+    placement: normalizeString(row?.placement || ''),
+    status: normalizeString(row?.status || 'draft'),
+    note: normalizeString(row?.note || ''),
+    actionLabel: normalizeString(row?.action_label || row?.actionLabel || '자세히 보기') || '자세히 보기',
+    targetUrl: normalizeString(row?.target_url || row?.targetUrl || '') || undefined,
+    sortOrder: normalizeNumber(row?.sort_order ?? row?.sortOrder) || 0,
+    isActive: Boolean(row?.is_active ?? row?.isActive ?? true),
+    startAt: normalizeIsoDate(row?.start_at || row?.startAt),
+    endAt: normalizeIsoDate(row?.end_at || row?.endAt),
   };
 }
 
@@ -1622,6 +1652,23 @@ export const apiClient = {
       nextCursor,
       hasMore: nextCursor !== null,
     };
+  },
+
+  getActiveAdSlots: async (placement?: string): Promise<ActiveAdSlot[]> => {
+    try {
+      const response = await axiosInstance.get('/ads', {
+        params: {
+          placement: normalizeString(placement || ''),
+          limit: 20,
+        },
+      });
+      const ads = Array.isArray(response.data?.ads) ? response.data.ads : [];
+      return ads.map(normalizeAdSlot);
+    } catch (error: any) {
+      const status = Number(error?.response?.status || 0);
+      if (status === 404 || status === 405 || status === 501) return [];
+      throw error;
+    }
   },
 
   getPostById: async (postId: string) => {

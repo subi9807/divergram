@@ -1,7 +1,8 @@
 import React from 'react';
-import { FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import { Camera } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../../src/components/Screen';
@@ -10,6 +11,12 @@ import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { useFeed } from '../../src/hooks/useFeed';
 import { appRouteMap } from '../../src/config/sitemap';
 import { FeedPost } from '../../src/features/feed/FeedPost';
+import { FeedAdSlot } from '../../src/features/feed/FeedAdSlot';
+import { apiClient, type ActiveAdSlot } from '../../src/lib/api';
+
+type FeedListItem =
+  | { type: 'post'; id: string; post: any }
+  | { type: 'ad'; id: string; ad: ActiveAdSlot };
 
 export default function FeedScreen() {
   const { t } = useTranslation();
@@ -26,10 +33,39 @@ export default function FeedScreen() {
     hasNextPage,
     isFetchingNextPage,
   } = useFeed();
+  const { data: activeAds = [] } = useQuery<ActiveAdSlot[]>({
+    queryKey: ['feed-active-ads'],
+    queryFn: () => apiClient.getActiveAdSlots('feed_inline'),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
+  const usableAds = activeAds.filter((ad) => ad.isActive && ['ready', 'active'].includes(String(ad.status || '').toLowerCase()));
+  const feedItems = posts.reduce<FeedListItem[]>((items, post, index) => {
+    items.push({ type: 'post', id: `post-${post.id}`, post });
+    const shouldInsertAd = usableAds.length > 0 && (index + 1) % 3 === 0;
+    if (shouldInsertAd) {
+      const ad = usableAds[Math.floor(index / 3) % usableAds.length];
+      if (ad) {
+        items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}`, ad });
+      }
+    }
+    return items;
+  }, []);
 
-  const renderPost = ({ item }: { item: any }) => <FeedPost post={item} />;
+  const renderPost = ({ item }: { item: FeedListItem }) => {
+    if (item.type === 'ad') {
+      return (
+        <FeedAdSlot
+          label={item.ad.title}
+          subtitle={item.ad.note || '운영에서 활성화한 광고 슬롯입니다. 설정에 따라 실제 광고 또는 캠페인 카드가 노출됩니다.'}
+          ctaLabel={item.ad.actionLabel || '자세히 보기'}
+          onPress={item.ad.targetUrl ? () => Linking.openURL(item.ad.targetUrl as string).catch(() => {}) : undefined}
+        />
+      );
+    }
+    return <FeedPost post={item.post} />;
+  };
 
   const onEndReached = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -55,7 +91,7 @@ export default function FeedScreen() {
       <LoadingOverlay visible={isLoading && !posts.length} />
       <View style={styles.container}>
         <FlatList
-          data={posts}
+          data={feedItems}
           renderItem={renderPost}
           keyExtractor={(item) => item.id}
           ListEmptyComponent={

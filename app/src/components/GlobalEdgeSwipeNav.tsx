@@ -186,7 +186,7 @@ export function GlobalEdgeSwipeNav({ onSwipeProgress, onSwipeCancel, onSwipeComm
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       <View pointerEvents="box-none" style={styles.row}>
         <View style={styles.leftEdge} {...leftEdgePanResponder.panHandlers} />
-        <View style={styles.spacer} />
+        <View pointerEvents="box-none" style={styles.spacer} />
         <View style={styles.rightEdge} {...rightEdgePanResponder.panHandlers} />
       </View>
     </View>

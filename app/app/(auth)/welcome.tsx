@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
   return (
     <Screen safe={false}>
       <ImageBackground source={heroImage} style={styles.hero} resizeMode="cover">
-        <View style={styles.overlay} />
+        <View pointerEvents="none" style={styles.overlay} />
         <View style={styles.top}>
           <View style={styles.logo}>
             <Image source={brandLogo} style={styles.logoImage} resizeMode="contain" />

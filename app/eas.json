@@ -15,11 +15,17 @@
     },
     "production": {
       "channel": "production",
-      "autoIncrement": false
+      "autoIncrement": false,
+      "env": {
+        "EXPO_USE_PRECOMPILED_MODULES": "0"
+      }
     }
   },
   "submit": {
     "production": {
+      "ios": {
+        "ascAppId": "6769253236"
+      },
       "android": {
         "serviceAccountKeyPath": "./.secrets/google-play-service-account.json",
         "track": "internal"

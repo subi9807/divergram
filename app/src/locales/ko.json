@@ -163,6 +163,16 @@
       "deleteDone": "게시물을 삭제했습니다.",
       "deleteFailed": "게시물 삭제에 실패했습니다."
     },
+    "media": {
+      "instagramFallback": "Instagram 미설치: 기본 공유 시트를 사용했습니다."
+    },
+    "ad": {
+      "slotLabel": "광고 슬롯",
+      "defaultTitle": "Divergram 추천 광고",
+      "defaultSubtitle": "피드 3번째 카드 이후에 자연스럽게 노출되는 운영용 광고 슬롯입니다.",
+      "googleReady": "Google AdMob 연동 가능 위치",
+      "cta": "자세히 보기"
+    },
     "comments": {
       "title": "댓글",
       "empty": "아직 댓글이 없습니다.",
@@ -400,7 +410,8 @@
       "save": "로그 저장"
     },
     "validation": {
-      "gasPercentRequired": "나이트록스/헬리옥스는 블렌딩 % 입력이 필요합니다."
+      "gasPercentRequired": "나이트록스/헬리옥스는 블렌딩 % 입력이 필요합니다.",
+      "oneOfThreeRequired": "포인트 위치, 사진, 메모 중 하나 이상 입력하면 제출할 수 있습니다."
     },
     "map": {
       "apiKeyMissing": "Google Maps API 키가 설정되지 않았습니다.",

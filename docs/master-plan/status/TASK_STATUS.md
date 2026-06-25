@@ -521,6 +521,12 @@
 - [x] 광고 슬롯 운영 API 추가
   - Evidence: `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminAds.js`, `/Volumes/WD_Elements/Works/divergram_api/server/index.js`
   - Note: `/api/admin/ads`의 목록/생성/수정/삭제를 분리해 피드·릴스 광고 슬롯을 운영 API로 관리할 수 있게 했다.
+- [x] 앱 피드 광고 슬롯 실연결
+  - Evidence: `/Volumes/WD_Elements/Works/divergram/app/app/(tabs)/feed.tsx`, `/Volumes/WD_Elements/Works/divergram/app/src/features/feed/FeedAdSlot.native.tsx`, `/Volumes/WD_Elements/Works/divergram/app/src/lib/api.ts`
+  - Note: 피드 3개 카드마다 서버 활성 광고 슬롯을 교차 노출하고, 실제 AdMob 배너 또는 대체 운영 카드가 나오도록 연결했다.
+- [x] 관리자 광고 노출 토글 보강
+  - Evidence: `/Volumes/WD_Elements/Works/divergram/adm/src/sections/AdsSection.jsx`
+  - Note: 광고 슬롯을 `노출 시작/중단`으로 즉시 바꿔 운영자가 피드/릴스 광고 송출 상태를 바로 제어할 수 있게 했다.
 - [x] 신고/제재 흐름 상세화
   - Evidence: `/Volumes/WD_Elements/Works/divergram_api/server/routes/adminModeration.js`, `/Volumes/WD_Elements/Works/divergram_api/server/middleware/requireAdmin.js`
   - Note: 관리자 행위 추적(`req.adminAuth`)과 신고 상세/액션 이력/상태 변경 저장을 추가해 운영 제재 흐름을 보강했다.

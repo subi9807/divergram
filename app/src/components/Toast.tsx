@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { View, Text, Animated, TouchableOpacity } from 'react-native';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -29,7 +28,6 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const insets = useSafeAreaInsets();
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substring(7);
@@ -71,14 +69,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <View 
-        className="absolute left-0 right-0 z-50 px-4"
-        style={{ top: insets.top + 10 }}
+      <View
+        pointerEvents="box-none"
+        className="absolute inset-0 z-50 px-4"
+        style={{ justifyContent: 'center', alignItems: 'center' }}
       >
         {toasts.map((toast) => (
           <Animated.View
             key={toast.id}
-            className={`flex-row items-start p-4 rounded-lg border mb-2 ${getToastStyles(toast.type)}`}
+            className={`mb-3 w-full max-w-[360px] flex-row items-start rounded-3xl border px-4 py-4 shadow-lg ${getToastStyles(toast.type)}`}
+            style={{ elevation: 10 }}
           >
             <View className="mr-3 mt-0.5">
               {getToastIcon(toast.type)}

@@ -24,6 +24,30 @@ function buildId(prefix, crypto) {
 }
 
 export function registerAdminAdsRoutes(app, { pool, requireAdmin, crypto }) {
+  app.get('/api/ads', async (req, res) => {
+    const placement = String(req.query.placement || '').trim().toLowerCase();
+    const limit = normalizeLimit(req.query.limit, 10, 50);
+    try {
+      const params = [limit];
+      const clauses = [`is_active = true`, `lower(status) IN ('ready', 'active')`];
+      if (placement) {
+        params.push(placement);
+        clauses.push(`lower(placement) = $${params.length}`);
+      }
+      const q = await pool.query(
+        `SELECT id, title, placement, status, note, action_label, target_url, sort_order, is_active, start_at, end_at, created_at, updated_at
+         FROM app_ad_slots
+         WHERE ${clauses.join(' AND ')}
+         ORDER BY sort_order ASC, updated_at DESC, created_at DESC
+         LIMIT $1`,
+        params
+      );
+      res.json({ ok: true, ads: q.rows || [] });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: 'public_ads_failed', detail: String(error?.message || error) });
+    }
+  });
+
   app.get('/api/admin/ads', requireAdmin, async (req, res) => {
     const limit = normalizeLimit(req.query.limit, 20, 100);
     try {

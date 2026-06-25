@@ -8,6 +8,24 @@ function getGoogleMapsApiKey(): string {
   return process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 }
 
+function getAdMobAppId(platform: 'android' | 'ios'): string {
+  const fallback =
+    platform === 'android'
+      ? 'ca-app-pub-3940256099942544~3347511713'
+      : 'ca-app-pub-3940256099942544~1458002511';
+  if (platform === 'android') {
+    return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_APP_ID || process.env.GOOGLE_ADMOB_ANDROID_APP_ID || fallback;
+  }
+  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_APP_ID || process.env.GOOGLE_ADMOB_IOS_APP_ID || fallback;
+}
+
+function getAdMobBannerUnitId(platform: 'android' | 'ios'): string {
+  if (platform === 'android') {
+    return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || '';
+  }
+  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || '';
+}
+
 function toGoogleIosUrlScheme(clientId: string): string | null {
   const trimmed = clientId.trim();
   if (!trimmed) return null;
@@ -20,6 +38,8 @@ function toGoogleIosUrlScheme(clientId: string): string | null {
 export default ({ config }: ConfigContext): ExpoConfig => {
   const googleIosUrlScheme = toGoogleIosUrlScheme(getGoogleIosClientId());
   const googleMapsApiKey = getGoogleMapsApiKey();
+  const adMobAndroidAppId = getAdMobAppId('android');
+  const adMobIosAppId = getAdMobAppId('ios');
   const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production';
   const expoDevClientPlugin = isProductionBuild
     ? []
@@ -42,22 +62,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.1',
+    version: '1.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
     scheme: 'divergram',
-    newArchEnabled: true,
-    splash: {
-      image: './assets/images/splash.png',
-      resizeMode: 'cover',
-      backgroundColor: '#0EA5E9'
-    },
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '10',
+      buildNumber: '13',
       usesAppleSignIn: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -92,7 +106,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#0EA5E9'
       },
       package: 'com.divergram.app',
-      versionCode: 12,
+      versionCode: 13,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -127,7 +141,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-font',
       'expo-image',
       'expo-image-picker',
+      'expo-sqlite',
       'expo-apple-authentication',
+      ...(adMobAndroidAppId || adMobIosAppId
+        ? [
+            [
+              'react-native-google-mobile-ads',
+              {
+                androidAppId: adMobAndroidAppId,
+                iosAppId: adMobIosAppId,
+                delay_app_measurement_init: true,
+                user_tracking_usage_description: '맞춤형 광고와 앱 성능 개선을 위해 광고 식별자를 사용합니다.'
+              }
+            ]
+          ]
+        : []),
       [
         'expo-build-properties',
         {
@@ -150,6 +178,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         origin: false
       },
       googleMapsApiKey,
+      adMob: {
+        androidAppId: adMobAndroidAppId,
+        iosAppId: adMobIosAppId,
+        androidBannerUnitId: getAdMobBannerUnitId('android'),
+        iosBannerUnitId: getAdMobBannerUnitId('ios'),
+        enabled: Boolean(adMobAndroidAppId || adMobIosAppId)
+      },
       socialAuth: {
         googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '',
         googleClientIdAndroid: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || process.env.GOOGLE_CLIENT_ID_ANDROID || '',
@@ -170,6 +205,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.1'
+    runtimeVersion: '1.2'
   } as ExpoConfig;
 };

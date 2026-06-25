@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Divergram",
+    "slug": "divergram"
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-3940256099942544~3347511713",
+    "ios_app_id": "ca-app-pub-3940256099942544~1458002511",
+    "delay_app_measurement_init": true,
+    "user_tracking_usage_description": "맞춤형 광고와 앱 성능 개선을 위해 광고 식별자를 사용합니다."
+  }
+}

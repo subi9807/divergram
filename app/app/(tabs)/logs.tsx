@@ -146,12 +146,12 @@ export default function LogsScreen() {
   const latNum = toNumber(form.locationLat);
   const lngNum = toNumber(form.locationLng);
   const mapPreview = buildGoogleStaticMapUrl(latNum ?? undefined, lngNum ?? undefined);
-  const hasPointName = Boolean(form.pointName.trim());
+  const hasOptionalCoreInput = Boolean(form.pointName.trim() || form.notes.trim() || selectedMedia.length);
   const hasVideoMedia = selectedMedia.some((item) => item.type === 'video');
   const hasPublishTarget = publishToFeed || publishToReels;
   const canSubmit = Boolean(
     form.title.trim() &&
-    hasPointName &&
+    hasOptionalCoreInput &&
     hasPublishTarget &&
     (!publishToReels || hasVideoMedia) &&
     (!needsGasPercent || form.gasPercent.trim())
@@ -639,6 +639,12 @@ export default function LogsScreen() {
                 <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{t('logsForm.map.previewPlaceholder')}</Text>
               </View>
             )}
+
+            {!hasOptionalCoreInput ? (
+              <Text className="mt-3 text-xs text-amber-600">
+                {t('logsForm.validation.oneOfThreeRequired', { defaultValue: '포인트 위치, 사진, 메모 중 하나 이상 입력하면 제출할 수 있습니다.' })}
+              </Text>
+            ) : null}
           </View>
 
           <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
@@ -734,6 +740,9 @@ export default function LogsScreen() {
             value={form.notes}
             onChangeText={(value) => update('notes', value)}
           />
+          <Text className="mt-2 text-xs text-surface-500 dark:text-surface-400">
+            {t('logsForm.validation.oneOfThreeRequired', { defaultValue: '포인트 위치, 사진, 메모 중 하나 이상 입력하면 제출할 수 있습니다.' })}
+          </Text>
 
           {!isGoogleMapsApiConfigured() ? (
             <Text className="mt-3 text-xs text-amber-600">{t('logsForm.map.apiKeyGuide')}</Text>

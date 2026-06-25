@@ -91,11 +91,22 @@ target 'Divergram' do
         config.build_settings['OTHER_LIBTOOLFLAGS'] = append_flag.call(libtool_flags, '-no_warning_for_no_symbols')
       end
 
+      if target.name == 'RNScreens'
+        target.build_configurations.each do |config|
+          config.build_settings['DEFINES_MODULE'] = 'YES'
+        end
+      end
+
       target.shell_script_build_phases.each do |phase|
         next unless phase.name&.include?('[CP-User] [Hermes] Replace Hermes')
         if phase.respond_to?(:always_out_of_date=)
           phase.always_out_of_date = '1'
         end
+      end
+
+      target.shell_script_build_phases.each do |phase|
+        next unless phase.name == '[CP-User] Build ExpoModulesJSI xcframework'
+        phase.shell_path = '/bin/bash' if phase.respond_to?(:shell_path=)
       end
 
       next unless target.name == 'fmt'

@@ -12,7 +12,7 @@ export function LoadingOverlay({ visible, text, className }: LoadingOverlayProps
   if (!visible) return null;
 
   return (
-    <View className={cn('absolute inset-0 z-50 items-center justify-center bg-surface-900/20', className)}>
+    <View pointerEvents="none" className={cn('absolute inset-0 z-50 items-center justify-center bg-surface-900/20', className)}>
       <View className="rounded-2xl bg-white px-5 py-4 shadow-lg shadow-surface-300">
         <ActivityIndicator size="large" color="#1198f5" />
       {text && (

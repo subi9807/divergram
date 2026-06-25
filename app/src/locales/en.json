@@ -163,6 +163,16 @@
       "deleteDone": "Post deleted.",
       "deleteFailed": "Failed to delete post."
     },
+    "media": {
+      "instagramFallback": "Instagram is not installed. The system share sheet was used instead."
+    },
+    "ad": {
+      "slotLabel": "Ad Slot",
+      "defaultTitle": "Divergram Featured Ad",
+      "defaultSubtitle": "This is a native ad slot inserted naturally after every 3 feed cards.",
+      "googleReady": "Ready for Google AdMob integration",
+      "cta": "Learn more"
+    },
     "comments": {
       "title": "Comments",
       "empty": "No comments yet.",
@@ -400,7 +410,8 @@
       "save": "Save Log"
     },
     "validation": {
-      "gasPercentRequired": "Please enter blend % for Nitrox or Heliox."
+      "gasPercentRequired": "Please enter blend % for Nitrox or Heliox.",
+      "oneOfThreeRequired": "Enter at least one of point location, photo, or notes to submit."
     },
     "map": {
       "apiKeyMissing": "Google Maps API key is missing.",

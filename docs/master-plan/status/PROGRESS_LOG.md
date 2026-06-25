@@ -820,3 +820,14 @@
 - iOS/Android 재배포를 위해 네이티브 빌드 번호를 각각 10 / 12로 올리고, EAS 빌드를 다시 시작했다.
 - iOS 빌드 안정화를 위해 `expo-build-properties`의 `ios.usePrecompiledModules`를 꺼서 `react-native-safe-area-context`와 `RNWorklets`의 xcframework 전환 스크립트가 없는 source build 경로로 돌렸다.
 - `./node_modules/.bin/eslint ...`와 `./node_modules/.bin/tsc -p tsconfig.json --noEmit --pretty false` 검증은 통과했다.
+
+## 2026-06-24 광고 운영 정합화 / AdMob 연결
+- 앱 피드에 서버 활성 광고 슬롯을 3개 카드 간격으로 삽입하고, 슬롯이 없으면 운영 안내 카드로 자연스럽게 대체되도록 연결했다.
+- 관리자 광고 화면에는 `노출 시작/중단` 토글을 넣어 실무자가 노출 상태를 즉시 바꿀 수 있게 정리했다.
+- 앱은 모바일 광고용 AdMob 설정을 기준으로 묶었고, 웹/관리자 쪽은 서버 `app_ad_slots`를 읽어 운영 상태를 관리하도록 분리했다.
+- 검증: `npm run lint -- --no-cache` in `/Volumes/WD_Elements/Works/divergram/app`
+- 검증: `npx tsc --noEmit --pretty false` in `/Volumes/WD_Elements/Works/divergram/app`
+- 검증: `npx eslint 'app/(tabs)/feed.tsx' src/lib/api.ts src/features/feed/FeedAdSlot.native.tsx src/features/feed/FeedAdSlot.tsx src/features/feed/FeedAdSlot.web.tsx` in `/Volumes/WD_Elements/Works/divergram/app`
+- 검증: `node --check server/routes/adminAds.js` in `/Volumes/WD_Elements/Works/divergram/api`
+- 검증: `npm run build` in `/Volumes/WD_Elements/Works/divergram/adm`
+- Note: Google AdSense 콘솔 자체 로그인은 이 세션에서 직접 조작할 수 없어서, 앱/관리자/서버 연결은 코드로 마무리했고 계정 콘솔 값은 추후 입력만 받으면 바로 반영할 수 있게 env 경로를 준비해뒀다.

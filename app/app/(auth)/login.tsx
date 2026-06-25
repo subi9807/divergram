@@ -328,7 +328,7 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <ImageBackground source={heroImage} style={styles.hero} imageStyle={styles.heroImage}>
-            <View style={styles.heroOverlay} />
+              <View pointerEvents="none" style={styles.heroOverlay} />
 
             <View style={styles.heroTopRow}>
               <TouchableOpacity

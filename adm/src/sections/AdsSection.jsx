@@ -117,6 +117,23 @@ export default function AdsSection({ adSlots = [], adminKey, refresh }) {
     }
   };
 
+  const toggleActive = async (slot) => {
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/api/admin/ads/${slot.id}`, {
+        adminKey,
+        method: 'PATCH',
+        body: { isActive: !slot.is_active, status: !slot.is_active ? 'ready' : 'paused' },
+      });
+      await refresh();
+    } catch (e) {
+      setError(e.message || '광고 슬롯 상태 변경 실패');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="card admin-section">
       <div className="section-head">
@@ -185,15 +202,18 @@ export default function AdsSection({ adSlots = [], adminKey, refresh }) {
                     <strong>{slot.title || slot.id}</strong>
                     <p>{slot.placement} · {slot.action_label || '운영 확인'}</p>
                   </div>
-                  <span className={slot.is_active ? 'badge active' : 'badge'}>{slot.status || 'draft'}</span>
+                  <span className={slot.is_active ? 'badge active' : 'badge'}>{slot.is_active ? '노출중' : '중지됨'}</span>
                 </div>
                 <div className="ad-item-meta">
                   <span>정렬 {slot.sort_order ?? 0}</span>
+                  <span>{slot.status || 'draft'}</span>
+                  <span>{slot.is_active ? '활성' : '비활성'}</span>
                   <span>{slot.target_url || '-'}</span>
                   <span>{formatDate(slot.updated_at || slot.created_at)}</span>
                 </div>
                 <div className="actions">
                   <button type="button" className="sm" onClick={() => startEdit(slot)} disabled={busy}>수정</button>
+                  <button type="button" className="sm" onClick={() => toggleActive(slot)} disabled={busy}>{slot.is_active ? '노출 중단' : '노출 시작'}</button>
                   <button type="button" className="sm" onClick={() => remove(slot)} disabled={busy}>삭제</button>
                 </div>
               </div>
