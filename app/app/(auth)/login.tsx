@@ -188,6 +188,9 @@ export default function LoginScreen() {
       if (code.includes('ERR_REQUEST_CANCELED')) {
         return;
       }
+      if (code.includes('google_login_cancelled')) {
+        return;
+      }
       if (socialSignup && code.includes('sso_signup_required')) {
         Alert.alert(
           t('auth.socialSignupRequiredTitle'),

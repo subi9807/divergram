@@ -32,6 +32,14 @@ const loggerTarget = path.join(
   'Logging',
   'Logger.swift'
 );
+const locationModuleTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'expo-location',
+  'ios',
+  'LocationModule.swift'
+);
 
 const marker = "    console.error(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}`);\n    process.exit(1);\n";
 const replacement = "    console.log(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}, skipping.`);\n    return;\n";
@@ -92,5 +100,16 @@ if (fs.existsSync(loggerTarget)) {
   } else {
     console.error('[fix-expo-xcframework] Logger.swift minLevel marker not found; no simulator minLevel patch applied.');
     process.exit(1);
+  }
+}
+
+if (fs.existsSync(locationModuleTarget)) {
+  const locationSource = fs.readFileSync(locationModuleTarget, 'utf8');
+  const requesterLine = '          MotionActivityPermissionRequester(),\n';
+  if (locationSource.includes(requesterLine)) {
+    fs.writeFileSync(locationModuleTarget, locationSource.replace(requesterLine, ''));
+    console.log('[fix-expo-xcframework] Patched LocationModule.swift to skip MotionActivityPermissionRequester registration.');
+  } else {
+    console.log('[fix-expo-xcframework] LocationModule.swift already patched for MotionActivityPermissionRequester.');
   }
 }

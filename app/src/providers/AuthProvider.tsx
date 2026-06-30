@@ -1,6 +1,8 @@
-import React, { createContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
 import type * as AppleAuthenticationTypes from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { apiClient } from '../lib/api';
@@ -222,6 +224,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   const socialAuth = getSocialAuthConfig();
   const googleIosUrlScheme = toGoogleIosUrlScheme(socialAuth.googleClientIdIos);
+  const googleRedirectUri = useMemo(
+    () =>
+      normalizeEnvValue(
+        AuthSession.makeRedirectUri({
+          scheme: 'divergram',
+          path: 'auth',
+          native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined,
+        })
+      ),
+    [googleIosUrlScheme]
+  );
+  const [googleAuthRequest, , promptGoogleAsync] = Google.useAuthRequest(
+    {
+      iosClientId: socialAuth.googleClientIdIos || undefined,
+      androidClientId: socialAuth.googleClientIdAndroid || undefined,
+      webClientId: socialAuth.googleClientIdWeb || undefined,
+      redirectUri: googleRedirectUri,
+      scopes: ['openid', 'profile', 'email'],
+      selectAccount: true,
+      extraParams: { access_type: 'offline', prompt: 'select_account' },
+    } as any,
+    { native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined }
+  );
 
   // OAuth configuration
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -512,60 +537,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async () => {
     try {
-      const AuthSession = await import('expo-auth-session');
       if (isExpoGo) {
         throw new Error('google_requires_dev_build');
       }
       if (!googleClientId) {
         throw new Error('missing_google_client_id');
       }
-      const redirectUri = normalizeEnvValue(
-        AuthSession.makeRedirectUri({
-          scheme: 'divergram',
-          path: 'auth',
-          native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined,
-        })
-      );
-      if (!redirectUri) {
+      if (!googleAuthRequest) {
+        throw new Error('google_request_not_ready');
+      }
+      if (!googleRedirectUri) {
         throw new Error('invalid_return_url');
       }
-      const request = new AuthSession.AuthRequest({
-        clientId: googleClientId!,
-        scopes: ['openid', 'profile', 'email'],
-        redirectUri,
-        responseType: AuthSession.ResponseType.Code,
-        usePKCE: true,
-        extraParams: { access_type: 'offline' },
-      } as any);
+      const result = await promptGoogleAsync();
 
-      const discovery = {
-        authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-        tokenEndpoint: 'https://oauth2.googleapis.com/token',
-        revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-        userInfoEndpoint: 'https://www.googleapis.com/oauth2/v2/userinfo',
-      };
-
-      const result = await request.promptAsync(discovery);
-      
-      if (result.type === 'success') {
-        let access_token = result.params.access_token;
-        if (!access_token && result.params.code) {
-          const exchange = await AuthSession.exchangeCodeAsync(
-            {
-              clientId: googleClientId!,
-              code: result.params.code,
-              redirectUri,
-              extraParams: (request as any).codeVerifier ? { code_verifier: (request as any).codeVerifier } : undefined,
-            },
-            discovery
-          );
-          access_token = exchange.accessToken;
-        }
-        if (!access_token) {
-          throw new Error('google_access_token_missing');
-        }
-        await signInOrSignUpWithGoogle(access_token);
+      if (result.type !== 'success') {
+        throw new Error(result.type === 'cancel' || result.type === 'dismiss' ? 'google_login_cancelled' : 'google_login_failed');
       }
+
+      let access_token = String(
+        result.authentication?.accessToken ||
+          result.authentication?.idToken ||
+          result.params.access_token ||
+          result.params.id_token ||
+          ''
+      ).trim();
+      if (!access_token && result.params.code) {
+        const discovery = {
+          authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+          tokenEndpoint: 'https://oauth2.googleapis.com/token',
+          revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
+          userInfoEndpoint: 'https://openidconnect.googleapis.com/v1/userinfo',
+        };
+        const exchange = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: googleClientId!,
+            code: result.params.code,
+            redirectUri: googleRedirectUri,
+            extraParams: String((googleAuthRequest as any)?.codeVerifier || '').trim()
+              ? { code_verifier: String((googleAuthRequest as any)?.codeVerifier || '').trim() }
+              : undefined,
+          },
+          discovery
+        );
+        access_token = String(exchange.accessToken || exchange.authentication?.accessToken || exchange.idToken || '').trim();
+      }
+
+      if (!access_token) {
+        throw new Error('google_access_token_missing');
+      }
+
+      await signInOrSignUpWithGoogle(access_token);
     } catch (error) {
       console.error('Google login error:', error);
       throw error;

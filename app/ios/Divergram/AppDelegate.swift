@@ -55,10 +55,14 @@ class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   // Extension point for config-plugins
 
   override func sourceURL(for bridge: RCTBridge) -> URL? {
-    // needed to return the correct URL for expo-dev-client.
-    bridge.bundleURL
+    // TestFlight/Release는 반드시 번들된 JS만 사용하고, 로컬 서버 fallback은 개발 빌드에서만 허용한다.
+    #if DEBUG
+    return bridge.bundleURL
       ?? bundleURL()
       ?? URL(string: "http://localhost:8081/.expo/.virtual-metro-entry.bundle?platform=ios&dev=true&minify=false")
+    #else
+    return bridge.bundleURL ?? bundleURL()
+    #endif
   }
 
   override func bundleURL() -> URL? {

@@ -1,0 +1,1 @@
+../../markdown/fastlane/docs/android_internal_tester_invite_ko.txt

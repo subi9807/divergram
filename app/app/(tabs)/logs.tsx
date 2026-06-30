@@ -128,6 +128,7 @@ export default function LogsScreen() {
   const [editingPostId, setEditingPostId] = useState('');
   const [prefilledPostId, setPrefilledPostId] = useState('');
   const [loadingExistingPost, setLoadingExistingPost] = useState(false);
+  const [mapPreviewError, setMapPreviewError] = useState('');
 
   const { data: resorts = [] } = useQuery({ queryKey: ['logs-resorts'], queryFn: apiClient.getResorts });
   const { data: editingPost } = useQuery({
@@ -159,11 +160,9 @@ export default function LogsScreen() {
 
   useEffect(() => {
     const nextEditingPostId = String(params.postId || '').trim();
-    /* eslint-disable react-hooks/set-state-in-effect -- 편집 대상 포스트를 라우트 파라미터로 동기화해야 함 */
     setEditingPostId(nextEditingPostId);
     setPrefilledPostId('');
     setLoadingExistingPost(Boolean(nextEditingPostId));
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [params.postId]);
 
   useEffect(() => {
@@ -177,7 +176,6 @@ export default function LogsScreen() {
       }))
       .filter((item: SelectedMediaItem) => Boolean(item.uri));
 
-    /* eslint-disable react-hooks/set-state-in-effect -- 서버에서 불러온 편집 값을 폼 상태로 초기화 */
     setForm({
       title: String((editingPost as any)?.content || '').split('\n')[0] || '',
       diveType: (editingPost as any)?.diveType === 'scuba' ? 'scuba' : 'freediving',
@@ -202,14 +200,11 @@ export default function LogsScreen() {
     setPublishToReels(Boolean((editingPost as any)?.publishToReels));
     setPrefilledPostId(editingPostId);
     setLoadingExistingPost(false);
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [editingPost, editingPostId, prefilledPostId]);
 
   useEffect(() => {
     if (editingPostId && editingPost === null) {
-      /* eslint-disable react-hooks/set-state-in-effect -- 편집 데이터가 없을 때 로딩 상태만 종료 */
       setLoadingExistingPost(false);
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [editingPost, editingPostId]);
 
@@ -631,14 +626,37 @@ export default function LogsScreen() {
               ) : null}
             </View>
 
-            {mapPreview ? (
-              <ExpoImage source={{ uri: mapPreview }} className="mt-3 h-40 w-full rounded-2xl" contentFit="cover" />
+            {mapPreview && !mapPreviewError ? (
+              <ExpoImage
+                source={{ uri: mapPreview }}
+                className="mt-3 h-40 w-full rounded-2xl"
+                contentFit="cover"
+                cachePolicy="disk"
+                transition={0}
+                onError={() => {
+                  setMapPreviewError(
+                    t('logsForm.map.previewFailed', {
+                      defaultValue: '지도 미리보기를 불러오지 못했습니다. 좌표 검색은 계속 사용할 수 있습니다.',
+                    })
+                  );
+                }}
+              />
             ) : (
               <View className="mt-3 h-24 w-full items-center justify-center rounded-2xl bg-surface-50 dark:bg-surface-800">
                 <MapPin size={22} color="#64748b" />
-                <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{t('logsForm.map.previewPlaceholder')}</Text>
+                <Text className="mt-1 px-3 text-center text-xs text-surface-500 dark:text-surface-400">
+                  {mapPreviewError || t('logsForm.map.previewPlaceholder')}
+                </Text>
               </View>
             )}
+            {mapPreviewError ? (
+              <TouchableOpacity
+                className="mt-2 self-start rounded-full bg-brand-600 px-3 py-2"
+                onPress={() => setMapPreviewError('')}
+              >
+                <Text className="text-xs font-semibold text-white">{t('common.retry', { defaultValue: '다시 시도' })}</Text>
+              </TouchableOpacity>
+            ) : null}
 
             {!hasOptionalCoreInput ? (
               <Text className="mt-3 text-xs text-amber-600">

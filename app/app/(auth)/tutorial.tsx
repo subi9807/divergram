@@ -36,19 +36,6 @@ export default function TutorialScreen() {
 
   const isLast = step === steps.length - 1;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (requesting) return;
-      if (isLast) {
-        void completeWithPermissions();
-        return;
-      }
-      setStep((prev) => Math.min(prev + 1, steps.length - 1));
-    }, 4500);
-
-    return () => clearTimeout(timer);
-  }, [completeWithPermissions, isLast, requesting, steps.length, step]);
-
   const completeTutorial = useCallback(async () => {
     await markTutorialCompleted();
     router.replace('/');
@@ -63,6 +50,19 @@ export default function TutorialScreen() {
       setRequesting(false);
     }
   }, [completeTutorial]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (requesting) return;
+      if (isLast) {
+        void completeWithPermissions();
+        return;
+      }
+      setStep((prev) => Math.min(prev + 1, steps.length - 1));
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [completeWithPermissions, isLast, requesting, steps.length, step]);
 
   const handleNext = useCallback(async () => {
     if (!isLast) {

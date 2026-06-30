@@ -211,6 +211,36 @@ export function registerAuthRoutes(app, deps) {
     };
   };
 
+  const fetchGoogleProfileByAnyToken = async (token) => {
+    try {
+      return await fetchGoogleProfileByAccessToken(token);
+    } catch (error) {
+      const attempts = [
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`,
+        `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`,
+      ];
+      let lastError = error;
+      for (const url of attempts) {
+        try {
+          const infoResp = await fetch(url);
+          if (!infoResp.ok) {
+            lastError = new Error(`google_tokeninfo_failed_${infoResp.status}`);
+            continue;
+          }
+          const info = await infoResp.json();
+          return {
+            sub: String(info.sub || info.user_id || '').trim(),
+            email: normalizeEmail(info.email || ''),
+            name: String(info.name || info.given_name || '').trim(),
+          };
+        } catch (e) {
+          lastError = e;
+        }
+      }
+      throw lastError;
+    }
+  };
+
   let appleJwkCache = { keys: [], expiresAt: 0 };
 
   const getAppleSigningKeys = async () => {
@@ -300,7 +330,7 @@ export function registerAuthRoutes(app, deps) {
   };
 
   const fetchMobileOAuthProfile = async (provider, accessToken, userInfo = {}) => {
-    if (provider === 'google') return fetchGoogleProfileByAccessToken(accessToken);
+    if (provider === 'google') return fetchGoogleProfileByAnyToken(accessToken);
     if (provider === 'apple') return fetchAppleProfileByIdentityToken(accessToken, userInfo);
     if (provider === 'kakao') return fetchKakaoProfileByAccessToken(accessToken);
     if (provider === 'naver') return fetchNaverProfileByAccessToken(accessToken);

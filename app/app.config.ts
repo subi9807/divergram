@@ -71,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '13',
+      buildNumber: '22',
       usesAppleSignIn: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -106,7 +106,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         backgroundColor: '#0EA5E9'
       },
       package: 'com.divergram.app',
-      versionCode: 13,
+      versionCode: 22,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',

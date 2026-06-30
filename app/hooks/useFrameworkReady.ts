@@ -8,6 +8,7 @@ declare global {
 
 export function useFrameworkReady() {
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     window.frameworkReady?.();
   });
 }
