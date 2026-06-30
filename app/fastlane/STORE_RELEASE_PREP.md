@@ -1,0 +1,1 @@
+../markdown/fastlane/STORE_RELEASE_PREP.md
