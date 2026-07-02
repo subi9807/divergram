@@ -1,0 +1,13 @@
+Options -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Keep real static files like /app-ads.txt, /robots.txt, and /sitemap.xml reachable.
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fall back to the SPA shell for client-side routes.
+  RewriteRule ^ index.html [L]
+</IfModule>
