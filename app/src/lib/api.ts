@@ -627,6 +627,28 @@ export const apiClient = {
     };
   },
 
+  uploadBinaryMedia: async (payload: {
+    uri: string;
+    fileName?: string;
+    mimeType?: string;
+  }): Promise<DirectUploadResult> => {
+    const uri = normalizeString(payload.uri || '');
+    if (!uri) throw new Error('upload_uri_required');
+
+    const formData = new FormData();
+    formData.append('file', {
+      uri,
+      name: normalizeString(payload.fileName || '') || `divergram-${Date.now()}`,
+      type: normalizeString(payload.mimeType || '') || 'application/octet-stream',
+    } as any);
+
+    const response = await axiosInstance.post('/uploads', formData);
+    const row = response.data?.data || response.data || {};
+    return {
+      url: normalizeString(row?.url || ''),
+      file: normalizeString(row?.file || ''),
+    };
+  },
   deleteCloudinaryMedia: async (payload: {
     url?: string;
     publicId?: string;

@@ -1,7 +1,6 @@
 import React from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { analytics } from './analytics';
 import i18n from './i18n';
@@ -47,18 +46,20 @@ class NotificationManager {
 
       // Get push token
       if (Device.isDevice) {
-        const token = await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig?.extra?.eas?.projectId,
-        });
-        
-        this.pushToken = token.data;
-        
+        const token = await this.getFirebaseMessagingToken();
+        if (!token) {
+          console.log('Failed to resolve Firebase messaging token');
+          return null;
+        }
+
+        this.pushToken = token;
+
         // Register token with backend
         await this.registerPushToken();
-        
-        analytics.action('Push Token Registered', { token: token.data });
-        
-        return token.data;
+
+        analytics.action('Push Token Registered', { platform: Platform.OS });
+
+        return token;
       } else {
         console.log('Must use physical device for push notifications');
         return null;
@@ -66,6 +67,23 @@ class NotificationManager {
     } catch (error) {
       console.error('Error initializing notifications:', error);
       analytics.error(error as Error, { context: 'notification_init' });
+      return null;
+    }
+  }
+
+  private async getFirebaseMessagingToken() {
+    if (Platform.OS === 'web') return null;
+
+    try {
+      const { default: messaging } = await import('@react-native-firebase/messaging');
+      const firebaseMessaging = messaging();
+      await firebaseMessaging.registerDeviceForRemoteMessages().catch(() => undefined);
+      await firebaseMessaging.requestPermission().catch(() => undefined);
+      const token = await firebaseMessaging.getToken();
+      const normalizedToken = String(token || '').trim();
+      return normalizedToken || null;
+    } catch (error) {
+      console.error('Failed to get Firebase messaging token:', error);
       return null;
     }
   }
@@ -200,14 +218,14 @@ export const notificationManager = new NotificationManager();
 
 // React hook for notifications
 export const useNotifications = () => {
-  const [expoPushToken, setExpoPushToken] = React.useState<string | null>(null);
+  const [fcmToken, setFcmToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    notificationManager.initialize().then(setExpoPushToken);
+    notificationManager.initialize().then(setFcmToken);
   }, []);
 
   return {
-    expoPushToken,
+    fcmToken,
     scheduleLocal: notificationManager.scheduleLocal.bind(notificationManager),
     scheduleDiveReminder: notificationManager.scheduleDiveReminder.bind(notificationManager),
     cancelNotification: notificationManager.cancelNotification.bind(notificationManager),

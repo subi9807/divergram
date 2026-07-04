@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1090996426265",
+    "project_id": "divergram-ad",
+    "storage_bucket": "divergram-ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1090996426265:android:e18db3355da257220ebc88",
+        "android_client_info": {
+          "package_name": "com.divergram.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARM0ETGXbTR_7fWrgU6yOayPJU6yug1L4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

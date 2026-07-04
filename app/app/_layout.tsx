@@ -60,13 +60,21 @@ export default function RootLayout() {
     if (Platform.OS === 'web') return;
     if (!isAdMobEnabled()) return;
     import('react-native-google-mobile-ads')
-      .then(({ default: mobileAdsModule }) =>
-        mobileAdsModule()
-          .initialize()
-          .catch(() => {
-            // 광고 초기화 실패는 앱 실행을 막지 않는다.
+      .then(({ default: mobileAdsModule }) => {
+        const mobileAds = mobileAdsModule();
+        return mobileAds
+          .setRequestConfiguration({
+            testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : [],
           })
-      )
+          .catch(() => {
+            // 테스트 기기 설정은 실패해도 앱 실행을 막지 않는다.
+          })
+          .then(() =>
+            mobileAds.initialize().catch(() => {
+              // 광고 초기화 실패는 앱 실행을 막지 않는다.
+            })
+          );
+      })
       .catch(() => {
         // 광고 SDK가 없더라도 앱 진입은 유지한다.
       });

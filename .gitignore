@@ -47,6 +47,7 @@ ios/Pods/
 ios/build/
 app/ios/Pods/
 app/ios/build/
+app/.build/
 app/android/.gradle/
 app/android/build/
 app/android/app/build/

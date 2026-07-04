@@ -40,6 +40,26 @@ const locationModuleTarget = path.join(
   'ios',
   'LocationModule.swift'
 );
+const expoSqliteCompatibilitySource = path.join(__dirname, 'templates', 'ExpoSQLiteCompatibility.swift');
+const expoSqliteCompatibilityTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'expo-sqlite',
+  'ios',
+  'ExpoSQLiteCompatibility.swift'
+);
+const expoSqliteVendorSourceDir = path.join(__dirname, '..', 'node_modules', 'expo-sqlite', 'vendor', 'sqlite3');
+const expoSqliteIosSourceDir = path.join(__dirname, '..', 'node_modules', 'expo-sqlite', 'ios');
+const googleMobileAdsModuleTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'react-native-google-mobile-ads',
+  'ios',
+  'RNGoogleMobileAds',
+  'RNGoogleMobileAdsModule.mm'
+);
 
 const marker = "    console.error(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}`);\n    process.exit(1);\n";
 const replacement = "    console.log(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}, skipping.`);\n    return;\n";
@@ -111,5 +131,100 @@ if (fs.existsSync(locationModuleTarget)) {
     console.log('[fix-expo-xcframework] Patched LocationModule.swift to skip MotionActivityPermissionRequester registration.');
   } else {
     console.log('[fix-expo-xcframework] LocationModule.swift already patched for MotionActivityPermissionRequester.');
+  }
+}
+
+if (fs.existsSync(expoSqliteCompatibilitySource)) {
+  const compatibilitySource = fs.readFileSync(expoSqliteCompatibilitySource, 'utf8');
+  const sqliteModuleTarget = path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    'expo-sqlite',
+    'ios',
+    'SQLiteModule.swift'
+  );
+  if (fs.existsSync(sqliteModuleTarget)) {
+    const sqliteModuleSource = fs.readFileSync(sqliteModuleTarget, 'utf8');
+    const expoSQLiteImportLine = 'import ExpoSQLite\n';
+    if (!sqliteModuleSource.includes(expoSQLiteImportLine)) {
+      const updated = sqliteModuleSource.replace(
+        'import ExpoModulesCore\n',
+        'import ExpoModulesCore\nimport ExpoSQLite\n'
+      );
+      if (updated !== sqliteModuleSource) {
+        fs.writeFileSync(sqliteModuleTarget, updated);
+        console.log('[fix-expo-xcframework] Injected import ExpoSQLite into SQLiteModule.swift.');
+      }
+    }
+    const sqliteSupportMarker = 'typealias ExpoSQLiteUpdateHookCallback = @convention(c)';
+    if (!sqliteModuleSource.includes(sqliteSupportMarker)) {
+      const importMarker = 'import ExpoSQLite\n';
+      if (sqliteModuleSource.includes(importMarker)) {
+        const nextSource = sqliteModuleSource.replace(importMarker, `${importMarker}\n${compatibilitySource}\n`);
+        fs.writeFileSync(sqliteModuleTarget, nextSource);
+        console.log('[fix-expo-xcframework] Injected ExpoSQLite compatibility declarations into SQLiteModule.swift.');
+      }
+    } else {
+      console.log('[fix-expo-xcframework] SQLiteModule.swift already contains ExpoSQLite compatibility declarations.');
+    }
+  }
+
+  if (!fs.existsSync(expoSqliteCompatibilityTarget)) {
+    fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
+    console.log('[fix-expo-xcframework] Added ExpoSQLiteCompatibility.swift for Swift C API declarations.');
+  } else {
+    const compatibilityTargetSource = fs.readFileSync(expoSqliteCompatibilityTarget, 'utf8');
+    if (compatibilityTargetSource !== compatibilitySource) {
+      fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
+      console.log('[fix-expo-xcframework] Updated ExpoSQLiteCompatibility.swift to match template.');
+    } else {
+      console.log('[fix-expo-xcframework] ExpoSQLiteCompatibility.swift already matches template.');
+    }
+  }
+}
+
+if (fs.existsSync(expoSqliteVendorSourceDir) && fs.existsSync(expoSqliteIosSourceDir)) {
+  for (const file of ['sqlite3.c', 'sqlite3.h']) {
+    const source = path.join(expoSqliteVendorSourceDir, file);
+    const target = path.join(expoSqliteIosSourceDir, file);
+    if (!fs.existsSync(source)) {
+      continue;
+    }
+    const sourceContents = fs.readFileSync(source, 'utf8');
+    if (!fs.existsSync(target)) {
+      fs.writeFileSync(target, sourceContents);
+      console.log(`[fix-expo-xcframework] Restored ExpoSQLite ${file} from vendor sources.`);
+      continue;
+    }
+    const targetContents = fs.readFileSync(target, 'utf8');
+    if (targetContents !== sourceContents) {
+      fs.writeFileSync(target, sourceContents);
+      console.log(`[fix-expo-xcframework] Updated ExpoSQLite ${file} from vendor sources.`);
+    }
+  }
+}
+
+if (fs.existsSync(googleMobileAdsModuleTarget)) {
+  const googleMobileAdsSource = fs.readFileSync(googleMobileAdsModuleTarget, 'utf8');
+  const ageRestrictedBlock = `  if (requestConfiguration[@"ageRestrictedTreatment"]) {
+    NSString *ageRestrictedTreatment = requestConfiguration[@"ageRestrictedTreatment"];
+    if ([ageRestrictedTreatment isEqualToString:@"child"]) {
+      GADMobileAds.sharedInstance.requestConfiguration.ageRestrictedTreatment =
+          GADAgeRestrictedTreatmentChild;
+    } else if ([ageRestrictedTreatment isEqualToString:@"teen"]) {
+      GADMobileAds.sharedInstance.requestConfiguration.ageRestrictedTreatment =
+          GADAgeRestrictedTreatmentTeen;
+    } else if ([ageRestrictedTreatment isEqualToString:@"unspecified"]) {
+      GADMobileAds.sharedInstance.requestConfiguration.ageRestrictedTreatment =
+          GADAgeRestrictedTreatmentUnspecified;
+    }
+  }
+`;
+  if (googleMobileAdsSource.includes(ageRestrictedBlock)) {
+    fs.writeFileSync(googleMobileAdsModuleTarget, googleMobileAdsSource.replace(ageRestrictedBlock, ''));
+    console.log('[fix-expo-xcframework] Patched RNGoogleMobileAdsModule.mm to skip unsupported ageRestrictedTreatment API.');
+  } else {
+    console.log('[fix-expo-xcframework] RNGoogleMobileAdsModule.mm already patched for ageRestrictedTreatment API.');
   }
 }
