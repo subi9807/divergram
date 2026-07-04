@@ -18,6 +18,7 @@ const notificationKeys: NotificationType[] = [
 ];
 
 const INSTALLATION_ID_KEY = 'divergram_installation_id';
+const ALL_USERS_TOPIC = 'all_users';
 
 function getInstallationId() {
   const existing = storage.getString(INSTALLATION_ID_KEY);
@@ -63,6 +64,13 @@ export async function registerFcmToken(token: string, platform = Platform.OS): P
   const normalizedToken = String(token || '').trim();
   if (!normalizedToken) return;
   await apiClient.updatePushToken(platform, normalizedToken, { deviceId: getInstallationId() });
+
+  try {
+    const { default: messaging } = await import('@react-native-firebase/messaging');
+    await messaging().subscribeToTopic(ALL_USERS_TOPIC);
+  } catch (error) {
+    console.warn('Failed to subscribe to all_users topic:', error);
+  }
 }
 
 export async function sendPushTest(payload?: { title?: string; body?: string; data?: Record<string, any> }) {

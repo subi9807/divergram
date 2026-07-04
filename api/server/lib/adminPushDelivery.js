@@ -1,5 +1,4 @@
-const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send';
-const EXPO_PUSH_CHUNK_SIZE = 50;
+import { ALL_USERS_TOPIC, isExpoPushToken, sendPushToToken, sendFcmPushToTopic } from './pushDelivery.js';
 
 export function normalizeAudienceRole(value) {
   const role = String(value || '').trim().toLowerCase();
@@ -37,53 +36,6 @@ export function normalizeIso(value) {
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toISOString();
-}
-
-export function isExpoPushToken(token) {
-  const raw = String(token || '').trim();
-  if (!raw) return false;
-  return /^ExponentPushToken\[[^\]]+\]$/.test(raw) || /^ExpoPushToken\[[^\]]+\]$/.test(raw);
-}
-
-export function chunkArray(items, size) {
-  const out = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
-
-export async function sendExpoPushMessages(messages) {
-  const tickets = [];
-  const errors = [];
-  if (!messages.length) return { tickets, errors };
-
-  for (const batch of chunkArray(messages, EXPO_PUSH_CHUNK_SIZE)) {
-    try {
-      const response = await fetch(EXPO_PUSH_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(batch),
-      });
-
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        errors.push({ type: 'http_error', status: response.status, payload });
-        continue;
-      }
-      if (!payload || !Array.isArray(payload.data)) {
-        errors.push({ type: 'invalid_response', payload });
-        continue;
-      }
-      tickets.push(...payload.data);
-    } catch (error) {
-      errors.push({ type: 'network_error', message: String(error?.message || error) });
-    }
-  }
-
-  return { tickets, errors };
 }
 
 function buildWhereClause(filters, params) {
@@ -168,8 +120,11 @@ export async function collectPushRecipients(pool, filters = {}) {
     params
   );
 
-  const rows = (q.rows || []).filter((row) => isExpoPushToken(row.push_token));
-  const unsupportedCount = (q.rows || []).length - rows.length;
+  const rows = (q.rows || []).map((row) => ({
+    ...row,
+    tokenType: isExpoPushToken(row.push_token) ? 'expo' : 'fcm',
+  })).filter((row) => String(row.push_token || '').trim());
+  const unsupportedCount = 0;
   return { rows, unsupportedCount };
 }
 
@@ -184,6 +139,14 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
   }
 
   const { rows, unsupportedCount } = await collectPushRecipients(pool, filters);
+  const isBroadAudience =
+    String(filters?.targetRole || 'all').trim().toLowerCase() === 'all' &&
+    (!normalizeUserIds(filters?.targetUserIds || filters?.target_user_ids || filters?.userIds).length) &&
+    !String(filters?.createdAfter || filters?.created_after || '').trim() &&
+    !String(filters?.createdBefore || filters?.created_before || '').trim() &&
+    !String(filters?.scubaLevel || filters?.scuba_level || '').trim() &&
+    !String(filters?.freedivingLevel || filters?.freediving_level || '').trim() &&
+    String(filters?.blockedState || filters?.blocked_state || 'all').trim().toLowerCase() === 'all';
   if (!rows.length) {
     await pool.query(
       `INSERT INTO admin_audit_logs(action, target_user_id, detail)
@@ -222,29 +185,49 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     };
   }
 
-  const messages = rows.map((row) => ({
-    to: row.push_token,
-    title,
-    body,
-    sound: 'default',
-    priority: 'high',
-    data: {
-      ...data,
-      type: 'admin_broadcast',
-      targetRole: filters.targetRole || 'all',
-      userId: row.user_id,
-      username: row.username,
-      role: row.role,
-      createdAt: String(row.created_at || ''),
-      scubaLevel: row.scuba_level || '',
-      freedivingLevel: row.freediving_level || '',
-      isBlocked: Boolean(row.is_blocked),
-    },
-  }));
+  const baseData = {
+    ...data,
+    type: 'admin_broadcast',
+    targetRole: filters.targetRole || 'all',
+  };
 
-  const result = await sendExpoPushMessages(messages);
-  const successCount = result.tickets.filter((ticket) => ticket?.status === 'ok').length;
-  const failureCount = result.tickets.filter((ticket) => ticket?.status !== 'ok').length + result.errors.length;
+  let deliveryResults = [];
+  let successCount = 0;
+  let failureCount = 0;
+  let expoTokenCount = rows.filter((row) => row.tokenType === 'expo').length;
+  let fcmTokenCount = rows.filter((row) => row.tokenType === 'fcm').length;
+  let topicDelivery = null;
+
+  if (isBroadAudience) {
+    topicDelivery = await sendFcmPushToTopic(ALL_USERS_TOPIC, title, body, baseData);
+    deliveryResults = [topicDelivery];
+    successCount = topicDelivery?.ok ? 1 : 0;
+    failureCount = topicDelivery?.ok ? 0 : 1;
+    expoTokenCount = 0;
+    fcmTokenCount = 0;
+  } else {
+    deliveryResults = await Promise.allSettled(
+      rows.map((row) =>
+        sendPushToToken(
+          row.push_token,
+          title,
+          body,
+          {
+            ...baseData,
+            userId: row.user_id,
+            username: row.username,
+            role: row.role,
+            createdAt: String(row.created_at || ''),
+            scubaLevel: row.scuba_level || '',
+            freedivingLevel: row.freediving_level || '',
+            isBlocked: Boolean(row.is_blocked),
+          }
+        )
+      )
+    );
+    successCount = deliveryResults.filter((item) => item.status === 'fulfilled' && item.value?.ok).length;
+    failureCount = deliveryResults.length - successCount;
+  }
 
   await pool.query(
     `INSERT INTO admin_audit_logs(action, target_user_id, detail)
@@ -257,7 +240,11 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
         title,
         body,
         filters,
+        deliveryMode: isBroadAudience ? 'topic' : 'tokens',
+        topic: isBroadAudience ? ALL_USERS_TOPIC : '',
         tokenCount: rows.length,
+        expoTokenCount,
+        fcmTokenCount,
         unsupportedCount,
         successCount,
         failureCount,
@@ -270,15 +257,19 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     ok: true,
     queued: successCount > 0,
     message: successCount > 0 ? 'push_queued' : 'push_not_queued',
+    deliveryMode: isBroadAudience ? 'topic' : 'tokens',
+    topic: isBroadAudience ? ALL_USERS_TOPIC : '',
     targetRole: filters.targetRole || 'all',
     targetUserIds: filters.targetUserIds || [],
     tokenCount: rows.length,
-    expoTokenCount: rows.length,
+    expoTokenCount,
+    fcmTokenCount,
     unsupportedCount,
     successCount,
     failureCount,
-    ticketPreview: result.tickets.slice(0, 5),
-    errorPreview: result.errors.slice(0, 3),
+    deliveryPreview: isBroadAudience
+      ? [topicDelivery]
+      : deliveryResults.slice(0, 5).map((item) => (item.status === 'fulfilled' ? item.value : { ok: false, reason: String(item.reason || 'rejected') })),
     sentAt: new Date().toISOString(),
     preview: { title, body, data },
   };

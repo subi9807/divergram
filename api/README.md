@@ -18,6 +18,13 @@ npm run start
 - `ADMIN_API_KEY` (16자 이상)
 - DB 연결 값 (`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`)
 
+## 푸시 발송 설정
+- `FCM_SERVICE_ACCOUNT_JSON` 또는 `FCM_SERVICE_ACCOUNT_PATH`
+- 전체 사용자 브로드캐스트 토픽 기본값은 `all_users`
+
+앱은 설치 후 최초 실행 시 푸시 토큰을 서버에 등록하고, `all_users` 토픽에도 자동 구독됩니다.
+관리자 `푸시 발송` 화면의 전체 발송은 이 토픽과 개별 토큰을 함께 사용합니다.
+
 ## 업로드 API
 - `POST /api/uploads`
 - Auth: `Authorization: Bearer <token>`
