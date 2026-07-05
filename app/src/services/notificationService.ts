@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import { apiClient } from '../lib/api';
 import { requestNativeFeature } from './nativeBridgeService';
 import type { NotificationSetting, NotificationType } from '../models';
@@ -64,6 +65,10 @@ export async function registerFcmToken(token: string, platform = Platform.OS): P
   const normalizedToken = String(token || '').trim();
   if (!normalizedToken) return;
   await apiClient.updatePushToken(platform, normalizedToken, { deviceId: getInstallationId() });
+
+  if (__DEV__ && Platform.OS === 'ios' && !Device.isDevice) {
+    return;
+  }
 
   try {
     const { default: messaging } = await import('@react-native-firebase/messaging');

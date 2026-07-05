@@ -15,6 +15,18 @@ type LayoutPreviewPayload = {
   auth?: LayoutPreviewAuth;
 };
 
+function readEnvPreview(): LayoutPreviewPayload | null {
+  if (!__DEV__) return null;
+  const raw = String(process.env.EXPO_PUBLIC_LAYOUT_PREVIEW_JSON || '').trim();
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(raw);
+    return payload && typeof payload === 'object' ? (payload as LayoutPreviewPayload) : null;
+  } catch {
+    return null;
+  }
+}
+
 function readWindowPreview(): LayoutPreviewPayload | null {
   if (typeof window === 'undefined') return null;
   const payload = (window as any).__DIVERGRAM_LAYOUT_PREVIEW__ as LayoutPreviewPayload | undefined;
@@ -23,10 +35,9 @@ function readWindowPreview(): LayoutPreviewPayload | null {
 }
 
 export function getLayoutPreviewPayload(): LayoutPreviewPayload | null {
-  return readWindowPreview();
+  return readWindowPreview() || readEnvPreview();
 }
 
 export function isLayoutPreviewEnabled(): boolean {
-  return Boolean(readWindowPreview());
+  return Boolean(getLayoutPreviewPayload());
 }
-

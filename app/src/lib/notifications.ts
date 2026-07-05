@@ -45,25 +45,32 @@ class NotificationManager {
       }
 
       // Get push token
-      if (Device.isDevice) {
-        const token = await this.getFirebaseMessagingToken();
-        if (!token) {
-          console.log('Failed to resolve Firebase messaging token');
-          return null;
+      if (!Device.isDevice) {
+        const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
+        if (debugToken) {
+          this.pushToken = debugToken;
+          await this.registerPushToken();
+          analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true });
+          return debugToken;
         }
-
-        this.pushToken = token;
-
-        // Register token with backend
-        await this.registerPushToken();
-
-        analytics.action('Push Token Registered', { platform: Platform.OS });
-
-        return token;
-      } else {
         console.log('Must use physical device for push notifications');
         return null;
       }
+
+      const token = await this.getFirebaseMessagingToken();
+      if (!token) {
+        console.log('Failed to resolve Firebase messaging token');
+        return null;
+      }
+
+      this.pushToken = token;
+
+      // Register token with backend
+      await this.registerPushToken();
+
+      analytics.action('Push Token Registered', { platform: Platform.OS });
+
+      return token;
     } catch (error) {
       console.error('Error initializing notifications:', error);
       analytics.error(error as Error, { context: 'notification_init' });
