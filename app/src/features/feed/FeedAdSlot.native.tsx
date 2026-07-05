@@ -26,7 +26,7 @@ export function FeedAdSlot({
     if (bannerUnitId) return true;
     return __DEV__;
   }, [bannerFailed, bannerUnitId]);
-  const resolvedUnitId = bannerUnitId || (__DEV__ ? TestIds.BANNER : '');
+  const resolvedUnitId = __DEV__ ? TestIds.BANNER : bannerUnitId;
 
   return (
     <View className="mx-4 mb-5 overflow-hidden rounded-[28px] border border-brand-200/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 dark:border-brand-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
@@ -85,4 +85,3 @@ export function FeedAdSlot({
     </View>
   );
 }
-

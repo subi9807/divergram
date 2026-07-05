@@ -42,8 +42,8 @@ export default function FeedScreen() {
 
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
   const usableAds = activeAds.filter((ad) => ad.isActive && ['ready', 'active'].includes(String(ad.status || '').toLowerCase()));
-  const hasFallbackAdOnly = usableAds.length === 0 && isAdMobEnabled();
-  const fallbackAds: ActiveAdSlot[] = usableAds.length || !isAdMobEnabled()
+  const shouldUseFallbackAd = usableAds.length === 0 && (__DEV__ || isAdMobEnabled());
+  const fallbackAds: ActiveAdSlot[] = usableAds.length || !shouldUseFallbackAd
     ? []
     : [
         {
@@ -60,19 +60,27 @@ export default function FeedScreen() {
   const resolvedAds = [...usableAds, ...fallbackAds];
   const feedItems = React.useMemo<FeedListItem[]>(() => {
     return posts.reduce<FeedListItem[]>((items, post, index) => {
-      items.push({ type: 'post', id: `post-${post.id}`, post });
       const shouldInsertAd =
         resolvedAds.length > 0 &&
-        ((hasFallbackAdOnly && index === 0) || (index + 1) % 3 === 0);
+        ((shouldUseFallbackAd && index === 0) || (index + 1) % 3 === 0);
       if (shouldInsertAd) {
         const ad = resolvedAds[Math.floor(index / 3) % resolvedAds.length];
         if (ad) {
-          items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}`, ad });
+          const adId = `ad-${ad.id}-${Math.floor(index / 3)}-${index}`;
+          if (shouldUseFallbackAd && index === 0) {
+            items.push({ type: 'ad', id: adId, ad });
+          }
+          items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
+          if (!shouldUseFallbackAd || index !== 0) {
+            items.push({ type: 'ad', id: adId, ad });
+          }
+          return items;
         }
       }
+      items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
       return items;
     }, []);
-  }, [hasFallbackAdOnly, posts, resolvedAds]);
+  }, [posts, resolvedAds, shouldUseFallbackAd]);
 
   const renderPost = ({ item }: { item: FeedListItem }) => {
     if (item.type === 'ad') {
