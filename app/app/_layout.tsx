@@ -54,7 +54,11 @@ export default function RootLayout() {
   }, [hideSplash]);
 
   useEffect(() => {
-    setColorScheme(resolvedTheme === 'dark' ? 'dark' : 'light');
+    try {
+      setColorScheme(resolvedTheme === 'dark' ? 'dark' : 'light');
+    } catch {
+      // NativeWind가 테마 수동 설정을 허용하지 않는 런타임에서는 무시한다.
+    }
   }, [resolvedTheme, setColorScheme]);
 
   useEffect(() => {
