@@ -13,6 +13,7 @@ import { appRouteMap } from '../../src/config/sitemap';
 import { FeedPost } from '../../src/features/feed/FeedPost';
 import { FeedAdSlot } from '../../src/features/feed/FeedAdSlot';
 import { apiClient, type ActiveAdSlot } from '../../src/lib/api';
+import { isAdMobEnabled } from '../../src/config/ads';
 
 type FeedListItem =
   | { type: 'post'; id: string; post: any }
@@ -41,17 +42,37 @@ export default function FeedScreen() {
 
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
   const usableAds = activeAds.filter((ad) => ad.isActive && ['ready', 'active'].includes(String(ad.status || '').toLowerCase()));
-  const feedItems = posts.reduce<FeedListItem[]>((items, post, index) => {
-    items.push({ type: 'post', id: `post-${post.id}`, post });
-    const shouldInsertAd = usableAds.length > 0 && (index + 1) % 3 === 0;
-    if (shouldInsertAd) {
-      const ad = usableAds[Math.floor(index / 3) % usableAds.length];
-      if (ad) {
-        items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}`, ad });
+  const hasFallbackAdOnly = usableAds.length === 0 && isAdMobEnabled();
+  const fallbackAds: ActiveAdSlot[] = usableAds.length || !isAdMobEnabled()
+    ? []
+    : [
+        {
+          id: 'fallback-admob-feed',
+          title: t('feed.ad.defaultTitle', { defaultValue: 'Divergram 추천 광고' }),
+          placement: 'feed_inline',
+          status: 'active',
+          note: t('feed.ad.defaultSubtitle', { defaultValue: 'AdMob 배너가 연결되면 이 슬롯에 표시됩니다.' }),
+          actionLabel: t('feed.ad.cta', { defaultValue: '자세히 보기' }),
+          isActive: true,
+          sortOrder: 0,
+        },
+      ];
+  const resolvedAds = [...usableAds, ...fallbackAds];
+  const feedItems = React.useMemo<FeedListItem[]>(() => {
+    return posts.reduce<FeedListItem[]>((items, post, index) => {
+      items.push({ type: 'post', id: `post-${post.id}`, post });
+      const shouldInsertAd =
+        resolvedAds.length > 0 &&
+        ((hasFallbackAdOnly && index === 0) || (index + 1) % 3 === 0);
+      if (shouldInsertAd) {
+        const ad = resolvedAds[Math.floor(index / 3) % resolvedAds.length];
+        if (ad) {
+          items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}`, ad });
+        }
       }
-    }
-    return items;
-  }, []);
+      return items;
+    }, []);
+  }, [hasFallbackAdOnly, posts, resolvedAds]);
 
   const renderPost = ({ item }: { item: FeedListItem }) => {
     if (item.type === 'ad') {
