@@ -16,6 +16,7 @@ import { useAuth } from '../src/hooks/useAuth';
 import { useResolvedTheme } from '../src/hooks/useResolvedTheme';
 import { isAdMobEnabled } from '../src/config/ads';
 import { loadAiSettings } from '../src/services/aiSettingsService';
+import { useNotifications } from '../src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 WebBrowser.maybeCompleteAuthSession();
@@ -126,6 +127,7 @@ export default function RootLayout() {
           <ToastProvider>
             <AuthProvider>
               <SettingsHydrationBridge />
+              <NotificationBootstrapBridge />
               <Animated.View style={[styles.stackShell, { transform: [{ translateX: swipeTranslateX }] }]}>
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="index" />
@@ -156,6 +158,12 @@ function SettingsHydrationBridge() {
     void loadAiSettings();
   }, [user?.id]);
 
+  return null;
+}
+
+function NotificationBootstrapBridge() {
+  const { user } = useAuth();
+  useNotifications(Boolean(user?.id));
   return null;
 }
 

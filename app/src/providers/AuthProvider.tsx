@@ -128,6 +128,7 @@ function normalizeUser(raw: any): User | null {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  syncCurrentUserProfile: (profile: { full_name?: string; username?: string; avatar_url?: string }) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
   loginWithFacebook: () => Promise<void>;
@@ -312,6 +313,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     [extendAuthSession]
   );
+
+  const syncCurrentUserProfile = useCallback((profile: { full_name?: string; username?: string; avatar_url?: string }) => {
+    setUser((current) => {
+      if (!current) return current;
+      const nextUser = normalizeUser({
+        id: current.id,
+        email: current.email,
+        name: String(profile.full_name || profile.username || current.name || '').trim(),
+        avatar: String(profile.avatar_url || current.avatar || '').trim(),
+      });
+      if (!nextUser) return current;
+      storage.set(AUTH_USER_KEY, JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
 
   const sanitizeUsername = useCallback((value: string) => {
     const normalized = value
@@ -580,7 +596,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
           discovery
         );
-        access_token = String(exchange.accessToken || exchange.authentication?.accessToken || exchange.idToken || '').trim();
+        const exchangePayload = exchange as any;
+        access_token = String(exchangePayload.accessToken || exchangePayload.authentication?.accessToken || exchangePayload.idToken || '').trim();
       }
 
       if (!access_token) {
@@ -824,6 +841,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    syncCurrentUserProfile,
     loginWithGoogle,
     loginWithApple,
     loginWithFacebook,

@@ -99,7 +99,8 @@ export function registerAuthRoutes(app, deps) {
     res.setHeader('Set-Cookie', cookie);
   };
 
-  const PROFILE_SELECT_COLUMNS = 'username,full_name,bio,avatar_url,website,account_type,scuba_level,freediving_level,license_image_url,license_type,license_number,license_agency,license_issued_at';
+  const PROFILE_SELECT_COLUMNS =
+    'username,full_name,contact_phone,bio,avatar_url,resort_cover_url,resort_photo_urls,resort_amenities,website,account_type,diving_level,scuba_level,freediving_level,license_image_url,license_type,license_number,license_agency,license_issued_at';
 
   const buildProfileFromRow = (row, fallbackId, fallbackUsername = '') => {
     const source = row || {};
@@ -107,8 +108,12 @@ export function registerAuthRoutes(app, deps) {
       id: String(source.id || fallbackId || ''),
       username: String(source.username || fallbackUsername || ''),
       full_name: String(source.full_name || fallbackUsername || ''),
+      contact_phone: String(source.contact_phone || ''),
       bio: String(source.bio || ''),
       avatar_url: String(source.avatar_url || ''),
+      resort_cover_url: String(source.resort_cover_url || ''),
+      resort_photo_urls: Array.isArray(source.resort_photo_urls) ? source.resort_photo_urls : [],
+      resort_amenities: Array.isArray(source.resort_amenities) ? source.resort_amenities : [],
       website: String(source.website || ''),
       account_type: String(source.account_type || 'personal'),
       scuba_level: String(source.scuba_level || ''),
@@ -916,16 +921,42 @@ export function registerAuthRoutes(app, deps) {
 
       const email = req.body?.email ? normalizeEmail(req.body.email) : undefined;
       const username = req.body?.username ? String(req.body.username).trim() : undefined;
+      const fullName = req.body?.full_name ?? req.body?.fullName;
+      const contactPhone = req.body?.contact_phone ?? req.body?.contactPhone;
+      const currentPassword = req.body?.currentPassword ? String(req.body.currentPassword) : undefined;
       const password = req.body?.password ? String(req.body.password) : undefined;
 
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'invalid_email' });
       if (username && (username.length < 4 || username.length > 32 || !/^[a-zA-Z0-9_]+$/.test(username))) return res.status(400).json({ error: 'invalid_username' });
+      if (contactPhone !== undefined && String(contactPhone).trim() && String(contactPhone).trim().length < 6) return res.status(400).json({ error: 'invalid_contact_phone' });
       if (password && !isStrongPassword(password)) return res.status(400).json({ error: 'invalid_password' });
+
+      const needsPasswordCheck = password !== undefined;
+      let currentPasswordOk = !needsPasswordCheck;
+      if (needsPasswordCheck) {
+        if (!currentPassword) return res.status(400).json({ error: 'current_password_required' });
+        const currentUser = await pool.query('SELECT password_hash,password_sha256 FROM app_users WHERE id=$1', [userId]);
+        const row = currentUser.rows[0] || {};
+        if (!row.password_hash && !row.password_sha256) return res.status(400).json({ error: 'password_change_not_supported' });
+        if (row.password_hash) {
+          currentPasswordOk = await bcrypt.compare(currentPassword, row.password_hash);
+        } else if (row.password_sha256) {
+          const sha = crypto.createHash('sha256').update(currentPassword).digest('hex');
+          currentPasswordOk = sha === row.password_sha256;
+          if (currentPasswordOk) {
+            const upgraded = await bcrypt.hash(currentPassword, 12);
+            await pool.query('UPDATE app_users SET password_hash=$1 WHERE id=$2', [upgraded, userId]);
+          }
+        }
+        if (!currentPasswordOk) return res.status(403).json({ error: 'invalid_current_password' });
+      }
 
       const fields = [];
       const vals = [];
 
       if (username !== undefined) { vals.push(username); fields.push(`username=$${vals.length}`); }
+      if (fullName !== undefined) { vals.push(String(fullName).trim()); fields.push(`full_name=$${vals.length}`); }
+      if (contactPhone !== undefined) { vals.push(String(contactPhone).trim()); fields.push(`contact_phone=$${vals.length}`); }
       if (password !== undefined) {
         const hash = await bcrypt.hash(password, 12);
         const sha = crypto.createHash('sha256').update(password).digest('hex');
@@ -961,8 +992,23 @@ export function registerAuthRoutes(app, deps) {
         );
         if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
 
+        const profileUpdates = [];
+        const profileValues = [];
         if (username !== undefined) {
-          await pool.query('UPDATE app_profiles SET username=$1, full_name=COALESCE(NULLIF(full_name,\'\'), $1) WHERE id=$2', [username, userId]);
+          profileValues.push(username);
+          profileUpdates.push(`username=$${profileValues.length}`);
+        }
+        if (fullName !== undefined) {
+          profileValues.push(String(fullName).trim());
+          profileUpdates.push(`full_name=$${profileValues.length}`);
+        }
+        if (contactPhone !== undefined) {
+          profileValues.push(String(contactPhone).trim());
+          profileUpdates.push(`contact_phone=$${profileValues.length}`);
+        }
+        if (profileUpdates.length) {
+          profileValues.push(userId);
+          await pool.query(`UPDATE app_profiles SET ${profileUpdates.join(', ')} WHERE id=$${profileValues.length}`, profileValues);
         }
       } else {
         const current = await pool.query('SELECT id,email,username FROM app_users WHERE id=$1', [userId]);
@@ -1046,6 +1092,14 @@ export function registerAuthRoutes(app, deps) {
     const sessionDays = parseSessionDays(stateData?.sessionDays);
     const defaultReturnTo = stateData?.returnTo || WEB_APP_BASE_URL;
     const redirectTo = (params) => appendQuery(defaultReturnTo, params);
+    const returnToHost = (() => {
+      try {
+        return new URL(defaultReturnTo).hostname;
+      } catch {
+        return '';
+      }
+    })();
+    const shouldExposeToken = ['localhost', '127.0.0.1', '::1'].includes(returnToHost);
 
     if (!['google', 'apple', 'facebook'].includes(provider)) {
       return res.redirect(redirectTo({ oauth: 'failed', reason: 'unsupported_provider' }));
@@ -1186,7 +1240,7 @@ export function registerAuthRoutes(app, deps) {
       });
 
       setSessionCookie(res, authResult.token, sessionDays);
-      return res.redirect(redirectTo({ oauth: 'success' }));
+      return res.redirect(redirectTo(shouldExposeToken ? { oauth: 'success', oauthToken: authResult.token } : { oauth: 'success' }));
     } catch (e) {
       const reason = String(e?.message || 'oauth_callback_error').slice(0, 120);
       return res.redirect(redirectTo({ oauth: 'failed', reason }));

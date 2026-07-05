@@ -13,6 +13,7 @@ import { registerAdminGrowthMapRoutes } from './routes/adminGrowthMap.js';
 import { registerAdminJobsRoutes } from './routes/adminJobs.js';
 import { registerAdminModerationRoutes } from './routes/adminModeration.js';
 import { registerAdminAdsRoutes } from './routes/adminAds.js';
+import { registerAdminPricingRoutes } from './routes/adminPricing.js';
 import { registerAdminPushRoutes } from './routes/adminPush.js';
 import { registerAdminCommunicationSettingsRoutes } from './routes/adminCommunicationSettings.js';
 import { registerAdminDataRoutes } from './routes/adminData.js';
@@ -50,6 +51,7 @@ app.use(cors({
     return cb(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'X-Admin-Key'],
   credentials: true,
 }));
 app.use(express.json({ limit: '15mb' }));
@@ -246,10 +248,15 @@ async function ensureSchema() {
       id TEXT PRIMARY KEY,
       username TEXT NOT NULL,
       full_name TEXT NOT NULL DEFAULT '',
+      contact_phone TEXT,
       bio TEXT NOT NULL DEFAULT '',
       avatar_url TEXT NOT NULL DEFAULT '',
       website TEXT,
       account_type TEXT NOT NULL DEFAULT 'personal',
+      resort_cover_url TEXT,
+      resort_photo_urls JSONB NOT NULL DEFAULT '[]'::jsonb,
+      resort_amenities JSONB NOT NULL DEFAULT '[]'::jsonb,
+      diving_level TEXT,
       scuba_level TEXT,
       freediving_level TEXT,
       license_type TEXT,
@@ -263,6 +270,11 @@ async function ensureSchema() {
   `);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS website TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS account_type TEXT NOT NULL DEFAULT 'personal';`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS contact_phone TEXT;`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS resort_cover_url TEXT;`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS resort_photo_urls JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS resort_amenities JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS diving_level TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS scuba_level TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS freediving_level TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_type TEXT;`);
@@ -271,6 +283,39 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_issued_at TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_image_url TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_image_path TEXT;`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_resort_prices (
+      id TEXT PRIMARY KEY,
+      resort_id TEXT NOT NULL REFERENCES app_profiles(id) ON DELETE CASCADE,
+      price_type TEXT NOT NULL DEFAULT 'dive_package',
+      title TEXT NOT NULL,
+      image_url TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      duration_text TEXT NOT NULL DEFAULT '',
+      unit_label TEXT NOT NULL DEFAULT '',
+      currency TEXT NOT NULL DEFAULT 'KRW',
+      amount DOUBLE PRECISION NOT NULL DEFAULT 0,
+      included_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+      sort_order INT NOT NULL DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS resort_id TEXT;`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS price_type TEXT NOT NULL DEFAULT 'dive_package';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT '';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS image_url TEXT NOT NULL DEFAULT '';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS duration_text TEXT NOT NULL DEFAULT '';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS unit_label TEXT NOT NULL DEFAULT '';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS currency TEXT NOT NULL DEFAULT 'KRW';`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION NOT NULL DEFAULT 0;`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS included_items JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0;`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;`);
+  await pool.query(`ALTER TABLE app_resort_prices ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_posts (
@@ -525,6 +570,7 @@ registerAdminCoreRoutes(app, { pool, requireAdmin });
 registerAdminGrowthMapRoutes(app, { pool, requireAdmin });
 registerAdminJobsRoutes(app, { pool, requireAdmin, processQueuedJobs });
 registerAdminAdsRoutes(app, { pool, requireAdmin, crypto });
+registerAdminPricingRoutes(app, { pool, requireAdmin, crypto });
 registerAdminPushRoutes(app, { pool, requireAdmin, crypto });
 registerAdminCommunicationSettingsRoutes(app, { pool, requireAdmin });
 registerAdminDataRoutes(app, { pool, requireAdmin, bcrypt, crypto });

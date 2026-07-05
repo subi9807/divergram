@@ -73,7 +73,7 @@ export default function ProfileEditScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, syncCurrentUserProfile } = useAuth();
   const { data: profile } = useProfile();
   const { showToast } = useToast();
 
@@ -335,6 +335,10 @@ export default function ProfileEditScreen() {
         ...(prev || {}),
         ...nextProfilePatch,
       }));
+      syncCurrentUserProfile({
+        full_name: nextProfilePatch.full_name,
+        avatar_url: nextProfilePatch.avatar_url,
+      });
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['profile'] }),

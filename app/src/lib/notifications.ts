@@ -217,12 +217,13 @@ class NotificationManager {
 export const notificationManager = new NotificationManager();
 
 // React hook for notifications
-export const useNotifications = () => {
+export const useNotifications = (enabled = true) => {
   const [fcmToken, setFcmToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
+    if (!enabled) return;
     notificationManager.initialize().then(setFcmToken);
-  }, []);
+  }, [enabled]);
 
   return {
     fcmToken,

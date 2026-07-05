@@ -99,7 +99,7 @@ export async function collectPushRecipients(pool, filters = {}) {
   params.push(limit);
 
   const q = await pool.query(
-    `SELECT DISTINCT
+    `SELECT
         t.user_id::text AS user_id,
         t.platform,
         t.device_id,

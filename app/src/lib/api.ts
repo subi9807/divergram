@@ -38,6 +38,11 @@ type CandidateRequest = {
   headers?: Record<string, string>;
 };
 
+type DirectUploadResult = {
+  url: string;
+  file: string;
+};
+
 const unsupportedRouteCache = new Set<string>();
 const isKnownProdApi = /api\.divergram\.com/i.test(API_ROOT);
 
