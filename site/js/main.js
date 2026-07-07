@@ -45,7 +45,16 @@
     { href: "./career", label: "채용", group: "회사" },
     { href: "./terms", label: "이용약관", group: "정책" },
     { href: "./privacy", label: "개인정보처리방침", group: "정책" },
+    { href: "./location", label: "위치기반서비스", group: "정책" },
+    { href: "./youth", label: "청소년보호정책", group: "정책" },
     { href: "./security", label: "정보보안정책", group: "정책" },
+    { href: "./cookie", label: "쿠키정책", group: "정책" },
+    { href: "./marketing", label: "마케팅 정보 수신 동의", group: "정책" },
+    { href: "./third-party", label: "제3자 정보 제공 동의", group: "정책" },
+    { href: "./consent", label: "개인정보 수집 및 이용 동의", group: "정책" },
+    { href: "./openapi", label: "플랫폼 API 이용약관", group: "정책" },
+    { href: "./license", label: "오픈소스 라이선스", group: "정책" },
+    { href: "./sitemap", label: "사이트맵", group: "정책" },
   ];
 
   const languageAriaLabels = {
@@ -691,8 +700,9 @@
           .filter((item) => item.group === group)
           .map((item) => `<a class="nav__link" href="${item.href}">${item.label}</a>`)
           .join("");
+        const groupClass = group === "정책" ? " nav__group--policy" : group === "회사" ? " nav__group--company" : " nav__group--platform";
         return `
-          <section class="nav__group">
+          <section class="nav__group${groupClass}">
             <span class="nav__title">${group}</span>
             ${items}
           </section>
