@@ -371,7 +371,111 @@
     },
   };
 
+  const visualLocalizedCopy = {
+    ko: {
+      hero: {
+        badge: "Dive logged",
+        status: "오늘의 다이빙 기록 완료",
+        cards: ["로그북", "다이빙 포인트", "버디 매칭"],
+      },
+      identity: {
+        title: "문섬 로그가 저장됐어요",
+        copy: "버디와 피드에 공유하고 라이센스에 연결할 수 있습니다.",
+        depth: "최대 수심",
+        time: "잠수 시간",
+        button: "피드에 공유",
+        topNote: "오늘의 버디",
+        bottomNote: "누적 다이브",
+      },
+      console: {
+        title: "divergram travel board",
+        live: "Live",
+        sidebarTitle: "개요",
+        sidebarItems: ["교육", "라이센스", "리조트", "예약"],
+        mainLabel: "이번 주 교육·포인트 조회",
+        stats: ["저장 로그", "협업 단체", "운영"],
+      },
+      institutions: ["스쿠버", "프리다이빙", "로그북", "라이센스", "리조트"],
+    },
+    en: {
+      hero: {
+        badge: "Dive logged",
+        status: "Today's dive recorded",
+        cards: ["Logbook", "Dive point", "Buddy match"],
+      },
+      identity: {
+        title: "The Munseom log is saved",
+        copy: "Share it to your feed and connect it to your license.",
+        depth: "Max depth",
+        time: "Dive time",
+        button: "Share to feed",
+        topNote: "Today's buddy",
+        bottomNote: "Total dives",
+      },
+      console: {
+        title: "divergram travel board",
+        live: "Live",
+        sidebarTitle: "Overview",
+        sidebarItems: ["Courses", "Licenses", "Resorts", "Bookings"],
+        mainLabel: "This week's education & point views",
+        stats: ["Saved logs", "Partner groups", "Operations"],
+      },
+      institutions: ["Scuba", "Freediving", "Logbook", "License", "Resort"],
+    },
+    ja: {
+      hero: {
+        badge: "ダイブ記録",
+        status: "本日のダイブ記録が完了しました",
+        cards: ["ログブック", "ダイブポイント", "バディマッチ"],
+      },
+      identity: {
+        title: "文島のログが保存されました",
+        copy: "バディとフィードで共有し、ライセンスにも接続できます。",
+        depth: "最大水深",
+        time: "潜水時間",
+        button: "フィードに共有",
+        topNote: "今日のバディ",
+        bottomNote: "累計ダイブ",
+      },
+      console: {
+        title: "divergram travel board",
+        live: "公開中",
+        sidebarTitle: "概要",
+        sidebarItems: ["講習", "ライセンス", "リゾート", "予約"],
+        mainLabel: "今週の教育・ポイント確認",
+        stats: ["保存ログ", "提携団体", "運営"],
+      },
+      institutions: ["スキューバ", "フリーダイビング", "ログブック", "ライセンス", "リゾート"],
+    },
+    zh: {
+      hero: {
+        badge: "潜水已记录",
+        status: "今日潜水记录已完成",
+        cards: ["日志本", "潜点", "潜伴匹配"],
+      },
+      identity: {
+        title: "文岛日志已保存",
+        copy: "可分享至动态，并连接到你的证照。",
+        depth: "最大深度",
+        time: "潜水时长",
+        button: "分享到动态",
+        topNote: "今日潜伴",
+        bottomNote: "累计潜水",
+      },
+      console: {
+        title: "divergram travel board",
+        live: "运行中",
+        sidebarTitle: "概览",
+        sidebarItems: ["课程", "证照", "度假村", "预约"],
+        mainLabel: "本周教育与积分查询",
+        stats: ["已保存日志", "合作机构", "运营"],
+      },
+      institutions: ["水肺", "自由潜水", "日志本", "证照", "度假村"],
+    },
+  };
+
   const getLocalized = () => localizedCopy[currentLanguage] || localizedCopy.ko;
+  const getVisualLocalized = () => visualLocalizedCopy[currentLanguage] || visualLocalizedCopy.ko;
 
   const setText = (selector, value, scope = document) => {
     if (value == null) return;
@@ -415,6 +519,7 @@
 
   const applyLocalizedCopy = () => {
     const copy = getLocalized();
+    const visual = getVisualLocalized();
     updateMeta(currentLanguage);
 
     if (header) {
@@ -457,7 +562,12 @@
     setHTML(".dg-hero__actions .button--primary", `${copy.home.heroPrimary} <span aria-hidden="true">→</span>`, body);
     setHTML(".dg-hero__actions .text-link", `${copy.home.heroSecondary} <span aria-hidden="true">↗</span>`, body);
     setText(".dg-hero__foot p", copy.home.heroFoot, body);
-    setAllTexts(".institution-list span", copy.home.institutions, body);
+    setAllTexts(".institution-list span", visual.institutions, body);
+    setText(".trust-core strong", visual.hero.badge, body);
+    setText(".trust-core small", visual.hero.status, body);
+    setText(".float-card--identity small", visual.hero.cards[0], body);
+    setText(".float-card--document small", visual.hero.cards[1], body);
+    setText(".float-card--api small", visual.hero.cards[2], body);
 
     setOverline(".dg-statement .dg-overline", copy.home.statementOverline, body);
     setText(".dg-statement h2", copy.home.statementTitle, body);
@@ -467,11 +577,23 @@
     setText(".story-section--identity h2", copy.home.identityTitle, body);
     setText(".story-section--identity .story-copy > p:last-of-type", copy.home.identityCopy, body);
     setHTML(".story-section--identity .text-link", `${copy.home.identityLink} <span aria-hidden="true">→</span>`, body);
+    setText(".story-section--identity .phone-content h3", visual.identity.title, body);
+    setText(".story-section--identity .phone-content > p", visual.identity.copy, body);
+    setAllTexts(".story-section--identity .phone-detail span", [visual.identity.depth, visual.identity.time], body);
+    setText(".story-section--identity .phone-content button", visual.identity.button, body);
+    setText(".story-section--identity .scene-note--top span", visual.identity.topNote, body);
+    setText(".story-section--identity .scene-note--bottom span", visual.identity.bottomNote, body);
 
     setOverline(".story-section--institution .dg-overline", copy.home.institutionOverline, body);
     setText(".story-section--institution h2", copy.home.institutionTitle, body);
     setText(".story-section--institution .story-copy > p:last-of-type", copy.home.institutionCopy, body);
     setHTML(".story-section--institution .text-link", `${copy.home.institutionLink} <span aria-hidden="true">→</span>`, body);
+    setText(".story-section--institution .console-bar > span", visual.console.title, body);
+    setText(".story-section--institution .console-bar small", visual.console.live, body);
+    setText(".story-section--institution .console-body aside strong", visual.console.sidebarTitle, body);
+    setAllTexts(".story-section--institution .console-body aside span", visual.console.sidebarItems, body);
+    setText(".story-section--institution .console-main > p", visual.console.mainLabel, body);
+    setAllTexts(".story-section--institution .console-stats span", visual.console.stats, body);
 
     setOverline(".feature-section__head .dg-overline", copy.home.featureOverline, body);
     setText(".feature-section__head h2", copy.home.featureTitle, body);
@@ -519,7 +641,7 @@
 
     setOverline(".trust-copy .dg-overline", copy.home.trustOverline, body);
     setText(".trust-copy h2", copy.home.trustTitle, body);
-    setText(".trust-copy > p", copy.home.trustCopy, body);
+    setText(".trust-copy > p:not(.dg-overline)", copy.home.trustCopy, body);
     setHTML(".trust-copy .button", `${copy.home.trustButton} <span aria-hidden="true">→</span>`, body);
     setAllTexts(".trust-layers .layer strong", copy.home.trustLayers, body);
     setAllTexts(".trust-layers .layer small", copy.home.trustLayerCopies, body);

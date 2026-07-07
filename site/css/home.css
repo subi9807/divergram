@@ -1362,6 +1362,24 @@
   .trust-copy { max-width:690px; }
 }
 
+@media (min-width: 1101px) {
+  .bento-card--light .bento-copy {
+    max-width: 56%;
+  }
+
+  .bento-card--light .bento-copy h3 {
+    white-space: nowrap;
+    font-size: clamp(2rem, 2.45vw, 2.85rem);
+    line-height: 1;
+  }
+
+  .bento-card--light .license-wallet {
+    width: min(50%, 360px);
+    right: -18px;
+    bottom: -6px;
+  }
+}
+
 @media (max-width: 820px) {
   .dg-hero h1 { font-size:clamp(3.4rem,8.8vw,5rem); }
   .dg-hero__foot { align-items:start;gap:1.5rem; }
