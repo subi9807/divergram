@@ -2,6 +2,7 @@
   const root = document.documentElement;
   const body = document.body;
   const isHomePage = body.classList.contains("home-page");
+  if (!isHomePage) body.classList.add("subpage-page");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const loader = document.querySelector(".loader");
   let header = document.querySelector(".header");
