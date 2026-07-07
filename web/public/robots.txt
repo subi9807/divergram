@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /manager
 
-Sitemap: https://divergram.com/sitemap.xml
+Sitemap: https://app.divergram.com/sitemap.xml

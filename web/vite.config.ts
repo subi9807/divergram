@@ -10,10 +10,10 @@ export default defineConfig({
   },
   server: {
     host: true,
-    allowedHosts: ['divergram.com', 'www.divergram.com', 'manager.divergram.com', 'api.divergram.com'],
+    allowedHosts: ['app.divergram.com', 'divergram.com', 'manager.divergram.com', 'api.divergram.com'],
   },
   preview: {
     host: '127.0.0.1',
-    allowedHosts: ['divergram.com', 'www.divergram.com', 'manager.divergram.com', 'api.divergram.com'],
+    allowedHosts: ['app.divergram.com', 'divergram.com', 'manager.divergram.com', 'api.divergram.com'],
   },
 });
