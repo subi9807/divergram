@@ -59,28 +59,20 @@ export default function FeedScreen() {
       ];
   const resolvedAds = [...usableAds, ...fallbackAds];
   const feedItems = React.useMemo<FeedListItem[]>(() => {
-    return posts.reduce<FeedListItem[]>((items, post, index) => {
-      const shouldInsertAd =
-        resolvedAds.length > 0 &&
-        ((shouldUseFallbackAd && index === 0) || (index + 1) % 3 === 0);
-      if (shouldInsertAd) {
-        const ad = resolvedAds[Math.floor(index / 3) % resolvedAds.length];
+    const items: FeedListItem[] = [];
+    posts.forEach((post, index) => {
+      items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
+
+      if (resolvedAds.length > 0 && (index + 1) % 3 === 0) {
+        const adIndex = Math.floor(index / 3) % resolvedAds.length;
+        const ad = resolvedAds[adIndex];
         if (ad) {
-          const adId = `ad-${ad.id}-${Math.floor(index / 3)}-${index}`;
-          if (shouldUseFallbackAd && index === 0) {
-            items.push({ type: 'ad', id: adId, ad });
-          }
-          items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
-          if (!shouldUseFallbackAd || index !== 0) {
-            items.push({ type: 'ad', id: adId, ad });
-          }
-          return items;
+          items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}-${index}`, ad });
         }
       }
-      items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
-      return items;
-    }, []);
-  }, [posts, resolvedAds, shouldUseFallbackAd]);
+    });
+    return items;
+  }, [posts, resolvedAds]);
 
   const renderPost = ({ item }: { item: FeedListItem }) => {
     if (item.type === 'ad') {
