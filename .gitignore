@@ -38,6 +38,7 @@ expo-env.d.ts
 .firebase/
 
 .secrets/
+.keys/
 **/android/keys/*.json
 **/*service-account*.json
 **/*.p8
@@ -48,6 +49,7 @@ ios/build/
 app/ios/Pods/
 app/ios/build/
 app/.build/
+app/.release/
 app/android/.gradle/
 app/android/build/
 app/android/app/build/
