@@ -1,0 +1,4361 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f7fb" />
+    <meta
+      name="description"
+      content="Divergram 사업 제안서. 다이빙 기록, 해양 안전, 장비 연동, 지역 관광 데이터를 연결하는 다이버 플랫폼 소개 문서."
+    />
+    <link rel="canonical" href="https://divergram.com/proposal" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Divergram" />
+    <meta property="og:title" content="Divergram 사업 제안서" />
+    <meta property="og:description" content="다이빙 기록, 탐색, 리조트 예약, 쇼핑몰, 강습/교육을 연결하는 해양 레저 플랫폼 제안서." />
+    <meta property="og:url" content="https://divergram.com/proposal" />
+    <meta property="og:image" content="https://divergram.com/assets/divergram-logo-blue.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Divergram 사업 제안서" />
+    <meta name="twitter:description" content="다이빙 기록, 탐색, 리조트 예약, 쇼핑몰, 강습/교육을 연결하는 해양 레저 플랫폼 제안서." />
+    <meta name="twitter:image" content="https://divergram.com/assets/divergram-logo-blue.png" />
+    <title>Divergram | 사업 제안서</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      :root {
+        --ink: #102033;
+        --ink-2: #32445a;
+        --muted: #66798f;
+        --line: #d9e3ef;
+        --line-2: #edf2f7;
+        --paper: #ffffff;
+        --wash: #f4f7fb;
+        --blue: #1565c0;
+        --blue-2: #0c3f78;
+        --teal: #0f9f9a;
+        --green: #2e7d55;
+        --gold: #b78218;
+        --coral: #c85046;
+        --radius: 8px;
+        --page-w: 210mm;
+        --page-h: 297mm;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(180deg, rgba(21, 101, 192, 0.08), transparent 340px),
+          var(--wash);
+        color: var(--ink);
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Arial, sans-serif;
+        line-height: 1.55;
+        word-break: keep-all;
+        overflow-wrap: normal;
+        line-break: strict;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .screen-actions {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid rgba(16, 32, 51, 0.1);
+        background: rgba(244, 247, 251, 0.88);
+        backdrop-filter: blur(14px);
+      }
+
+      .screen-actions__inner {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+      }
+
+      .screen-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+
+      .screen-brand strong {
+        color: var(--ink);
+      }
+
+      .logo-dot {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        border: 1px solid rgba(21, 101, 192, 0.18);
+        color: #fff;
+        font-weight: 800;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(21, 101, 192, 0.14);
+      }
+
+      .logo-dot img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+      .screen-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .screen-buttons a,
+      .screen-buttons button {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        padding: 9px 13px;
+        text-decoration: none;
+      }
+
+      .screen-buttons button {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: #fff;
+      }
+
+      .document {
+        padding: 24px 0 48px;
+      }
+
+      .page {
+        position: relative;
+        width: var(--page-w);
+        min-height: var(--page-h);
+        margin: 0 auto 22px;
+        padding: 18mm 17mm 16mm;
+        background: var(--paper);
+        box-shadow: 0 24px 60px rgba(28, 48, 73, 0.18);
+        overflow: hidden;
+      }
+
+      .page::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 5mm;
+        background: linear-gradient(90deg, var(--blue), var(--teal), var(--gold));
+      }
+
+      .page-footer {
+        position: absolute;
+        left: 17mm;
+        right: 17mm;
+        bottom: 8mm;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid var(--line-2);
+        padding-top: 4mm;
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+
+      .page-num {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .cover {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .cover-main {
+        flex: 1;
+        display: grid;
+        align-content: center;
+        gap: 10mm;
+      }
+
+      .cover-kicker {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .cover h1 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 47px;
+        line-height: 1.12;
+        font-weight: 850;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      .cover h1 span {
+        display: block;
+        color: var(--blue);
+      }
+
+      .cover-lead {
+        max-width: 150mm;
+        color: var(--ink-2);
+        font-size: 17px;
+        letter-spacing: -0.012em;
+        text-wrap: pretty;
+        margin: 0;
+      }
+
+      .cover-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8mm;
+        align-items: stretch;
+      }
+
+      .cover-visual {
+        position: relative;
+        min-height: 54mm;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 25% 25%, rgba(15, 159, 154, 0.2), transparent 27mm),
+          radial-gradient(circle at 74% 68%, rgba(21, 101, 192, 0.18), transparent 24mm),
+          linear-gradient(135deg, #f8fbff, #ffffff);
+        overflow: hidden;
+      }
+
+      .cover-visual__phone {
+        position: absolute;
+        right: 10mm;
+        top: 6mm;
+        width: 35mm;
+        height: 46mm;
+        border: 2px solid #102033;
+        border-radius: 8mm;
+        background: #fff;
+        box-shadow: 0 12px 24px rgba(16, 32, 51, 0.14);
+        overflow: hidden;
+      }
+
+      .cover-visual__phone::before {
+        content: "";
+        position: absolute;
+        left: 7mm;
+        right: 7mm;
+        top: 4mm;
+        height: 2mm;
+        border-radius: 99px;
+        background: #d8e3ef;
+        z-index: 1;
+      }
+
+      .cover-visual__phone img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .cover-visual__wave {
+        position: absolute;
+        left: 8mm;
+        bottom: 9mm;
+        width: 85mm;
+        height: 20mm;
+        border-radius: 50%;
+        border: 3px solid rgba(21, 101, 192, 0.24);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+        transform: rotate(-12deg);
+      }
+
+      .cover-visual__chips {
+        position: absolute;
+        left: 9mm;
+        top: 9mm;
+        display: grid;
+        gap: 2mm;
+      }
+
+      .cover-visual__chips span {
+        display: inline-flex;
+        width: fit-content;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--line);
+        color: var(--ink-2);
+        font-size: 10.5px;
+        font-weight: 800;
+        padding: 1.6mm 3mm;
+        box-shadow: 0 5px 14px rgba(16, 32, 51, 0.08);
+      }
+
+      .toc-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .toc-section {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 4mm;
+      }
+
+      .toc-section strong {
+        display: block;
+        color: var(--blue);
+        font-size: 12px;
+        margin-bottom: 2mm;
+        text-transform: uppercase;
+      }
+
+      .toc-section ol {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .toc-section li {
+        color: var(--ink-2);
+        font-size: 11.4px;
+        margin-bottom: 1.4mm;
+      }
+
+      .toc-section span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .founder-photo {
+        min-height: 42mm;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.95) 0 10mm, transparent 10.4mm),
+          radial-gradient(circle at 50% 74%, rgba(21, 101, 192, 0.16) 0 20mm, transparent 20.4mm),
+          linear-gradient(135deg, #dff0ff, #ffffff);
+        display: grid;
+        place-items: end center;
+        padding: 5mm;
+        overflow: hidden;
+      }
+
+      .founder-photo::before {
+        content: "";
+        width: 24mm;
+        height: 24mm;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        box-shadow: 0 16mm 0 9mm rgba(16, 32, 51, 0.92);
+      }
+
+      .founder-photo span {
+        position: absolute;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .cover-panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 7mm;
+        background: linear-gradient(180deg, #f8fbff, #fff);
+      }
+
+      .cover-panel strong {
+        display: block;
+        color: var(--ink);
+        font-size: 15px;
+        margin-bottom: 2mm;
+      }
+
+      .cover-panel p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-lockup img {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        object-fit: contain;
+      }
+
+      .brand-lockup .fallback-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: #fff;
+        font-weight: 800;
+      }
+
+      .brand-lockup strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .brand-lockup span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      h2 {
+        margin: 0 0 7mm;
+        color: var(--ink);
+        font-size: 28px;
+        line-height: 1.18;
+        letter-spacing: -0.03em;
+        text-wrap: balance;
+      }
+
+      h3 {
+        margin: 0 0 3mm;
+        color: var(--ink);
+        font-size: 16px;
+        line-height: 1.3;
+        letter-spacing: -0.018em;
+        text-wrap: balance;
+      }
+
+      p {
+        margin: 0;
+        text-wrap: pretty;
+      }
+
+      .eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4mm;
+        color: var(--blue);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 18px;
+        height: 2px;
+        background: var(--blue);
+      }
+
+      .lead {
+        color: var(--ink-2);
+        font-size: 14px;
+        letter-spacing: -0.01em;
+        text-wrap: pretty;
+        margin-bottom: 7mm;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 5mm;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 5mm;
+        background: #fff;
+      }
+
+      .card--soft {
+        background: #f8fbff;
+      }
+
+      .card p,
+      .card li {
+        color: var(--ink-2);
+        font-size: 12.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .card-icon {
+        display: grid;
+        place-items: center;
+        width: 10mm;
+        height: 10mm;
+        margin-bottom: 2mm;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: #fff;
+        font-size: 9px;
+        font-weight: 900;
+      }
+
+      .card ul,
+      .plain-list {
+        margin: 0;
+        padding-left: 16px;
+      }
+
+      .card li + li,
+      .plain-list li + li {
+        margin-top: 2mm;
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 7mm 0;
+      }
+
+      .metric {
+        border-left: 3px solid var(--blue);
+        background: #f8fbff;
+        padding: 4mm;
+      }
+
+      .metric strong {
+        display: block;
+        color: var(--ink);
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 11.5px;
+        margin-top: 1mm;
+      }
+
+      .diagram-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 6mm 0;
+      }
+
+      .diagram-row--four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .diagram-node {
+        position: relative;
+        min-height: 32mm;
+        border: 1px solid var(--line);
+        border-top: 4px solid var(--blue);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 4mm;
+      }
+
+      .diagram-node::before,
+      .ecosystem-node::before,
+      .thesis-card::before {
+        content: attr(data-icon);
+        display: grid;
+        place-items: center;
+        width: 9mm;
+        height: 9mm;
+        margin-bottom: 2mm;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: #fff;
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: -0.04em;
+      }
+
+      .diagram-node:nth-child(2n) {
+        border-top-color: var(--teal);
+      }
+
+      .diagram-node:nth-child(3n) {
+        border-top-color: var(--gold);
+      }
+
+      .diagram-node strong {
+        display: block;
+        color: var(--ink);
+        font-size: 14px;
+        margin-bottom: 1.5mm;
+      }
+
+      .diagram-node span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 11.8px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .diagram-node small {
+        display: inline-block;
+        margin-bottom: 2mm;
+        color: var(--blue);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .flow-diagram {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5mm;
+        margin: 6mm 0;
+      }
+
+      .flow-item {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #ffffff);
+        padding: 4mm;
+        min-height: 36mm;
+      }
+
+      .flow-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 3mm;
+        margin: 4mm 0;
+      }
+
+      .flow-detail {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 3mm;
+      }
+
+      .flow-detail strong {
+        display: block;
+        color: var(--ink);
+        font-size: 11.6px;
+        margin-bottom: 1mm;
+      }
+
+      .flow-detail span {
+        color: var(--ink-2);
+        font-size: 9.6px;
+      }
+
+      .flow-item:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: -4.6mm;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--blue);
+        font-weight: 900;
+        font-size: 15px;
+      }
+
+      .flow-item b {
+        display: grid;
+        place-items: center;
+        width: 8mm;
+        height: 8mm;
+        margin-bottom: 2mm;
+        border-radius: 50%;
+        background: var(--blue);
+        color: #fff;
+        font-size: 11px;
+      }
+
+      .flow-item strong {
+        display: block;
+        color: var(--ink);
+        font-size: 14px;
+        margin-bottom: 1.5mm;
+      }
+
+      .flow-item span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 11.6px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .before-after {
+        display: grid;
+        grid-template-columns: 1fr 13mm 1fr;
+        gap: 4mm;
+        align-items: stretch;
+        margin: 6mm 0;
+      }
+
+      .before-after__panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 4.5mm;
+        background: #fff;
+      }
+
+      .before-after__panel.is-before {
+        border-top: 4px solid var(--coral);
+        background: #fffafa;
+      }
+
+      .before-after__panel.is-after {
+        border-top: 4px solid var(--teal);
+        background: #f4fbfa;
+      }
+
+      .before-after__panel strong {
+        display: block;
+        margin-bottom: 3mm;
+        color: var(--ink);
+        font-size: 15px;
+      }
+
+      .before-after__panel ul {
+        margin: 0;
+        padding-left: 16px;
+      }
+
+      .before-after__panel li {
+        color: var(--ink-2);
+        font-size: 12px;
+      }
+
+      .before-after__panel li + li {
+        margin-top: 2mm;
+      }
+
+      .before-after__arrow {
+        display: grid;
+        place-items: center;
+        color: var(--blue);
+        font-weight: 900;
+        font-size: 20px;
+      }
+
+      .ecosystem-map {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 6mm 0;
+      }
+
+      .ecosystem-core {
+        grid-column: 2;
+        display: grid;
+        place-items: center;
+        min-height: 28mm;
+        border-radius: var(--radius);
+        background: var(--ink);
+        color: #fff;
+        text-align: center;
+        padding: 4mm;
+      }
+
+      .ecosystem-core strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .ecosystem-core span {
+        display: block;
+        margin-top: 1mm;
+        color: #cbd8e6;
+        font-size: 11px;
+      }
+
+      .ecosystem-node {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #f8fbff;
+        padding: 4mm;
+      }
+
+      .ecosystem-node strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13.5px;
+        margin-bottom: 1mm;
+      }
+
+      .ecosystem-node span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 11.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .profile-hero {
+        display: grid;
+        grid-template-columns: 0.7fr 0.9fr 1.15fr;
+        gap: 6mm;
+        align-items: stretch;
+        margin: 6mm 0;
+      }
+
+      .profile-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 6mm;
+      }
+
+      .profile-card strong {
+        display: block;
+        color: var(--ink);
+        font-size: 22px;
+        margin-bottom: 2mm;
+      }
+
+      .profile-card span {
+        display: block;
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 800;
+        margin-bottom: 4mm;
+      }
+
+      .profile-card p {
+        color: var(--ink-2);
+        font-size: 13px;
+        letter-spacing: -0.008em;
+        text-wrap: pretty;
+      }
+
+      .profile-list {
+        display: grid;
+        gap: 3mm;
+      }
+
+      .profile-point {
+        border-left: 3px solid var(--blue);
+        background: #f8fbff;
+        padding: 3.5mm 4mm;
+      }
+
+      .profile-point:nth-child(2) {
+        border-left-color: var(--teal);
+      }
+
+      .profile-point:nth-child(3) {
+        border-left-color: var(--gold);
+      }
+
+      .profile-point strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13.5px;
+        margin-bottom: 1mm;
+      }
+
+      .profile-point span {
+        color: var(--ink-2);
+        font-size: 12px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .mini-visual {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 3mm;
+        margin: 5mm 0;
+      }
+
+      .mini-visual__item {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 3.4mm;
+      }
+
+      .mini-visual__item b {
+        display: block;
+        color: var(--blue);
+        font-size: 18px;
+        line-height: 1;
+        margin-bottom: 1.5mm;
+      }
+
+      .mini-visual__item span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 10.8px;
+      }
+
+      .finance-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5mm;
+      }
+
+      .finance-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        font-size: 11.4px;
+      }
+
+      .finance-table th,
+      .finance-table td {
+        padding: 2.6mm 3mm;
+        border-bottom: 1px solid var(--line-2);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .finance-table th {
+        background: #f3f7fc;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .finance-table td {
+        color: var(--ink-2);
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .bep-box {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .bep-item {
+        border: 1px solid var(--line);
+        border-top: 4px solid var(--green);
+        border-radius: var(--radius);
+        background: #f7fcf9;
+        padding: 4mm;
+      }
+
+      .bep-item strong {
+        display: block;
+        color: var(--ink);
+        font-size: 18px;
+        margin-bottom: 1mm;
+      }
+
+      .bep-item span {
+        color: var(--ink-2);
+        font-size: 11.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .year-roadmap {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3mm;
+        margin: 5mm 0;
+      }
+
+      .year-step {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 3.5mm;
+        min-height: 44mm;
+      }
+
+      .year-step strong {
+        display: inline-block;
+        margin-bottom: 2mm;
+        padding: 1.5mm 2.2mm;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        font-size: 11px;
+      }
+
+      .year-step h3 {
+        font-size: 13px;
+        margin-bottom: 1.5mm;
+      }
+
+      .year-step p {
+        color: var(--ink-2);
+        font-size: 10.8px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .statement {
+        margin: 6mm 0;
+        padding: 5mm 6mm;
+        border-left: 4px solid var(--teal);
+        background: #f4fbfa;
+        color: var(--ink-2);
+        font-size: 13.5px;
+        letter-spacing: -0.01em;
+        text-wrap: pretty;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        font-size: 12px;
+      }
+
+      .table th,
+      .table td {
+        padding: 3.2mm 3.5mm;
+        border-bottom: 1px solid var(--line-2);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .table th {
+        width: 31%;
+        color: var(--ink);
+        background: #f3f7fc;
+        font-weight: 800;
+      }
+
+      .table td {
+        color: var(--ink-2);
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .process {
+        display: grid;
+        gap: 3mm;
+      }
+
+      .process-step {
+        display: grid;
+        grid-template-columns: 10mm 1fr;
+        gap: 4mm;
+        align-items: start;
+        padding: 4mm;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+      }
+
+      .process-step span {
+        width: 10mm;
+        height: 10mm;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--ink);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .process-step p {
+        color: var(--ink-2);
+        font-size: 12.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .roadmap {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4mm;
+      }
+
+      .roadmap-item {
+        min-height: 45mm;
+        border-top: 4px solid var(--blue);
+        background: #f8fbff;
+        padding: 4mm;
+      }
+
+      .roadmap-item:nth-child(2) {
+        border-color: var(--teal);
+      }
+
+      .roadmap-item:nth-child(3) {
+        border-color: var(--gold);
+      }
+
+      .roadmap-item:nth-child(4) {
+        border-color: var(--green);
+      }
+
+      .roadmap-item strong {
+        display: block;
+        margin-bottom: 2mm;
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .roadmap-item p {
+        color: var(--ink-2);
+        font-size: 12px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .budget-bars {
+        display: grid;
+        gap: 3mm;
+      }
+
+      .budget-row {
+        display: grid;
+        grid-template-columns: 33mm 1fr 14mm;
+        gap: 4mm;
+        align-items: center;
+        font-size: 12px;
+        color: var(--ink-2);
+      }
+
+      .bar {
+        height: 8px;
+        border-radius: 99px;
+        background: var(--line-2);
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--blue), var(--teal));
+      }
+
+      .caption {
+        margin-top: 3mm;
+        color: var(--muted);
+        font-size: 10.5px;
+      }
+
+      .compact {
+        font-size: 11.8px;
+      }
+
+      .two-column-list {
+        columns: 2;
+        column-gap: 8mm;
+        color: var(--ink-2);
+        font-size: 12.5px;
+      }
+
+      .two-column-list li {
+        break-inside: avoid;
+        margin-bottom: 2mm;
+      }
+
+      .screen-gallery {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 5mm;
+        align-items: stretch;
+      }
+
+      .phone-shot {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 8mm;
+        padding: 4mm;
+        background: linear-gradient(180deg, #102033, #1a2f48);
+        box-shadow: 0 14px 30px rgba(16, 32, 51, 0.16);
+        display: grid;
+        grid-template-columns: 29mm 1fr;
+        gap: 4mm;
+        align-items: center;
+      }
+
+      .phone-shot img {
+        display: block;
+        width: 100%;
+        height: 58mm;
+        object-fit: contain;
+        border-radius: 5mm;
+        background: #eef3f8;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .screen-caption {
+        color: #d9e7f6;
+        font-size: 11.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .screen-caption strong {
+        display: block;
+        color: #fff;
+        font-size: 12.5px;
+        margin-bottom: 1mm;
+      }
+
+      .stamp-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 6mm 0;
+      }
+
+      .stamp-card {
+        position: relative;
+        min-height: 43mm;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 50% 34%, rgba(255, 255, 255, 0.96) 0 10mm, transparent 10.2mm),
+          linear-gradient(180deg, #fff8df, #ffffff);
+        padding: 4mm;
+        overflow: hidden;
+        text-align: center;
+      }
+
+      .stamp-card::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 4mm;
+        width: 23mm;
+        height: 23mm;
+        border-radius: 50%;
+        transform: translateX(-50%);
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent),
+          var(--stamp-color, var(--gold));
+        box-shadow:
+          inset 0 0 0 1.2mm rgba(255, 255, 255, 0.35),
+          0 8px 18px rgba(16, 32, 51, 0.16);
+      }
+
+      .stamp-card::after {
+        content: attr(data-icon);
+        position: absolute;
+        left: 50%;
+        top: 9.4mm;
+        transform: translateX(-50%);
+        color: #fff;
+        font-size: 17px;
+        font-weight: 900;
+      }
+
+      .stamp-card b {
+        position: relative;
+        z-index: 1;
+        display: inline-block;
+        margin-top: 25mm;
+        margin-bottom: 1.8mm;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--stamp-color, var(--gold));
+        font-size: 10px;
+        padding: 1mm 2.3mm;
+        border: 1px solid rgba(183, 130, 24, 0.24);
+      }
+
+      .stamp-card strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13.5px;
+        margin-bottom: 1mm;
+      }
+
+      .stamp-card span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 11.2px;
+      }
+
+      .stamp-card--blue {
+        --stamp-color: var(--blue);
+      }
+
+      .stamp-card--teal {
+        --stamp-color: var(--teal);
+      }
+
+      .stamp-card--green {
+        --stamp-color: var(--green);
+      }
+
+      .stamp-card--coral {
+        --stamp-color: var(--coral);
+      }
+
+      .stamp-card--gold {
+        --stamp-color: var(--gold);
+      }
+
+      .visual-band {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .visual-band__item {
+        min-height: 25mm;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          linear-gradient(135deg, rgba(21, 101, 192, 0.1), transparent),
+          #fff;
+        padding: 3.5mm;
+      }
+
+      .visual-band__item strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        margin-bottom: 1mm;
+      }
+
+      .visual-band__item span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 10.8px;
+      }
+
+      .stamp-catalog {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 2.4mm;
+        margin: 4mm 0;
+      }
+
+      .stamp-mini {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 2.2mm;
+        text-align: center;
+        min-height: 25mm;
+      }
+
+      .stamp-mini b {
+        display: grid;
+        place-items: center;
+        width: 10mm;
+        height: 10mm;
+        margin: 0 auto 1.5mm;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--mini-color, var(--blue)), rgba(15, 159, 154, 0.8));
+        color: #fff;
+        font-size: 8px;
+        font-weight: 900;
+        box-shadow: inset 0 0 0 1mm rgba(255, 255, 255, 0.26);
+      }
+
+      .stamp-mini strong {
+        display: block;
+        color: var(--ink);
+        font-size: 9.3px;
+        line-height: 1.2;
+      }
+
+      .stamp-mini span {
+        display: block;
+        margin-top: 0.7mm;
+        color: var(--muted);
+        font-size: 7.8px;
+      }
+
+      .unit-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        font-size: 10.8px;
+      }
+
+      .unit-table th,
+      .unit-table td {
+        padding: 2.2mm 2.4mm;
+        border-bottom: 1px solid var(--line-2);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .unit-table th {
+        background: #f3f7fc;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .unit-table td {
+        color: var(--ink-2);
+      }
+
+      .promo-budget {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 5mm;
+        margin: 5mm 0;
+      }
+
+      .budget-stack {
+        display: grid;
+        gap: 2.6mm;
+      }
+
+      .budget-chip {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 3mm;
+      }
+
+      .budget-chip strong {
+        display: flex;
+        justify-content: space-between;
+        gap: 3mm;
+        color: var(--ink);
+        font-size: 12px;
+        margin-bottom: 1mm;
+      }
+
+      .budget-chip span {
+        color: var(--ink-2);
+        font-size: 10px;
+      }
+
+      .market-stats,
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .market-stat,
+      .kpi-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 4mm;
+      }
+
+      .market-stat strong,
+      .kpi-card strong {
+        display: block;
+        color: var(--blue);
+        font-size: 18px;
+        line-height: 1.1;
+        margin-bottom: 1.5mm;
+      }
+
+      .market-stat span,
+      .kpi-card span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 11px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .market-chart {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 5mm;
+        align-items: stretch;
+        margin: 5mm 0;
+      }
+
+      .chart-panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 5mm;
+      }
+
+      .bar-chart {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6mm;
+        align-items: end;
+        min-height: 49mm;
+      }
+
+      .bar-col {
+        display: grid;
+        gap: 2mm;
+        align-content: end;
+        text-align: center;
+      }
+
+      .bar-col i {
+        display: block;
+        width: 100%;
+        border-radius: 4mm 4mm 1mm 1mm;
+        background: linear-gradient(180deg, var(--blue), var(--teal));
+      }
+
+      .bar-col strong {
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .bar-col span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .kpi-formula {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 3mm;
+        margin: 4mm 0;
+      }
+
+      .formula-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 3mm;
+      }
+
+      .formula-card strong {
+        display: block;
+        color: var(--ink);
+        font-size: 12px;
+        margin-bottom: 1mm;
+      }
+
+      .formula-card span {
+        color: var(--ink-2);
+        font-size: 10px;
+      }
+
+      .competitor-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--line);
+        font-size: 11.2px;
+      }
+
+      .competitor-table th,
+      .competitor-table td {
+        padding: 2.4mm 2.8mm;
+        border-bottom: 1px solid var(--line-2);
+        border-right: 1px solid var(--line-2);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .competitor-table th {
+        background: #f3f7fc;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .competitor-table td {
+        color: var(--ink-2);
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .competitor-table .is-strong {
+        color: var(--green);
+        font-weight: 800;
+      }
+
+      .mvp-lanes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .mvp-graphic {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .mvp-graphic__node {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #f8fbff, #fff);
+        padding: 4mm;
+        min-height: 30mm;
+      }
+
+      .mvp-graphic__node:not(:last-child)::after {
+        content: ">";
+        position: absolute;
+        right: -3.7mm;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--blue);
+        font-weight: 900;
+      }
+
+      .mvp-graphic__node strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        margin-bottom: 1mm;
+      }
+
+      .mvp-graphic__node span {
+        color: var(--ink-2);
+        font-size: 10.5px;
+      }
+
+      .mvp-lane {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        overflow: hidden;
+      }
+
+      .mvp-lane h3 {
+        margin: 0;
+        padding: 3.2mm;
+        background: var(--ink);
+        color: #fff;
+        font-size: 13px;
+      }
+
+      .mvp-lane:nth-child(2) h3 {
+        background: var(--blue);
+      }
+
+      .mvp-lane:nth-child(3) h3 {
+        background: var(--teal);
+      }
+
+      .mvp-lane ul {
+        margin: 0;
+        padding: 4mm 4mm 4mm 7mm;
+      }
+
+      .mvp-lane li {
+        color: var(--ink-2);
+        font-size: 11.4px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .mvp-lane li + li {
+        margin-top: 1.8mm;
+      }
+
+      .mock-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4mm;
+        margin: 5mm 0;
+      }
+
+      .mock-screen {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #102033, #1c3858);
+        padding: 3mm;
+        min-height: 54mm;
+        color: #fff;
+      }
+
+      .mock-screen__bar {
+        display: flex;
+        gap: 1.5mm;
+        margin-bottom: 3mm;
+      }
+
+      .mock-screen__bar span {
+        width: 3mm;
+        height: 3mm;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .mock-screen strong {
+        display: block;
+        margin-bottom: 2mm;
+        font-size: 12.5px;
+      }
+
+      .mock-screen p {
+        color: #d9e7f6;
+        font-size: 10.2px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .mock-pill {
+        display: inline-block;
+        margin: 2.5mm 1mm 0 0;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #fff;
+        font-size: 9px;
+        padding: 1mm 2mm;
+      }
+
+      .thesis-hero {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background:
+          radial-gradient(circle at 15% 20%, rgba(15, 159, 154, 0.16), transparent 28mm),
+          radial-gradient(circle at 84% 70%, rgba(21, 101, 192, 0.16), transparent 30mm),
+          linear-gradient(135deg, #f8fbff, #ffffff);
+        padding: 6mm;
+        margin: 5mm 0;
+      }
+
+      .thesis-hero strong {
+        display: block;
+        color: var(--ink);
+        font-size: 21px;
+        line-height: 1.28;
+        letter-spacing: -0.028em;
+        text-wrap: balance;
+        margin-bottom: 3mm;
+      }
+
+      .thesis-hero p {
+        color: var(--ink-2);
+        font-size: 13px;
+        letter-spacing: -0.008em;
+        text-wrap: pretty;
+      }
+
+      .thesis-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 3mm;
+        margin: 5mm 0;
+      }
+
+      .thesis-card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 3.4mm;
+      }
+
+      .thesis-card::before {
+        content: attr(data-icon);
+      }
+
+      .thesis-card b {
+        display: grid;
+        place-items: center;
+        width: 8mm;
+        height: 8mm;
+        margin-bottom: 2mm;
+        border-radius: 50%;
+        background: var(--blue);
+        color: #fff;
+        font-size: 10px;
+      }
+
+      .thesis-card strong {
+        display: block;
+        color: var(--ink);
+        font-size: 11.8px;
+        letter-spacing: -0.012em;
+        text-wrap: balance;
+        margin-bottom: 1mm;
+      }
+
+      .thesis-card span {
+        display: block;
+        color: var(--ink-2);
+        font-size: 9.8px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      .commitment-note {
+        margin: 5mm 0;
+        padding: 5mm 6mm;
+        border-radius: var(--radius);
+        background: #102033;
+        color: #fff;
+      }
+
+      .commitment-note strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 2mm;
+      }
+
+      .commitment-note p {
+        color: #d9e7f6;
+        font-size: 12.5px;
+        letter-spacing: -0.006em;
+        text-wrap: pretty;
+      }
+
+      @media (max-width: 900px) {
+        .page {
+          width: min(100% - 24px, var(--page-w));
+          min-height: auto;
+          padding: 24px;
+        }
+
+        .screen-actions__inner,
+        .cover-grid,
+        .grid-2,
+        .grid-3,
+        .metric-row,
+        .roadmap,
+        .screen-gallery,
+        .stamp-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .screen-actions__inner {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .page-footer {
+          position: static;
+          margin-top: 28px;
+        }
+
+        .cover h1 {
+          font-size: 34px;
+        }
+      }
+
+      @media print {
+        :root {
+          --page-w: 210mm;
+          --page-h: 297mm;
+        }
+
+        html,
+        body {
+          width: 210mm;
+          background: #fff !important;
+        }
+
+        .screen-actions {
+          display: none !important;
+        }
+
+        .document {
+          padding: 0;
+        }
+
+        .page {
+          width: 210mm;
+          height: 297mm;
+          min-height: 297mm;
+          padding: 14mm 15mm 12mm;
+          margin: 0;
+          box-shadow: none;
+          break-after: page;
+          page-break-after: always;
+        }
+
+        .page-footer {
+          left: 15mm;
+          right: 15mm;
+          bottom: 6mm;
+        }
+
+        .cover-main {
+          gap: 7mm;
+        }
+
+        .cover h1 {
+          font-size: 42px;
+        }
+
+        .cover-lead {
+          max-width: 160mm;
+          font-size: 15px;
+        }
+
+        .cover-grid {
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 8mm;
+        }
+
+        h2 {
+          margin-bottom: 5mm;
+          font-size: 24px;
+        }
+
+        h3 {
+          font-size: 14px;
+        }
+
+        .eyebrow {
+          margin-bottom: 3mm;
+        }
+
+        .lead {
+          margin-bottom: 5mm;
+          font-size: 12.5px;
+        }
+
+        .card {
+          padding: 3.5mm;
+        }
+
+        .card p,
+        .card li {
+          font-size: 10.8px;
+        }
+
+        .metric-row {
+          margin: 4mm 0;
+        }
+
+        .metric {
+          padding: 3mm;
+        }
+
+        .diagram-row {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 3mm;
+          margin: 3mm 0;
+        }
+
+        .diagram-row--four {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .diagram-node {
+          min-height: 22mm;
+          padding: 2.6mm;
+        }
+
+        .diagram-node strong {
+          font-size: 11.6px;
+          margin-bottom: 0.8mm;
+        }
+
+        .diagram-node span {
+          font-size: 9.8px;
+        }
+
+        .diagram-node small {
+          margin-bottom: 0.8mm;
+          font-size: 8.5px;
+        }
+
+        .flow-diagram {
+          gap: 3mm;
+          margin: 4mm 0;
+        }
+
+        .flow-item {
+          min-height: 28mm;
+          padding: 3mm;
+        }
+
+        .flow-item:not(:last-child)::after {
+          right: -3.4mm;
+          font-size: 12px;
+        }
+
+        .flow-item strong {
+          font-size: 12px;
+        }
+
+        .flow-item span {
+          font-size: 10px;
+        }
+
+        .before-after {
+          gap: 3mm;
+          margin: 4mm 0;
+        }
+
+        .before-after__panel {
+          padding: 3mm;
+        }
+
+        .before-after__panel li {
+          font-size: 10px;
+        }
+
+        .ecosystem-map {
+          gap: 3mm;
+          margin: 4mm 0;
+        }
+
+        .ecosystem-core {
+          min-height: 22mm;
+          padding: 3mm;
+        }
+
+        .ecosystem-node {
+          padding: 3mm;
+        }
+
+        .ecosystem-node span {
+          font-size: 10px;
+        }
+
+        .profile-hero {
+          grid-template-columns: 0.62fr 0.8fr 1.1fr;
+          gap: 4mm;
+          margin: 4mm 0;
+        }
+
+        .founder-photo {
+          min-height: 34mm;
+          padding: 3mm;
+        }
+
+        .toc-grid {
+          gap: 3mm;
+          margin: 3.5mm 0;
+        }
+
+        .toc-section {
+          padding: 2.8mm;
+        }
+
+        .toc-section li {
+          font-size: 8.9px;
+          margin-bottom: 0.8mm;
+        }
+
+        .toc-section strong {
+          font-size: 9.6px;
+        }
+
+        .toc-section span {
+          font-size: 8px;
+        }
+
+        .profile-card {
+          padding: 4mm;
+        }
+
+        .profile-card strong {
+          font-size: 18px;
+        }
+
+        .profile-point {
+          padding: 2.6mm 3mm;
+        }
+
+        .profile-point span {
+          font-size: 10px;
+        }
+
+        .mini-visual {
+          gap: 2.4mm;
+          margin: 3.5mm 0;
+        }
+
+        .mini-visual__item {
+          padding: 2.4mm;
+        }
+
+        .mini-visual__item b {
+          font-size: 14px;
+        }
+
+        .mini-visual__item span {
+          font-size: 8.8px;
+        }
+
+        .finance-grid {
+          gap: 3mm;
+        }
+
+        .finance-table {
+          font-size: 9.8px;
+        }
+
+        .finance-table th,
+        .finance-table td {
+          padding: 1.8mm 2.2mm;
+        }
+
+        .bep-box {
+          gap: 3mm;
+          margin: 3.5mm 0;
+        }
+
+        .bep-item {
+          padding: 3mm;
+        }
+
+        .bep-item strong {
+          font-size: 14px;
+        }
+
+        .bep-item span {
+          font-size: 9.8px;
+        }
+
+        .year-roadmap {
+          gap: 2.4mm;
+          margin: 4mm 0;
+        }
+
+        .year-step {
+          min-height: 34mm;
+          padding: 2.6mm;
+        }
+
+        .year-step p {
+          font-size: 8.8px;
+        }
+
+        .statement {
+          margin: 4mm 0;
+          padding: 3.5mm 4mm;
+          font-size: 11.2px;
+        }
+
+        .table {
+          font-size: 10.3px;
+        }
+
+        .table th,
+        .table td {
+          padding: 2mm 2.4mm;
+        }
+
+        .process {
+          grid-template-columns: none;
+          gap: 3mm;
+        }
+
+        .process-step {
+          padding: 3mm;
+        }
+
+        .process-step p {
+          font-size: 10.4px;
+        }
+
+        .roadmap-item {
+          min-height: 34mm;
+          padding: 3mm;
+        }
+
+        .roadmap-item p {
+          font-size: 9.6px;
+        }
+
+        .screen-gallery {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 3mm;
+        }
+
+        .phone-shot {
+          grid-template-columns: 23mm 1fr;
+          gap: 3mm;
+          border-radius: 6mm;
+          padding: 2.6mm;
+        }
+
+        .phone-shot img {
+          height: 45mm;
+          border-radius: 4mm;
+        }
+
+        .screen-caption {
+          font-size: 9.5px;
+        }
+
+        .screen-caption strong {
+          font-size: 10.5px;
+          margin-bottom: 0.5mm;
+        }
+
+        .card-icon,
+        .diagram-node::before,
+        .ecosystem-node::before,
+        .thesis-card::before {
+          width: 7mm;
+          height: 7mm;
+          margin-bottom: 1mm;
+          font-size: 7px;
+        }
+
+        .flow-detail-grid {
+          gap: 2mm;
+          margin: 2.8mm 0;
+        }
+
+        .flow-detail {
+          padding: 2mm;
+        }
+
+        .flow-detail strong {
+          font-size: 9px;
+        }
+
+        .flow-detail span {
+          font-size: 7.4px;
+        }
+
+        .stamp-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 3mm;
+          margin: 4mm 0;
+        }
+
+        .stamp-card {
+          min-height: 35mm;
+          padding: 2.4mm;
+        }
+
+        .stamp-card::before {
+          top: 3mm;
+          width: 19mm;
+          height: 19mm;
+        }
+
+        .stamp-card::after {
+          top: 7mm;
+          font-size: 14px;
+        }
+
+        .stamp-card b {
+          margin-top: 21mm;
+          font-size: 8.5px;
+          padding: 0.8mm 1.8mm;
+        }
+
+        .stamp-card strong {
+          font-size: 10.5px;
+        }
+
+        .stamp-card span {
+          font-size: 8.3px;
+        }
+
+        .visual-band {
+          gap: 3mm;
+          margin: 3.5mm 0;
+        }
+
+        .visual-band__item {
+          min-height: 20mm;
+          padding: 2.6mm;
+        }
+
+        .visual-band__item span {
+          font-size: 8.8px;
+        }
+
+        .market-chart {
+          gap: 3mm;
+          margin: 3mm 0;
+        }
+
+        .chart-panel {
+          padding: 3mm;
+        }
+
+        .bar-chart {
+          min-height: 35mm;
+          gap: 4mm;
+        }
+
+        .kpi-formula {
+          gap: 2mm;
+          margin: 2.8mm 0;
+        }
+
+        .formula-card {
+          padding: 2mm;
+        }
+
+        .formula-card strong {
+          font-size: 9.3px;
+        }
+
+        .formula-card span {
+          font-size: 7.6px;
+        }
+
+        .market-stats,
+        .kpi-grid,
+        .mvp-lanes,
+        .mock-grid {
+          gap: 3mm;
+          margin: 3.5mm 0;
+        }
+
+        .market-stat,
+        .kpi-card {
+          padding: 2.8mm;
+        }
+
+        .market-stat strong,
+        .kpi-card strong {
+          font-size: 14px;
+        }
+
+        .market-stat span,
+        .kpi-card span {
+          font-size: 8.8px;
+        }
+
+        .competitor-table {
+          font-size: 8.9px;
+        }
+
+        .competitor-table th,
+        .competitor-table td {
+          padding: 1.6mm 1.8mm;
+        }
+
+        .mvp-lane h3 {
+          padding: 2.2mm;
+          font-size: 10.6px;
+        }
+
+        .mvp-lane ul {
+          padding: 2.8mm 2.8mm 2.8mm 5.6mm;
+        }
+
+        .mvp-lane li {
+          font-size: 8.8px;
+        }
+
+        .mvp-graphic {
+          gap: 2.4mm;
+          margin: 3mm 0;
+        }
+
+        .mvp-graphic__node {
+          min-height: 22mm;
+          padding: 2.4mm;
+        }
+
+        .mvp-graphic__node strong {
+          font-size: 9.8px;
+        }
+
+        .mvp-graphic__node span {
+          font-size: 7.8px;
+        }
+
+        .mock-screen {
+          min-height: 42mm;
+          padding: 2.4mm;
+        }
+
+        .mock-screen strong {
+          font-size: 10.2px;
+        }
+
+        .mock-screen p {
+          font-size: 8.4px;
+        }
+
+        .mock-pill {
+          font-size: 7.4px;
+          padding: 0.8mm 1.4mm;
+        }
+
+        .thesis-hero {
+          padding: 4mm;
+          margin: 3.5mm 0;
+        }
+
+        .thesis-hero strong {
+          font-size: 16px;
+          margin-bottom: 2mm;
+        }
+
+        .thesis-hero p {
+          font-size: 10.5px;
+        }
+
+        .thesis-grid {
+          gap: 2.2mm;
+          margin: 3.5mm 0;
+        }
+
+        .thesis-card {
+          padding: 2.3mm;
+        }
+
+        .thesis-card b {
+          width: 6.5mm;
+          height: 6.5mm;
+          margin-bottom: 1.2mm;
+          font-size: 8px;
+        }
+
+        .thesis-card strong {
+          font-size: 9.2px;
+        }
+
+        .thesis-card span {
+          font-size: 7.6px;
+        }
+
+        .commitment-note {
+          margin: 3.5mm 0;
+          padding: 3.5mm 4mm;
+        }
+
+        .commitment-note strong {
+          font-size: 12.5px;
+        }
+
+        .commitment-note p {
+          font-size: 9.6px;
+        }
+
+        .stamp-catalog {
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 1.6mm;
+          margin: 3mm 0;
+        }
+
+        .stamp-mini {
+          min-height: 20mm;
+          padding: 1.5mm;
+        }
+
+        .stamp-mini b {
+          width: 7.6mm;
+          height: 7.6mm;
+          font-size: 6.6px;
+        }
+
+        .stamp-mini strong {
+          font-size: 7.4px;
+        }
+
+        .stamp-mini span {
+          font-size: 6.2px;
+        }
+
+        .unit-table {
+          font-size: 8.4px;
+        }
+
+        .unit-table th,
+        .unit-table td {
+          padding: 1.5mm 1.7mm;
+        }
+
+        .promo-budget {
+          gap: 3mm;
+          margin: 3mm 0;
+        }
+
+        .budget-chip {
+          padding: 2mm;
+        }
+
+        .budget-chip strong {
+          font-size: 9.2px;
+        }
+
+        .budget-chip span {
+          font-size: 7.4px;
+        }
+
+        .page:last-child {
+          break-after: auto;
+          page-break-after: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="screen-actions" aria-label="화면용 도구">
+      <div class="screen-actions__inner">
+        <div class="screen-brand">
+          <span class="logo-dot">
+            <img src="./assets/divergram-logo-blue.png" alt="Divergram" onerror="this.replaceWith(document.createTextNode('DG'))" />
+          </span>
+          <span><strong>Divergram</strong> A4 사업 제안서 미리보기</span>
+        </div>
+        <div class="screen-buttons">
+          <a href="#page-1">표지</a>
+          <a href="#page-10">서비스</a>
+          <a href="#page-15">앱 화면</a>
+          <a href="#page-18">사업계획</a>
+          <button type="button" onclick="window.print()">A4로 출력</button>
+        </div>
+      </div>
+    </div>
+
+    <main class="document">
+      <section class="page cover" id="page-1">
+        <div class="cover-main">
+          <div class="brand-lockup">
+            <img src="./assets/divergram-logo-blue.png" alt="Divergram" onerror="this.replaceWith(Object.assign(document.createElement('div'), {className:'fallback-logo', textContent:'DG'}))" />
+            <div>
+              <strong>Divergram</strong>
+              <span>다이빙 기록과 안전을 연결하는 플랫폼</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="cover-kicker">Business Proposal</div>
+            <h1>
+              모든 다이빙을<br />
+              더 안전하게 기록하고<br />
+              더 쉽게 연결합니다
+              <span>Divergram</span>
+            </h1>
+            <p class="cover-lead">
+              Divergram은 스쿠버다이빙, 프리다이빙, 스노클링 사용자를 위한 다이빙 특화 플랫폼입니다.
+              기록, 해양 날씨, 장비 연동, 안전 경고, 커뮤니티 공유를 하나의 사용자 경험으로 통합합니다.
+            </p>
+          </div>
+
+          <div class="cover-grid">
+            <div class="cover-panel">
+              <strong>제안 핵심</strong>
+              <p>
+                다이빙 전후의 분산된 정보를 하나로 모아 사용자의 기록 편의와 안전 판단을 높이고,
+                지역 다이빙 생태계와 파트너 연결을 확장하는 플랫폼을 구축합니다.
+              </p>
+            </div>
+          </div>
+
+          <div class="cover-visual" aria-label="Divergram 서비스 구조 시각화">
+            <div class="cover-visual__chips">
+              <span>Logbook Feed</span>
+              <span>Reels & Stamp</span>
+              <span>Resort Booking</span>
+              <span>Shop & Education</span>
+            </div>
+            <div class="cover-visual__wave"></div>
+            <div class="cover-visual__phone">
+              <img src="./assets/proposal/02_tutorial_step1.png" alt="Divergram 피드 화면 예시" />
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span>Divergram Business Proposal</span>
+          <span class="page-num">01</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-2">
+        <div class="eyebrow">Contents</div>
+        <h2>제안서 전체 흐름</h2>
+        <p class="lead">
+          Divergram 제안서는 창업자 신뢰, 투자 논리, 시장 기회, 제품 전략, 수익 구조, 홍보·집행 계획 순서로 구성되어 있습니다.
+          심사자는 목차를 통해 사업의 실행 가능성과 투자 포인트를 빠르게 확인할 수 있습니다.
+        </p>
+
+        <div class="toc-grid">
+          <div class="toc-section">
+            <strong>01. Trust & Thesis</strong>
+            <ol>
+              <li>Founder Profile <span>창업자 역량</span></li>
+              <li>Why Invest <span>투자 논리</span></li>
+              <li>Executive Summary <span>사업 요약</span></li>
+            </ol>
+          </div>
+          <div class="toc-section">
+            <strong>02. Market & Product</strong>
+            <ol>
+              <li>Market & Target <span>시장성과 고객</span></li>
+              <li>Problem & Opportunity <span>문제와 기회</span></li>
+              <li>Product / Service / MVP <span>제품 범위</span></li>
+            </ol>
+          </div>
+          <div class="toc-section">
+            <strong>03. Engagement & Proof</strong>
+            <ol>
+              <li>Stamp & Retention <span>초기 30종 스탬프</span></li>
+              <li>Pilot & KPI <span>실증 목표와 산출 근거</span></li>
+              <li>App Screens / Mockups <span>화면 증빙</span></li>
+            </ol>
+          </div>
+          <div class="toc-section">
+            <strong>04. Business & Execution</strong>
+            <ol>
+              <li>Business Model / Revenue <span>수익과 단가</span></li>
+              <li>Promotion Budget <span>홍보 전략과 예산</span></li>
+              <li>Execution / Funding / Risk <span>집행과 리스크</span></li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="statement">
+          투자 검토의 핵심은 “기능이 많은 앱”이 아니라, 다이버의 반복 사용을 통해 리조트 예약, 광고, 쇼핑몰, 강습/교육 수익이 연결되는 구조를 확인하는 것입니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Contents</span>
+          <span class="page-num">02</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-3">
+        <div class="eyebrow">Founder Profile</div>
+        <h2>기술과 다이빙 현장을 모두 이해하는 실행형 창업자</h2>
+        <p class="lead">
+          Divergram은 단순한 앱 아이디어가 아니라, IT 제품 개발 경험과 실제 다이빙 현장 경험이 결합된 사업입니다.
+          대표자는 20년 이상의 IT 개발, 기획, 설계 경험과 10년 이상의 다이빙 경력 및 강사 활동을 바탕으로
+          기술 구현과 사용자 현장성을 함께 검증할 수 있습니다.
+        </p>
+
+        <div class="profile-hero">
+          <article class="profile-card">
+            <strong>Founder / Product Lead</strong>
+            <span>IT Architecture · Product Planning · Diving Instructor</span>
+            <p>
+              Divergram은 개발자 관점에서만 설계된 서비스가 아니라, 실제 다이버가 다이빙 전후에 어떤 정보를 찾고,
+              어떤 기록을 남기며, 어떤 순간에 불편을 느끼는지에 대한 현장 경험을 기반으로 출발했습니다.
+            </p>
+          </article>
+          <div class="founder-photo" aria-label="대표자 사진 샘플">
+            <span>Sample photo area</span>
+          </div>
+          <div class="profile-list">
+            <div class="profile-point">
+              <strong>IT 개발·기획·설계 20년 이상</strong>
+              <span>서비스 구조 설계, 프론트엔드/백엔드 개발, 데이터 흐름, 운영 시스템, 관리자 도구까지 제품 전반을 이해합니다.</span>
+            </div>
+            <div class="profile-point">
+              <strong>다이빙 경력 10년 이상 및 강사 활동</strong>
+              <span>스쿠버다이빙 현장의 안전 판단, 교육, 버디 문화, 리조트/샵 운영 흐름, 로그 기록 습관을 실제 경험으로 이해합니다.</span>
+            </div>
+            <div class="profile-point">
+              <strong>사업 실행 적합성</strong>
+              <span>기술 구현 가능성과 현장 필요성을 동시에 판단할 수 있어 MVP 개발, 파일럿 운영, 파트너 협업의 시행착오를 줄일 수 있습니다.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-visual">
+          <div class="mini-visual__item">
+            <b>20+</b>
+            <span>IT 개발·기획·설계 경력</span>
+          </div>
+          <div class="mini-visual__item">
+            <b>10+</b>
+            <span>다이빙 현장 경험</span>
+          </div>
+          <div class="mini-visual__item">
+            <b>강사</b>
+            <span>교육과 안전 운영 이해</span>
+          </div>
+          <div class="mini-visual__item">
+            <b>실행</b>
+            <span>제품화와 제휴 설득 가능</span>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <article class="card card--soft">
+            <h3>제품 판단력</h3>
+            <p>사용자에게 필요한 기능과 기술적으로 가능한 범위를 균형 있게 결정할 수 있습니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>현장 검증력</h3>
+            <p>다이빙 강사와 다이버 네트워크를 통해 초기 사용자 피드백과 실증 운영을 빠르게 수행할 수 있습니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>파트너 설득력</h3>
+            <p>리조트, 다이빙샵, 교육기관, 장비 브랜드가 이해할 수 있는 언어로 서비스를 설명할 수 있습니다.</p>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Founder Profile</span>
+          <span class="page-num">03</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-4">
+        <div class="eyebrow">Why Invest</div>
+        <h2>Divergram은 다이버의 첫 화면을 선점하는 해양 레저 거래 플랫폼입니다</h2>
+        <p class="lead">
+          투자해야 하는 이유는 다이빙 기록 앱 하나를 만드는 것이 아니라, 아직 하나로 연결되지 않은 다이빙 산업의
+          기록, 탐색, 예약, 커머스, 교육, 광고 접점을 하나의 사용자 데이터와 파트너 네트워크로 묶는 일이기 때문입니다.
+        </p>
+
+        <div class="thesis-hero">
+          <strong>다이버가 포인트를 찾고, 리조트를 예약하고, 장비를 구매하고, 강습을 신청하고, 자신의 경험을 공유하는 모든 순간은 아직 하나의 플랫폼으로 연결되어 있지 않습니다.</strong>
+          <p>
+            Divergram은 로그북과 스탬프를 반복 사용의 시작점으로 삼고, 그 위에 리조트 예약, 검색 광고, 쇼핑몰, 강습/교육을 연결합니다.
+            사용자의 기록이 쌓일수록 파트너가 비용을 지불할 이유도 함께 커지는 구조입니다.
+          </p>
+        </div>
+
+        <div class="thesis-grid">
+          <div class="thesis-card" data-icon="IN">
+            <b>1</b>
+            <strong>Digital Entry Point</strong>
+            <span>다이버가 다이빙 전후에 처음 여는 앱이 되는 것을 목표로 합니다.</span>
+          </div>
+          <div class="thesis-card" data-icon="RU">
+            <b>2</b>
+            <strong>Repeat Usage</strong>
+            <span>로그북, 릴스, 스탬프가 단발성 방문이 아닌 반복 사용을 만듭니다.</span>
+          </div>
+          <div class="thesis-card" data-icon="TX">
+            <b>3</b>
+            <strong>Transaction Layer</strong>
+            <span>리조트 예약, 쇼핑몰, 강습/교육 신청으로 거래 수익을 만듭니다.</span>
+          </div>
+          <div class="thesis-card" data-icon="PR">
+            <b>4</b>
+            <strong>Partner Revenue</strong>
+            <span>리조트, 샵, 브랜드, 강사가 광고와 노출 성과에 비용을 지불합니다.</span>
+          </div>
+          <div class="thesis-card" data-icon="SC">
+            <b>5</b>
+            <strong>Scalable Model</strong>
+            <span>한 지역에서 검증한 포인트/리조트 모델을 다른 해양 레저 지역으로 복제합니다.</span>
+          </div>
+        </div>
+
+        <div class="commitment-note">
+          <strong>Founder Commitment</strong>
+          <p>
+            이 사업은 단순히 만들어보고 싶은 앱이 아닙니다. 20년 이상 IT 제품을 만들고, 10년 이상 다이빙 현장에서 다이버와 강사로 활동하며
+            직접 느낀 문제를 해결하려는 사업입니다. Divergram은 대표자가 가장 잘 이해하는 기술과 가장 오래 몸으로 경험한 현장이 만나는 프로젝트이며,
+            그래서 끝까지 실행할 수 있는 이유가 분명합니다.
+          </p>
+        </div>
+
+        <div class="page-footer">
+          <span>Why Invest</span>
+          <span class="page-num">04</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-5">
+        <div class="eyebrow">Executive Summary</div>
+        <h2>다이빙 전후의 모든 경험을 하나의 로그로 연결합니다</h2>
+        <p class="lead">
+          Divergram은 단순 SNS가 아니라 다이버의 활동 흐름을 데이터화하는 서비스입니다.
+          다이빙 포인트, 해양 상태, 장비 로그, 사진과 영상, 버디, 자격증, 공개 범위를 하나의 로그로 연결해
+          사용자의 반복 사용과 파트너 확장을 동시에 만듭니다.
+        </p>
+
+        <div class="diagram-row">
+          <div class="diagram-node" data-icon="DP">
+            <small>Discover</small>
+            <strong>다이빙포인트</strong>
+            <span>지도에서 포인트를 찾고, 입수 위치와 주변 정보를 로그에 연결합니다.</span>
+          </div>
+          <div class="diagram-node" data-icon="WX">
+            <small>Prepare</small>
+            <strong>해양 날씨</strong>
+            <span>파고, 조류, 수온, 시야를 확인해 입수 전 위험도를 판단합니다.</span>
+          </div>
+          <div class="diagram-node" data-icon="BD">
+            <small>Connect</small>
+            <strong>버디</strong>
+            <span>함께한 다이버를 기록하고, 피드와 공유를 통해 커뮤니티 관계를 이어갑니다.</span>
+          </div>
+          <div class="diagram-node" data-icon="RS">
+            <small>Stay</small>
+            <strong>리조트 · 샵</strong>
+            <span>지역 다이빙샵, 리조트, 교육, 체험 상품으로 연결되는 파트너 접점을 만듭니다.</span>
+          </div>
+          <div class="diagram-node" data-icon="LG">
+            <small>Record</small>
+            <strong>DiveLog</strong>
+            <span>수심, 시간, 장비, 사진, 영상, 메모를 하나의 다이빙 기록으로 정리합니다.</span>
+          </div>
+          <div class="diagram-node" data-icon="AI">
+            <small>Sync & Share</small>
+            <strong>장비 연동 · AI 공유</strong>
+            <span>Garmin, Suunto, Shearwater, Bluetooth 로그와 AI 캡션으로 기록 완성도를 높입니다.</span>
+          </div>
+        </div>
+
+        <div class="statement">
+          핵심 가설은 명확합니다. 다이버는 기록을 더 쉽게 남기고 싶고, 입수 전 안전 정보를 한 번에 보고 싶으며,
+          장비 데이터를 자동으로 모으고, 자신의 경험을 보기 좋게 공유하고 싶어 합니다.
+        </div>
+
+        <div class="grid-3">
+          <article class="card card--soft">
+            <h3>사용자 가치</h3>
+            <p>로그 입력 부담을 줄이고, 위치와 날씨, 장비, 사진을 한 번에 관리합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>운영 가치</h3>
+            <p>관리자 웹과 API를 통해 신고, 자격증, 통계, 파트너 정보를 체계적으로 운영합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>사업 가치</h3>
+            <p>광고, 예약 수수료, 검색 노출, 쇼핑몰, 강습 프로그램으로 지속 가능한 모델을 만듭니다.</p>
+          </article>
+        </div>
+
+        <div style="height: 8mm;"></div>
+        <table class="table">
+          <tbody>
+            <tr>
+              <th>서비스 정의</th>
+              <td>다이빙 기록, 해양 안전 정보, 장비 로그, 콘텐츠 공유를 통합하는 다이버 플랫폼</td>
+            </tr>
+            <tr>
+              <th>핵심 고객</th>
+              <td>스쿠버다이버, 프리다이버, 스노클링 사용자, 다이빙샵, 교육기관, 리조트, 장비 브랜드</td>
+            </tr>
+            <tr>
+              <th>사업 방향</th>
+              <td>초기에는 DiveLog와 해양 날씨를 중심으로 반복 사용을 만들고, 이후 장비 연동과 파트너 생태계로 확장</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="page-footer">
+          <span>Executive Summary</span>
+          <span class="page-num">05</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-6">
+        <div class="eyebrow">Market & Target</div>
+        <h2>다이빙 관광, 장비, 교육, 지역 예약이 하나의 디지털 접점으로 이동하고 있습니다</h2>
+        <p class="lead">
+          Divergram의 시장은 단순 앱 시장이 아니라 다이빙 관광, 장비 구매, 교육 프로그램, 지역 리조트 예약이 만나는 영역입니다.
+          사용자가 다이빙 전후에 반복적으로 사용하는 기록/탐색 접점을 확보하면 광고, 예약, 커머스, 교육 수익으로 확장할 수 있습니다.
+        </p>
+
+        <div class="market-stats">
+          <div class="market-stat">
+            <strong>$4.55B</strong>
+            <span>글로벌 다이빙 관광 시장은 2023년 약 45.5억 달러 규모로 추정됩니다.</span>
+          </div>
+          <div class="market-stat">
+            <strong>$8.83B</strong>
+            <span>2030년 약 88.3억 달러까지 성장 전망이 제시되어 있습니다.</span>
+          </div>
+          <div class="market-stat">
+            <strong>9.9%</strong>
+            <span>2024~2030년 연평균 성장률 전망. 체험형 여행과 해양 레저 수요가 성장 배경입니다.</span>
+          </div>
+        </div>
+
+        <div class="market-chart">
+          <div class="chart-panel">
+            <h3>글로벌 다이빙 관광 시장 성장 전망</h3>
+            <div class="bar-chart" aria-label="다이빙 관광 시장 성장 차트">
+              <div class="bar-col">
+                <i style="height: 27mm;"></i>
+                <strong>$4.55B</strong>
+                <span>2023</span>
+              </div>
+              <div class="bar-col">
+                <i style="height: 49mm;"></i>
+                <strong>$8.83B</strong>
+                <span>2030E</span>
+              </div>
+            </div>
+          </div>
+          <div class="chart-panel">
+            <h3>Divergram의 진입 포인트</h3>
+            <ul class="plain-list">
+              <li>관광 시장 성장의 접점은 예약 이전의 탐색, 기록, 커뮤니티에서 시작됩니다.</li>
+              <li>다이버가 반복적으로 남기는 로그와 스탬프가 리조트, 장비, 강습 수익으로 연결됩니다.</li>
+              <li>초기에는 국내 파일럿으로 검증하고, 검증된 포인트/리조트 모델을 해외 인기 지역으로 복제합니다.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>초기 타깃 고객</h3>
+            <ul>
+              <li>다이빙 로그와 사진/영상을 꾸준히 남기고 싶은 스쿠버·프리다이버</li>
+              <li>다이빙포인트, 해양 날씨, 리조트 정보를 한 번에 확인하려는 여행형 다이버</li>
+              <li>강습, 투어, 장비 구매, 리조트 예약을 앱 안에서 연결하고 싶은 신규 다이버</li>
+              <li>디지털 홍보와 예약 전환이 필요한 리조트, 다이빙샵, 강사, 장비 브랜드</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>시장 진입 논리</h3>
+            <ul>
+              <li>기록과 탐색은 사용자가 반복적으로 앱에 들어오는 기본 접점입니다.</li>
+              <li>리조트와 샵은 검색 노출, 예약 문의, 방문 스탬프를 통해 직접적인 효과를 확인할 수 있습니다.</li>
+              <li>커머스와 강습은 다이버의 성장 단계에 맞춰 자연스럽게 연결되는 추가 수익원입니다.</li>
+              <li>초기에는 국내 파일럿으로 검증하고, 이후 인기 해외 포인트와 제휴 리조트로 확장합니다.</li>
+            </ul>
+          </article>
+        </div>
+
+        <p class="caption">
+          출처: Grand View Research Horizon, Global Diving Tourism Market Outlook 2023-2030. 시장 수치는 외부 리포트 기반 참고값이며 실제 사업계획에서는 지역별 검증 수치로 보완합니다.
+        </p>
+
+        <div class="page-footer">
+          <span>Market & Target</span>
+          <span class="page-num">06</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-7">
+        <div class="eyebrow">Problem & Opportunity</div>
+        <h2>현재 다이빙 경험은 기록, 안전, 장비, 공유가 분리되어 있습니다</h2>
+        <p class="lead">
+          다이빙은 준비, 입수, 기록, 공유, 재방문이 이어지는 활동입니다. 하지만 현재 사용자는 여러 앱과 웹사이트를 오가며
+          데이터를 직접 옮기고, 해양 상태를 따로 확인하고, 콘텐츠를 다시 만들어야 합니다.
+        </p>
+
+        <div class="before-after">
+          <div class="before-after__panel is-before">
+            <strong>현재 경험</strong>
+            <ul>
+              <li>로그는 장비 앱, 사진첩, 메모, SNS에 분산됩니다.</li>
+              <li>해양 상태와 위험도는 외부 사이트에서 따로 확인합니다.</li>
+              <li>버디, 리조트, 포인트 정보가 기록과 분리됩니다.</li>
+              <li>여행 후 공유 콘텐츠를 다시 제작해야 합니다.</li>
+            </ul>
+          </div>
+          <div class="before-after__arrow">→</div>
+          <div class="before-after__panel is-after">
+            <strong>Divergram 경험</strong>
+            <ul>
+              <li>다이빙포인트, 날씨, 버디, 장비 로그를 하나로 저장합니다.</li>
+              <li>입수 전 조건과 기록 후 공유가 같은 흐름에 들어옵니다.</li>
+              <li>리조트, 샵, 교육기관이 포인트와 로그에 연결됩니다.</li>
+              <li>AI 요약과 캡션으로 공유 콘텐츠를 바로 만듭니다.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ecosystem-map">
+          <div class="ecosystem-node" data-icon="DV">
+            <strong>다이버</strong>
+            <span>로그 작성, 버디 연결, 공유</span>
+          </div>
+          <div class="ecosystem-core">
+            <strong>Divergram</strong>
+            <span>기록 · 안전 · 포인트 · 파트너</span>
+          </div>
+          <div class="ecosystem-node" data-icon="PT">
+            <strong>다이빙포인트</strong>
+            <span>위치, 리뷰, 사진, 해양 상태</span>
+          </div>
+          <div class="ecosystem-node" data-icon="RS">
+            <strong>리조트 · 샵</strong>
+            <span>탐색, 예약, 교육, 체험 상품</span>
+          </div>
+          <div class="ecosystem-node" data-icon="EQ">
+            <strong>장비 · 자격증</strong>
+            <span>로그 동기화, 인증, 활동 이력</span>
+          </div>
+          <div class="ecosystem-node" data-icon="OP">
+            <strong>운영자</strong>
+            <span>신고, 통계, 파트너 관리</span>
+          </div>
+        </div>
+
+        <div class="statement">
+          Divergram의 기회는 “SNS를 하나 더 만드는 것”이 아니라, 다이빙 전후의 반복 행동을 하나의 표준 흐름으로 만드는 데 있습니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Problem & Opportunity</span>
+          <span class="page-num">07</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-8">
+        <div class="eyebrow">Competitive Position</div>
+        <h2>Divergram은 분산된 다이빙 앱 기능을 하나의 여정으로 결합합니다</h2>
+        <p class="lead">
+          기존 서비스는 로그 작성, SNS 공유, 리조트 검색, 장비 연동, 교육 예약 중 하나의 기능에 집중하는 경우가 많습니다.
+          Divergram은 다이버가 실제로 이동하는 “탐색 → 기록 → 공유 → 예약/구매/교육 → 재방문” 흐름 전체를 연결합니다.
+        </p>
+
+        <table class="competitor-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>일반 로그 앱</th>
+              <th>SNS/릴스 앱</th>
+              <th>예약/여행 플랫폼</th>
+              <th>장비 연동 앱</th>
+              <th>Divergram</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>로그북/Feed</th>
+              <td>강점</td>
+              <td>약함</td>
+              <td>없음</td>
+              <td>장비 중심</td>
+              <td class="is-strong">기록+관계+콘텐츠 통합</td>
+            </tr>
+            <tr>
+              <th>릴스/공유</th>
+              <td>약함</td>
+              <td>강점</td>
+              <td>약함</td>
+              <td>없음</td>
+              <td class="is-strong">다이빙 기록 기반 공유</td>
+            </tr>
+            <tr>
+              <th>포인트/해양 정보</th>
+              <td>일부</td>
+              <td>없음</td>
+              <td>지역 정보 중심</td>
+              <td>없음</td>
+              <td class="is-strong">입수 전 판단 정보 제공</td>
+            </tr>
+            <tr>
+              <th>리조트/샵 연결</th>
+              <td>약함</td>
+              <td>광고성 노출</td>
+              <td>강점</td>
+              <td>없음</td>
+              <td class="is-strong">검색, 예약, 방문 스탬프 연결</td>
+            </tr>
+            <tr>
+              <th>수익화 구조</th>
+              <td>앱 과금 중심</td>
+              <td>광고 중심</td>
+              <td>예약 수수료</td>
+              <td>장비 생태계</td>
+              <td class="is-strong">광고+예약+검색광고+커머스+교육</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="statement">
+          차별화 포인트는 개별 기능의 존재가 아니라, 다이버의 활동 데이터가 리조트, 포인트, 장비, 쇼핑몰, 강습/교육으로 연결되는 구조입니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Competitive Position</span>
+          <span class="page-num">08</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-9">
+        <div class="eyebrow">Product Strategy</div>
+        <h2>Divergram은 다이빙의 전 과정을 하나의 제품 흐름으로 연결합니다</h2>
+        <p class="lead">
+          사용자는 다이빙 전 포인트와 해양 상태를 확인하고, 다이빙 후 장비 로그와 사진을 가져오며,
+          AI 도움을 받아 기록을 정리하고 공유합니다. 이 흐름이 반복될수록 개인 로그와 지역 데이터가 함께 축적됩니다.
+        </p>
+
+        <div class="flow-diagram">
+          <div class="flow-item">
+            <b>1</b>
+            <strong>탐색 · 예약</strong>
+            <span>다이빙포인트, 리조트, 샵, 해양 날씨, 프로그램을 확인합니다.</span>
+          </div>
+          <div class="flow-item">
+            <b>2</b>
+            <strong>기록 · 피드</strong>
+            <span>로그북(Feed)에 다이빙 기록, 버디, 사진, 영상을 정리합니다.</span>
+          </div>
+          <div class="flow-item">
+            <b>3</b>
+            <strong>릴스 · 공유</strong>
+            <span>짧은 영상, AI 캡션, 공유 이미지로 경험을 콘텐츠화합니다.</span>
+          </div>
+          <div class="flow-item">
+            <b>4</b>
+            <strong>보상 · 재방문</strong>
+            <span>스탬프와 뱃지로 다이빙 횟수, 방문, 팔로우 활동을 축적합니다.</span>
+          </div>
+        </div>
+
+        <div class="flow-detail-grid">
+          <div class="flow-detail">
+            <strong>1. 탐색 · 예약</strong>
+            <span>포인트 검색, 해양 날씨, 리조트/샵 상세, 강습 프로그램, 예약 문의 버튼으로 전환을 만듭니다.</span>
+          </div>
+          <div class="flow-detail">
+            <strong>2. 기록 · 피드</strong>
+            <span>수심, 시간, 버디, 사진/영상, 장비, 공개 범위를 하나의 로그 카드로 구조화합니다.</span>
+          </div>
+          <div class="flow-detail">
+            <strong>3. 릴스 · 공유</strong>
+            <span>짧은 영상과 AI 캡션으로 개인 기록을 커뮤니티 콘텐츠와 외부 유입 채널로 전환합니다.</span>
+          </div>
+          <div class="flow-detail">
+            <strong>4. 보상 · 재방문</strong>
+            <span>다이빙 횟수, 리조트 방문, 팔로우, 교육 수료 스탬프로 반복 방문 이유를 만듭니다.</span>
+          </div>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <table class="unit-table">
+          <thead>
+            <tr>
+              <th>수익 항목</th>
+              <th>단가 가정</th>
+              <th>Divergram 적용 방식</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>지역 AD 광고</th>
+              <td>월 50만~300만원</td>
+              <td>피드, 탐색, 포인트 상세, 리조트 화면의 지역/브랜드 광고 상품</td>
+            </tr>
+            <tr>
+              <th>검색 순위 광고</th>
+              <td>파트너당 월 10만~50만원</td>
+              <td>다이빙포인트, 리조트, 샵, 강습 검색 결과 상위 노출</td>
+            </tr>
+            <tr>
+              <th>강습/교육</th>
+              <td>체험 8만~15만원, 오픈워터 45만~80만원, 스페셜티 20만~40만원</td>
+              <td>신청 중개, 자체/제휴 프로그램 운영, 박람회 상담 전환</td>
+            </tr>
+            <tr>
+              <th>쇼핑몰</th>
+              <td>장비 판매 마진 10~25% 가정</td>
+              <td>로그북/교육 단계별 장비 추천, 쿠폰, 스탬프 캠페인 연결</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="height: 5mm;"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>사용자 앱</h3>
+            <p>로그북(Feed), 릴스, 탐색, 리조트, 쇼핑몰, 강습/교육을 중심으로 다이버의 반복 사용 흐름을 제공합니다.</p>
+          </article>
+          <article class="card">
+            <h3>운영 시스템</h3>
+            <p>관리자 웹과 API 서버를 통해 회원, 신고, 포인트, 리조트/샵, 자격증, 광고, 통계, 미디어, 푸시, 연동 상태를 관리합니다.</p>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Product Strategy</span>
+          <span class="page-num">09</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-10">
+        <div class="eyebrow">Service Scope</div>
+        <h2>주요 기능은 기록, 콘텐츠, 탐색, 예약, 구매, 교육으로 구성됩니다</h2>
+        <p class="lead">
+          Divergram은 다이버가 앱을 여는 명확한 이유를 여섯 개의 핵심 메뉴로 만듭니다.
+          다이빙 기록을 남기고, 짧은 콘텐츠로 공유하고, 포인트와 리조트를 찾고, 필요한 상품과 교육까지 연결하는 구조입니다.
+        </p>
+
+        <div class="grid-3">
+          <article class="card card--soft">
+            <span class="card-icon">FD</span>
+            <h3>로그북(Feed)</h3>
+            <p>
+              날짜, 입수/출수 시간, 수심, 수온, 시야, 조류, 장비, 버디, 사진과 영상을 하나의 피드형 기록으로 관리합니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <span class="card-icon">RL</span>
+            <h3>릴스</h3>
+            <p>
+              짧은 다이빙 영상, 포인트 하이라이트, 장비 리뷰, 교육 팁을 공유해 커뮤니티 유입과 체류 시간을 만듭니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <span class="card-icon">EX</span>
+            <h3>탐색</h3>
+            <p>
+              다이빙포인트, 해양 날씨, 리조트, 샵, 리뷰, 입수 위치, 주변 정보를 지도와 검색으로 제공합니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <span class="card-icon">RS</span>
+            <h3>리조트</h3>
+            <p>
+              제휴 리조트와 다이빙샵의 소개, 위치, 예약 문의, 체험 상품, 방문 이력을 앱 안에서 연결합니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <span class="card-icon">SH</span>
+            <h3>쇼핑몰</h3>
+            <p>
+              마스크, 핀, 슈트, 컴퓨터, 액세서리 등 장비 구매와 제휴 상품 추천을 통해 추가 수익 접점을 만듭니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <span class="card-icon">ED</span>
+            <h3>강습/교육</h3>
+            <p>
+              초급, 중급, 스페셜티, 안전 교육, 투어 프로그램을 소개하고 신청으로 연결해 교육 수요를 흡수합니다.
+            </p>
+          </article>
+        </div>
+
+        <div class="statement">
+          제안의 핵심은 메뉴를 많이 넣는 것이 아니라, 다이버가 기록하고 보고 사고 배우는 행동을 하나의 앱 안에서 반복하게 만드는 것입니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Service Scope</span>
+          <span class="page-num">10</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-11">
+        <div class="eyebrow">MVP Scope</div>
+        <h2>초기 출시는 핵심 사용 흐름을 검증하는 범위로 제한합니다</h2>
+        <p class="lead">
+          Divergram은 모든 기능을 한 번에 완성하는 방식이 아니라, 사용자가 반복적으로 돌아오는 핵심 흐름부터 검증합니다.
+          1차 MVP는 로그북, 탐색, 리조트 정보, 스탬프의 기본 루프를 만들고, 이후 커머스와 교육, 장비 연동을 단계적으로 확장합니다.
+        </p>
+
+        <div class="mvp-graphic">
+          <div class="mvp-graphic__node">
+            <strong>반복 사용 루프</strong>
+            <span>로그북 작성, 탐색, 스탬프 달성, 릴스 공유를 통해 매주 다시 들어오는 이유를 만듭니다.</span>
+          </div>
+          <div class="mvp-graphic__node">
+            <strong>파트너 전환 루프</strong>
+            <span>리조트/샵 노출, 예약 문의, 방문 스탬프, 광고 상품 전환 가능성을 검증합니다.</span>
+          </div>
+          <div class="mvp-graphic__node">
+            <strong>수익화 확장 루프</strong>
+            <span>검색 광고, 예약 수수료, 쇼핑몰, 강습/교육, 브랜드 캠페인으로 확장합니다.</span>
+          </div>
+        </div>
+
+        <div class="mvp-lanes">
+          <div class="mvp-lane">
+            <h3>1차 MVP: 반복 사용 검증</h3>
+            <ul>
+              <li>로그북(Feed) 작성, 사진/영상 첨부, 공개 범위 설정</li>
+              <li>다이빙포인트 탐색, 기본 해양 날씨, 리조트/샵 정보</li>
+              <li>첫 다이빙, 10회 다이빙, 첫 팔로우 등 기본 스탬프</li>
+              <li>관리자 회원/콘텐츠/신고/파트너 기본 관리</li>
+            </ul>
+          </div>
+          <div class="mvp-lane">
+            <h3>2차 확장: 수익화 검증</h3>
+            <ul>
+              <li>리조트 예약 문의와 예약당 USD 1 수수료 정산</li>
+              <li>검색 순위 광고와 지역 AD 광고 상품 운영</li>
+              <li>쇼핑몰 제휴 상품, 강습/교육 프로그램 신청</li>
+              <li>릴스 공유, 캠페인 스탬프, 제휴 리조트 방문 스탬프</li>
+            </ul>
+          </div>
+          <div class="mvp-lane">
+            <h3>3차 고도화: 데이터 플랫폼</h3>
+            <ul>
+              <li>Garmin, Suunto, Shearwater, Bluetooth 장비 로그 연동</li>
+              <li>AI 로그 요약, 캡션, 공유 이미지 자동 생성</li>
+              <li>파트너 대시보드, 지역별 성과 리포트, API 확장</li>
+              <li>해외 포인트와 글로벌 리조트 네트워크 확장</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="visual-band">
+          <div class="visual-band__item">
+            <strong>검증 기준</strong>
+            <span>사용자가 로그북을 작성하고, 포인트를 찾고, 스탬프를 달성하며 다시 돌아오는가를 확인합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>수익 기준</strong>
+            <span>파트너가 광고, 검색 노출, 예약 전환, 방문 캠페인에 비용을 지불할 이유를 검증합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>확장 기준</strong>
+            <span>반복 사용률과 파트너 성과가 확인된 뒤 장비 연동과 글로벌 확장을 진행합니다.</span>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <span>MVP Scope</span>
+          <span class="page-num">11</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-12">
+        <h2>초기 30종 스탬프로 사용자가 경험을 모아가는 재미를 만듭니다</h2>
+        <p class="lead">
+          Divergram은 iPhone의 뱃지처럼 사용자의 활동을 눈에 보이는 성취로 전환합니다.
+          초기에는 다이빙 기록, 제휴 리조트 방문, 팔로우, 교육 수료, 릴스 공유, 쇼핑몰/박람회 참여까지 30종 스탬프를 제공해 재방문 동기를 강화합니다.
+        </p>
+
+        <div class="stamp-catalog">
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>D1</b><strong>첫 다이빙</strong><span>Dive</span></div>
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>D10</b><strong>10회 다이빙</strong><span>Dive</span></div>
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>D50</b><strong>50회 다이빙</strong><span>Dive</span></div>
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>D100</b><strong>100회 다이빙</strong><span>Dive</span></div>
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>D200</b><strong>200회 다이빙</strong><span>Dive</span></div>
+          <div class="stamp-mini" style="--mini-color:#1565c0"><b>NT</b><strong>야간 다이빙</strong><span>Special</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>R1</b><strong>첫 리조트 방문</strong><span>Visit</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>R5</b><strong>리조트 5회</strong><span>Visit</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>R10</b><strong>리조트 10회</strong><span>Visit</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>QR</b><strong>샵 체크인</strong><span>Partner</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>TR</b><strong>투어 참가</strong><span>Partner</span></div>
+          <div class="stamp-mini" style="--mini-color:#0f9f9a"><b>RV</b><strong>리뷰 작성</strong><span>Partner</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>F1</b><strong>첫 팔로우</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>FR</b><strong>첫 팔로워</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>BD</b><strong>버디 연결</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>RL</b><strong>릴스 첫 공유</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>LK</b><strong>100 좋아요</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#c85046"><b>CP</b><strong>캡션 공유</strong><span>Social</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>OW</b><strong>오픈워터</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>AD</b><strong>어드밴스드</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>SF</b><strong>안전 교육</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>SP</b><strong>스페셜티</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>EQ</b><strong>장비 체험</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#2e7d55"><b>IC</b><strong>강사 추천</strong><span>Learn</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>EX</b><strong>박람회 방문</strong><span>Event</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>AD</b><strong>광고 캠페인</strong><span>Event</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>SH</b><strong>첫 장비 구매</strong><span>Shop</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>CP</b><strong>쿠폰 사용</strong><span>Shop</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>PT</b><strong>포인트 개척</strong><span>Explore</span></div>
+          <div class="stamp-mini" style="--mini-color:#b78218"><b>GL</b><strong>해외 포인트</strong><span>Explore</span></div>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>사용자 효과</h3>
+            <ul>
+              <li>다이빙 기록이 단순 저장을 넘어 성취 수집 경험으로 바뀝니다.</li>
+              <li>스탬프를 모으기 위해 로그북 작성, 리조트 방문, 릴스 공유가 반복됩니다.</li>
+              <li>초보 다이버도 첫 기록과 첫 팔로워를 통해 앱 안에서 성장감을 느낍니다.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>사업 효과</h3>
+            <ul>
+              <li>제휴 리조트 방문 스탬프는 파트너 예약과 재방문 프로모션으로 연결됩니다.</li>
+              <li>쇼핑몰, 강습/교육, 박람회 이벤트와 연동해 캠페인형 스탬프를 운영할 수 있습니다.</li>
+              <li>스탬프 달성률은 리텐션, 방문 전환, 제휴 성과를 설명하는 지표가 됩니다.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Stamp & Retention</span>
+          <span class="page-num">12</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-13">
+        <div class="eyebrow">Pilot & Operation</div>
+        <h2>실증은 지역 포인트와 실제 사용자 흐름을 중심으로 진행합니다</h2>
+        <p class="lead">
+          초기 실증은 기능 완성도보다 “사용자가 반복해서 쓰는 이유”를 검증하는 데 집중합니다.
+          특정 지역 또는 다이빙샵 네트워크를 기준으로 포인트 정보, 해양 날씨 조회, 로그 작성, 릴스 공유, 스탬프 달성, 파트너 유입을 측정합니다.
+        </p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>파일럿 운영 방식</h3>
+            <ul>
+              <li>1개 시범 지역 또는 다이빙샵 그룹을 선정해 초기 포인트 데이터를 정리합니다.</li>
+              <li>파일럿 사용자에게 로그북 작성, 날씨 조회, 릴스 공유, 스탬프 달성 흐름을 반복 사용하게 합니다.</li>
+              <li>운영자는 관리자 웹에서 신고, 자격증, 콘텐츠, 연동 상태, 기본 통계를 확인합니다.</li>
+              <li>실증 종료 후 사용자 행동, 연동 성공률, 재방문율, 제휴 전환 가능성을 리포트화합니다.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>검증할 핵심 질문</h3>
+            <ul>
+              <li>다이버가 수동 로그 대신 앱 기록을 지속적으로 선택하는가?</li>
+              <li>해양 날씨와 위험도 정보가 입수 전 의사결정에 실제로 사용되는가?</li>
+              <li>장비 로그 연동이 기록 누락과 입력 피로를 줄이는가?</li>
+              <li>릴스와 스탬프가 신규 사용자 유입, 재방문, 파트너 노출에 기여하는가?</li>
+            </ul>
+          </article>
+        </div>
+
+        <div style="height: 6mm;"></div>
+        <div class="grid-3">
+          <article class="card card--soft">
+            <h3>측정 지표</h3>
+            <p>주간 활성 사용자, 로그 작성 수, 릴스 공유 수, 스탬프 달성률, 리조트 방문 전환을 우선 측정합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>운영 산출물</h3>
+            <p>파일럿 운영 보고서, 사용자 피드백, 지역 포인트 데이터, 기능 개선 목록, 파트너 제휴 제안서를 산출합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>확장 기준</h3>
+            <p>반복 사용률과 연동 안정성이 확인되면 지역 확대, 교육기관 제휴, 장비 브랜드 협력으로 확장합니다.</p>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Pilot & Operation</span>
+          <span class="page-num">13</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-14">
+        <div class="eyebrow">Year 1 KPI</div>
+        <h2>1년차 목표는 사용자 반복 사용과 파트너 전환 가능성을 증명하는 것입니다</h2>
+        <p class="lead">
+          초기 성과는 매출 규모보다 “다이버가 실제로 반복 사용하고, 파트너가 비용을 지불할 수 있는가”를 검증하는 데 집중합니다.
+          아래 목표는 제출용 기본 가정이며, 파일럿 지역과 사업비 규모에 따라 조정할 수 있습니다.
+        </p>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <strong>3,000명</strong>
+            <span>1년차 누적 가입자 목표. 강사 네트워크, 박람회, 리조트 제휴를 통해 확보합니다.</span>
+          </div>
+          <div class="kpi-card">
+            <strong>1,000 MAU</strong>
+            <span>월간 활성 사용자 목표. 로그북, 릴스, 스탬프를 반복 사용 지표로 봅니다.</span>
+          </div>
+          <div class="kpi-card">
+            <strong>10,000건</strong>
+            <span>누적 로그북 작성 목표. 포인트, 버디, 사진/영상 데이터를 함께 축적합니다.</span>
+          </div>
+          <div class="kpi-card">
+            <strong>20곳</strong>
+            <span>제휴 리조트/샵 목표. 검색 노출, 방문 스탬프, 예약 문의를 함께 검증합니다.</span>
+          </div>
+          <div class="kpi-card">
+            <strong>5,000회</strong>
+            <span>다이빙포인트와 해양 날씨 조회 목표. 탐색 기능의 실사용성을 확인합니다.</span>
+          </div>
+          <div class="kpi-card">
+            <strong>300건</strong>
+            <span>예약 문의, 강습 신청, 쇼핑몰 전환 등 파트너 전환 행동 목표입니다.</span>
+          </div>
+        </div>
+
+        <div class="kpi-formula">
+          <div class="formula-card">
+            <strong>가입자 3,000명</strong>
+            <span>강사/샵 네트워크 20곳 × 월 30명 유입 × 5개월 + 박람회/AD 유입 1,000명 기준.</span>
+          </div>
+          <div class="formula-card">
+            <strong>1,000 MAU</strong>
+            <span>누적 가입자 3,000명 중 월 30~35%가 로그북, 탐색, 스탬프를 재사용한다는 보수적 가정.</span>
+          </div>
+          <div class="formula-card">
+            <strong>로그 10,000건</strong>
+            <span>활성 사용자 1,000명 × 월 평균 1건 로그 × 10개월 운영 기준.</span>
+          </div>
+          <div class="formula-card">
+            <strong>제휴 20곳</strong>
+            <span>파일럿 지역 5곳 + 국내 주요 다이빙 지역 3권역 × 5곳 파트너 확보 기준.</span>
+          </div>
+          <div class="formula-card">
+            <strong>조회 5,000회</strong>
+            <span>MAU 1,000명 × 월 평균 5회 포인트/날씨 조회 기준.</span>
+          </div>
+          <div class="formula-card">
+            <strong>전환 300건</strong>
+            <span>예약/강습/쇼핑 문의 5,000회 노출 중 6% 전환 행동 기준.</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>파트너 확보 계획</h3>
+            <ul>
+              <li>파일럿 지역 다이빙샵 5곳과 초기 운영 협의</li>
+              <li>제휴 리조트 10~20곳의 기본 프로필과 방문 스탬프 구성</li>
+              <li>강사 네트워크를 통한 교육/체험 프로그램 등록</li>
+              <li>장비 브랜드 또는 쇼핑몰 제휴 상품 30개 이상 테스트</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>보고 산출물</h3>
+            <ul>
+              <li>월간 사용자 행동 리포트와 리텐션 지표</li>
+              <li>제휴 파트너별 노출, 클릭, 방문, 예약 문의 성과</li>
+              <li>스탬프 캠페인 참여율과 재방문 영향 분석</li>
+              <li>2년차 수익화 전환을 위한 광고/예약 상품 제안서</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Year 1 KPI</span>
+          <span class="page-num">14</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-15">
+        <h2>실제 앱 화면으로 확인하는 Divergram의 사용자 경험</h2>
+        <p class="lead">
+          Divergram은 다이빙을 처음 시작하는 사용자도 쉽게 진입할 수 있도록 온보딩, 로그인, 핵심 가치 안내 화면을 제공합니다.
+          제안 단계에서는 앱의 완성도와 브랜드 일관성을 보여주는 실제 스토어용 스크린샷을 함께 제시합니다.
+        </p>
+
+        <div class="screen-gallery">
+          <figure class="phone-shot">
+            <img src="./assets/proposal/04_splash.png" alt="Divergram 스플래시 화면" />
+            <figcaption class="screen-caption">
+              <strong>Brand Entry</strong>
+              첫 진입에서 서비스 정체성과 신뢰감을 전달합니다.
+            </figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="./assets/proposal/01_login.png" alt="Divergram 로그인 화면" />
+            <figcaption class="screen-caption">
+              <strong>Secure Login</strong>
+              사용자 계정 기반의 개인 로그 관리 흐름을 시작합니다.
+            </figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="./assets/proposal/02_tutorial_step1.png" alt="Divergram 튜토리얼 화면 1" />
+            <figcaption class="screen-caption">
+              <strong>Dive Log</strong>
+              다이빙 기록과 커뮤니티 경험을 자연스럽게 안내합니다.
+            </figcaption>
+          </figure>
+          <figure class="phone-shot">
+            <img src="./assets/proposal/03_tutorial_step3.png" alt="Divergram 튜토리얼 화면 3" />
+            <figcaption class="screen-caption">
+              <strong>Connected Journey</strong>
+              포인트, 기록, 공유로 이어지는 서비스 확장성을 보여줍니다.
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <div class="statement">
+          스크린샷은 단순 장식이 아니라, 심사자와 파트너가 “실제로 구현 중인 서비스”를 직관적으로 이해하게 만드는 증빙 자료입니다.
+          이후 DiveLog, 해양 날씨, 장비 연동 화면이 완성될수록 이 페이지는 제품 실증 자료로 확장됩니다.
+        </div>
+
+        <div class="page-footer">
+          <span>App Screens</span>
+          <span class="page-num">15</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-16">
+        <div class="eyebrow">Core Screen Mockups</div>
+        <h2>핵심 기능 화면은 로그북, 탐색, 리조트, 커머스, 교육, 스탬프로 확장됩니다</h2>
+        <p class="lead">
+          현재 스크린샷은 브랜드와 온보딩 중심의 구현 화면입니다. 다음 단계에서는 실제 반복 사용과 수익화에 직접 연결되는
+          핵심 화면을 아래와 같은 구조로 확장합니다.
+        </p>
+
+        <div class="mock-grid">
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>로그북(Feed)</strong>
+            <p>다이빙 시간, 수심, 버디, 사진/영상, 포인트, 공개 범위를 카드형 피드로 보여줍니다.</p>
+            <span class="mock-pill">Dive #24</span>
+            <span class="mock-pill">Buddy 2</span>
+            <span class="mock-pill">Stamp</span>
+          </div>
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>탐색</strong>
+            <p>지도 기반 포인트, 해양 날씨, 리뷰, 주변 리조트와 샵 정보를 한 화면에서 탐색합니다.</p>
+            <span class="mock-pill">Point</span>
+            <span class="mock-pill">Weather</span>
+            <span class="mock-pill">Review</span>
+          </div>
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>리조트</strong>
+            <p>제휴 리조트 소개, 예약 문의, 방문 스탬프, 프로그램 안내를 파트너 화면으로 구성합니다.</p>
+            <span class="mock-pill">Booking</span>
+            <span class="mock-pill">$1 Fee</span>
+            <span class="mock-pill">Visit</span>
+          </div>
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>쇼핑몰</strong>
+            <p>마스크, 핀, 슈트, 컴퓨터, 액세서리 등 다이버 성장 단계에 맞춘 상품을 추천합니다.</p>
+            <span class="mock-pill">Gear</span>
+            <span class="mock-pill">Margin</span>
+            <span class="mock-pill">Coupon</span>
+          </div>
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>강습/교육</strong>
+            <p>초급, 중급, 스페셜티, 안전 교육, 투어 프로그램을 검색하고 신청 흐름으로 연결합니다.</p>
+            <span class="mock-pill">Course</span>
+            <span class="mock-pill">Instructor</span>
+            <span class="mock-pill">Apply</span>
+          </div>
+          <div class="mock-screen">
+            <div class="mock-screen__bar"><span></span><span></span><span></span></div>
+            <strong>스탬프</strong>
+            <p>첫 다이빙, 10회 다이빙, 제휴 리조트 방문, 첫 팔로워 등 성취를 수집합니다.</p>
+            <span class="mock-pill">Dive</span>
+            <span class="mock-pill">Visit</span>
+            <span class="mock-pill">Social</span>
+          </div>
+        </div>
+
+        <div class="statement">
+          이 페이지는 실제 개발 화면의 기획 방향을 보여주는 목업입니다. 앱 개발이 진행되면 이 영역은 실제 캡처 이미지로 교체해 제출 신뢰도를 높일 수 있습니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Core Screen Mockups</span>
+          <span class="page-num">16</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-17">
+        <h2>차별화는 기능 개수가 아니라, 다이빙 데이터가 연결되는 방식입니다</h2>
+        <p class="lead">
+          일반 커뮤니티 서비스는 콘텐츠 소비에 집중합니다. Divergram은 콘텐츠 이전에 다이빙 기록과 안전 정보를 구조화합니다.
+          사용자의 로그가 쌓일수록 개인 이력, 포인트 정보, 지역 연결, 파트너 비즈니스가 함께 커집니다.
+        </p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>차별화 포인트</h3>
+            <ul>
+              <li>다이빙 포인트, 해양 날씨, 장비 로그, 사진, 버디 정보를 하나의 기록으로 통합합니다.</li>
+              <li>위험도와 추천 시간대를 사용자에게 이해 가능한 문장으로 제공합니다.</li>
+              <li>외부 API와 BLE 연동을 통해 수동 입력 부담을 줄입니다.</li>
+              <li>기록을 공유 가능한 이미지와 캡션으로 전환해 자연스러운 유입을 만듭니다.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>기대 효과</h3>
+            <ul>
+              <li>사용자: 기록 편의성, 안전 판단, 콘텐츠 공유 경험 개선</li>
+              <li>지역: 다이빙 포인트, 샵, 리조트, 교육기관 노출 확대</li>
+              <li>산업: 장비 브랜드와 교육기관의 디지털 접점 확보</li>
+              <li>운영: 신고, 정책 동의, 자격증, 통계 기반 신뢰도 강화</li>
+            </ul>
+          </article>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <table class="table">
+          <tbody>
+            <tr>
+              <th>안전성</th>
+              <td>해양 날씨, 조류, 수온, 시야, 파고 정보를 기반으로 보수적인 위험도와 주의 문구를 제공합니다.</td>
+            </tr>
+            <tr>
+              <th>지속 사용성</th>
+              <td>기록 자동화와 공유 콘텐츠 생성을 통해 사용자가 다이빙 후 다시 앱으로 돌아오는 이유를 만듭니다.</td>
+            </tr>
+            <tr>
+              <th>확장성</th>
+              <td>앱, 관리자, 공개 웹, API가 분리되어 지역, 파트너, 장비, 교육 영역으로 단계 확장이 가능합니다.</td>
+            </tr>
+            <tr>
+              <th>신뢰성</th>
+              <td>정책 동의, 신고, 계정 삭제, 알림 설정, 연동 실패 처리 등 운영에 필요한 기본 흐름을 설계합니다.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="page-footer">
+          <span>Differentiation & Impact</span>
+          <span class="page-num">17</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-18">
+        <div class="eyebrow">Business Model</div>
+        <h2>수익은 광고, 예약 연결, 검색 노출, 쇼핑몰, 강습 프로그램에서 발생합니다</h2>
+        <p class="lead">
+          Divergram은 사용자에게 결제를 요구하는 방식보다, 다이버의 반복 사용과 지역 파트너 연결을 기반으로 수익을 만듭니다.
+          앱 사용자는 무료로 진입하고, 리조트·샵·교육·장비·여행 파트너가 실제 노출과 예약 성과에 따라 비용을 지불하는 구조입니다.
+        </p>
+
+        <div class="grid-3">
+          <article class="card card--soft">
+            <h3>AD 광고</h3>
+            <p>피드, 포인트 상세, 날씨 화면, 리조트/샵 탐색 화면에 다이빙 관련 브랜드와 지역 광고를 노출합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>예약 연결 수수료</h3>
+            <p>리조트 예약 또는 체험 프로그램 예약 발생 시 건당 USD 1를 기본 수수료로 설정합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>검색 순위 광고</h3>
+            <p>다이빙포인트, 리조트, 샵, 강습 검색 결과에서 상위 노출 상품을 월 단위 광고 상품으로 운영합니다.</p>
+          </article>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>핵심 성장 전략</h3>
+            <ul>
+              <li>초기: DiveLog와 해양 날씨 중심의 MVP 안정화</li>
+              <li>중기: 리조트 예약, 검색 순위 광고, 지역 AD 광고 상품 출시</li>
+              <li>확장: 쇼핑몰 운영과 장비/투어/보험/교육 제휴 확대</li>
+              <li>고도화: 강습 프로그램, 스포츠 박람회 홍보, 파트너 대시보드 제공</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>성과 지표</h3>
+            <ul>
+              <li>주간 활성 사용자와 재방문율</li>
+              <li>광고 노출 수, 클릭률, 리조트 예약 전환 수</li>
+              <li>검색 순위 광고 계약 수와 월 반복 매출</li>
+              <li>쇼핑몰 거래액, 강습 프로그램 신청 수, 스탬프 캠페인 참여율, 제휴 파트너 수</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="statement">
+          사업화의 핵심은 사용자를 과금하는 것이 아니라, 다이버가 자주 찾는 접점에 리조트, 샵, 장비, 강습, 여행 상품을 자연스럽게 연결하는 것입니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Business Model</span>
+          <span class="page-num">18</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-19">
+        <div class="eyebrow">Revenue & Cost Structure</div>
+        <h2>수익구조는 광고, 예약, 검색 노출, 커머스, 강습 프로그램으로 구성됩니다</h2>
+        <p class="lead">
+          아래 수치는 실제 계약 전 제출용 기본 가정안입니다. 광고 단가, 예약량, 쇼핑몰 거래액, 강습 프로그램 판매량에 따라
+          매출은 조정되며, 초기에는 고정비를 낮추고 파트너 확보와 트래픽 확대에 집중합니다.
+        </p>
+
+        <div class="finance-grid">
+          <article class="card">
+            <h3>수익구조</h3>
+            <table class="finance-table">
+              <tbody>
+                <tr>
+                  <th>AD 광고</th>
+                  <td>피드/포인트/날씨/리조트 화면 광고. 초기 월 300만~800만원, 3년차 월 2,000만원 이상 목표.</td>
+                </tr>
+                <tr>
+                  <th>예약 수수료</th>
+                  <td>리조트/체험 예약 1건당 USD 1. 월 5,000건 기준 약 650만원 수준 매출 가정.</td>
+                </tr>
+                <tr>
+                  <th>검색 순위 광고</th>
+                  <td>리조트, 샵, 강습, 포인트 상위 노출 상품. 파트너당 월 10만~50만원 광고 상품 운영.</td>
+                </tr>
+                <tr>
+                  <th>쇼핑몰/강습</th>
+                  <td>장비 쇼핑몰 판매 마진, 제휴 상품 수수료, 자체/제휴 강습 프로그램 판매 수익, 스탬프 캠페인 제휴.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+          <article class="card">
+            <h3>예상 지출비용</h3>
+            <table class="finance-table">
+              <tbody>
+                <tr>
+                  <th>개발 인건비</th>
+                  <td>월 1,800만~2,800만원. 앱/API/관리자/연동/QA 개발 인력 기준.</td>
+                </tr>
+                <tr>
+                  <th>클라우드/운영</th>
+                  <td>월 300만~700만원. 서버, DB, 미디어 저장, 지도/날씨 API, 모니터링 포함.</td>
+                </tr>
+                <tr>
+                  <th>실증/마케팅</th>
+                  <td>월 500만~1,500만원. 파일럿, 콘텐츠 제작, 광고 집행, 파트너 영업 포함.</td>
+                </tr>
+                <tr>
+                  <th>법무/정책</th>
+                  <td>월 100만~300만원. 개인정보, 위치정보, 약관, 안전 고지, 회계/계약 검토 포함.</td>
+                </tr>
+                <tr>
+                  <th>합계</th>
+                  <td>초기 월 2,700만~5,300만원, 연 3.2억~6.4억원 수준의 운영비 가정.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <div class="visual-band">
+          <div class="visual-band__item">
+            <strong>Traffic</strong>
+            <span>로그북, 릴스, 탐색, 스탬프가 반복 방문과 광고 노출을 만듭니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>Transaction</strong>
+            <span>리조트 예약, 쇼핑몰, 강습/교육 신청이 거래 수익으로 연결됩니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>Partner</strong>
+            <span>검색 순위 광고와 캠페인 스탬프로 제휴 파트너의 참여 이유를 만듭니다.</span>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <span>Revenue & Cost Structure</span>
+          <span class="page-num">19</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-20">
+        <div class="eyebrow">Revenue Assumptions</div>
+        <h2>수익 숫자는 트래픽, 예약 전환, 파트너 광고 단가를 기준으로 검증합니다</h2>
+        <p class="lead">
+          Divergram의 매출 추정은 사용자를 직접 과금하는 방식이 아니라, 다이버의 반복 사용이 만든 노출과 전환을 파트너 수익으로 연결하는 구조입니다.
+          아래 산식은 제출용 기본 가정이며, 파일럿 운영 결과에 따라 보수적으로 조정합니다.
+        </p>
+
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>수익원</th>
+              <th>기본 산식</th>
+              <th>1년차 검증 기준</th>
+              <th>확장 조건</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>AD 광고</th>
+              <td>월간 노출 수 × CPM/CPC 광고 단가</td>
+              <td>로그북, 릴스, 탐색 화면의 광고 노출과 클릭률 측정</td>
+              <td>MAU와 페이지뷰 증가, 브랜드 광고주 확보</td>
+            </tr>
+            <tr>
+              <th>예약 수수료</th>
+              <td>리조트/체험 예약 건수 × USD 1</td>
+              <td>월 예약 문의 300건 이상, 실제 예약 전환율 측정</td>
+              <td>제휴 리조트 50곳 이상, 인기 포인트별 예약 흐름 확보</td>
+            </tr>
+            <tr>
+              <th>검색 순위 광고</th>
+              <td>파트너 수 × 월 10만~50만원 광고 상품</td>
+              <td>제휴 리조트/샵 20곳 중 광고 상품 전환 의향 확인</td>
+              <td>파트너 성과 리포트 제공과 지역별 슬롯 상품화</td>
+            </tr>
+            <tr>
+              <th>쇼핑몰</th>
+              <td>거래액 × 판매 마진 또는 제휴 수수료</td>
+              <td>장비 카테고리별 클릭, 장바구니, 구매 전환 추적</td>
+              <td>로그북/강습 단계별 장비 추천과 쿠폰 캠페인</td>
+            </tr>
+            <tr>
+              <th>강습/교육</th>
+              <td>교육 신청 건수 × 중개/운영 마진</td>
+              <td>초급/안전/스페셜티 과정 신청 수와 상담 전환 측정</td>
+              <td>강사 네트워크, 교육기관 제휴, 박람회 현장 상담 확대</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="visual-band">
+          <div class="visual-band__item">
+            <strong>보수적 추정</strong>
+            <span>초기에는 광고 단가보다 사용자 행동과 파트너 전환 의향을 우선 검증합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>측정 가능성</strong>
+            <span>노출, 클릭, 예약 문의, 방문 스탬프, 구매/교육 신청을 관리자 리포트로 집계합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>확장 가능성</strong>
+            <span>파일럿 지역에서 검증한 산식을 다른 다이빙 포인트와 리조트로 복제합니다.</span>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <span>Revenue Assumptions</span>
+          <span class="page-num">20</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-21">
+        <h2>손익분기점은 광고 매출과 예약 수수료가 고정비를 넘는 시점입니다</h2>
+        <p class="lead">
+          아래는 실제 매출 확정치가 아니라 사업계획 수립을 위한 기본 시나리오입니다.
+          초기 1년은 제품 안정화와 실증에 집중하고, 2년차부터 AD 광고, 리조트 예약 수수료, 검색 순위 광고, 쇼핑몰, 강습 프로그램으로
+          고정비를 흡수하는 구조를 목표로 합니다.
+        </p>
+
+        <div class="bep-box">
+          <div class="bep-item">
+            <strong>월 고정비 가정</strong>
+            <span>초기 월 2,700만~5,300만원, 안정화 후 월 4,000만~7,000만원 범위로 관리</span>
+          </div>
+          <div class="bep-item">
+            <strong>BEP 목표</strong>
+            <span>월 광고 2,000만원 + 예약 1만건 + 검색광고 50곳 + 쇼핑/강습 매출 확보</span>
+          </div>
+          <div class="bep-item">
+            <strong>예상 시점</strong>
+            <span>보수적 기준 3년차 후반, 빠른 파트너 확보 시 2년차 후반 손익분기 가능</span>
+          </div>
+        </div>
+
+        <div class="visual-band">
+          <div class="visual-band__item">
+            <strong>1단계: 사용성</strong>
+            <span>무료 진입, 로그북 작성, 릴스 공유, 스탬프 달성으로 체류 지표를 확보합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>2단계: 전환</strong>
+            <span>리조트 예약, 쇼핑몰 구매, 강습 신청으로 파트너 거래를 검증합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>3단계: 손익</strong>
+            <span>광고와 예약 수수료, 검색 광고, 커머스 마진이 고정비를 초과하는 구조를 만듭니다.</span>
+          </div>
+        </div>
+
+        <table class="finance-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>1년차</th>
+              <th>2년차</th>
+              <th>3년차</th>
+              <th>5년차</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>핵심 목표</th>
+              <td>MVP/파일럿</td>
+              <td>광고/예약 수익화</td>
+              <td>BEP 접근</td>
+              <td>확장 수익화</td>
+            </tr>
+            <tr>
+              <th>주요 수익</th>
+              <td>지원금, 파일럿, 초기 제휴</td>
+              <td>AD 광고, 예약 수수료, 검색광고</td>
+              <td>쇼핑몰, 강습, 브랜드 광고</td>
+              <td>글로벌 리조트, 커머스, 박람회 제휴</td>
+            </tr>
+            <tr>
+              <th>비용 관리</th>
+              <td>개발 중심</td>
+              <td>운영/마케팅 확대</td>
+              <td>서버/CS/제휴 운영 최적화</td>
+              <td>지역별 조직/파트너 비용</td>
+            </tr>
+            <tr>
+              <th>손익 관점</th>
+              <td>투자/지원 필요</td>
+              <td>매출 검증</td>
+              <td>손익분기 목표</td>
+              <td>영업이익 구조화</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="caption">실제 BEP는 광고 단가, 예약 전환율, 쇼핑몰 마진, 강습 프로그램 판매량, 클라우드/API 비용에 따라 조정됩니다.</p>
+
+        <div class="page-footer">
+          <span>Break-even Scenario</span>
+          <span class="page-num">21</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-22">
+        <div class="eyebrow">Long-term Roadmap</div>
+        <h2>1년차 검증에서 10년차 해양 레저 플랫폼 확장까지 단계적으로 성장합니다</h2>
+        <p class="lead">
+          Divergram의 발전 방향은 기능 출시 순서가 아니라 시장 신뢰를 쌓는 순서로 설계합니다.
+          초기에는 기록과 안전 정보의 반복 사용을 만들고, 이후 버디, 포인트, 리조트, 장비, 교육, 여행 영역을 연결합니다.
+        </p>
+
+        <div class="year-roadmap">
+          <div class="year-step">
+            <strong>1년차</strong>
+            <h3>MVP와 파일럿</h3>
+            <p>DiveLog, 해양 날씨, 앱 온보딩, 초기 포인트 데이터, 파일럿 사용자 검증을 완료합니다.</p>
+          </div>
+          <div class="year-step">
+            <strong>2년차</strong>
+            <h3>광고와 예약 수익화</h3>
+            <p>AD 광고, 리조트 예약당 USD 1 수수료, 검색 순위 광고, 버디 기능, 장비 연동을 검증합니다.</p>
+          </div>
+          <div class="year-step">
+            <strong>3년차</strong>
+            <h3>손익분기 접근</h3>
+            <p>파트너 50곳, 월 예약 1만건, 광고 매출, 쇼핑몰과 강습 프로그램을 통해 손익분기점을 목표로 합니다.</p>
+          </div>
+          <div class="year-step">
+            <strong>5년차</strong>
+            <h3>지역 확장</h3>
+            <p>국내 주요 다이빙 지역과 해외 인기 포인트로 확장하고, 예약/교육/장비 생태계를 강화합니다.</p>
+          </div>
+          <div class="year-step">
+            <strong>10년차</strong>
+            <h3>글로벌 플랫폼</h3>
+            <p>글로벌 다이버 로그, 포인트 데이터, 장비 연동, 리조트 네트워크를 연결하는 해양 레저 플랫폼으로 확장합니다.</p>
+          </div>
+        </div>
+
+        <div class="statement">
+          장기적으로 Divergram은 “다이빙 기록 앱”에서 출발해 다이버, 버디, 리조트, 다이빙포인트, 장비, 교육기관을 연결하는
+          해양 레저 운영 인프라로 성장하는 것을 목표로 합니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Long-term Roadmap</span>
+          <span class="page-num">22</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-23">
+        <div class="eyebrow">Promotion Strategy</div>
+        <h2>홍보 전략은 현장 접점, 다이버 커뮤니티, 파트너 채널을 함께 활용합니다</h2>
+        <p class="lead">
+          Divergram은 온라인 광고만으로 성장하기보다 실제 다이버가 모이는 현장과 커뮤니티를 함께 공략해야 합니다.
+          스포츠 박람회, 다이빙 엑스포, 리조트 제휴, 강습 프로그램, 장비 브랜드 협업을 통해 서비스 신뢰와 초기 유입을 확보합니다.
+        </p>
+
+        <div class="grid-3">
+          <article class="card card--soft">
+            <h3>스포츠 박람회/다이빙 엑스포</h3>
+            <p>부스 운영, 앱 시연, 리조트 예약 이벤트, 강습 상담, 장비 브랜드 공동 프로모션으로 초기 인지도를 확보합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>리조트·샵 현장 제휴</h3>
+            <p>다이빙샵 체크인 QR, 포인트별 날씨 안내, 로그 작성 이벤트, 예약 리워드를 통해 현장 사용을 유도합니다.</p>
+          </article>
+          <article class="card card--soft">
+            <h3>강습 프로그램 연계</h3>
+            <p>초급/중급 교육, 투어 프로그램, 안전 교육, 장비 체험 클래스를 앱 안에서 소개하고 신청으로 연결합니다.</p>
+          </article>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <div class="grid-2">
+          <article class="card">
+            <h3>온라인 홍보</h3>
+            <ul>
+              <li>Instagram/Reels 기반 로그 공유 캠페인</li>
+              <li>지역 다이빙포인트별 SEO 콘텐츠와 공개 웹 유입</li>
+              <li>강사와 인플루언서의 앱 사용 후기 및 공동 이벤트</li>
+              <li>장비 로그 연동, 해양 날씨, 버디 찾기 기능 중심의 숏폼 콘텐츠</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>오프라인 홍보</h3>
+            <ul>
+              <li>박람회 부스, 체험존, QR 설치, 현장 예약 프로모션</li>
+              <li>다이빙샵/리조트 카운터 포스터와 제휴 쿠폰</li>
+              <li>자격증 과정 수강생 대상 로그북 사용 캠페인</li>
+              <li>지역 축제, 해양레저 행사, 관광기관 공동 홍보</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Promotion Strategy</span>
+          <span class="page-num">23</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-24">
+        <div class="eyebrow">Promotion Budget</div>
+        <h2>홍보 예산은 다이빙단체, 박람회, AD 광고, 현장 제휴를 함께 집행합니다</h2>
+        <p class="lead">
+          초기 홍보는 단순 온라인 광고보다 신뢰 가능한 다이빙 접점에서 시작해야 합니다.
+          다이빙단체와 강사 네트워크, 박람회 부스, 리조트/샵 현장 캠페인, 온라인 AD 광고를 함께 운영해 가입자와 파트너를 동시에 확보합니다.
+        </p>
+
+        <div class="promo-budget">
+          <article class="card">
+            <h3>1년차 홍보 예산 기본안</h3>
+            <div class="budget-stack">
+              <div class="budget-chip">
+                <strong><span>다이빙단체/강사 네트워크</span><span>1,200만~2,000만원</span></strong>
+                <span>강사 세미나, 교육기관 설명회, 초기 앰배서더 운영, 수강생 로그북 캠페인</span>
+              </div>
+              <div class="budget-chip">
+                <strong><span>박람회/다이빙 엑스포</span><span>1,500만~3,000만원</span></strong>
+                <span>부스, 시연 장비, 리플렛, 현장 QR 가입, 리조트 예약 이벤트, 강습 상담</span>
+              </div>
+              <div class="budget-chip">
+                <strong><span>AD 광고/콘텐츠</span><span>2,000만~4,000만원</span></strong>
+                <span>Instagram/Reels, 검색 광고, 지역 포인트 콘텐츠, 리타겟팅 광고 집행</span>
+              </div>
+              <div class="budget-chip">
+                <strong><span>리조트/샵 현장 제휴</span><span>800만~1,500만원</span></strong>
+                <span>포스터, QR 스탠드, 체크인 스탬프, 방문 쿠폰, 파일럿 운영 물품</span>
+              </div>
+            </div>
+          </article>
+          <article class="card">
+            <h3>채널별 목표</h3>
+            <table class="unit-table">
+              <tbody>
+                <tr>
+                  <th>다이빙단체</th>
+                  <td>강사/교육기관 10~20곳 협력, 수강생 로그북 사용 유도</td>
+                </tr>
+                <tr>
+                  <th>박람회</th>
+                  <td>현장 가입 300~700명, 리조트/강습 상담 리드 100건 이상 확보</td>
+                </tr>
+                <tr>
+                  <th>AD 광고</th>
+                  <td>지역 포인트, 장비, 강습 키워드 기반 가입자 1,000명 이상 유입</td>
+                </tr>
+                <tr>
+                  <th>파트너 제휴</th>
+                  <td>제휴 리조트/샵 20곳 확보, 방문 스탬프와 예약 문의 전환 측정</td>
+                </tr>
+                <tr>
+                  <th>성과 보고</th>
+                  <td>채널별 CAC, 가입 전환율, 예약 문의, 스탬프 달성률을 월간 리포트화</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <div class="statement">
+          1년차 홍보 예산은 총 5,500만~1억500만원 범위로 설계하며, 사업비 규모에 따라 박람회와 AD 광고 비중을 조정합니다.
+        </div>
+
+        <div class="page-footer">
+          <span>Promotion Budget</span>
+          <span class="page-num">24</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-25">
+        <div class="eyebrow">Execution Plan</div>
+        <h2>기술 개발, 실증 운영, 파트너 확장을 단계적으로 추진합니다</h2>
+        <p class="lead">
+          Divergram은 한 번에 모든 기능을 출시하는 방식보다 핵심 사용 흐름을 먼저 안정화하고,
+          실사용 데이터를 기반으로 장비 연동과 파트너 기능을 넓히는 방식이 적합합니다.
+        </p>
+
+        <div class="roadmap">
+          <div class="roadmap-item">
+            <strong>Phase 1. 핵심 기록</strong>
+            <p>DiveLog 관리, 상세 편집, 미디어, 공개 범위, 설정 메뉴, 기본 알림을 완성합니다.</p>
+          </div>
+          <div class="roadmap-item">
+            <strong>Phase 2. 안전 정보</strong>
+            <p>지도, 포인트, Stormglass 해양 날씨, 위험도, 추천 시간대, 캐시/fallback을 고도화합니다.</p>
+          </div>
+          <div class="roadmap-item">
+            <strong>Phase 3. 장비 연동</strong>
+            <p>Garmin, Suunto, Shearwater Cloud와 BLE 기반 다이빙 컴퓨터 동기화를 안정화합니다.</p>
+          </div>
+          <div class="roadmap-item">
+            <strong>Phase 4. 확산</strong>
+            <p>AI 요약, 캡션, 공유 이미지, 파트너 대시보드, 지역 실증 리포트로 확장합니다.</p>
+          </div>
+        </div>
+
+        <div class="visual-band">
+          <div class="visual-band__item">
+            <strong>Build</strong>
+            <span>로그북, 탐색, 리조트, 쇼핑몰, 강습/교육의 핵심 흐름을 안정화합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>Measure</strong>
+            <span>릴스 공유, 스탬프 달성, 예약 전환, 파트너 광고 성과를 측정합니다.</span>
+          </div>
+          <div class="visual-band__item">
+            <strong>Scale</strong>
+            <span>검증된 지역과 파트너 모델을 국내외 다이빙 포인트로 확장합니다.</span>
+          </div>
+        </div>
+
+        <div class="page-footer">
+          <span>Execution Plan</span>
+          <span class="page-num">25</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-26">
+        <div class="eyebrow">Funding Plan</div>
+        <h2>재원은 제품 완성도, 실증 성과, 파트너 확산에 집중 투입합니다</h2>
+        <p class="lead">
+          초기 재원은 단순 운영비가 아니라 Divergram의 신뢰도를 높이는 핵심 자산에 우선 배분합니다.
+          앱 안정화, 해양 날씨·포인트 데이터, 리조트 예약 흐름, 버디/강습/커머스 기능을 검증 가능한 단계로 집행합니다.
+        </p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>재원 활용 방향</h3>
+            <div class="budget-bars">
+              <div class="budget-row">
+                <span>기술 개발</span>
+                <div class="bar"><span style="width: 44%;"></span></div>
+                <strong>44%</strong>
+              </div>
+              <div class="budget-row">
+                <span>실증 운영</span>
+                <div class="bar"><span style="width: 24%;"></span></div>
+                <strong>24%</strong>
+              </div>
+              <div class="budget-row">
+                <span>안전/정책</span>
+                <div class="bar"><span style="width: 18%;"></span></div>
+                <strong>18%</strong>
+              </div>
+              <div class="budget-row">
+                <span>콘텐츠/확산</span>
+                <div class="bar"><span style="width: 14%;"></span></div>
+                <strong>14%</strong>
+              </div>
+            </div>
+            <p class="caption">비율은 제안용 기본안이며, 기관 양식과 총 사업비에 맞춰 조정 가능합니다.</p>
+          </article>
+          <article class="card">
+            <h3>사업 계획 입력 항목</h3>
+            <table class="table compact">
+              <tbody>
+                <tr>
+                  <th>요청 금액</th>
+                  <td>[입력]</td>
+                </tr>
+                <tr>
+                  <th>사업 기간</th>
+                  <td>[예: 6개월 / 12개월 / 18개월]</td>
+                </tr>
+                <tr>
+                  <th>자부담</th>
+                  <td>[현금 / 현물 구분]</td>
+                </tr>
+                <tr>
+                  <th>집행 항목</th>
+                  <td>개발, 클라우드, 실증, 사용자 모집, 장비 검증, 홍보</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <div class="grid-2">
+          <article class="card card--soft">
+            <h3>집행 우선순위</h3>
+            <ul>
+              <li>사용자 로그 작성, 포인트 검색, 리조트 예약 연결 등 핵심 전환 흐름 개선</li>
+              <li>해양 날씨, 위험도 안내, 다이빙포인트 데이터의 품질과 신뢰도 확보</li>
+              <li>파트너 리조트·다이빙샵 확보를 위한 파일럿 운영과 현장 홍보</li>
+              <li>광고 상품, 검색 순위 광고, 예약 수수료 정산 구조의 운영 검증</li>
+            </ul>
+          </article>
+          <article class="card card--soft">
+            <h3>검증 산출물</h3>
+            <ul>
+              <li>월간 활성 사용자, DiveLog 작성 수, 포인트 조회 수, 예약 전환율 리포트</li>
+              <li>제휴 리조트 수, 검색 광고 참여 파트너 수, 광고 노출/클릭 성과</li>
+              <li>강습 프로그램 신청, 쇼핑몰 구매 전환, 박람회 유입 성과</li>
+              <li>투자·지원기관 보고용 운영 지표와 다음 단계 확장 계획</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Funding Plan</span>
+          <span class="page-num">26</span>
+        </div>
+      </section>
+
+      <section class="page" id="page-27">
+        <div class="eyebrow">Risk Control & Closing</div>
+        <h2>리스크는 명확하게 관리하고, 성과는 측정 가능한 지표로 증명합니다</h2>
+        <p class="lead">
+          해양 안전, 위치정보, 외부 API, 장비 연동을 다루는 서비스는 신뢰가 가장 중요합니다.
+          Divergram은 제품 기능뿐 아니라 정책, 예외 처리, 운영 체계를 함께 설계합니다.
+        </p>
+
+        <div class="grid-2">
+          <article class="card">
+            <h3>주요 리스크와 대응</h3>
+            <ul>
+              <li>외부 API 정책 변경: provider별 어댑터, 캐시, fallback, 재시도 구조 적용</li>
+              <li>안전 정보 오해: 보수적 위험도, 참고용 안내, 명확한 경고 문구 제공</li>
+              <li>개인정보와 위치정보: 공개 범위, 동의 이력, 계정 삭제 요청, 권한 관리</li>
+              <li>기능 범위 과다: 기록, 날씨, 연동, 공유의 핵심 흐름 중심으로 단계화</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>성과 측정 지표</h3>
+            <ul>
+              <li>가입 전환율, 주간 활성 사용자, 재방문율</li>
+              <li>DiveLog 작성 수와 외부 로그 가져오기 성공률</li>
+              <li>해양 날씨 조회 수와 위험도 화면 사용률</li>
+              <li>공유 콘텐츠 생성 수, 제휴 파트너 수, 파일럿 지역 성과</li>
+            </ul>
+          </article>
+        </div>
+
+        <div style="height: 7mm;"></div>
+        <div class="statement">
+          Divergram은 다이버가 다이빙을 준비하고, 기록하고, 공유하는 습관을 바꾸는 플랫폼입니다.
+          동시에 지역 다이빙 생태계와 파트너가 사용자 경험 안으로 들어올 수 있는 연결 구조를 제공합니다.
+        </div>
+
+        <div class="grid-2">
+          <article class="card card--soft">
+            <h3>최종 제안</h3>
+            <p>
+              Divergram을 초기 실증 가능한 해양 레저 플랫폼으로 구축하고,
+              검증된 사용자 흐름을 기반으로 지역, 장비, 교육, 여행 파트너 영역까지 확장합니다.
+            </p>
+          </article>
+          <article class="card card--soft">
+            <h3>다음 단계</h3>
+            <p>
+              사업비와 기간을 확정한 뒤 파일럿 지역, 초기 사용자군, 장비 연동 우선순위를 정하고
+              MVP 검증과 운영 리포트를 함께 진행합니다.
+            </p>
+          </article>
+        </div>
+
+        <div class="page-footer">
+          <span>Divergram · Contact / Partnership</span>
+          <span class="page-num">27</span>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
