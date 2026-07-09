@@ -1,4 +1,12 @@
 export function registerAdminCoreRoutes(app, { pool, requireAdmin }) {
+  const toNullableNumber = (value, fallback = null) => {
+    if (value === '' || value === undefined || value === null) return fallback;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const toTextArray = (value) => Array.from(new Set((Array.isArray(value) ? value : []).map((item) => String(item || '').trim()).filter(Boolean)));
+  const toJsonArray = (value) => JSON.stringify(toTextArray(value));
+
   app.get('/api/admin/health', requireAdmin, async (_req, res) => {
     res.json({ ok: true, service: 'admin-api' });
   });
@@ -185,7 +193,7 @@ export function registerAdminCoreRoutes(app, { pool, requireAdmin }) {
     }
     try {
       const q = await pool.query(
-        `SELECT id::text AS id, username, full_name, bio, avatar_url, website, account_type, resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at
+        `SELECT id::text AS id, username, full_name, bio, avatar_url, resort_cover_url, resort_photo_urls, resort_amenities, website, account_type, resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at
          FROM app_profiles
          ${where}
          ORDER BY COALESCE(resort_rating_avg, 0) DESC, COALESCE(resort_review_count, 0) DESC, created_at DESC
@@ -195,6 +203,98 @@ export function registerAdminCoreRoutes(app, { pool, requireAdmin }) {
       res.json({ ok: true, resorts: q.rows || [] });
     } catch (error) {
       res.status(500).json({ ok: false, error: 'admin_resorts_failed', detail: String(error?.message || error) });
+    }
+  });
+
+  app.post('/api/admin/resorts', requireAdmin, async (req, res) => {
+    const fullName = String(req.body?.full_name || '').trim();
+    const username = String(req.body?.username || '').trim();
+    const resortRegion = String(req.body?.resort_region || '').trim();
+    const resortAddress = String(req.body?.resort_address || '').trim();
+    const website = String(req.body?.website || '').trim();
+    if (!fullName) return res.status(400).json({ ok: false, error: 'full_name_required' });
+    if (!username) return res.status(400).json({ ok: false, error: 'username_required' });
+
+    const safeUsername = username.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toLowerCase();
+    const id = String(req.body?.id || `resort_${safeUsername || 'new'}_${Date.now()}`).trim();
+    const payload = {
+      id,
+      username,
+      full_name: fullName,
+      bio: String(req.body?.bio || '').trim(),
+      avatar_url: String(req.body?.avatar_url || '').trim(),
+      resort_cover_url: String(req.body?.resort_cover_url || '').trim(),
+      resort_photo_urls: toTextArray(req.body?.resort_photo_urls),
+      resort_amenities: toTextArray(req.body?.resort_amenities),
+      website: website || null,
+      account_type: 'resort',
+      resort_address: resortAddress || null,
+      resort_region: resortRegion || null,
+      resort_lat: toNullableNumber(req.body?.resort_lat, null),
+      resort_lng: toNullableNumber(req.body?.resort_lng, null),
+      resort_rating_avg: toNullableNumber(req.body?.resort_rating_avg, 0),
+      resort_review_count: Math.max(0, Math.round(toNullableNumber(req.body?.resort_review_count, 0) || 0)),
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const q = await pool.query(
+        `INSERT INTO app_profiles(
+           id, username, full_name, bio, avatar_url, resort_cover_url, resort_photo_urls, resort_amenities, website, account_type,
+           resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at
+         )
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+         ON CONFLICT (id) DO UPDATE SET
+           username=EXCLUDED.username,
+           full_name=EXCLUDED.full_name,
+           bio=EXCLUDED.bio,
+           avatar_url=EXCLUDED.avatar_url,
+           resort_cover_url=EXCLUDED.resort_cover_url,
+           resort_photo_urls=EXCLUDED.resort_photo_urls,
+           resort_amenities=EXCLUDED.resort_amenities,
+           website=EXCLUDED.website,
+           account_type=EXCLUDED.account_type,
+           resort_address=EXCLUDED.resort_address,
+           resort_region=EXCLUDED.resort_region,
+           resort_lat=EXCLUDED.resort_lat,
+           resort_lng=EXCLUDED.resort_lng,
+           resort_rating_avg=EXCLUDED.resort_rating_avg,
+           resort_review_count=EXCLUDED.resort_review_count
+         RETURNING id::text AS id, username, full_name, bio, avatar_url, resort_cover_url, resort_photo_urls, resort_amenities, website, account_type, resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at`,
+        [
+          payload.id,
+          payload.username,
+          payload.full_name,
+          payload.bio,
+          payload.avatar_url,
+          payload.resort_cover_url,
+          toJsonArray(payload.resort_photo_urls),
+          toJsonArray(payload.resort_amenities),
+          payload.website,
+          payload.account_type,
+          payload.resort_address,
+          payload.resort_region,
+          payload.resort_lat,
+          payload.resort_lng,
+          payload.resort_rating_avg,
+          payload.resort_review_count,
+          payload.created_at,
+        ]
+      );
+
+      const resort = q.rows[0] || null;
+      if (!resort) return res.status(500).json({ ok: false, error: 'admin_resort_create_failed' });
+
+      await pool.query(
+        `INSERT INTO app_records(table_name, record_id, data)
+         VALUES ('profiles', $1, $2::jsonb)
+         ON CONFLICT (table_name, record_id) DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
+        [resort.id, JSON.stringify(resort)]
+      );
+
+      res.json({ ok: true, resort });
+    } catch (error) {
+      res.status(500).json({ ok: false, error: 'admin_resort_create_failed', detail: String(error?.message || error) });
     }
   });
 
@@ -211,13 +311,17 @@ export function registerAdminCoreRoutes(app, { pool, requireAdmin }) {
 
     if (req.body?.full_name !== undefined) push('full_name', String(req.body.full_name || '').trim());
     if (req.body?.bio !== undefined) push('bio', String(req.body.bio || '').trim());
+    if (req.body?.avatar_url !== undefined) push('avatar_url', String(req.body.avatar_url || '').trim() || null);
+    if (req.body?.resort_cover_url !== undefined) push('resort_cover_url', String(req.body.resort_cover_url || '').trim() || null);
+    if (req.body?.resort_photo_urls !== undefined) push('resort_photo_urls', toJsonArray(req.body.resort_photo_urls));
+    if (req.body?.resort_amenities !== undefined) push('resort_amenities', toJsonArray(req.body.resort_amenities));
     if (req.body?.website !== undefined) push('website', String(req.body.website || '').trim() || null);
     if (req.body?.resort_address !== undefined) push('resort_address', String(req.body.resort_address || '').trim());
     if (req.body?.resort_region !== undefined) push('resort_region', String(req.body.resort_region || '').trim());
-    if (req.body?.resort_lat !== undefined) push('resort_lat', req.body.resort_lat === '' ? null : Number(req.body.resort_lat));
-    if (req.body?.resort_lng !== undefined) push('resort_lng', req.body.resort_lng === '' ? null : Number(req.body.resort_lng));
-    if (req.body?.resort_rating_avg !== undefined) push('resort_rating_avg', req.body.resort_rating_avg === '' ? null : Number(req.body.resort_rating_avg));
-    if (req.body?.resort_review_count !== undefined) push('resort_review_count', req.body.resort_review_count === '' ? null : Math.max(0, Math.round(Number(req.body.resort_review_count) || 0)));
+    if (req.body?.resort_lat !== undefined) push('resort_lat', toNullableNumber(req.body.resort_lat, null));
+    if (req.body?.resort_lng !== undefined) push('resort_lng', toNullableNumber(req.body.resort_lng, null));
+    if (req.body?.resort_rating_avg !== undefined) push('resort_rating_avg', toNullableNumber(req.body.resort_rating_avg, null));
+    if (req.body?.resort_review_count !== undefined) push('resort_review_count', Math.max(0, Math.round(toNullableNumber(req.body.resort_review_count, 0) || 0)));
     if (req.body?.account_type !== undefined) push('account_type', String(req.body.account_type || '').trim() || 'resort');
 
     if (!fields.length) return res.status(400).json({ ok: false, error: 'no_fields_to_update' });
@@ -226,13 +330,69 @@ export function registerAdminCoreRoutes(app, { pool, requireAdmin }) {
       values.push(id);
       const q = await pool.query(
         `UPDATE app_profiles SET ${fields.join(', ')} WHERE id=$${values.length}
-         RETURNING id::text AS id, username, full_name, bio, avatar_url, website, account_type, resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at`,
+         RETURNING id::text AS id, username, full_name, bio, avatar_url, resort_cover_url, resort_photo_urls, resort_amenities, website, account_type, resort_address, resort_region, resort_lat, resort_lng, resort_rating_avg, resort_review_count, created_at`,
         values
       );
       if (!q.rows.length) return res.status(404).json({ ok: false, error: 'resort_not_found' });
       res.json({ ok: true, resort: q.rows[0] });
     } catch (error) {
       res.status(500).json({ ok: false, error: 'admin_resort_update_failed', detail: String(error?.message || error) });
+    }
+  });
+
+  app.delete('/api/admin/resorts/:id', requireAdmin, async (req, res) => {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ ok: false, error: 'resort_id_required' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const current = await client.query(
+        `SELECT id::text AS id, username, full_name, account_type
+         FROM app_profiles
+         WHERE id=$1
+         LIMIT 1`,
+        [id]
+      );
+      if (!current.rows.length) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ ok: false, error: 'resort_not_found' });
+      }
+
+      const removedProfile = await client.query('DELETE FROM app_profiles WHERE id=$1 RETURNING id', [id]);
+      await client.query(
+        `DELETE FROM app_records WHERE table_name='profiles' AND record_id=$1`,
+        [id]
+      );
+
+      const maybeUser = await client.query('SELECT id::text AS id, role FROM app_users WHERE id::text=$1 LIMIT 1', [id]);
+      if (maybeUser.rows.length && String(maybeUser.rows[0]?.role || '').toLowerCase() === 'resort') {
+        await client.query(`UPDATE app_users SET role='user' WHERE id::text=$1`, [id]);
+      }
+
+      await client.query(
+        `INSERT INTO admin_audit_logs(action, target_user_id, detail)
+         VALUES ($1, $2, $3::jsonb)`,
+        [
+          'resort_delete',
+          Number.isFinite(Number(id)) ? Number(id) : null,
+          JSON.stringify({
+            resortId: id,
+            username: current.rows[0]?.username || '',
+            fullName: current.rows[0]?.full_name || '',
+            accountType: current.rows[0]?.account_type || 'resort',
+            removedProfile: removedProfile.rowCount,
+          }),
+        ]
+      );
+
+      await client.query('COMMIT');
+      res.json({ ok: true, removed: { resortId: id, profile: removedProfile.rowCount } });
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      res.status(500).json({ ok: false, error: 'admin_resort_delete_failed', detail: String(error?.message || error) });
+    } finally {
+      client.release();
     }
   });
 }

@@ -105,12 +105,21 @@ export default function FeedScreen() {
   if (error) {
     return (
       <Screen>
-        <EmptyState
-          title={t('feed.error')}
-          subtitle={t('feed.errorSubtitle')}
-          actionText={t('common.retry')}
-          onAction={refetch}
-        />
+        <View style={styles.errorState}>
+          <EmptyState
+            title={t('feed.error')}
+            subtitle={t('feed.errorSubtitle')}
+            actionText={t('common.retry')}
+            onAction={refetch}
+          />
+          {__DEV__ || isAdMobEnabled() ? (
+            <FeedAdSlot
+              label="AdMob test"
+              subtitle="피드 API 오류가 있어도 광고 SDK 동작을 확인하기 위한 테스트 슬롯입니다."
+              ctaLabel="테스트"
+            />
+          ) : null}
+        </View>
       </Screen>
     );
   }
@@ -151,6 +160,10 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  errorState: {
+    flex: 1,
+    justifyContent: 'center',
   },
   fab: {
     position: 'absolute',

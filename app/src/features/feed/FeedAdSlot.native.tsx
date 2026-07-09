@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import * as Device from 'expo-device';
 import { useTranslation } from 'react-i18next';
 import { Megaphone } from 'lucide-react-native';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
@@ -21,12 +22,14 @@ export function FeedAdSlot({
   const { t } = useTranslation();
   const [bannerFailed, setBannerFailed] = useState(false);
   const bannerUnitId = getAdMobBannerUnitId();
+  const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
   const bannerReady = useMemo(() => {
     if (bannerFailed) return false;
+    if (Platform.OS === 'ios' && !Device.isDevice) return false;
     if (bannerUnitId) return true;
-    return __DEV__;
-  }, [bannerFailed, bannerUnitId]);
-  const resolvedUnitId = __DEV__ ? TestIds.BANNER : bannerUnitId;
+    return shouldUseTestAds;
+  }, [bannerFailed, bannerUnitId, shouldUseTestAds]);
+  const resolvedUnitId = shouldUseTestAds ? TestIds.BANNER : bannerUnitId;
 
   return (
     <View className="mx-4 mb-5 overflow-hidden rounded-[28px] border border-brand-200/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 dark:border-brand-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">

@@ -1,5 +1,6 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Device from 'expo-device';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { storage } from './storage';
@@ -62,6 +63,9 @@ export async function checkPushPermission(): Promise<RuntimePermissionResult> {
 
 export async function requestPushPermission(): Promise<RuntimePermissionResult> {
   try {
+    if (Platform.OS === 'ios' && !Device.isDevice) {
+      return { status: 'unavailable', granted: false };
+    }
     const { status } = await Notifications.requestPermissionsAsync();
     const normalized = normalizeStatus(status);
     return { status: normalized, granted: normalized === 'granted' };
@@ -183,7 +187,9 @@ export async function requestBluetoothPermission(): Promise<RuntimePermissionRes
 }
 
 export async function requestCoreRuntimePermissions() {
-  const push = await requestPushPermission();
+  const push = Platform.OS === 'ios' && !Device.isDevice
+    ? { status: 'unavailable' as const, granted: false }
+    : await requestPushPermission();
   const location = await requestLocationPermission();
   const bluetooth = await requestBluetoothPermission();
   return { push, location, bluetooth };

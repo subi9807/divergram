@@ -30,7 +30,20 @@ class NotificationManager {
 
   async initialize() {
     try {
-      // Request permissions
+      const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
+      if (__DEV__ && debugToken) {
+        this.pushToken = debugToken;
+        await this.registerPushToken();
+        analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true, debugFallback: true });
+        return debugToken;
+      }
+
+      if (Platform.OS === 'ios' && !Device.isDevice) {
+        console.log('Must use physical device for push notifications');
+        return null;
+      }
+
+      // Request permissions only after we know the runtime can actually support push.
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -41,19 +54,6 @@ class NotificationManager {
 
       if (finalStatus !== 'granted') {
         console.log('Push notification permission denied');
-        return null;
-      }
-
-      // Get push token
-      if (!Device.isDevice) {
-        const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
-        if (debugToken) {
-          this.pushToken = debugToken;
-          await this.registerPushToken();
-          analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true });
-          return debugToken;
-        }
-        console.log('Must use physical device for push notifications');
         return null;
       }
 

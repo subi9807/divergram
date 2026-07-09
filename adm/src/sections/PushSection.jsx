@@ -16,6 +16,13 @@ const EMPTY_PUSH_FORM = {
   dataJson: '',
 };
 
+const EMPTY_TEST_FORM = {
+  token: '',
+  title: 'FCM 테스트',
+  body: 'Divergram push test',
+  dataJson: '{"kind":"push_test"}',
+};
+
 const PUSH_TEMPLATES = [
   { key: 'notice', label: '전체 공지', title: '[운영 공지] Divergram 안내', body: '서비스 공지와 운영 안내를 확인해 주세요.', targetRole: 'all', data: { type: 'notice', channel: 'admin' } },
   { key: 'update', label: '앱 업데이트', title: '[업데이트 안내] Divergram 새 소식', body: '앱 업데이트와 변경 사항을 확인해 주세요.', targetRole: 'all', data: { type: 'update', channel: 'admin' } },
@@ -26,12 +33,17 @@ const PUSH_TEMPLATES = [
 
 export default function PushSection({ reports = [], certifications = [], reportBreakdown = {} }) {
   const [pushForm, setPushForm] = useState(EMPTY_PUSH_FORM);
+  const [testForm, setTestForm] = useState(EMPTY_TEST_FORM);
   const [pushBusy, setPushBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
   const [pushError, setPushError] = useState('');
+  const [testError, setTestError] = useState('');
   const [pushResult, setPushResult] = useState(null);
+  const [testResult, setTestResult] = useState(null);
   const [pushHistory, setPushHistory] = useState([]);
   const [savedTemplates, setSavedTemplates] = useState([]);
   const hasPushDataJson = pushForm.dataJson.trim().length > 0;
+  const hasTestDataJson = testForm.dataJson.trim().length > 0;
 
   const loadPushHistory = async () => {
     try {
@@ -63,6 +75,14 @@ export default function PushSection({ reports = [], certifications = [], reportB
       return null;
     }
   }, [hasPushDataJson, pushForm.dataJson]);
+
+  const testPreview = useMemo(() => {
+    try {
+      return hasTestDataJson ? JSON.parse(testForm.dataJson) : {};
+    } catch {
+      return null;
+    }
+  }, [hasTestDataJson, testForm.dataJson]);
 
   const sendPush = async (event) => {
     event.preventDefault();
@@ -99,10 +119,43 @@ export default function PushSection({ reports = [], certifications = [], reportB
     }
   };
 
+  const sendPushTest = async (event) => {
+    event.preventDefault();
+    setTestBusy(true);
+    setTestError('');
+    try {
+      let payloadData = {};
+      if (testForm.dataJson.trim()) {
+        payloadData = JSON.parse(testForm.dataJson);
+        if (!payloadData || typeof payloadData !== 'object' || Array.isArray(payloadData)) throw new Error('data_json_must_be_object');
+      }
+      const result = await api('/api/admin/push/test', {
+        method: 'POST',
+        body: {
+          token: testForm.token.trim(),
+          title: testForm.title,
+          body: testForm.body,
+          data: payloadData,
+        },
+      });
+      setTestResult(result);
+    } catch (error) {
+      setTestError(error.message || '푸시 테스트 실패');
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
   const clearPush = () => {
     setPushForm(EMPTY_PUSH_FORM);
     setPushResult(null);
     setPushError('');
+  };
+
+  const clearTest = () => {
+    setTestForm(EMPTY_TEST_FORM);
+    setTestResult(null);
+    setTestError('');
   };
 
   const applyTemplate = (template) => {
@@ -185,6 +238,50 @@ export default function PushSection({ reports = [], certifications = [], reportB
             <span className="muted">전체 발송은 FCM `all_users` 토픽과 개별 토큰을 함께 사용해.</span>
             <button type="button" className="chip" onClick={applyAllUsersBroadcast}>전체 사용자 발송</button>
           </div>
+        </div>
+        <div className="push-template-saved" style={{ marginBottom: 16 }}>
+          <div className="panel-head">
+            <strong>FCM 직접 테스트</strong>
+            <div className="row">
+              <span className="muted">앱에서 받은 FCM registration token을 바로 붙여서 보내는 용도야.</span>
+              <button type="button" className="chip" onClick={clearTest}>초기화</button>
+            </div>
+          </div>
+          <form className="push-form" onSubmit={sendPushTest}>
+            <div className="field-grid push-grid">
+              <label><span>FCM 토큰</span><input value={testForm.token} onChange={(e) => setTestForm((prev) => ({ ...prev, token: e.target.value }))} placeholder="앱에서 복사한 FCM registration token" /></label>
+              <label><span>제목</span><input value={testForm.title} onChange={(e) => setTestForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="테스트 제목" /></label>
+            </div>
+            <label className="textarea-field"><span>본문</span><textarea rows={3} value={testForm.body} onChange={(e) => setTestForm((prev) => ({ ...prev, body: e.target.value }))} placeholder="테스트 본문" /></label>
+            <div className="field-grid push-grid">
+              <label><span>추가 데이터 JSON</span><input value={testForm.dataJson} onChange={(e) => setTestForm((prev) => ({ ...prev, dataJson: e.target.value }))} placeholder='{"kind":"push_test"}' /></label>
+              <div className="push-hint">토큰이 유효하면 바로 FCM으로 전송돼. iPhone 시뮬레이터 토큰은 테스트용 가짜 값이라 실패할 수 있어.</div>
+            </div>
+            <div className="preview-box push-preview">
+              <span className="muted">테스트 미리보기</span>
+              <div className="preview-card">
+                <strong>{testForm.title || 'FCM 테스트'}</strong>
+                <p>{testForm.body || 'Divergram push test'}</p>
+                <div className="preview-pill-row">
+                  <span className="badge active">{testForm.token.trim() ? '토큰 입력됨' : '토큰 필요'}</span>
+                  <span className="badge">{!hasTestDataJson ? '추가 데이터 없음' : testPreview ? 'JSON 확인됨' : 'JSON 오류'}</span>
+                </div>
+                <small>{testPreview ? JSON.stringify(testPreview) : 'test payload'}</small>
+              </div>
+            </div>
+            <div className="detail-actions">
+              <button type="submit" disabled={testBusy}>{testBusy ? '전송 중...' : 'FCM 테스트 발송'}</button>
+            </div>
+            {testError && <p className="error">{testError}</p>}
+            {testResult && (
+              <div className="auth-check-box">
+                <p>전송 방식: <strong>{testResult.provider || 'fcm'}</strong></p>
+                <p>성공: <strong>{testResult.successCount ?? 0}개</strong></p>
+                <p>실패: <strong>{testResult.failureCount ?? 0}개</strong></p>
+                <p>상태: <strong>{testResult.message || '-'}</strong></p>
+              </div>
+            )}
+          </form>
         </div>
         <div className="push-template-grid">
           {PUSH_TEMPLATES.map((template) => (

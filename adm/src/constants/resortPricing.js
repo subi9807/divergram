@@ -1,0 +1,88 @@
+export const RESORT_PRICE_TYPES = [
+  { key: 'dive_package', label: '다이빙 패키지' },
+  { key: 'education', label: '교육 과정' },
+  { key: 'fun_dive', label: '펀 다이빙' },
+  { key: 'freedive_course', label: '프리다이빙 교육' },
+  { key: 'scuba_course', label: '스쿠버 교육' },
+  { key: 'specialty', label: '스페셜티' },
+  { key: 'rental', label: '장비 렌탈' },
+  { key: 'transfer', label: '이동/픽업' },
+  { key: 'boat_trip', label: '보트 트립' },
+  { key: 'private', label: '프라이빗' },
+  { key: 'photo_video', label: '촬영/포토' },
+  { key: 'other', label: '기타' },
+];
+
+export const RESORT_PRICE_TYPE_GROUPS = [
+  { key: 'package', label: '패키지', types: ['dive_package', 'private', 'boat_trip'] },
+  { key: 'education', label: '교육', types: ['education', 'freedive_course', 'scuba_course', 'specialty'] },
+  { key: 'activity', label: '다이빙', types: ['fun_dive'] },
+  { key: 'rental', label: '렌탈/장비', types: ['rental', 'photo_video'] },
+  { key: 'transfer', label: '이동', types: ['transfer'] },
+  { key: 'other', label: '기타', types: ['other'] },
+];
+
+export const RESORT_PRICE_UNITS = [
+  { key: 'per_person', label: '1인 기준' },
+  { key: 'per_day', label: '1일 기준' },
+  { key: 'per_night', label: '1박 기준' },
+  { key: 'per_session', label: '1회 기준' },
+  { key: 'course', label: '코스' },
+  { key: 'package', label: '패키지' },
+  { key: 'trip', label: '트립' },
+  { key: 'rental', label: '렌탈' },
+  { key: 'custom', label: '직접 입력' },
+];
+
+export const DIVING_PRICE_PRESETS = [
+  {
+    key: 'fun_dive_2',
+    label: '펀 다이빙',
+    price_type: 'fun_dive',
+    unit_label: '1인 기준',
+    title: '1일 펀 다이빙',
+    duration_text: '2회 보트 다이빙',
+    included_items_text: '보트 이동\n가이드 포함\n조식 포함',
+    sort_order: 10,
+  },
+  {
+    key: 'fun_dive_3',
+    label: '펀 다이빙 3회',
+    price_type: 'fun_dive',
+    unit_label: '1인 기준',
+    title: '2일 펀 다이빙',
+    duration_text: '3회 보트 다이빙',
+    included_items_text: '보트 이동\n가이드 포함\n장비 대여 별도',
+    sort_order: 20,
+  },
+  {
+    key: 'open_water',
+    label: '오픈워터',
+    price_type: 'scuba_course',
+    unit_label: '코스',
+    title: '오픈워터 코스',
+    duration_text: '3일 과정',
+    included_items_text: '이론 교육\n풀세션\n해양 실습',
+    sort_order: 30,
+  },
+  {
+    key: 'advanced',
+    label: '어드밴스드',
+    price_type: 'scuba_course',
+    unit_label: '코스',
+    title: '어드밴스드 코스',
+    duration_text: '2일 과정',
+    included_items_text: '중성부력\n딥다이브\n내비게이션',
+    sort_order: 40,
+  },
+  {
+    key: 'rental_set',
+    label: '장비 렌탈',
+    price_type: 'rental',
+    unit_label: '1일 기준',
+    title: '장비 렌탈 패키지',
+    duration_text: '1일 기준',
+    included_items_text: 'BCD\n레귤레이터\n웻슈트',
+    sort_order: 50,
+  },
+];

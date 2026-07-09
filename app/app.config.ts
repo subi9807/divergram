@@ -11,8 +11,8 @@ function getGoogleMapsApiKey(): string {
 function getAdMobAppId(platform: 'android' | 'ios'): string {
   const fallback =
     platform === 'android'
-      ? 'ca-app-pub-3940256099942544~3347511713'
-      : 'ca-app-pub-3940256099942544~1458002511';
+      ? 'ca-app-pub-6018533601998790~9736334888'
+      : 'ca-app-pub-6018533601998790~5278215124';
   if (platform === 'android') {
     return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_APP_ID || process.env.GOOGLE_ADMOB_ANDROID_APP_ID || fallback;
   }
@@ -23,7 +23,7 @@ function getAdMobBannerUnitId(platform: 'android' | 'ios'): string {
   if (platform === 'android') {
     return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || '';
   }
-  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || '';
+  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || 'ca-app-pub-6018533601998790/8455042807';
 }
 
 function toGoogleIosUrlScheme(clientId: string): string | null {
@@ -62,7 +62,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2',
+    version: '1.2.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
@@ -71,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '26',
+      buildNumber: '29',
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
       infoPlist: {
@@ -108,7 +108,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 25,
+      versionCode: 28,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -139,6 +139,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       ...expoDevClientPlugin,
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#FFFFFF',
+          image: './assets/images/splash.png',
+          imageWidth: 240,
+          resizeMode: 'contain'
+        }
+      ],
       'expo-router',
       'expo-font',
       'expo-image',
@@ -209,6 +218,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.2'
+    runtimeVersion: '1.2.2'
   } as ExpoConfig;
 };

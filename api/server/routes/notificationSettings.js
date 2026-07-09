@@ -1,3 +1,5 @@
+import { isExpoPushToken, sendPushToToken } from '../lib/pushDelivery.js';
+
 const DEFAULT_ITEMS = {
   like: true,
   comment: true,
@@ -9,9 +11,6 @@ const DEFAULT_ITEMS = {
   bluetooth_error: false,
   certification_status: false,
 };
-
-const EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send";
-const EXPO_PUSH_CHUNK_SIZE = 50;
 
 function normalizeBoolean(value, fallback = false) {
   if (typeof value === "boolean") return value;
@@ -67,54 +66,6 @@ async function writeSetting(pool, userId, setting) {
      DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
     ["notification_settings", String(userId), JSON.stringify(setting)]
   );
-}
-
-function isExpoPushToken(token) {
-  const raw = String(token || "").trim();
-  if (!raw) return false;
-  return /^ExponentPushToken\[[^\]]+\]$/.test(raw) || /^ExpoPushToken\[[^\]]+\]$/.test(raw);
-}
-
-function chunkArray(items, size) {
-  const out = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
-
-async function sendExpoPushMessages(messages) {
-  const tickets = [];
-  const errors = [];
-  if (!messages.length) return { tickets, errors };
-
-  for (const batch of chunkArray(messages, EXPO_PUSH_CHUNK_SIZE)) {
-    try {
-      const response = await fetch(EXPO_PUSH_ENDPOINT, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Accept-Encoding": "gzip, deflate",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(batch),
-      });
-
-      const payload = await response.json().catch(() => null);
-      if (!response.ok) {
-        errors.push({ type: "http_error", status: response.status, payload });
-        continue;
-      }
-      if (!payload || !Array.isArray(payload.data)) {
-        errors.push({ type: "invalid_response", payload });
-        continue;
-      }
-
-      tickets.push(...payload.data);
-    } catch (error) {
-      errors.push({ type: "network_error", message: String(error?.message || error) });
-    }
-  }
-
-  return { tickets, errors };
 }
 
 export function registerNotificationSettingsRoutes(app, { pool, getAuthUserId, authRateLimit }) {
@@ -193,48 +144,29 @@ export function registerNotificationSettingsRoutes(app, { pool, getAuthUserId, a
       }
 
       const expoTokens = allTokens.filter((row) => isExpoPushToken(row.token));
-      const unsupported = allTokens.filter((row) => !isExpoPushToken(row.token));
-
-      if (!expoTokens.length) {
-        return res.json({
-          ok: true,
-          queued: false,
-          message: "unsupported_push_token_format",
-          userId: String(userId),
-          preview: { title, body, data },
-          tokenCount: allTokens.length,
-          unsupportedCount: unsupported.length,
-          sentAt: new Date().toISOString(),
-        });
-      }
-
-      const messages = expoTokens.map((row) => ({
-        to: row.token,
-        title,
-        body,
-        sound: "default",
-        priority: "high",
-        data,
-      }));
-
-      const result = await sendExpoPushMessages(messages);
-      const successTickets = result.tickets.filter((ticket) => ticket?.status === "ok");
-      const failedTickets = result.tickets.filter((ticket) => ticket?.status !== "ok");
+      const fcmTokens = allTokens.filter((row) => !isExpoPushToken(row.token));
+      const deliveryResults = await Promise.allSettled(
+        allTokens.map((row) => sendPushToToken(row.token, title, body, data))
+      );
+      const successCount = deliveryResults.filter((item) => item.status === "fulfilled" && item.value?.ok).length;
+      const failureCount = deliveryResults.length - successCount;
 
       return res.json({
         ok: true,
-        queued: successTickets.length > 0,
-        message: successTickets.length > 0 ? "push_queued" : "push_not_queued",
+        queued: successCount > 0,
+        message: successCount > 0 ? "push_queued" : "push_not_queued",
         userId: String(userId),
         sentAt: new Date().toISOString(),
         preview: { title, body, data },
         tokenCount: allTokens.length,
         expoTokenCount: expoTokens.length,
-        unsupportedCount: unsupported.length,
-        successCount: successTickets.length,
-        failureCount: failedTickets.length + result.errors.length,
-        ticketPreview: result.tickets.slice(0, 5),
-        errorPreview: result.errors.slice(0, 3),
+        fcmTokenCount: fcmTokens.length,
+        unsupportedCount: 0,
+        successCount,
+        failureCount,
+        deliveryPreview: deliveryResults.slice(0, 5).map((item) =>
+          item.status === "fulfilled" ? item.value : { ok: false, reason: String(item.reason || "rejected") }
+        ),
       });
     } catch (error) {
       return res.status(500).json({

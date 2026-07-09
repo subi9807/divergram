@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Animated, Easing, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import * as Device from 'expo-device';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -63,13 +64,15 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    if (Platform.OS === 'ios' && !Device.isDevice) return;
     if (!isAdMobEnabled()) return;
+    const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
     import('react-native-google-mobile-ads')
       .then(({ default: mobileAdsModule }) => {
         const mobileAds = mobileAdsModule();
         return mobileAds
           .setRequestConfiguration({
-            testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : [],
+            testDeviceIdentifiers: shouldUseTestAds ? ['EMULATOR'] : [],
           })
           .catch(() => {
             // 테스트 기기 설정은 실패해도 앱 실행을 막지 않는다.
@@ -167,7 +170,7 @@ function SettingsHydrationBridge() {
 
 function NotificationBootstrapBridge() {
   const { user } = useAuth();
-  useNotifications(Boolean(user?.id));
+  useNotifications(Boolean(user?.id) && !(Platform.OS === 'ios' && !Device.isDevice));
   return null;
 }
 

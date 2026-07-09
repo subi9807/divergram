@@ -145,7 +145,7 @@ if (fs.existsSync(expoSqliteCompatibilitySource)) {
     'SQLiteModule.swift'
   );
   if (fs.existsSync(sqliteModuleTarget)) {
-    const sqliteModuleSource = fs.readFileSync(sqliteModuleTarget, 'utf8');
+    let sqliteModuleSource = fs.readFileSync(sqliteModuleTarget, 'utf8');
     const expoSQLiteImportLine = 'import ExpoSQLite\n';
     if (!sqliteModuleSource.includes(expoSQLiteImportLine)) {
       const updated = sqliteModuleSource.replace(
@@ -154,33 +154,50 @@ if (fs.existsSync(expoSqliteCompatibilitySource)) {
       );
       if (updated !== sqliteModuleSource) {
         fs.writeFileSync(sqliteModuleTarget, updated);
+        sqliteModuleSource = updated;
         console.log('[fix-expo-xcframework] Injected import ExpoSQLite into SQLiteModule.swift.');
       }
     }
-    const sqliteSupportMarker = 'typealias ExpoSQLiteUpdateHookCallback = @convention(c)';
-    if (!sqliteModuleSource.includes(sqliteSupportMarker)) {
-      const importMarker = 'import ExpoSQLite\n';
-      if (sqliteModuleSource.includes(importMarker)) {
-        const nextSource = sqliteModuleSource.replace(importMarker, `${importMarker}\n${compatibilitySource}\n`);
-        fs.writeFileSync(sqliteModuleTarget, nextSource);
-        console.log('[fix-expo-xcframework] Injected ExpoSQLite compatibility declarations into SQLiteModule.swift.');
-      }
+
+    const injectedCompatibilitySource = `${expoSQLiteImportLine}\n${compatibilitySource}\n`;
+    if (sqliteModuleSource.includes(injectedCompatibilitySource)) {
+      const updated = sqliteModuleSource.replace(injectedCompatibilitySource, expoSQLiteImportLine);
+      fs.writeFileSync(sqliteModuleTarget, updated);
+      sqliteModuleSource = updated;
+      console.log('[fix-expo-xcframework] Removed obsolete ExpoSQLite compatibility declarations from SQLiteModule.swift.');
+    }
+
+    const legacyCompatibilityPattern =
+      /\ntypealias ExpoSQLiteUpdateHookCallback = @convention\(c\)[\s\S]*?\n@_silgen_name\("exsqlite3_next_stmt"\)\nfunc exsqlite3_next_stmt\(_ db: OpaquePointer\?, _ statement: OpaquePointer\?\) -> OpaquePointer\?\n/;
+    if (legacyCompatibilityPattern.test(sqliteModuleSource)) {
+      const updated = sqliteModuleSource.replace(legacyCompatibilityPattern, '\n');
+      fs.writeFileSync(sqliteModuleTarget, updated);
+      sqliteModuleSource = updated;
+      console.log('[fix-expo-xcframework] Removed legacy inline ExpoSQLite compatibility declarations from SQLiteModule.swift.');
     } else {
-      console.log('[fix-expo-xcframework] SQLiteModule.swift already contains ExpoSQLite compatibility declarations.');
+      console.log('[fix-expo-xcframework] SQLiteModule.swift does not contain inline ExpoSQLite compatibility declarations.');
+    }
+
+    const inlineCoreCompatibilityPattern =
+      /import ExpoSQLite\n[\s\S]*?\nprivate typealias SQLiteColumnNames/;
+    if (inlineCoreCompatibilityPattern.test(sqliteModuleSource)) {
+      const updated = sqliteModuleSource.replace(
+        inlineCoreCompatibilityPattern,
+        'import ExpoSQLite\n\nprivate typealias SQLiteColumnNames'
+      );
+      fs.writeFileSync(sqliteModuleTarget, updated);
+      sqliteModuleSource = updated;
+      console.log('[fix-expo-xcframework] Removed inline ExpoSQLite bridge declarations; using ExpoSQLite module exports.');
+    } else {
+      console.log('[fix-expo-xcframework] SQLiteModule.swift has no inline ExpoSQLite bridge declarations.');
     }
   }
 
-  if (!fs.existsSync(expoSqliteCompatibilityTarget)) {
-    fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
-    console.log('[fix-expo-xcframework] Added ExpoSQLiteCompatibility.swift for Swift C API declarations.');
+  if (fs.existsSync(expoSqliteCompatibilityTarget)) {
+    fs.rmSync(expoSqliteCompatibilityTarget);
+    console.log('[fix-expo-xcframework] Removed obsolete ExpoSQLiteCompatibility.swift.');
   } else {
-    const compatibilityTargetSource = fs.readFileSync(expoSqliteCompatibilityTarget, 'utf8');
-    if (compatibilityTargetSource !== compatibilitySource) {
-      fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
-      console.log('[fix-expo-xcframework] Updated ExpoSQLiteCompatibility.swift to match template.');
-    } else {
-      console.log('[fix-expo-xcframework] ExpoSQLiteCompatibility.swift already matches template.');
-    }
+    console.log('[fix-expo-xcframework] ExpoSQLiteCompatibility.swift is already absent.');
   }
 }
 

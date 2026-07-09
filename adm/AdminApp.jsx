@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, API_BASE, DEFAULT_ADMIN_KEY } from './lib/api';
+import { api, API_BASE, setAdminAuthToken } from './lib/api';
 import { loadGoogleMaps, parseCoord } from './lib/maps';
 import Icon from './components/Icon';
 import DashboardSection from './sections/DashboardSection';
@@ -44,11 +44,13 @@ async function safeReadJson(response) {
 }
 
 export function AdminApp() {
-  const [adminKey, setAdminKey] = useState(localStorage.getItem('dg_admin_key') || DEFAULT_ADMIN_KEY || '');
   const [sessionUser, setSessionUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const [oauthProviders, setOauthProviders] = useState({});
+  const [emailLoginEmail, setEmailLoginEmail] = useState('');
+  const [emailLoginPassword, setEmailLoginPassword] = useState('');
+  const [emailLoginBusy, setEmailLoginBusy] = useState(false);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -81,14 +83,12 @@ export function AdminApp() {
   const mapRef = useRef(null);
 
   const hasAdminSession = !!sessionUser?.email && isAllowedAdminEmail(sessionUser.email);
-  const hasAdminKey = !!String(adminKey || '').trim();
-  const canAccess = hasAdminSession || hasAdminKey;
-  const authModeLabel = hasAdminSession ? `SNS 로그인: ${sessionUser.email}` : hasAdminKey ? '관리자 키 로그인' : '로그인 대기';
+  const canAccess = hasAdminSession;
+  const authModeLabel = hasAdminSession ? `세션 로그인: ${sessionUser.email}` : '로그인 대기';
 
   const refreshSession = async () => {
     try {
-      const r = await fetch(`${API_BASE}/api/auth/session`, { credentials: 'include' });
-      const j = await safeReadJson(r);
+      const j = await api('/api/auth/session');
       const session = j?.session || null;
       const email = normalizeEmail(session?.user?.email || '');
       if (email && isAllowedAdminEmail(email)) {
@@ -115,23 +115,22 @@ export function AdminApp() {
   };
 
   const refresh = async ({ memberRole = memberRoleFilter } = {}) => {
-    if (!canAccess) return setError('SNS 로그인 또는 관리자 키가 필요해.');
+    if (!canAccess) return setError('SNS 또는 이메일 로그인이 필요해.');
     setLoading(true);
     setError('');
     setAuthError('');
-    if (hasAdminKey) localStorage.setItem('dg_admin_key', adminKey);
     try {
       const settled = await Promise.allSettled([
-        api('/api/admin/stats', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api(`/api/admin/users?q=${encodeURIComponent(query)}&role=${encodeURIComponent(memberRole || 'all')}&limit=50`, { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/audit-logs?limit=20', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/tables', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/growth?days=14', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`, { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/reports?limit=50', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/certifications?limit=50', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/map-points', { adminKey: hasAdminKey ? adminKey : undefined }),
-        api('/api/admin/ads?limit=20', { adminKey: hasAdminKey ? adminKey : undefined }),
+        api('/api/admin/stats'),
+        api(`/api/admin/users?q=${encodeURIComponent(query)}&role=${encodeURIComponent(memberRole || 'all')}&limit=50`),
+        api('/api/admin/audit-logs?limit=20'),
+        api('/api/admin/tables'),
+        api('/api/admin/growth?days=14'),
+        api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`),
+        api('/api/admin/reports?limit=50'),
+        api('/api/admin/certifications?limit=50'),
+        api('/api/admin/map-points'),
+        api('/api/admin/ads?limit=20'),
       ]);
       const nextErrors = [];
       const applyResult = (index, setter, pick = (value) => value) => {
@@ -157,10 +156,6 @@ export function AdminApp() {
     } catch (e) {
       const message = e.message || '요청 실패';
       setError(message);
-      if (message === 'unauthorized' && !hasAdminSession) {
-        localStorage.removeItem('dg_admin_key');
-        setAdminKey('');
-      }
     } finally {
       setLoading(false);
     }
@@ -168,7 +163,7 @@ export function AdminApp() {
 
   const refreshTableRows = async (name = selectedTable) => {
     try {
-      const r = await api(`/api/admin/table/${name}?limit=100`, { adminKey: hasAdminKey ? adminKey : undefined });
+      const r = await api(`/api/admin/table/${name}?limit=100`);
       setTableRows(r.rows || []);
     } catch (e) {
       setError(e.message || '테이블 조회 실패');
@@ -177,7 +172,7 @@ export function AdminApp() {
 
   const updateUser = async (id, payload) => {
     try {
-      await api(`/api/admin/users/${id}`, { adminKey: hasAdminKey ? adminKey : undefined, method: 'PATCH', body: payload });
+      await api(`/api/admin/users/${id}`, { method: 'PATCH', body: payload });
       await refresh();
     } catch (e) {
       setError(e.message || '수정 실패');
@@ -190,7 +185,6 @@ export function AdminApp() {
     if (!window.confirm('이 회원의 게시물만 모두 삭제할까?')) return;
     try {
       await api(`/api/admin/users/${encodeURIComponent(targetId)}/posts`, {
-        adminKey: hasAdminKey ? adminKey : undefined,
         method: 'DELETE',
       });
       await refresh({ memberRole: memberRoleFilter });
@@ -206,7 +200,6 @@ export function AdminApp() {
     if (!window.confirm('이 회원을 삭제할까? 회원과 게시물이 모두 삭제돼.')) return;
     try {
       await api(`/api/admin/users/${encodeURIComponent(targetId)}`, {
-        adminKey: hasAdminKey ? adminKey : undefined,
         method: 'DELETE',
       });
       await refresh({ memberRole: memberRoleFilter });
@@ -218,7 +211,7 @@ export function AdminApp() {
 
   const refreshResorts = async () => {
     try {
-      const r = await api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`, { adminKey: hasAdminKey ? adminKey : undefined });
+      const r = await api(`/api/admin/resorts?q=${encodeURIComponent(resortQuery)}`);
       setResorts(r.resorts || []);
     } catch (e) {
       setError(e.message || '리조트 조회 실패');
@@ -227,7 +220,7 @@ export function AdminApp() {
 
   const updateResort = async (id, patch) => {
     try {
-      await api(`/api/admin/resorts/${id}`, { adminKey: hasAdminKey ? adminKey : undefined, method: 'PATCH', body: patch });
+      await api(`/api/admin/resorts/${id}`, { method: 'PATCH', body: patch });
       await refreshResorts();
     } catch (e) {
       setError(e.message || '리조트 수정 실패');
@@ -240,7 +233,6 @@ export function AdminApp() {
     if (!window.confirm('정말 이 게시물을 삭제할까?')) return;
     try {
       await api(`/api/admin/posts/${encodeURIComponent(targetId)}`, {
-        adminKey: hasAdminKey ? adminKey : undefined,
         method: 'DELETE',
       });
       await refresh({ memberRole: memberRoleFilter });
@@ -257,7 +249,6 @@ export function AdminApp() {
     try {
       for (const id of ids) {
         await api(`/api/admin/posts/${encodeURIComponent(id)}`, {
-          adminKey: hasAdminKey ? adminKey : undefined,
           method: 'DELETE',
         });
       }
@@ -275,7 +266,6 @@ export function AdminApp() {
     try {
       for (const id of ids) {
         await api(`/api/admin/users/${encodeURIComponent(id)}`, {
-          adminKey: hasAdminKey ? adminKey : undefined,
           method: 'DELETE',
         });
       }
@@ -289,8 +279,8 @@ export function AdminApp() {
   const seedBulk = async () => {
     try {
       setLoading(true);
-      await api('/api/admin/seed-bulk', { adminKey: hasAdminKey ? adminKey : undefined, method: 'POST', body: { users: 50, posts: 300, comments: 1000, likes: 2000 } });
-      await api('/api/admin/migrate-normalized', { adminKey: hasAdminKey ? adminKey : undefined, method: 'POST' });
+      await api('/api/admin/seed-bulk', { method: 'POST', body: { users: 50, posts: 300, comments: 1000, likes: 2000 } });
+      await api('/api/admin/migrate-normalized', { method: 'POST' });
       await refresh();
     } catch (e) {
       setError(e.message || '샘플 생성 실패');
@@ -303,7 +293,7 @@ export function AdminApp() {
     try {
       const [sessionResp, healthResp] = await Promise.all([
         fetch(`${API_BASE}/api/auth/session`, { credentials: 'include' }),
-        api('/api/admin/health', { adminKey: hasAdminKey ? adminKey : undefined }),
+        api('/api/admin/health'),
       ]);
       const sessionJson = await safeReadJson(sessionResp);
       const session = sessionJson?.session || null;
@@ -334,14 +324,40 @@ export function AdminApp() {
     );
   };
 
+  const startEmailLogin = async (event) => {
+    event.preventDefault();
+    setEmailLoginBusy(true);
+    setAuthError('');
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailLoginEmail,
+          password: emailLoginPassword,
+          sessionDays: 30,
+        }),
+      });
+      const j = await safeReadJson(r);
+      if (!r.ok) throw new Error(j?.error || 'email_login_failed');
+      setAdminAuthToken(j?.token || '');
+      setEmailLoginPassword('');
+      await refreshSession();
+    } catch (e) {
+      setAuthError(e.message || 'email_login_failed');
+    } finally {
+      setEmailLoginBusy(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch {
       // 무시
     }
-    localStorage.removeItem('dg_admin_key');
-    setAdminKey('');
+    setAdminAuthToken('');
     setSessionUser(null);
     setStats(null);
     setUsers([]);
@@ -359,6 +375,17 @@ export function AdminApp() {
   useEffect(() => {
     refreshSession();
     refreshProviders();
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const oauthToken = url.searchParams.get('oauthToken') || url.searchParams.get('token') || '';
+    if (!oauthToken) return;
+    setAdminAuthToken(oauthToken);
+    url.searchParams.delete('oauthToken');
+    url.searchParams.delete('token');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    refreshSession();
   }, []);
 
   useEffect(() => {
@@ -386,7 +413,7 @@ export function AdminApp() {
     if (!canAccess || section !== 'dashboard') return undefined;
     const t = setInterval(() => refresh(), 5000);
     return () => clearInterval(t);
-  }, [canAccess, section, query, resortQuery, adminKey, hasAdminSession]);
+  }, [canAccess, section, query, resortQuery, hasAdminSession]);
 
   useEffect(() => {
     if (!canAccess || section !== 'map' || !mapRef.current) return undefined;
@@ -398,7 +425,7 @@ export function AdminApp() {
         if (cancelled || !window.google) return;
         const google = window.google;
         const map = new google.maps.Map(mapRef.current, { center: { lat: 36.5, lng: 127.8 }, zoom: 6, mapTypeControl: false, streetViewControl: false, fullscreenControl: false });
-        const { points } = await api('/api/admin/map-points', { adminKey: hasAdminKey ? adminKey : undefined });
+        const { points } = await api('/api/admin/map-points');
         const geocoder = new google.maps.Geocoder();
         const bounds = new google.maps.LatLngBounds();
         let hasMarker = false;
@@ -429,20 +456,20 @@ export function AdminApp() {
       }
     })();
     return () => { cancelled = true; };
-  }, [canAccess, section, adminKey, hasAdminKey]);
+  }, [canAccess, section]);
 
   useEffect(() => {
     if (!canAccess) return;
     if (section !== 'feeds' && section !== 'reels') return;
     (async () => {
       try {
-        const r = await api('/api/admin/table/app_posts?limit=500', { adminKey: hasAdminKey ? adminKey : undefined });
+        const r = await api('/api/admin/table/app_posts?limit=500');
         setTableRows(r.rows || []);
       } catch (e) {
         setError(e.message || '게시물 조회 실패');
       }
     })();
-  }, [canAccess, section, adminKey, hasAdminKey]);
+  }, [canAccess, section]);
 
   useEffect(() => {
     if (!canAccess) return;
@@ -526,18 +553,15 @@ export function AdminApp() {
   if (!canAccess) {
     return (
       <div className="auth-shell">
-        <div className="auth-card card">
+        <section className="auth-card card">
           <div className="auth-hero">
             <div className="brand auth-brand">DG</div>
             <div>
               <h1>Divergram Admin</h1>
-              <p>adm.divergram.com 에서는 SNS 로그인 또는 관리자 키로 접속할 수 있어.</p>
+              <p>adm.divergram.com 에서 SNS 또는 이메일로 로그인해.</p>
             </div>
           </div>
-          <div className="auth-status">
-            <span className="status-pill"><span className="dot bad" />세션 대기</span>
-            <span className="muted">기본 관리자: subi9807@gmail.com</span>
-          </div>
+
           <div className="auth-social-grid">
             {ADMIN_PROVIDERS.map((provider) => {
               const enabled = !!oauthProviders?.[provider.key]?.enabled;
@@ -548,14 +572,36 @@ export function AdminApp() {
               );
             })}
           </div>
-          <div className="auth-divider"><span>SNS 대신 관리자 키 사용</span></div>
-          <div className="row auth-key-row">
-            <input type="password" autoComplete="current-password" value={adminKey} onChange={(e) => setAdminKey(e.target.value)} placeholder="ADMIN_API_KEY" />
-            <button type="button" onClick={() => { localStorage.setItem('dg_admin_key', adminKey.trim()); refresh(); }} disabled={loading}>{loading ? '확인 중...' : '키로 접속'}</button>
-          </div>
+
+          <div className="auth-divider"><span>Email 로그인</span></div>
+
+          <form className="auth-email-form" onSubmit={startEmailLogin}>
+            <label>
+              <span>이메일</span>
+              <input
+                type="email"
+                autoComplete="username"
+                value={emailLoginEmail}
+                onChange={(e) => setEmailLoginEmail(e.target.value)}
+                placeholder="admin@divergram.com"
+              />
+            </label>
+            <label>
+              <span>비밀번호</span>
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={emailLoginPassword}
+                onChange={(e) => setEmailLoginPassword(e.target.value)}
+                placeholder="Password"
+              />
+            </label>
+            <button type="submit" disabled={emailLoginBusy}>{emailLoginBusy ? '로그인 중...' : '이메일로 로그인'}</button>
+          </form>
+
           {authError && <p className="error">{authError}</p>}
-          <p className="auth-note">로그인하면 세션은 유지되고, 관리자 API는 쿠키 또는 키로 접근할 수 있어.</p>
-        </div>
+          <p className="auth-note">관리자 계정만 접속돼. 로그인 성공 후에는 세션이 유지돼.</p>
+        </section>
       </div>
     );
   }
@@ -590,13 +636,13 @@ export function AdminApp() {
         {section === 'dashboard' && <DashboardSection stats={stats} trendData={trendData} memberTypeData={memberTypeData} blockData={blockData} roleCounts={roleCounts} reportBreakdown={reportBreakdown} reports={reports} certifications={certifications} mapPoints={mapPoints} adSlots={adSlots} />}
         {section === 'map' && <MapSection mapRef={mapRef} mapError={mapError} />}
         {section === 'users' && <UsersSection users={visibleMembers} query={query} setQuery={setQuery} refresh={refresh} updateUser={updateUser} deleteUserPosts={deleteUserPosts} deleteUser={deleteUser} deleteUsersBulk={deleteUsersBulk} roleFilter={memberRoleFilter} setRoleFilter={setMemberRoleFilter} roleCounts={roleCounts} />}
-        {section === 'reports' && <ReportsSection reports={reports} adminKey={hasAdminKey ? adminKey : ''} refresh={refresh} reportBreakdown={reportBreakdown} />}
+        {section === 'reports' && <ReportsSection reports={reports} refresh={refresh} reportBreakdown={reportBreakdown} />}
         {section === 'resorts' && <ResortsSection resorts={resorts} resortQuery={resortQuery} setResortQuery={setResortQuery} refreshResorts={refreshResorts} updateResort={updateResort} />}
         {section === 'feeds' && <FeedsSection feedRows={feedRows} feedPageRows={feedPageRows} feedPage={feedPage} feedTotalPages={feedTotalPages} setFeedPage={setFeedPage} onDelete={deletePost} onBulkDelete={deletePostsBulk} />}
         {section === 'reels' && <ReelsSection reelRows={reelRows} reelPageRows={reelPageRows} reelPage={reelPage} reelTotalPages={reelTotalPages} setReelPage={setReelPage} getReelThumb={getReelThumb} onDelete={deletePost} onBulkDelete={deletePostsBulk} />}
-        {section === 'ads' && <AdsSection adSlots={adSlots} adminKey={hasAdminKey ? adminKey : ''} refresh={refresh} />}
+        {section === 'ads' && <AdsSection adSlots={adSlots} refresh={refresh} />}
         {section === 'logs' && <LogsSection logs={logs} />}
-        {section === 'settings' && <SettingsSection adminKey={adminKey} setAdminKey={setAdminKey} loading={loading} refresh={refresh} seedBulk={seedBulk} checkUserAdminAuth={checkUserAdminAuth} authCheck={authCheck} sessionUser={sessionUser} reports={reports} certifications={certifications} reportBreakdown={reportBreakdown} />}
+        {section === 'settings' && <SettingsSection loading={loading} refresh={refresh} seedBulk={seedBulk} checkUserAdminAuth={checkUserAdminAuth} authCheck={authCheck} sessionUser={sessionUser} reports={reports} certifications={certifications} reportBreakdown={reportBreakdown} />}
       </main>
     </div>
   );
