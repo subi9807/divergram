@@ -64,7 +64,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (Platform.OS === 'ios' && !Device.isDevice) return;
     if (!isAdMobEnabled()) return;
     const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
     import('react-native-google-mobile-ads')
