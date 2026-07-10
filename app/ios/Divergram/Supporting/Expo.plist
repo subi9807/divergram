@@ -11,6 +11,6 @@
     <key>EXUpdatesEnableBsdiffPatchSupport</key>
     <true/>
     <key>EXUpdatesRuntimeVersion</key>
-    <string>1.2</string>
+    <string>1.2.2</string>
   </dict>
 </plist>
