@@ -82,13 +82,24 @@ export default function LoginScreen() {
 
   const resolveErrorMessage = (error: unknown, mode: EmailAuthMode | 'social' = 'social') => {
     const status = (error as any)?.response?.status;
-    const raw = String((error as any)?.message || '');
+    const responseData = (error as any)?.response?.data || {};
+    const raw = [
+      responseData?.code,
+      responseData?.error,
+      responseData?.message,
+      (error as any)?.code,
+      (error as any)?.message,
+    ].map((value) => String(value || '')).join(' ');
     const rawLower = raw.toLowerCase();
     if (rawLower.includes('urlstring') || rawLower.includes('invalid url')) return t('auth.oauthConfigInvalid');
     if (raw.includes('google_requires_dev_build')) return t('auth.googleRequiresDevBuild');
+    if (raw.includes('google_request_not_ready')) return 'Google 로그인을 준비하는 중입니다. 잠시 후 다시 시도해주세요.';
+    if (raw.includes('google_access_token_missing')) return 'Google 인증 토큰을 확인할 수 없습니다. 다시 로그인해주세요.';
+    if (raw.includes('google_tokeninfo_failed') || raw.includes('google_userinfo_failed')) return 'Google 계정 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
     if (raw.includes('apple_requires_ios')) return 'Apple 로그인은 iOS 기기에서만 사용할 수 있습니다.';
     if (raw.includes('apple_login_unavailable')) return '현재 기기에서 Apple 로그인을 사용할 수 없습니다.';
     if (raw.includes('apple_identity_token_missing')) return 'Apple 인증 토큰을 확인할 수 없습니다.';
+    if (raw.includes('apple_identity_verify_failed')) return 'Apple 인증 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
     if (raw.includes('facebook_login_not_supported')) return 'Facebook 로그인은 아직 지원하지 않습니다.';
     if (raw.includes('missing_google_client_id')) return t('auth.googleConfigMissing');
     if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('kakao_config_missing') || raw.includes('naver_config_missing') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
@@ -101,6 +112,9 @@ export default function LoginScreen() {
     if (raw.includes('instagram_cancelled')) return 'Instagram 로그인이 취소되었습니다.';
     if (raw.includes('instagram_token_exchange_failed')) return t('auth.socialLinkFailed');
     if (raw.includes('instagram_userinfo_failed')) return t('auth.socialLinkFailed');
+    if (raw.includes('unsupported_provider_for_mobile')) return '현재 서버에서 이 SNS 로그인을 지원하지 않습니다.';
+    if (raw.includes('profile_missing_fields')) return 'SNS 계정 정보를 확인하지 못했습니다. 이메일 공개 설정을 확인해주세요.';
+    if (raw.includes('oauth_mobile_failed')) return 'SNS 로그인 처리 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
     if (
       raw.includes('oauth_email_mismatch') ||
       raw.includes('oauth_link_failed') ||

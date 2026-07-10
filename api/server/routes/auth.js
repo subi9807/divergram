@@ -116,6 +116,7 @@ export function registerAuthRoutes(app, deps) {
       resort_amenities: Array.isArray(source.resort_amenities) ? source.resort_amenities : [],
       website: String(source.website || ''),
       account_type: String(source.account_type || 'personal'),
+      diving_level: String(source.diving_level || ''),
       scuba_level: String(source.scuba_level || ''),
       freediving_level: String(source.freediving_level || ''),
       license_image_url: String(source.license_image_url || ''),
@@ -559,7 +560,9 @@ export function registerAuthRoutes(app, deps) {
       if (message === 'user_blocked') return res.status(403).json({ error: 'user_blocked' });
       if (message === 'unsupported_provider_for_mobile') return res.status(400).json({ error: message });
       if (message.startsWith('apple_identity_') || message.startsWith('apple_keys_failed_')) return res.status(400).json({ error: message });
-      if (/_userinfo_failed_/.test(message) || message.startsWith('google_userinfo_failed_')) return res.status(400).json({ error: message });
+      if (/_userinfo_failed_/.test(message) || /_tokeninfo_failed_/.test(message) || message.startsWith('google_userinfo_failed_')) {
+        return res.status(400).json({ error: message });
+      }
       return res.status(500).json({ error: 'oauth_mobile_failed' });
     }
   });
@@ -863,7 +866,7 @@ export function registerAuthRoutes(app, deps) {
     const token = getRequestToken(req);
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     const provider = String(req.params.provider || '').toLowerCase();
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver'].includes(provider)) {
+    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) {
       return res.status(400).json({ error: 'unsupported_provider' });
     }
     try {
