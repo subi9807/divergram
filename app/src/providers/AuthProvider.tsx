@@ -131,9 +131,6 @@ interface AuthContextType {
   syncCurrentUserProfile: (profile: { full_name?: string; username?: string; avatar_url?: string }) => void;
   loginWithGoogle: () => Promise<void>;
   loginWithApple: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
-  loginWithKakao: () => Promise<void>;
-  loginWithNaver: () => Promise<void>;
   loginWithInstagram: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<User | null>;
@@ -143,7 +140,7 @@ interface AuthContextType {
   getAccessToken: () => string | null;
 }
 
-type SocialProvider = 'google' | 'apple' | 'facebook' | 'kakao' | 'naver' | 'instagram';
+type SocialProvider = 'google' | 'apple' | 'instagram';
 
 export type SocialLinkInput = {
   provider: SocialProvider;
@@ -644,47 +641,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithFacebook = async () => {
-    try {
-      throw new Error('facebook_login_not_supported');
-    } catch (error) {
-      console.error('Facebook login error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithKakao = async () => {
-    try {
-      const { kakaoAuth } = await import('../lib/auth/kakao');
-      const { accessToken, userInfo } = await kakaoAuth.login();
-      await handleOAuthSuccess('kakao', accessToken, {
-        id: userInfo.id.toString(),
-        email: userInfo.kakao_account.email,
-        name: userInfo.properties.nickname,
-        avatar: userInfo.properties.profile_image,
-      });
-    } catch (error) {
-      console.error('Kakao login error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithNaver = async () => {
-    try {
-      const { naverAuth } = await import('../lib/auth/naver');
-      const { accessToken, userInfo } = await naverAuth.login();
-      await handleOAuthSuccess('naver', accessToken, {
-        id: userInfo.response.id,
-        email: userInfo.response.email,
-        name: userInfo.response.name,
-        avatar: userInfo.response.profile_image,
-      });
-    } catch (error) {
-      console.error('Naver login error:', error);
-      throw error;
-    }
-  };
-
   const loginWithInstagram = async () => {
     try {
       const { instagramAuth } = await import('../lib/auth/instagram');
@@ -842,9 +798,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     syncCurrentUserProfile,
     loginWithGoogle,
     loginWithApple,
-    loginWithFacebook,
-    loginWithKakao,
-    loginWithNaver,
     loginWithInstagram,
     loginWithEmail,
     signupWithEmail,

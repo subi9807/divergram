@@ -26,17 +26,15 @@ import {
   EyeOff,
   Mail,
   ShieldCheck,
-  UserRound,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
-import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { SocialLinkInput, SocialSignupInput } from '../../src/providers/AuthProvider';
 import { setPendingSignupDraft } from '../../src/services/signupFlowService';
 
-type Provider = 'google' | 'apple' | 'facebook' | 'kakao' | 'naver' | 'instagram';
+type Provider = 'google' | 'apple' | 'instagram';
 type FocusedField = 'name' | 'contact' | 'email' | 'password' | null;
 type EmailAuthMode = 'signin' | 'signup';
 
@@ -50,8 +48,6 @@ export default function LoginScreen() {
   const {
     loginWithGoogle,
     loginWithApple,
-    loginWithKakao,
-    loginWithNaver,
     loginWithInstagram,
     loginWithEmail,
     signupWithSocialAccount,
@@ -74,8 +70,6 @@ export default function LoginScreen() {
   const socialAuth = getSocialAuthConfig();
   const isIOS = Platform.OS === 'ios';
   const hasGoogleLogin = Boolean(socialAuth.googleClientIdIos || socialAuth.googleClientIdAndroid || socialAuth.googleClientIdWeb);
-  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
-  const hasNaverLogin = Boolean(socialAuth.naverClientId && socialAuth.naverClientSecret);
   const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const isSigninDisabled = !email.trim() || !password;
   const isSignupDisabled = !name.trim() || !contact.trim() || !email.trim() || !password;
@@ -100,9 +94,8 @@ export default function LoginScreen() {
     if (raw.includes('apple_login_unavailable')) return '현재 기기에서 Apple 로그인을 사용할 수 없습니다.';
     if (raw.includes('apple_identity_token_missing')) return 'Apple 인증 토큰을 확인할 수 없습니다.';
     if (raw.includes('apple_identity_verify_failed')) return 'Apple 인증 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
-    if (raw.includes('facebook_login_not_supported')) return 'Facebook 로그인은 아직 지원하지 않습니다.';
     if (raw.includes('missing_google_client_id')) return t('auth.googleConfigMissing');
-    if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('kakao_config_missing') || raw.includes('naver_config_missing') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
+    if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
     if (raw.includes('google_profile_missing_fields')) return t('auth.googleProfileMissing');
     if (raw.includes('oauth_backend_not_available')) return t('auth.oauthBackendMissing');
     if (raw.includes('google_userinfo_failed')) return t('auth.googleUserInfoFailed');
@@ -135,12 +128,6 @@ export default function LoginScreen() {
         return 'Google';
       case 'apple':
         return 'Apple';
-      case 'facebook':
-        return 'Facebook';
-      case 'kakao':
-        return 'Kakao';
-      case 'naver':
-        return 'Naver';
       case 'instagram':
         return 'Instagram';
       default:
@@ -187,12 +174,6 @@ export default function LoginScreen() {
           break;
         case 'apple':
           await loginWithApple();
-          break;
-        case 'kakao':
-          await loginWithKakao();
-          break;
-        case 'naver':
-          await loginWithNaver();
           break;
         case 'instagram':
           await loginWithInstagram();
@@ -399,28 +380,6 @@ export default function LoginScreen() {
                     containerStyle={styles.spacingMd}
                   />
                 ) : null}
-                {hasKakaoLogin ? (
-                  <SocialLoginButton
-                    label={t('auth.continueWithKakao', { defaultValue: 'Kakao로 계속하기' })}
-                    onPress={() => handleSocialLogin('kakao')}
-                    icon={<Text style={styles.kakaoIconText}>K</Text>}
-                    disabled={loading}
-                    containerStyle={[styles.spacingMd, styles.kakaoButton]}
-                    iconWrapStyle={styles.kakaoIconWrap}
-                  />
-                ) : null}
-                {hasNaverLogin ? (
-                  <SocialLoginButton
-                    label={t('auth.continueWithNaver')}
-                    onPress={() => handleSocialLogin('naver')}
-                    icon={<UserRound size={18} color="#ffffff" />}
-                    disabled={loading}
-                    containerStyle={[styles.spacingMd, styles.naverButton]}
-                    iconWrapStyle={styles.naverIconWrap}
-                    labelStyle={styles.naverLabel}
-                    chevronColor="#ffffff"
-                  />
-                ) : null}
                 {hasInstagramLogin ? (
                   <SocialLoginButton
                     label={t('auth.continueWithInstagram', { defaultValue: 'Instagram으로 계속하기' })}
@@ -434,7 +393,7 @@ export default function LoginScreen() {
                   />
                 ) : null}
 
-                {!hasGoogleLogin && !hasKakaoLogin && !hasNaverLogin && !hasInstagramLogin ? (
+                {!hasGoogleLogin && !isIOS && !hasInstagramLogin ? (
                   <View style={styles.noProviderNotice}>
                     <Text style={styles.noProviderText}>
                       현재 설정된 SNS 로그인이 없습니다. 이메일 로그인으로 진행해 주세요.
@@ -861,30 +820,6 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     fontSize: 15,
     fontWeight: '700',
-  },
-  kakaoButton: {
-    borderColor: '#f2d84f',
-    backgroundColor: '#fee500',
-  },
-  kakaoIconWrap: {
-    borderColor: 'rgba(120,53,15,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  kakaoIconText: {
-    color: '#191919',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  naverButton: {
-    borderColor: '#00b63c',
-    backgroundColor: '#00c73c',
-  },
-  naverIconWrap: {
-    borderColor: 'rgba(255,255,255,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  naverLabel: {
-    color: '#ffffff',
   },
   instagramButton: {
     borderColor: '#d946ef',

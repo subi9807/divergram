@@ -8,7 +8,7 @@ const zustandStorage = {
   removeItem: (name: string) => storage.delete(name),
 };
 
-export type SocialProvider = 'google' | 'apple' | 'kakao' | 'naver' | 'instagram';
+export type SocialProvider = 'google' | 'apple' | 'instagram';
 
 export type BlockedUser = {
   id: string;
@@ -65,8 +65,6 @@ const defaultInsuranceInfo: InsuranceInfo = {
 const defaultSocialLinks: Record<SocialProvider, { linked: boolean; linkedAt: string }> = {
   google: { linked: false, linkedAt: '' },
   apple: { linked: false, linkedAt: '' },
-  kakao: { linked: false, linkedAt: '' },
-  naver: { linked: false, linkedAt: '' },
   instagram: { linked: false, linkedAt: '' },
 };
 

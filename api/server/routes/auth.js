@@ -482,7 +482,7 @@ export function registerAuthRoutes(app, deps) {
     const shouldAutoCreate = rawAutoCreate === true || String(rawAutoCreate || '').toLowerCase() === 'true';
     const userInfo = req.body?.userInfo && typeof req.body.userInfo === 'object' ? req.body.userInfo : {};
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!accessToken) return res.status(400).json({ error: 'access_token_required' });
 
     try {
@@ -592,7 +592,7 @@ export function registerAuthRoutes(app, deps) {
     const email = normalizeEmail(linkPayload.email || '');
     const sessionDays = parseSessionDays(linkPayload.sessionDays);
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!providerSub || !email) return res.status(400).json({ error: 'invalid_link_payload' });
     if (email !== userEmail) return res.status(409).json({ error: 'oauth_email_mismatch' });
 
@@ -634,7 +634,7 @@ export function registerAuthRoutes(app, deps) {
     const email = normalizeEmail(linkPayload.email || '');
     const sessionDays = parseSessionDays(linkPayload.sessionDays);
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!providerSub || !email) return res.status(400).json({ error: 'invalid_link_payload' });
 
     try {
@@ -866,7 +866,7 @@ export function registerAuthRoutes(app, deps) {
     const token = getRequestToken(req);
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     const provider = String(req.params.provider || '').toLowerCase();
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) {
+    if (!['google', 'apple', 'instagram'].includes(provider)) {
       return res.status(400).json({ error: 'unsupported_provider' });
     }
     try {

@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
-import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
@@ -22,8 +21,6 @@ function pickParam(value: string | string[] | undefined): string {
 type DetailMode =
   | 'link-google'
   | 'link-apple'
-  | 'link-kakao'
-  | 'link-naver'
   | 'link-instagram'
   | 'account-delete'
   | 'blocked-users'
@@ -38,8 +35,6 @@ function asMode(value: string): DetailMode {
   const allowed: DetailMode[] = [
     'link-google',
     'link-apple',
-    'link-kakao',
-    'link-naver',
     'link-instagram',
     'account-delete',
     'blocked-users',
@@ -64,10 +59,9 @@ export default function SettingsDetailScreen() {
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ mode?: string | string[] }>();
   const mode = asMode(pickParam(params.mode));
-  const { loginWithGoogle, loginWithApple, loginWithKakao, loginWithNaver, loginWithInstagram, linkSocialAccount, logout } = useAuth();
+  const { loginWithGoogle, loginWithApple, loginWithInstagram, linkSocialAccount, logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
   const socialAuth = getSocialAuthConfig();
-  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
   const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const setSocialLinked = useSettingsFeatureStore((state) => state.setSocialLinked);
@@ -138,8 +132,6 @@ export default function SettingsDetailScreen() {
   const title = useMemo(() => {
     if (mode === 'link-google') return t('settingsPage.account.googleLink', { defaultValue: 'Google 로그인 연동' });
     if (mode === 'link-apple') return t('settingsPage.account.appleLink', { defaultValue: 'Apple 로그인 연동' });
-    if (mode === 'link-kakao') return t('settingsPage.account.kakaoLink', { defaultValue: 'Kakao 로그인 연동' });
-    if (mode === 'link-naver') return t('settingsPage.account.naverLink', { defaultValue: 'Naver 로그인 연동' });
     if (mode === 'link-instagram') return t('settingsPage.account.instagramLink', { defaultValue: 'Instagram 로그인 연동' });
     if (mode === 'account-delete') return t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
@@ -166,8 +158,6 @@ export default function SettingsDetailScreen() {
   const socialProvider = useMemo<SocialProvider | null>(() => {
     if (mode === 'link-google') return 'google';
     if (mode === 'link-apple') return 'apple';
-    if (mode === 'link-kakao') return 'kakao';
-    if (mode === 'link-naver') return 'naver';
     if (mode === 'link-instagram') return 'instagram';
     return null;
   }, [mode]);
@@ -175,8 +165,6 @@ export default function SettingsDetailScreen() {
   const socialLabel = useMemo(() => {
     if (socialProvider === 'google') return 'Google';
     if (socialProvider === 'apple') return 'Apple';
-    if (socialProvider === 'kakao') return 'Kakao';
-    if (socialProvider === 'naver') return 'Naver';
     if (socialProvider === 'instagram') return 'Instagram';
     return '';
   }, [socialProvider]);
@@ -212,14 +200,6 @@ export default function SettingsDetailScreen() {
       });
       return;
     }
-    if (socialProvider === 'kakao' && !hasKakaoLogin) {
-      showToast({
-        type: 'error',
-        title: t('auth.error', { defaultValue: '오류' }),
-        message: 'Kakao 로그인 설정이 아직 완료되지 않았습니다.',
-      });
-      return;
-    }
     if (socialProvider === 'instagram' && !hasInstagramLogin) {
       showToast({
         type: 'error',
@@ -232,8 +212,6 @@ export default function SettingsDetailScreen() {
     try {
       if (socialProvider === 'google') await loginWithGoogle();
       if (socialProvider === 'apple') await loginWithApple();
-      if (socialProvider === 'kakao') await loginWithKakao();
-      if (socialProvider === 'naver') await loginWithNaver();
       if (socialProvider === 'instagram') await loginWithInstagram();
       await refreshSocialLinks();
       showToast({

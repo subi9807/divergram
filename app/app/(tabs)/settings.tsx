@@ -21,7 +21,6 @@ import {
   UserRoundCog,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
-import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
@@ -222,7 +221,6 @@ export default function SettingsScreen() {
   const { logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
   const socialAuth = getSocialAuthConfig();
-  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
   const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
@@ -518,28 +516,6 @@ export default function SettingsScreen() {
                   }
                 />
               ) : null}
-              {hasKakaoLogin ? (
-                <SocialButton
-                  label="Kakao"
-                  actionLabel={socialActionLabel('kakao')}
-                  onPress={() => router.push('/(tabs)/settings-detail?mode=link-kakao' as never)}
-                  badge={
-                    <View style={[styles.socialBadge, { backgroundColor: '#FEE500' }]}>
-                      <Text style={{ fontSize: 15, fontWeight: '800', color: '#191919' }}>K</Text>
-                    </View>
-                  }
-                />
-              ) : null}
-              <SocialButton
-                label="Naver"
-                actionLabel={socialActionLabel('naver')}
-                onPress={() => router.push('/(tabs)/settings-detail?mode=link-naver' as never)}
-                badge={
-                  <View style={[styles.socialBadge, { backgroundColor: '#00c73c' }]}>
-                    <Text style={{ fontSize: 13, fontWeight: '900', color: '#ffffff' }}>N</Text>
-                  </View>
-                }
-              />
               {hasInstagramLogin ? (
                 <SocialButton
                   label="Instagram"
