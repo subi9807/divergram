@@ -24,12 +24,13 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Facebook,
   Mail,
   ShieldCheck,
   UserRound,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
+import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
+import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { SocialLinkInput, SocialSignupInput } from '../../src/providers/AuthProvider';
@@ -49,7 +50,6 @@ export default function LoginScreen() {
   const {
     loginWithGoogle,
     loginWithApple,
-    loginWithFacebook,
     loginWithKakao,
     loginWithNaver,
     loginWithInstagram,
@@ -71,6 +71,12 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<FocusedField>(null);
   const [pendingSocialLink, setPendingSocialLink] = useState<SocialLinkInput | null>(null);
+  const socialAuth = getSocialAuthConfig();
+  const isIOS = Platform.OS === 'ios';
+  const hasGoogleLogin = Boolean(socialAuth.googleClientIdIos || socialAuth.googleClientIdAndroid || socialAuth.googleClientIdWeb);
+  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
+  const hasNaverLogin = Boolean(socialAuth.naverClientId && socialAuth.naverClientSecret);
+  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const isSigninDisabled = !email.trim() || !password;
   const isSignupDisabled = !name.trim() || !contact.trim() || !email.trim() || !password;
 
@@ -83,6 +89,7 @@ export default function LoginScreen() {
     if (raw.includes('apple_requires_ios')) return 'Apple 로그인은 iOS 기기에서만 사용할 수 있습니다.';
     if (raw.includes('apple_login_unavailable')) return '현재 기기에서 Apple 로그인을 사용할 수 없습니다.';
     if (raw.includes('apple_identity_token_missing')) return 'Apple 인증 토큰을 확인할 수 없습니다.';
+    if (raw.includes('facebook_login_not_supported')) return 'Facebook 로그인은 아직 지원하지 않습니다.';
     if (raw.includes('missing_google_client_id')) return t('auth.googleConfigMissing');
     if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('kakao_config_missing') || raw.includes('naver_config_missing') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
     if (raw.includes('google_profile_missing_fields')) return t('auth.googleProfileMissing');
@@ -166,9 +173,6 @@ export default function LoginScreen() {
           break;
         case 'apple':
           await loginWithApple();
-          break;
-        case 'facebook':
-          await loginWithFacebook();
           break;
         case 'kakao':
           await loginWithKakao();
@@ -364,54 +368,65 @@ export default function LoginScreen() {
           <View style={styles.formCard}>
             {!showEmailForm ? (
               <>
-                <SocialLoginButton
-                  label={t('auth.continueWithGoogle')}
-                  onPress={() => handleSocialLogin('google')}
-                  icon="G"
-                  disabled={loading}
-                />
-                <SocialLoginButton
-                  label={t('auth.continueWithApple')}
-                  onPress={() => handleSocialLogin('apple')}
-                  icon={<Apple size={18} color="#0f172a" />}
-                  disabled={loading}
-                  containerStyle={styles.spacingMd}
-                />
-                <SocialLoginButton
-                  label={t('auth.continueWithFacebook')}
-                  onPress={() => handleSocialLogin('facebook')}
-                  icon={<Facebook size={18} color="#1877f2" />}
-                  disabled={loading}
-                  containerStyle={styles.spacingMd}
-                />
-                <SocialLoginButton
-                  label={t('auth.continueWithKakao', { defaultValue: 'Kakao로 계속하기' })}
-                  onPress={() => handleSocialLogin('kakao')}
-                  icon={<Text style={styles.kakaoIconText}>K</Text>}
-                  disabled={loading}
-                  containerStyle={[styles.spacingMd, styles.kakaoButton]}
-                  iconWrapStyle={styles.kakaoIconWrap}
-                />
-                <SocialLoginButton
-                  label={t('auth.continueWithNaver')}
-                  onPress={() => handleSocialLogin('naver')}
-                  icon={<UserRound size={18} color="#ffffff" />}
-                  disabled={loading}
-                  containerStyle={[styles.spacingMd, styles.naverButton]}
-                  iconWrapStyle={styles.naverIconWrap}
-                  labelStyle={styles.naverLabel}
-                  chevronColor="#ffffff"
-                />
-                <SocialLoginButton
-                  label={t('auth.continueWithInstagram', { defaultValue: 'Instagram으로 계속하기' })}
-                  onPress={() => handleSocialLogin('instagram')}
-                  icon={<Text style={styles.instagramIconText}>◎</Text>}
-                  disabled={loading}
-                  containerStyle={[styles.spacingMd, styles.instagramButton]}
-                  iconWrapStyle={styles.instagramIconWrap}
-                  labelStyle={styles.instagramLabel}
-                  chevronColor="#ffffff"
-                />
+                {hasGoogleLogin ? (
+                  <SocialLoginButton
+                    label={t('auth.continueWithGoogle')}
+                    onPress={() => handleSocialLogin('google')}
+                    icon="G"
+                    disabled={loading}
+                  />
+                ) : null}
+                {isIOS ? (
+                  <SocialLoginButton
+                    label={t('auth.continueWithApple')}
+                    onPress={() => handleSocialLogin('apple')}
+                    icon={<Apple size={18} color="#0f172a" />}
+                    disabled={loading}
+                    containerStyle={styles.spacingMd}
+                  />
+                ) : null}
+                {hasKakaoLogin ? (
+                  <SocialLoginButton
+                    label={t('auth.continueWithKakao', { defaultValue: 'Kakao로 계속하기' })}
+                    onPress={() => handleSocialLogin('kakao')}
+                    icon={<Text style={styles.kakaoIconText}>K</Text>}
+                    disabled={loading}
+                    containerStyle={[styles.spacingMd, styles.kakaoButton]}
+                    iconWrapStyle={styles.kakaoIconWrap}
+                  />
+                ) : null}
+                {hasNaverLogin ? (
+                  <SocialLoginButton
+                    label={t('auth.continueWithNaver')}
+                    onPress={() => handleSocialLogin('naver')}
+                    icon={<UserRound size={18} color="#ffffff" />}
+                    disabled={loading}
+                    containerStyle={[styles.spacingMd, styles.naverButton]}
+                    iconWrapStyle={styles.naverIconWrap}
+                    labelStyle={styles.naverLabel}
+                    chevronColor="#ffffff"
+                  />
+                ) : null}
+                {hasInstagramLogin ? (
+                  <SocialLoginButton
+                    label={t('auth.continueWithInstagram', { defaultValue: 'Instagram으로 계속하기' })}
+                    onPress={() => handleSocialLogin('instagram')}
+                    icon={<Text style={styles.instagramIconText}>◎</Text>}
+                    disabled={loading}
+                    containerStyle={[styles.spacingMd, styles.instagramButton]}
+                    iconWrapStyle={styles.instagramIconWrap}
+                    labelStyle={styles.instagramLabel}
+                    chevronColor="#ffffff"
+                  />
+                ) : null}
+
+                {!hasGoogleLogin && !hasKakaoLogin && !hasNaverLogin && !hasInstagramLogin ? (
+                  <View style={styles.noProviderNotice}>
+                    <Text style={styles.noProviderText}>
+                      현재 설정된 SNS 로그인이 없습니다. 이메일 로그인으로 진행해 주세요.
+                    </Text>
+                  </View>
+                ) : null}
 
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
@@ -792,6 +807,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  noProviderNotice: {
+    marginTop: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#d6e3f0',
+    backgroundColor: '#f8fbff',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  noProviderText: {
+    color: '#4b647f',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
   spacingMd: {
     marginTop: 10,

@@ -646,9 +646,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithFacebook = async () => {
     try {
-      // Facebook OAuth implementation would go here
-      // For now, using mock data
-      await handleOAuthSuccess('facebook', 'mock_token');
+      throw new Error('facebook_login_not_supported');
     } catch (error) {
       console.error('Facebook login error:', error);
       throw error;

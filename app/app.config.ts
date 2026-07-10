@@ -71,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '30',
+      buildNumber: '31',
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
       infoPlist: {

@@ -334,12 +334,28 @@ export function registerAuthRoutes(app, deps) {
     };
   };
 
+  const fetchInstagramProfileByAccessToken = async (accessToken) => {
+    const url = new URL('https://graph.instagram.com/me');
+    url.searchParams.set('fields', 'id,username');
+    url.searchParams.set('access_token', accessToken);
+    const infoResp = await fetch(url);
+    if (!infoResp.ok) throw new Error(`instagram_userinfo_failed_${infoResp.status}`);
+    const info = await infoResp.json();
+    const sub = String(info.id || '').trim();
+    return {
+      sub,
+      email: sub ? `instagram_${sub}@oauth.divergram.local` : '',
+      name: String(info.username || '').trim(),
+    };
+  };
+
   const fetchMobileOAuthProfile = async (provider, accessToken, userInfo = {}) => {
     if (provider === 'google') return fetchGoogleProfileByAnyToken(accessToken);
     if (provider === 'apple') return fetchAppleProfileByIdentityToken(accessToken, userInfo);
     if (provider === 'kakao') return fetchKakaoProfileByAccessToken(accessToken);
     if (provider === 'naver') return fetchNaverProfileByAccessToken(accessToken);
     if (provider === 'facebook') return fetchFacebookProfileByAccessToken(accessToken);
+    if (provider === 'instagram') return fetchInstagramProfileByAccessToken(accessToken);
     throw new Error('unsupported_provider_for_mobile');
   };
 
@@ -465,7 +481,7 @@ export function registerAuthRoutes(app, deps) {
     const shouldAutoCreate = rawAutoCreate === true || String(rawAutoCreate || '').toLowerCase() === 'true';
     const userInfo = req.body?.userInfo && typeof req.body.userInfo === 'object' ? req.body.userInfo : {};
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!accessToken) return res.status(400).json({ error: 'access_token_required' });
 
     try {
@@ -573,7 +589,7 @@ export function registerAuthRoutes(app, deps) {
     const email = normalizeEmail(linkPayload.email || '');
     const sessionDays = parseSessionDays(linkPayload.sessionDays);
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!providerSub || !email) return res.status(400).json({ error: 'invalid_link_payload' });
     if (email !== userEmail) return res.status(409).json({ error: 'oauth_email_mismatch' });
 
@@ -615,7 +631,7 @@ export function registerAuthRoutes(app, deps) {
     const email = normalizeEmail(linkPayload.email || '');
     const sessionDays = parseSessionDays(linkPayload.sessionDays);
 
-    if (!['google', 'apple', 'facebook', 'kakao', 'naver'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    if (!['google', 'apple', 'facebook', 'kakao', 'naver', 'instagram'].includes(provider)) return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     if (!providerSub || !email) return res.status(400).json({ error: 'invalid_link_payload' });
 
     try {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +21,8 @@ import {
   UserRoundCog,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
+import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
+import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useSettingsStore } from '../../src/stores/settingsStore';
@@ -218,6 +220,10 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { isDark } = useResolvedTheme();
   const { logout } = useAuth();
+  const isIOS = Platform.OS === 'ios';
+  const socialAuth = getSocialAuthConfig();
+  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
+  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -500,26 +506,30 @@ export default function SettingsScreen() {
                   </View>
                 }
               />
-              <SocialButton
-                label="Apple"
-                actionLabel={socialActionLabel('apple')}
-                onPress={() => router.push('/(tabs)/settings-detail?mode=link-apple' as never)}
-                badge={
-                  <View style={[styles.socialBadge, { backgroundColor: '#111827' }]}>
-                    <Apple size={16} color="#ffffff" />
-                  </View>
-                }
-              />
-              <SocialButton
-                label="Kakao"
-                actionLabel={socialActionLabel('kakao')}
-                onPress={() => router.push('/(tabs)/settings-detail?mode=link-kakao' as never)}
-                badge={
-                  <View style={[styles.socialBadge, { backgroundColor: '#FEE500' }]}>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#191919' }}>K</Text>
-                  </View>
-                }
-              />
+              {isIOS ? (
+                <SocialButton
+                  label="Apple"
+                  actionLabel={socialActionLabel('apple')}
+                  onPress={() => router.push('/(tabs)/settings-detail?mode=link-apple' as never)}
+                  badge={
+                    <View style={[styles.socialBadge, { backgroundColor: '#111827' }]}>
+                      <Apple size={16} color="#ffffff" />
+                    </View>
+                  }
+                />
+              ) : null}
+              {hasKakaoLogin ? (
+                <SocialButton
+                  label="Kakao"
+                  actionLabel={socialActionLabel('kakao')}
+                  onPress={() => router.push('/(tabs)/settings-detail?mode=link-kakao' as never)}
+                  badge={
+                    <View style={[styles.socialBadge, { backgroundColor: '#FEE500' }]}>
+                      <Text style={{ fontSize: 15, fontWeight: '800', color: '#191919' }}>K</Text>
+                    </View>
+                  }
+                />
+              ) : null}
               <SocialButton
                 label="Naver"
                 actionLabel={socialActionLabel('naver')}
@@ -530,16 +540,18 @@ export default function SettingsScreen() {
                   </View>
                 }
               />
-              <SocialButton
-                label="Instagram"
-                actionLabel={socialActionLabel('instagram')}
-                onPress={() => router.push('/(tabs)/settings-detail?mode=link-instagram' as never)}
-                badge={
-                  <View style={[styles.socialBadge, { backgroundColor: '#F09433' }]}>
-                    <Text style={{ fontSize: 12, fontWeight: '900', color: '#ffffff' }}>IG</Text>
-                  </View>
-                }
-              />
+              {hasInstagramLogin ? (
+                <SocialButton
+                  label="Instagram"
+                  actionLabel={socialActionLabel('instagram')}
+                  onPress={() => router.push('/(tabs)/settings-detail?mode=link-instagram' as never)}
+                  badge={
+                    <View style={[styles.socialBadge, { backgroundColor: '#F09433' }]}>
+                      <Text style={{ fontSize: 12, fontWeight: '900', color: '#ffffff' }}>IG</Text>
+                    </View>
+                  }
+                />
+              ) : null}
             </View>
           </View>
           <ActionRow

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
+import { KAKAO_LOGIN_ENABLED } from '../../src/config/featureFlags';
+import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useToast } from '../../src/components/Toast';
@@ -63,6 +65,10 @@ export default function SettingsDetailScreen() {
   const params = useLocalSearchParams<{ mode?: string | string[] }>();
   const mode = asMode(pickParam(params.mode));
   const { loginWithGoogle, loginWithApple, loginWithKakao, loginWithNaver, loginWithInstagram, linkSocialAccount, logout } = useAuth();
+  const isIOS = Platform.OS === 'ios';
+  const socialAuth = getSocialAuthConfig();
+  const hasKakaoLogin = Boolean(KAKAO_LOGIN_ENABLED && socialAuth.kakaoRestApiKey);
+  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const setSocialLinked = useSettingsFeatureStore((state) => state.setSocialLinked);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
@@ -198,6 +204,30 @@ export default function SettingsDetailScreen() {
 
   const handleLinkProvider = async () => {
     if (!socialProvider || busy) return;
+    if (socialProvider === 'apple' && !isIOS) {
+      showToast({
+        type: 'error',
+        title: t('auth.error', { defaultValue: '오류' }),
+        message: 'Apple 로그인은 iOS에서만 사용할 수 있습니다.',
+      });
+      return;
+    }
+    if (socialProvider === 'kakao' && !hasKakaoLogin) {
+      showToast({
+        type: 'error',
+        title: t('auth.error', { defaultValue: '오류' }),
+        message: 'Kakao 로그인 설정이 아직 완료되지 않았습니다.',
+      });
+      return;
+    }
+    if (socialProvider === 'instagram' && !hasInstagramLogin) {
+      showToast({
+        type: 'error',
+        title: t('auth.error', { defaultValue: '오류' }),
+        message: 'Instagram 로그인 설정이 아직 완료되지 않았습니다.',
+      });
+      return;
+    }
     setBusy(true);
     try {
       if (socialProvider === 'google') await loginWithGoogle();
