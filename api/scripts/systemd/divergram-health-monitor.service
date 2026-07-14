@@ -1,0 +1,10 @@
+[Unit]
+Description=Divergram API health monitor
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/divergram/health-monitor.env
+ExecStart=/usr/local/sbin/divergram-health-monitor
+User=root
+Group=root

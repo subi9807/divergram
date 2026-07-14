@@ -11,6 +11,14 @@ import { getSocialAuthConfig, toGoogleIosUrlScheme } from '../config/socialAuth'
 import { useToast } from '../components/Toast';
 import i18n from '../lib/i18n';
 import { storage } from '../lib/storage';
+import {
+  AUTH_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  deleteSecureAuthValue,
+  getSecureAuthValue,
+  hydrateSecureAuthStorage,
+  setSecureAuthValue,
+} from '../lib/secureAuthStorage';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
 import { startUserPreferencesSync, stopUserPreferencesSync } from '../services/userPreferencesSyncService';
 
@@ -22,8 +30,6 @@ function normalizeEnvValue(value: string | null | undefined): string {
   return normalized;
 }
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 const AUTH_USER_KEY = 'auth_user';
 const AUTH_SESSION_EXPIRES_AT_KEY = 'auth_session_expires_at';
 const AUTH_STORAGE_KEYS = [AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY, AUTH_USER_KEY, AUTH_SESSION_EXPIRES_AT_KEY] as const;
@@ -60,7 +66,8 @@ async function hydrateAuthBackup() {
   try {
     const entries = await AsyncStorage.multiGet([...AUTH_STORAGE_KEYS]);
     const lookup = Object.fromEntries(entries.map(([key, value]) => [key, value || '']));
-    const token = String(lookup[AUTH_TOKEN_KEY] || '').trim();
+    await hydrateSecureAuthStorage();
+    const token = String(getSecureAuthValue(AUTH_TOKEN_KEY) || '').trim();
     if (!token) return null;
     let cachedUser: User | null = null;
     const rawUser = String(lookup[AUTH_USER_KEY] || '').trim();
@@ -73,7 +80,7 @@ async function hydrateAuthBackup() {
     }
     return {
       token,
-      refreshToken: String(lookup[REFRESH_TOKEN_KEY] || '').trim() || null,
+      refreshToken: String(getSecureAuthValue(REFRESH_TOKEN_KEY) || '').trim() || null,
       user: cachedUser,
       sessionExpiresAt: parseDateMs(lookup[AUTH_SESSION_EXPIRES_AT_KEY]),
     };
@@ -84,15 +91,13 @@ async function hydrateAuthBackup() {
 
 function persistAuthBackup(payload: { token: string; refreshToken?: string | null; user?: User | null; sessionExpiresAt?: string | null }) {
   void AsyncStorage.multiSet([
-    [AUTH_TOKEN_KEY, payload.token],
-    [REFRESH_TOKEN_KEY, payload.refreshToken || ''],
     [AUTH_USER_KEY, payload.user ? JSON.stringify(payload.user) : ''],
     [AUTH_SESSION_EXPIRES_AT_KEY, payload.sessionExpiresAt || ''],
   ]).catch(() => undefined);
 }
 
 function clearAuthBackup() {
-  void AsyncStorage.multiRemove([...AUTH_STORAGE_KEYS]).catch(() => undefined);
+  void AsyncStorage.multiRemove([AUTH_USER_KEY, AUTH_SESSION_EXPIRES_AT_KEY]).catch(() => undefined);
 }
 
 function resolveSessionExpiryMs(sessionDays?: number) {
@@ -296,8 +301,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
   const clearAuthSession = useCallback(() => {
-    storage.delete(AUTH_TOKEN_KEY);
-    storage.delete(REFRESH_TOKEN_KEY);
+    deleteSecureAuthValue(AUTH_TOKEN_KEY);
+    deleteSecureAuthValue(REFRESH_TOKEN_KEY);
     storage.delete(AUTH_USER_KEY);
     storage.delete(AUTH_SESSION_EXPIRES_AT_KEY);
     clearAuthBackup();
@@ -321,10 +326,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const token = String(payload?.token || payload?.accessToken || payload?.access_token || '').trim();
       if (!token) throw new Error('missing_auth_token');
-      storage.set(AUTH_TOKEN_KEY, token);
+      setSecureAuthValue(AUTH_TOKEN_KEY, token);
       const nextRefreshToken = String(payload?.refreshToken || payload?.refresh_token || '').trim();
-      if (nextRefreshToken) storage.set(REFRESH_TOKEN_KEY, nextRefreshToken);
-      else if (!storage.getString(REFRESH_TOKEN_KEY)) storage.delete(REFRESH_TOKEN_KEY);
+      if (nextRefreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, nextRefreshToken);
+      else if (!getSecureAuthValue(REFRESH_TOKEN_KEY)) deleteSecureAuthValue(REFRESH_TOKEN_KEY);
 
       const userPayload = payload?.user || {};
       const profilePayload = payload?.profile || {};
@@ -465,8 +470,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const previewToken = String(previewPayload.auth.token || 'layout-preview-token').trim();
         const previewRefreshToken = String(previewPayload.auth.refreshToken || '').trim();
         const sessionExpiresAt = previewPayload.auth.sessionExpiresAt || new Date(resolveSessionExpiryMs(DEFAULT_SESSION_DAYS)).toISOString();
-        storage.set(AUTH_TOKEN_KEY, previewToken);
-        if (previewRefreshToken) storage.set(REFRESH_TOKEN_KEY, previewRefreshToken);
+        setSecureAuthValue(AUTH_TOKEN_KEY, previewToken);
+        if (previewRefreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, previewRefreshToken);
         storage.set(AUTH_USER_KEY, JSON.stringify(previewUser));
         storage.set(AUTH_SESSION_EXPIRES_AT_KEY, sessionExpiresAt);
         setUser(previewUser);
@@ -475,7 +480,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    let token = storage.getString(AUTH_TOKEN_KEY);
+    await hydrateSecureAuthStorage();
+    let token = getSecureAuthValue(AUTH_TOKEN_KEY);
     let rawUser = storage.getString(AUTH_USER_KEY);
     let sessionExpiresAt = parseDateMs(storage.getString(AUTH_SESSION_EXPIRES_AT_KEY));
     if (!token || !rawUser || !sessionExpiresAt) {
@@ -488,8 +494,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!sessionExpiresAt && backup.sessionExpiresAt) {
           sessionExpiresAt = backup.sessionExpiresAt;
         }
-        storage.set(AUTH_TOKEN_KEY, token);
-        if (backup.refreshToken) storage.set(REFRESH_TOKEN_KEY, backup.refreshToken);
+        setSecureAuthValue(AUTH_TOKEN_KEY, token);
+        if (backup.refreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, backup.refreshToken);
         if (backup.user) storage.set(AUTH_USER_KEY, JSON.stringify(backup.user));
         if (backup.sessionExpiresAt) storage.set(AUTH_SESSION_EXPIRES_AT_KEY, new Date(backup.sessionExpiresAt).toISOString());
       }
@@ -540,7 +546,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 401 || status === 403) {
-        const refreshToken = storage.getString(REFRESH_TOKEN_KEY);
+        const refreshToken = getSecureAuthValue(REFRESH_TOKEN_KEY);
         if (refreshToken) {
           try {
             const refreshed = await withTimeout(
@@ -845,7 +851,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuthSession, showToast]);
 
   const getAccessToken = () => {
-    return storage.getString(AUTH_TOKEN_KEY) || null;
+    return getSecureAuthValue(AUTH_TOKEN_KEY);
   };
 
   const value = {

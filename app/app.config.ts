@@ -79,6 +79,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const paypalClientId = getPaypalClientId();
   const paypalHostedButtonId = getPaypalHostedButtonId();
   const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production';
+  const sentryOrg = String(process.env.SENTRY_ORG || '').trim();
+  const sentryProject = String(process.env.SENTRY_PROJECT || '').trim();
   const expoDevClientPlugin = isProductionBuild
     ? []
     : [
@@ -100,7 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2.3',
+    version: '1.2.4',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
@@ -109,7 +111,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '38',
+      buildNumber: '39',
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
       infoPlist: {
@@ -146,7 +148,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 32,
+      versionCode: 33,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -195,6 +197,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       'expo-image',
       'expo-image-picker',
       'expo-sqlite',
+      'expo-secure-store',
+      ...(sentryOrg && sentryProject
+        ? [['@sentry/react-native/expo', { organization: sentryOrg, project: sentryProject }]]
+        : []),
       'expo-apple-authentication',
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',

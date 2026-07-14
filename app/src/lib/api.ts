@@ -1,6 +1,7 @@
 import { create } from 'axios';
 import i18n from './i18n';
 import { storage } from './storage';
+import { getSecureAuthValue } from './secureAuthStorage';
 
 const RAW_API_BASE =
   process.env.EXPO_PUBLIC_DIVERGRAM_API_BASE ||
@@ -21,7 +22,7 @@ const axiosInstance = create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = storage.getString('auth_token');
+    const token = getSecureAuthValue('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

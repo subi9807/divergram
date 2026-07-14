@@ -2,7 +2,7 @@
   "name": "divergram",
   "packageManager": "pnpm@11.7.0",
   "main": "./index.js",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "private": true,
   "scripts": {
     "dev": "EXPO_NO_TELEMETRY=1 expo start --port 8081 --tunnel --non-interactive",
@@ -57,6 +57,7 @@
     "expo-location": "~56.0.18",
     "expo-notifications": "~56.0.18",
     "expo-router": "~56.2.11",
+    "expo-secure-store": "~56.0.4",
     "expo-splash-screen": "~56.0.10",
     "expo-sqlite": "~56.0.5",
     "expo-status-bar": "~56.0.4",

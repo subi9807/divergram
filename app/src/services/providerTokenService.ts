@@ -1,4 +1,4 @@
-import { apiClient, type ExternalProviderAuthResult, type ExternalProviderKey } from '../lib/api';
+import { type ExternalProviderAuthResult, type ExternalProviderKey } from '../lib/api';
 import { storage } from '../lib/storage';
 
 export type ProviderTokenState = {
@@ -28,8 +28,8 @@ function sanitizeTokenState(input: Partial<ProviderTokenState>, provider: Extern
   const now = new Date().toISOString();
   return {
     provider,
-    accessToken: String(input.accessToken || '').trim() || undefined,
-    refreshToken: String(input.refreshToken || '').trim() || undefined,
+    accessToken: undefined,
+    refreshToken: undefined,
     expiresAt: toIso(input.expiresAt),
     providerUserId: String(input.providerUserId || '').trim() || undefined,
     accountLabel: String(input.accountLabel || '').trim() || undefined,
@@ -80,20 +80,6 @@ export function isProviderTokenExpired(state: ProviderTokenState | null, skewMs 
 }
 
 export async function ensureProviderAccessToken(provider: ExternalProviderKey): Promise<string | undefined> {
-  const current = getProviderTokenState(provider);
-  if (!current?.accessToken && !current?.refreshToken) return undefined;
-  if (!isProviderTokenExpired(current)) return current?.accessToken;
-  if (!current?.refreshToken) return current?.accessToken;
-
-  try {
-    const refreshed = await apiClient.refreshExternalProviderToken(provider, {
-      refreshToken: current.refreshToken,
-      accessToken: current.accessToken,
-      providerUserId: current.providerUserId,
-    });
-    const next = updateProviderTokenFromAuthResult(provider, refreshed);
-    return next.accessToken || current.accessToken;
-  } catch {
-    return current.accessToken;
-  }
+  void provider;
+  return undefined;
 }

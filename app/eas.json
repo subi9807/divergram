@@ -16,6 +16,9 @@
     "production": {
       "channel": "production",
       "autoIncrement": false,
+      "android": {
+        "image": "ubuntu-24.04-jdk-17-ndk-r27b-sdk-55"
+      },
       "env": {
         "EXPO_USE_PRECOMPILED_MODULES": "0"
       }

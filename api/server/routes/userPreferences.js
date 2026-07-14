@@ -128,7 +128,27 @@ async function readPreferences(pool, userId) {
     "SELECT data, updated_at FROM app_records WHERE table_name='user_preferences' AND record_id=$1 LIMIT 1",
     [String(userId)]
   );
-  return result.rows[0] || null;
+  const row = result.rows[0] || null;
+  if (!row?.data) return row;
+  const data = { ...row.data };
+  if (data.sensitiveData) {
+    const sensitive = decryptSensitiveJson(data.sensitiveData, {});
+    data.emergencyContact = sensitive?.emergencyContact || DEFAULT_PREFERENCES.emergencyContact;
+    data.insuranceInfo = sensitive?.insuranceInfo || DEFAULT_PREFERENCES.insuranceInfo;
+    delete data.sensitiveData;
+  }
+  return { ...row, data };
+}
+
+function encryptPreferences(preferences) {
+  const stored = { ...preferences };
+  stored.sensitiveData = encryptSensitiveJson({
+    emergencyContact: stored.emergencyContact,
+    insuranceInfo: stored.insuranceInfo,
+  });
+  delete stored.emergencyContact;
+  delete stored.insuranceInfo;
+  return stored;
 }
 
 export function registerUserPreferencesRoutes(app, { pool, getAuthUserId, authRateLimit }) {
@@ -160,7 +180,7 @@ export function registerUserPreferencesRoutes(app, { pool, getAuthUserId, authRa
          ON CONFLICT (table_name, record_id)
          DO UPDATE SET data=EXCLUDED.data, updated_at=now()
          RETURNING updated_at`,
-        [String(userId), JSON.stringify(preferences)]
+        [String(userId), JSON.stringify(encryptPreferences(preferences))]
       );
       return res.json({ ok: true, data: preferences, exists: true, updatedAt: result.rows[0]?.updated_at || null });
     } catch {
@@ -168,3 +188,4 @@ export function registerUserPreferencesRoutes(app, { pool, getAuthUserId, authRa
     }
   });
 }
+import { decryptSensitiveJson, encryptSensitiveJson } from '../lib/dataEncryption.js';

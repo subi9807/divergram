@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node server/index.js",
     "start": "node server/index.js",
-    "worker:queue": "node server/queue-worker.js"
+    "worker:queue": "node server/queue-worker.js",
+    "test": "node --test server/**/*.test.js",
+    "test:production-smoke": "node scripts/smoke-production.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
