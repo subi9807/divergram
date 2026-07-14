@@ -19,7 +19,8 @@
     "ios": "expo run:ios",
     "android:release": "expo run:android --variant release",
     "ios:release": "expo run:ios --configuration Release",
-    "postinstall": "node scripts/fix-expo-xcframework.js"
+    "postinstall": "node scripts/fix-expo-xcframework.js",
+    "eas-build-post-install": "node scripts/ensure-hermes-executable.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
