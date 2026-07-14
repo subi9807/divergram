@@ -2,9 +2,10 @@
 const fs = require('fs');
 const path = require('path');
 
+const scriptDir = path.dirname(require.main?.filename || process.argv[1]);
 const platformDir = process.platform === 'darwin' ? 'osx-bin' : 'linux64-bin';
 const linkedCompiler = path.join(
-  __dirname,
+  scriptDir,
   '..',
   'node_modules',
   'hermes-compiler',
@@ -13,7 +14,7 @@ const linkedCompiler = path.join(
   'hermesc'
 );
 
-const pnpmStore = path.join(__dirname, '..', 'node_modules', '.pnpm');
+const pnpmStore = path.join(scriptDir, '..', 'node_modules', '.pnpm');
 const storedCompiler = fs.existsSync(pnpmStore)
   ? fs
       .readdirSync(pnpmStore)
