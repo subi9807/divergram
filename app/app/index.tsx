@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, StatusBar, StyleSheet, View } from 'react-native';
 import { useAuth } from '../src/hooks/useAuth';
 import { isLayoutPreviewEnabled } from '../src/lib/layoutPreview';
 import { hydrateTutorialCompleted } from '../src/lib/tutorial';
@@ -41,10 +41,15 @@ export default function Index() {
 
   if (loading || !bootReady || !minSplashElapsed || (tutorialDone && !corePermissionReady)) {
     return (
-      <View style={styles.splash}>
-        <Text style={styles.brand}>Divergram</Text>
-        <ActivityIndicator color="#ffffff" style={styles.spinner} />
-      </View>
+      <ImageBackground
+        source={require('../assets/images/splash.png')}
+        resizeMode="cover"
+        style={styles.splash}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#061323" translucent={false} />
+        <View pointerEvents="none" style={styles.overlay} />
+        <ActivityIndicator color="#ffffff" size="large" style={styles.spinner} />
+      </ImageBackground>
     );
   }
 
@@ -60,16 +65,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 18,
     backgroundColor: '#061323',
   },
-  brand: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(3, 15, 29, 0.08)',
   },
   spinner: {
-    marginTop: 8,
+    position: 'absolute',
+    bottom: '13%',
   },
 });
