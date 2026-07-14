@@ -155,7 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 35,
+      versionCode: 36,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
