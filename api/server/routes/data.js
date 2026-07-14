@@ -114,10 +114,14 @@ async function scopeRowsForRead(key, rows, identity, pool) {
     return key === 'rooms' ? rows.filter((row) => roomIds.has(row.id)) : rows.filter((row) => roomIds.has(row.room_id));
   }
   if (['post_media', 'likes', 'comments'].includes(key)) {
-    const visiblePosts = await pool.query(
-      `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility='public' OR user_id=$1`,
-      [userId || '']
-    );
+    const visiblePosts = userId
+      ? await pool.query(
+          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public' OR user_id=$1`,
+          [userId]
+        )
+      : await pool.query(
+          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public'`
+        );
     const postIds = new Set(visiblePosts.rows.map((row) => row.id));
     return rows.filter((row) => postIds.has(row.post_id));
   }
