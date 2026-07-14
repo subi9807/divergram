@@ -1,3 +1,9 @@
+allowBuilds:
+  '@firebase/util': true
+  '@sentry/cli': true
+  dtrace-provider: true
+  protobufjs: true
+  unrs-resolver: true
 onlyBuiltDependencies:
   - '@firebase/util'
   - '@sentry/cli'
