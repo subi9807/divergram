@@ -99,5 +99,14 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~56.0.4",
     "typescript": "~6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "@sentry/cli",
+      "dtrace-provider",
+      "protobufjs",
+      "unrs-resolver"
+    ]
   }
 }
