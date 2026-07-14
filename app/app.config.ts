@@ -21,7 +21,11 @@ function getAdMobAppId(platform: 'android' | 'ios'): string {
 
 function getAdMobBannerUnitId(platform: 'android' | 'ios'): string {
   if (platform === 'android') {
-    return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || '';
+    return (
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      'ca-app-pub-6018533601998790/6886397577'
+    );
   }
   return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || 'ca-app-pub-6018533601998790/8455042807';
 }
@@ -33,7 +37,7 @@ function getAdMobNativeUnitId(platform: 'android' | 'ios'): string {
       process.env.GOOGLE_ADMOB_ANDROID_NATIVE_UNIT_ID ||
       process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
       process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
-      ''
+      'ca-app-pub-6018533601998790/6886397577'
     );
   }
   return (
