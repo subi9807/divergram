@@ -7,7 +7,7 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
 def hermesPlatform = System.getProperty('os.name').toLowerCase().contains('mac') ? 'osx-bin' : 'linux64-bin'
 def installedHermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
-def hermesCompiler = new File(System.getProperty('java.io.tmpdir'), "divergram-hermesc/${hermesPlatform}/hermesc")
+def hermesCompiler = new File(rootDir, ".hermesc/${hermesPlatform}/hermesc")
 if (installedHermesCompiler.exists()) {
     hermesCompiler.parentFile.mkdirs()
     hermesCompiler.bytes = installedHermesCompiler.bytes

@@ -54,6 +54,7 @@ app/android/.gradle/
 app/android/build/
 app/android/app/build/
 app/android/.kotlin/
+app/android/.hermesc/
 
 # local Codex and test artifacts
 .codex-bin/
