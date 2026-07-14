@@ -28,6 +28,7 @@ export type AppRouteId =
   | 'marine_weather'
   | 'bluetooth_devices'
   | 'certifications'
+  | 'license_management'
   | 'notification_settings'
   | 'ai_settings'
   | 'policy_center'
@@ -40,6 +41,7 @@ export type AppRouteId =
   | 'ai_usage_policy'
   | 'open_source_licenses'
   | 'app_info'
+  | 'donate'
   | 'settings_detail'
   | 'auth_tutorial'
   | 'auth_welcome'
@@ -85,6 +87,7 @@ export const appSitemap: AppRoute[] = [
   { id: 'marine_weather', path: '/(tabs)/marine-weather', titleKey: 'settingsPage.notifications.weatherAlert', section: 'tabs', visibleInTabBar: false },
   { id: 'bluetooth_devices', path: '/(tabs)/bluetooth-devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
   { id: 'certifications', path: '/(tabs)/certifications', titleKey: 'settingsPage.diving.certifications', section: 'tabs', visibleInTabBar: false },
+  { id: 'license_management', path: '/(tabs)/license-management', titleKey: 'settingsPage.diving.licenseManagement', section: 'tabs', visibleInTabBar: false },
   { id: 'notification_settings', path: '/(tabs)/notification-settings', titleKey: 'settingsPage.sections.notifications', section: 'tabs', visibleInTabBar: false },
   { id: 'ai_settings', path: '/(tabs)/ai-settings', titleKey: 'settingsPage.sections.app', section: 'tabs', visibleInTabBar: false },
   { id: 'policy_center', path: '/(tabs)/policy-center', titleKey: 'settingsPage.app.policyCenter', section: 'tabs', visibleInTabBar: false },
@@ -97,6 +100,7 @@ export const appSitemap: AppRoute[] = [
   { id: 'ai_usage_policy', path: '/(tabs)/ai-usage-policy', titleKey: 'settingsPage.app.aiNotice', section: 'tabs', visibleInTabBar: false },
   { id: 'open_source_licenses', path: '/(tabs)/open-source-licenses', titleKey: 'settingsPage.app.openSourceLicenses', section: 'tabs', visibleInTabBar: false },
   { id: 'app_info', path: '/(tabs)/app-info', titleKey: 'settingsPage.app.appInfo', section: 'tabs', visibleInTabBar: false },
+  { id: 'donate', path: '/(tabs)/donate', titleKey: 'settingsPage.app.donate', section: 'tabs', visibleInTabBar: false },
   { id: 'settings_detail', path: '/(tabs)/settings-detail', titleKey: 'tabs.settings', section: 'tabs', visibleInTabBar: false },
   { id: 'auth_tutorial', path: '/(auth)/tutorial', titleKey: 'welcome.getStarted', section: 'auth' },
   { id: 'auth_welcome', path: '/(auth)/welcome', titleKey: 'auth.welcome', section: 'auth' },

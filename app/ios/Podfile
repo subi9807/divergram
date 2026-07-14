@@ -31,8 +31,7 @@ target 'Divergram' do
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
     config_command = [
-      'npx',
-      'expo-modules-autolinking',
+      File.join(__dir__, '..', 'node_modules', '.bin', 'expo-modules-autolinking'),
       'react-native-config',
       '--json',
       '--platform',

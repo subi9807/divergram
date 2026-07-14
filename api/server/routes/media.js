@@ -1,4 +1,30 @@
 import crypto from "crypto";
+import fs from "fs/promises";
+import path from "path";
+import multer from "multer";
+
+const MEDIA_UPLOAD_DIR = process.env.MEDIA_UPLOAD_DIR || "/home/divergram/uploads/media";
+const MIME_EXTENSIONS = new Map([
+  ["image/jpeg", "jpg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/heic", "heic"],
+  ["video/mp4", "mp4"],
+  ["video/quicktime", "mov"],
+  ["video/x-m4v", "m4v"],
+  ["video/webm", "webm"],
+]);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+  fileFilter: (_req, file, done) => {
+    if (!MIME_EXTENSIONS.has(String(file.mimetype || "").toLowerCase())) {
+      return done(new Error("unsupported_media_type"));
+    }
+    return done(null, true);
+  },
+});
 
 function sanitizeSegment(value, fallback = "file") {
   const normalized = String(value || "")
@@ -74,6 +100,44 @@ function buildCloudinaryConfig() {
 }
 
 export function registerMediaRoutes(app, { getAuthUserId, authRateLimit }) {
+  app.get("/api/uploads/:fileName", authRateLimit(600, 60_000), async (req, res) => {
+    const fileName = path.basename(String(req.params.fileName || ""));
+    if (!/^[a-f0-9-]+\.(jpg|png|webp|heic|mp4|mov|m4v|webm)$/i.test(fileName)) {
+      return res.status(400).json({ error: "invalid_media_file" });
+    }
+    return res.sendFile(path.join(MEDIA_UPLOAD_DIR, fileName), (error) => {
+      if (error && !res.headersSent) res.status(error.statusCode === 404 ? 404 : 500).json({ error: "media_read_failed" });
+    });
+  });
+
+  app.post("/api/uploads", authRateLimit(30, 60_000), (req, res) => {
+    const userId = getAuthUserId(req);
+    if (!userId) return res.status(401).json({ error: "unauthorized" });
+
+    upload.single("file")(req, res, async (uploadError) => {
+      if (uploadError) {
+        const tooLarge = uploadError?.code === "LIMIT_FILE_SIZE";
+        return res.status(tooLarge ? 413 : 400).json({ error: tooLarge ? "media_too_large" : "media_upload_invalid" });
+      }
+      if (!req.file?.buffer?.length) return res.status(400).json({ error: "media_file_required" });
+
+      const extension = MIME_EXTENSIONS.get(String(req.file.mimetype || "").toLowerCase());
+      if (!extension) return res.status(400).json({ error: "unsupported_media_type" });
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      const filePath = path.join(MEDIA_UPLOAD_DIR, fileName);
+      try {
+        await fs.mkdir(MEDIA_UPLOAD_DIR, { recursive: true, mode: 0o755 });
+        await fs.writeFile(filePath, req.file.buffer, { mode: 0o644 });
+        const configuredBase = String(process.env.PUBLIC_API_BASE_URL || "https://api.divergram.com").replace(/\/+$/, "");
+        const url = `${configuredBase}/api/uploads/${fileName}`;
+        return res.json({ ok: true, data: { url, file: fileName } });
+      } catch {
+        void fs.unlink(filePath).catch(() => undefined);
+        return res.status(500).json({ error: "media_upload_failed" });
+      }
+    });
+  });
+
   app.post("/api/media/cloudinary/sign-upload", authRateLimit(60, 60_000), async (req, res) => {
     const userId = getAuthUserId(req);
     if (!userId) return res.status(401).json({ error: "unauthorized" });

@@ -162,10 +162,11 @@ export async function getImportedDiveLogs(): Promise<DiveLog[]> {
     // fallback below
   }
 
-  return mockDiveLogs;
+  return __DEV__ ? mockDiveLogs : [];
 }
 
 export async function importManualDiveLogs(userId = 'me'): Promise<DiveLog[]> {
+  if (!__DEV__) return [];
   const stamp = new Date();
   const date = stamp.toISOString().slice(0, 10);
   const now = stamp.toISOString();

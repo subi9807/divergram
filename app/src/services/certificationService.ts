@@ -103,6 +103,7 @@ function sortByCreatedAtDesc(items: Certification[]) {
 }
 
 export async function listCertifications(userId = 'me'): Promise<Certification[]> {
+  const stored = readStoredCertifications().filter((item) => item.userId === userId || userId === 'me');
   try {
     const rows = await apiClient.listCertifications(userId);
     const normalized = rows.map(normalizeCertificationRow).filter(Boolean) as Certification[];
@@ -112,16 +113,30 @@ export async function listCertifications(userId = 'me'): Promise<Certification[]
       setSyncState('backend');
       return sorted;
     }
+    if (stored.length) {
+      const migrated: Certification[] = [];
+      for (const item of stored) {
+        const created = await apiClient.createCertification({
+          id: item.id, user_id: item.userId, agency: item.agency,
+          certification_number: item.certificationNumber, level: item.level,
+          issued_at: item.issuedAt, expires_at: item.expiresAt,
+          image_url: item.imageUrl, status: item.status,
+          created_at: item.createdAt, updated_at: item.updatedAt,
+        });
+        const normalizedItem = normalizeCertificationRow(created);
+        if (normalizedItem) migrated.push(normalizedItem);
+      }
+      writeStoredCertifications(migrated);
+      setSyncState('backend', 'migrated_local');
+      return sortByCreatedAtDesc(migrated);
+    }
     setSyncState('backend', 'empty');
-  } catch {
+    return sortByCreatedAtDesc(mockCertifications);
+  } catch (error) {
     setSyncState('local', 'backend_read_failed');
+    if (stored.length) return sortByCreatedAtDesc(stored);
+    throw error;
   }
-
-  const stored = readStoredCertifications();
-  if (stored.length) return sortByCreatedAtDesc(stored);
-  writeStoredCertifications(mockCertifications);
-  setSyncState('local', 'seed_mock');
-  return sortByCreatedAtDesc(mockCertifications);
 }
 
 export async function registerCertification(input: RegisterCertificationInput): Promise<Certification> {
@@ -163,12 +178,11 @@ export async function registerCertification(input: RegisterCertificationInput): 
       setSyncState('backend');
       return normalized;
     }
-  } catch {
+  } catch (error) {
     setSyncState('local', 'backend_create_failed');
+    throw error;
   }
-
-  upsertLocalCertification(next);
-  return next;
+  throw new Error('certification_create_invalid_response');
 }
 
 export async function updateCertificationStatus(
@@ -186,23 +200,11 @@ export async function updateCertificationStatus(
       setSyncState('backend');
       return normalized;
     }
-  } catch {
+  } catch (error) {
     setSyncState('local', 'backend_update_failed');
+    throw error;
   }
-
-  const rows = await listCertifications();
-  const nextRows = rows.map((item) =>
-    item.id === certId
-      ? {
-          ...item,
-          status,
-          updatedAt: new Date().toISOString(),
-        }
-      : item
-  );
-  const updated = nextRows.find((item) => item.id === certId) || null;
-  writeStoredCertifications(nextRows);
-  return updated;
+  throw new Error('certification_update_invalid_response');
 }
 
 export async function updateCertificationDetails(
@@ -231,31 +233,11 @@ export async function updateCertificationDetails(
       setSyncState('backend');
       return normalized;
     }
-  } catch {
+  } catch (error) {
     setSyncState('local', 'backend_update_failed');
+    throw error;
   }
-
-  const rows = await listCertifications();
-  let updated: Certification | null = null;
-  const nextRows = rows.map((item) => {
-    if (item.id !== certId) return item;
-    const nextItem: Certification = {
-      ...item,
-      agency: input.agency !== undefined ? normalizeCertificationAgency(input.agency) || item.agency : item.agency,
-      certificationNumber:
-        input.certificationNumber !== undefined ? String(input.certificationNumber || '').trim() || undefined : item.certificationNumber,
-      level: input.level !== undefined ? String(input.level || '').trim() || undefined : item.level,
-      issuedAt: input.issuedAt !== undefined ? String(input.issuedAt || '').trim() || undefined : item.issuedAt,
-      expiresAt: input.expiresAt !== undefined ? String(input.expiresAt || '').trim() || undefined : item.expiresAt,
-      imageUrl: input.imageUrl !== undefined ? String(input.imageUrl || '').trim() || undefined : item.imageUrl,
-      status: input.status || item.status,
-      updatedAt: new Date().toISOString(),
-    };
-    updated = nextItem;
-    return nextItem;
-  });
-  writeStoredCertifications(nextRows);
-  return updated;
+  throw new Error('certification_update_invalid_response');
 }
 
 export async function deleteCertification(certificationId: string): Promise<boolean> {
@@ -267,13 +249,8 @@ export async function deleteCertification(certificationId: string): Promise<bool
     removeLocalCertification(certId);
     setSyncState('backend');
     return true;
-  } catch {
+  } catch (error) {
     setSyncState('local', 'backend_delete_failed');
+    throw error;
   }
-
-  const rows = await listCertifications();
-  const nextRows = rows.filter((item) => item.id !== certId);
-  const removed = nextRows.length !== rows.length;
-  writeStoredCertifications(nextRows);
-  return removed;
 }

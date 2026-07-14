@@ -517,6 +517,7 @@
     "account": {
       "googleLink": "Google 로그인 연동",
       "appleLink": "Apple 로그인 연동",
+      "instagramLink": "Instagram 로그인 연동",
       "kakaoLink": "Kakao 로그인 연동",
       "devices": "다이빙 컴퓨터 관리",
       "deleteAccount": "계정 삭제",
@@ -549,6 +550,8 @@
     "diving": {
       "certifications": "자격증 관리",
       "certificationsSubtitle": "보유 자격과 레벨을 갱신합니다.",
+      "licenseManagement": "라이선스 관리",
+      "licenseManagementSubtitle": "내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.",
       "equipment": "장비 정보 등록",
       "integration": "외부 서비스 연동",
       "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.",
@@ -596,7 +599,21 @@
       "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다.",
       "openSourceLicenses": "오픈소스 라이선스",
       "appInfo": "앱 정보",
-      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다."
+      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다.",
+      "licenseManagement": "라이선스 관리",
+      "licenseManagementSubtitle": "내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.",
+      "donate": "후원하기",
+      "donateSubtitle": "Divergram을 응원하고 개발을 지원합니다."
+    },
+    "donate": {
+      "title": "후원하기",
+      "subtitle": "PayPal 공식 후원 버튼을 통해 Divergram을 응원할 수 있습니다.",
+      "buttonTitle": "PayPal 후원 페이지 열기",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "안내",
+      "guideBody": "후원 금액과 옵션은 PayPal Hosted Button 설정에서 관리합니다.",
+      "thanks": "Divergram을 응원해주셔서 감사합니다."
     },
     "safety": {
       "emergencyContact": "비상 연락처 등록",
@@ -618,18 +635,19 @@
   "menu": {
     "quick": "빠른 설정",
     "more": "더보기",
-    "desc": {
-      "messages": "버디와 채팅, 약속 조율",
-      "settings": "언어, 테마, 개인정보",
-      "activity": "내 활동과 기록",
-      "saved": "저장한 게시물/릴스",
-      "reels": "짧은 다이빙 영상",
-      "resorts": "다이빙 리조트 탐색",
-      "location": "지도에서 포인트 찾기",
-      "notifications": "최신 알림과 업데이트",
-      "admin": "운영 전용 화면",
-      "app_info": "약관, 정책, 고객 지원"
-    }
+      "desc": {
+        "messages": "버디와 채팅, 약속 조율",
+        "settings": "언어, 테마, 개인정보",
+        "activity": "내 활동과 기록",
+        "saved": "저장한 게시물/릴스",
+        "reels": "짧은 다이빙 영상",
+        "resorts": "다이빙 리조트 탐색",
+        "location": "지도에서 포인트 찾기",
+        "notifications": "최신 알림과 업데이트",
+        "license_management": "내 라이선스를 등록하고 관리",
+        "admin": "운영 전용 화면",
+        "app_info": "약관, 정책, 고객 지원"
+      }
   },
   "pages": {
     "messages": {
@@ -723,6 +741,7 @@
         "title": "라이선스 검증",
         "subtitle": "라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.",
         "upload": "라이선스 사진 업로드 + OCR",
+        "register": "라이선스 등록",
         "remove": "사진 제거",
         "processing": "인식 중...",
         "agency": "단체명",

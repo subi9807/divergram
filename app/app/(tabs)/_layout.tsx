@@ -129,6 +129,7 @@ export default function TabLayout() {
       <Tabs.Screen name="marine-weather" options={{ href: null }} />
       <Tabs.Screen name="bluetooth-devices" options={{ href: null }} />
       <Tabs.Screen name="certifications" options={{ href: null }} />
+      <Tabs.Screen name="license-management" options={{ href: null }} />
       <Tabs.Screen name="notification-settings" options={{ href: null }} />
       <Tabs.Screen name="ai-settings" options={{ href: null }} />
       <Tabs.Screen name="policy-center" options={{ href: null }} />
@@ -141,6 +142,7 @@ export default function TabLayout() {
       <Tabs.Screen name="ai-usage-policy" options={{ href: null }} />
       <Tabs.Screen name="open-source-licenses" options={{ href: null }} />
       <Tabs.Screen name="app-info" options={{ href: null }} />
+      <Tabs.Screen name="donate" options={{ href: null }} />
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="settings-detail" options={{ href: null }} />

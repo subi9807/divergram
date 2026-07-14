@@ -20,7 +20,7 @@ export async function connectGarminAccount(authCode?: string): Promise<{ connect
     updateProviderTokenFromAuthResult('garmin', result);
     return { connected: result.connected, accountLabel: result.accountLabel || 'Garmin Diver' };
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return { connected: true, accountLabel: 'Garmin Diver (mock)' };
     }
     throw error;
@@ -50,9 +50,9 @@ export async function fetchGarminDiveLogs(): Promise<ExternalDiveLog[]> {
       accessToken,
     });
     const mapped = mapProviderLogs('garmin', rows);
-    return mapped.length ? mapped : buildMockExternalLogs('garmin');
+    return mapped.length ? mapped : (__DEV__ ? buildMockExternalLogs('garmin') : []);
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return buildMockExternalLogs('garmin');
     }
     throw error;

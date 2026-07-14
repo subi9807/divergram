@@ -4,12 +4,13 @@ import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
-  Apple,
   Bell,
   Bluetooth,
   ChevronRight,
+  CreditCard,
   Globe,
   HelpCircle,
+  HandCoins,
   Link2,
   LogOut,
   Mail,
@@ -21,6 +22,7 @@ import {
   UserRoundCog,
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
+import { SocialBrandIcon } from '../../src/components/SocialBrandIcon';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
@@ -221,7 +223,7 @@ export default function SettingsScreen() {
   const { logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
   const socialAuth = getSocialAuthConfig();
-  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
+  const hasInstagramLogin = true;
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -500,7 +502,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/(tabs)/settings-detail?mode=link-google' as never)}
                 badge={
                   <View style={[styles.socialBadge, { borderColor: '#c9d9ee' }]}>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#2563eb' }}>G</Text>
+                    <SocialBrandIcon provider="google" size={22} />
                   </View>
                 }
               />
@@ -510,8 +512,8 @@ export default function SettingsScreen() {
                   actionLabel={socialActionLabel('apple')}
                   onPress={() => router.push('/(tabs)/settings-detail?mode=link-apple' as never)}
                   badge={
-                    <View style={[styles.socialBadge, { backgroundColor: '#111827' }]}>
-                      <Apple size={16} color="#ffffff" />
+                    <View style={styles.socialBadge}>
+                      <SocialBrandIcon provider="apple" size={22} />
                     </View>
                   }
                 />
@@ -522,8 +524,8 @@ export default function SettingsScreen() {
                   actionLabel={socialActionLabel('instagram')}
                   onPress={() => router.push('/(tabs)/settings-detail?mode=link-instagram' as never)}
                   badge={
-                    <View style={[styles.socialBadge, { backgroundColor: '#F09433' }]}>
-                      <Text style={{ fontSize: 12, fontWeight: '900', color: '#ffffff' }}>IG</Text>
+                    <View style={[styles.socialBadge, styles.instagramSocialBadge]}>
+                      <SocialBrandIcon provider="instagram" size={25} />
                     </View>
                   }
                 />
@@ -637,6 +639,12 @@ export default function SettingsScreen() {
             onPress={() => router.push(appRouteMap.certifications.path as never)}
           />
           <ActionRow
+            icon={<CreditCard size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.diving.licenseManagement', '라이선스 관리')}
+            subtitle={tx('settingsPage.diving.licenseManagementSubtitle', '내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.')}
+            onPress={() => router.push(appRouteMap.license_management.path as never)}
+          />
+          <ActionRow
             icon={<Bluetooth size={18} color="#4d5d6b" />}
             title={tx('settingsPage.diving.equipment', '장비/기기 관리')}
             onPress={() => router.push(appRouteMap.bluetooth_devices.path as never)}
@@ -696,6 +704,12 @@ export default function SettingsScreen() {
             title={tx('settingsPage.app.aiSettings', 'AI 설정')}
             subtitle={tx('settingsPage.app.aiSettingsSubtitle', 'AI 요약/캡션/위험도 설명 사용 여부를 관리합니다.')}
             onPress={() => router.push(appRouteMap.ai_settings.path as never)}
+          />
+          <ActionRow
+            icon={<HandCoins size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.app.donate', '후원하기')}
+            subtitle={tx('settingsPage.app.donateSubtitle', 'Divergram 개발과 운영을 응원합니다.')}
+            onPress={() => router.push(appRouteMap.donate.path as never)}
           />
           <ActionRow
             icon={<Link2 size={18} color="#4d5d6b" />}
@@ -1032,6 +1046,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#d9e6f2',
+  },
+  instagramSocialBadge: {
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   socialLabel: {
     marginTop: 8,

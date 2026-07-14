@@ -49,6 +49,14 @@ const expoSqliteCompatibilityTarget = path.join(
   'ios',
   'ExpoSQLiteCompatibility.swift'
 );
+const expoSqliteCompatTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'expo-sqlite',
+  'ios',
+  'SQLiteCompat.swift'
+);
 const expoSqliteVendorSourceDir = path.join(__dirname, '..', 'node_modules', 'expo-sqlite', 'vendor', 'sqlite3');
 const expoSqliteIosSourceDir = path.join(__dirname, '..', 'node_modules', 'expo-sqlite', 'ios');
 const googleMobileAdsModuleTarget = path.join(
@@ -191,13 +199,64 @@ if (fs.existsSync(expoSqliteCompatibilitySource)) {
     } else {
       console.log('[fix-expo-xcframework] SQLiteModule.swift has no inline ExpoSQLite bridge declarations.');
     }
+
+    const vendoredSymbols = 'exsqlite3_backup_finish exsqlite3_backup_init exsqlite3_backup_step exsqlite3_bind_blob exsqlite3_bind_double exsqlite3_bind_int exsqlite3_bind_int64 exsqlite3_bind_null exsqlite3_bind_parameter_index exsqlite3_bind_text exsqlite3_changes exsqlite3_clear_bindings exsqlite3_close exsqlite3_column_blob exsqlite3_column_bytes exsqlite3_column_count exsqlite3_column_double exsqlite3_column_int64 exsqlite3_column_name exsqlite3_column_text exsqlite3_column_type exsqlite3_db_filename exsqlite3_deserialize exsqlite3_enable_load_extension exsqlite3_errcode exsqlite3_errmsg exsqlite3_exec exsqlite3_finalize exsqlite3_free exsqlite3_get_autocommit exsqlite3_last_insert_rowid exsqlite3_load_extension exsqlite3_malloc64 exsqlite3_next_stmt exsqlite3_open exsqlite3_prepare_v2 exsqlite3_reset exsqlite3_serialize exsqlite3_step exsqlite3_update_hook exsqlite3changeset_apply exsqlite3changeset_invert exsqlite3session_attach exsqlite3session_changeset exsqlite3session_create exsqlite3session_delete exsqlite3session_enable'.split(' ');
+    let vendoredSQLiteModuleSource = sqliteModuleSource;
+    for (const vendoredSymbol of vendoredSymbols) {
+      const systemSymbol = vendoredSymbol.slice(2);
+      vendoredSQLiteModuleSource = vendoredSQLiteModuleSource.replace(
+        new RegExp(`\\b${systemSymbol}\\b`, 'g'),
+        vendoredSymbol
+      );
+    }
+    if (vendoredSQLiteModuleSource !== sqliteModuleSource) {
+      fs.writeFileSync(sqliteModuleTarget, vendoredSQLiteModuleSource);
+      sqliteModuleSource = vendoredSQLiteModuleSource;
+      console.log('[fix-expo-xcframework] Patched SQLiteModule.swift to use vendored exsqlite3 symbols.');
+    } else {
+      console.log('[fix-expo-xcframework] SQLiteModule.swift already uses vendored exsqlite3 symbols.');
+    }
   }
 
-  if (fs.existsSync(expoSqliteCompatibilityTarget)) {
-    fs.rmSync(expoSqliteCompatibilityTarget);
-    console.log('[fix-expo-xcframework] Removed obsolete ExpoSQLiteCompatibility.swift.');
+  if (!fs.existsSync(expoSqliteCompatibilityTarget)) {
+    fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
+    console.log('[fix-expo-xcframework] Restored ExpoSQLiteCompatibility.swift from template.');
   } else {
-    console.log('[fix-expo-xcframework] ExpoSQLiteCompatibility.swift is already absent.');
+    const targetContents = fs.readFileSync(expoSqliteCompatibilityTarget, 'utf8');
+    if (targetContents !== compatibilitySource) {
+      fs.writeFileSync(expoSqliteCompatibilityTarget, compatibilitySource);
+      console.log('[fix-expo-xcframework] Updated ExpoSQLiteCompatibility.swift from template.');
+    } else {
+      console.log('[fix-expo-xcframework] ExpoSQLiteCompatibility.swift already matches template.');
+    }
+  }
+}
+
+if (fs.existsSync(expoSqliteCompatTarget)) {
+  let sqliteCompatSource = fs.readFileSync(expoSqliteCompatTarget, 'utf8');
+  const sessionSymbols = [
+    'sqlite3session_create',
+    'sqlite3session_attach',
+    'sqlite3session_enable',
+    'sqlite3session_delete',
+    'sqlite3session_changeset',
+    'sqlite3changeset_apply',
+    'sqlite3changeset_invert',
+  ];
+
+  for (const symbol of sessionSymbols) {
+    sqliteCompatSource = sqliteCompatSource.replace(
+      `@_silgen_name("${symbol}")`,
+      `@_silgen_name("ex${symbol}")`
+    );
+  }
+
+  const originalSqliteCompatSource = fs.readFileSync(expoSqliteCompatTarget, 'utf8');
+  if (sqliteCompatSource !== originalSqliteCompatSource) {
+    fs.writeFileSync(expoSqliteCompatTarget, sqliteCompatSource);
+    console.log('[fix-expo-xcframework] Patched ExpoSQLite session bindings to use vendored exsqlite3 symbols.');
+  } else {
+    console.log('[fix-expo-xcframework] ExpoSQLite session bindings already use vendored symbols.');
   }
 }
 

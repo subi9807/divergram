@@ -62,7 +62,7 @@ interface DiveLogStoreState {
 }
 
 export const useDiveLogStore = create<DiveLogStoreState>((set, get) => ({
-  logs: mockDiveLogs,
+  logs: __DEV__ ? mockDiveLogs : [],
 
   getLogById: (logId) => get().logs.find((item) => item.id === logId),
 

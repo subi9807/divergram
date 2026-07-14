@@ -506,6 +506,7 @@
     "account": {
       "googleLink": "关联 Google 登录",
       "appleLink": "关联 Apple 登录",
+      "instagramLink": "关联 Instagram 登录",
       "kakaoLink": "关联 Kakao 登录",
       "devices": "潜水电脑管理",
       "deleteAccount": "删除账号",
@@ -538,6 +539,8 @@
     "diving": {
       "certifications": "证书管理",
       "certificationsSubtitle": "更新你持有的证书和当前等级。",
+      "licenseManagement": "证照管理",
+      "licenseManagementSubtitle": "查看、添加、编辑和删除你的证照。",
       "equipment": "装备信息登记",
       "integration": "外部服务联动",
       "integrationSubtitle": "管理 Google Maps、Stormglass、Garmin、Suunto、Shearwater 状态。",
@@ -585,7 +588,21 @@
       "policyCenter": "政策文档中心",
       "openSourceLicenses": "开源许可证",
       "appInfo": "应用信息",
-      "appInfoSubtitle": "管理条款、政策与客户支持项目。"
+      "appInfoSubtitle": "管理条款、政策与客户支持项目。",
+      "licenseManagement": "证照管理",
+      "licenseManagementSubtitle": "查看、添加、编辑和删除你的证照。",
+      "donate": "捐助",
+      "donateSubtitle": "支持 Divergram 并帮助开发。"
+    },
+    "donate": {
+      "title": "捐助",
+      "subtitle": "通过 PayPal 官方捐助按钮支持 Divergram。",
+      "buttonTitle": "打开 PayPal 捐助页面",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "说明",
+      "guideBody": "捐助金额和选项由 PayPal Hosted Button 设置管理。",
+      "thanks": "感谢你支持 Divergram。"
     },
     "safety": {
       "emergencyContact": "紧急联系人",
@@ -616,6 +633,7 @@
       "resorts": "潜水度假村探索",
       "location": "地图潜点导航",
       "notifications": "最新提醒与更新",
+      "license_management": "注册和管理证书",
       "admin": "运营管理入口",
       "app_info": "条款、政策、支持"
     }
@@ -712,6 +730,7 @@
         "title": "证书验证",
         "subtitle": "上传证书照片后可自动识别机构、证书编号和取得日期。",
         "upload": "上传证书照片 + OCR",
+        "register": "证书注册",
         "remove": "移除照片",
         "processing": "识别中...",
         "agency": "机构名称",

@@ -26,6 +26,41 @@ function getAdMobBannerUnitId(platform: 'android' | 'ios'): string {
   return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || 'ca-app-pub-6018533601998790/8455042807';
 }
 
+function getAdMobNativeUnitId(platform: 'android' | 'ios'): string {
+  if (platform === 'android') {
+    return (
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_NATIVE_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_NATIVE_UNIT_ID ||
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      ''
+    );
+  }
+  return (
+    process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_NATIVE_UNIT_ID ||
+    process.env.GOOGLE_ADMOB_IOS_NATIVE_UNIT_ID ||
+    process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID ||
+    process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID ||
+    'ca-app-pub-6018533601998790/8455042807'
+  );
+}
+
+function getPaypalDonationUrl(): string {
+  return process.env.EXPO_PUBLIC_PAYPAL_DONATE_URL || process.env.PAYPAL_DONATE_URL || '';
+}
+
+function getPaypalClientId(): string {
+  return (
+    process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID ||
+    process.env.PAYPAL_CLIENT_ID ||
+    'BAAnnRigmVrw7Ackm5yYkRNTEofhNYC6HRrYlKNZj08Hk2fHQWLTYqIG3i3OjZjmmhk8zfzktmm4YZR1Ow'
+  );
+}
+
+function getPaypalHostedButtonId(): string {
+  return process.env.EXPO_PUBLIC_PAYPAL_HOSTED_BUTTON_ID || process.env.PAYPAL_HOSTED_BUTTON_ID || 'ZE8JLS99SK2EU';
+}
+
 function toGoogleIosUrlScheme(clientId: string): string | null {
   const trimmed = clientId.trim();
   if (!trimmed) return null;
@@ -40,6 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const googleMapsApiKey = getGoogleMapsApiKey();
   const adMobAndroidAppId = getAdMobAppId('android');
   const adMobIosAppId = getAdMobAppId('ios');
+  const paypalDonationUrl = getPaypalDonationUrl();
+  const paypalClientId = getPaypalClientId();
+  const paypalHostedButtonId = getPaypalHostedButtonId();
   const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production';
   const expoDevClientPlugin = isProductionBuild
     ? []
@@ -62,7 +100,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2.2',
+    version: '1.2.3',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
@@ -71,7 +109,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '32',
+      buildNumber: '38',
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
       infoPlist: {
@@ -108,7 +146,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 29,
+      versionCode: 32,
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -144,8 +182,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           backgroundColor: '#FFFFFF',
           image: './assets/images/splash.png',
-          imageWidth: 240,
-          resizeMode: 'contain'
+          imageWidth: 380,
+          resizeMode: 'cover',
+          ios: {
+            enableFullScreenImage_legacy: true,
+            resizeMode: 'cover'
+          }
         }
       ],
       'expo-router',
@@ -196,7 +238,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         iosAppId: adMobIosAppId,
         androidBannerUnitId: getAdMobBannerUnitId('android'),
         iosBannerUnitId: getAdMobBannerUnitId('ios'),
+        androidNativeUnitId: getAdMobNativeUnitId('android'),
+        iosNativeUnitId: getAdMobNativeUnitId('ios'),
         enabled: Boolean(adMobAndroidAppId || adMobIosAppId)
+      },
+      paypal: {
+        donateUrl: paypalDonationUrl,
+        clientId: paypalClientId,
+        hostedButtonId: paypalHostedButtonId
       },
       socialAuth: {
         googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '',
@@ -218,6 +267,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.2.2'
+    runtimeVersion: '1.2.3'
   } as ExpoConfig;
 };

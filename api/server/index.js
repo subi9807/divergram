@@ -27,7 +27,12 @@ import { registerLegalRoutes } from './routes/legal.js';
 import { registerIntegrationRoutes } from './routes/integrations.js';
 import { registerNotificationSettingsRoutes } from './routes/notificationSettings.js';
 import { registerAiSettingsRoutes } from './routes/aiSettings.js';
+import { registerAiGenerationRoutes } from './routes/aiGeneration.js';
 import { registerMediaRoutes } from './routes/media.js';
+import { registerProfileRoutes } from './routes/profiles.js';
+import { registerUserPreferencesRoutes } from './routes/userPreferences.js';
+import { registerDivingLicenseRoutes } from './routes/divingLicenses.js';
+import { registerDiveLogDraftRoutes } from './routes/diveLogDrafts.js';
 import { processAdminPushJob } from './lib/adminPushDelivery.js';
 
 dotenv.config({ path: process.env.DIVERGRAM_ENV_FILE || path.resolve(process.cwd(), '.env') });
@@ -50,7 +55,7 @@ app.use(cors({
     if (CORS_ORIGINS.includes(origin)) return cb(null, true);
     return cb(new Error('Not allowed by CORS'));
   },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'X-Admin-Key'],
   credentials: true,
 }));
@@ -283,6 +288,7 @@ async function ensureSchema() {
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_issued_at TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_image_url TEXT;`);
   await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS license_image_path TEXT;`);
+  await pool.query(`ALTER TABLE app_profiles ADD COLUMN IF NOT EXISTS avatar_image_path TEXT;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_resort_prices (
@@ -575,14 +581,19 @@ registerAdminPushRoutes(app, { pool, requireAdmin, crypto });
 registerAdminCommunicationSettingsRoutes(app, { pool, requireAdmin });
 registerAdminDataRoutes(app, { pool, requireAdmin, bcrypt, crypto });
 registerAdminModerationRoutes(app, { pool, requireAdmin });
-registerDataRoutes(app, { pool, crypto });
+registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAdmin });
 registerPushRoutes(app, { pool, authRateLimit, getAuthUserId, crypto });
 registerChatRoutes(app, { pool, authRateLimit, getAuthUserId, crypto, enqueueMessageCreated });
 registerLegalRoutes(app, { pool, requireAdmin });
 registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLimit });
 registerNotificationSettingsRoutes(app, { pool, getAuthUserId, authRateLimit });
 registerAiSettingsRoutes(app, { pool, getAuthUserId, authRateLimit });
+registerAiGenerationRoutes(app, { getAuthUserId, authRateLimit });
 registerMediaRoutes(app, { getAuthUserId, authRateLimit });
+registerProfileRoutes(app, { pool, getAuthUserId, authRateLimit });
+registerUserPreferencesRoutes(app, { pool, getAuthUserId, authRateLimit });
+registerDivingLicenseRoutes(app, { pool, getAuthUserId, authRateLimit });
+registerDiveLogDraftRoutes(app, { pool, getAuthUserId, authRateLimit });
 registerDocsRoutes(app);
 
 function getAuthUserId(req) {
@@ -660,6 +671,19 @@ app.get('/api/license-image/me', authRateLimit(60, 60_000), async (req, res) => 
     res.sendFile(safePath);
   } catch { res.status(500).json({ error: 'license_image_failed' }); }
 });
+app.get('/api/license-image/:userId', authRateLimit(120, 60_000), async (req, res) => {
+  try {
+    const q = await pool.query('SELECT license_image_path FROM app_profiles WHERE id=$1', [String(req.params.userId)]);
+    const imagePath = q.rows[0]?.license_image_path;
+    if (!imagePath) return res.status(404).json({ error: 'not_found' });
+    const safePath = path.resolve(imagePath);
+    const safeRoot = path.resolve(LICENSE_UPLOAD_DIR);
+    if (!safePath.startsWith(`${safeRoot}${path.sep}`)) return res.status(403).json({ error: 'forbidden' });
+    return res.sendFile(safePath);
+  } catch {
+    return res.status(500).json({ error: 'license_image_failed' });
+  }
+});
 app.post('/api/license-image/ocr', authRateLimit(12, 60_000), async (req, res) => {
   const userId = getAuthUserId(req);
   if (!userId) return res.status(401).json({ error: 'unauthorized' });
@@ -670,12 +694,14 @@ app.post('/api/license-image/ocr', authRateLimit(12, 60_000), async (req, res) =
     const imagePath = path.join(LICENSE_UPLOAD_DIR, `${userId}-${Date.now()}-${crypto.randomUUID()}.${image.ext}`);
     await fs.writeFile(imagePath, image.buffer, { mode: 0o600 });
     const old = await pool.query('SELECT license_image_path FROM app_profiles WHERE id=$1', [userId]);
-    await pool.query('UPDATE app_profiles SET license_image_path=$1 WHERE id=$2', [imagePath, userId]);
+    const configuredBase = String(process.env.PUBLIC_API_BASE_URL || 'https://api.divergram.com').replace(/\/+$/, '');
+    const imageUrl = `${configuredBase}/api/license-image/${encodeURIComponent(String(userId))}`;
+    await pool.query('UPDATE app_profiles SET license_image_path=$1, license_image_url=$2 WHERE id=$3', [imagePath, imageUrl, userId]);
     const oldPath = old.rows[0]?.license_image_path;
     if (oldPath && oldPath !== imagePath) fs.unlink(oldPath).catch(() => undefined);
     let ocr = { configured: false, result: {} };
     try { ocr = await runLicenseOcr(image.dataUrl); } catch (e) { ocr = { configured: true, result: {}, error: e?.message || 'ocr_failed' }; }
-    res.json({ ok: true, has_image: true, ocr_configured: ocr.configured, ocr_error: ocr.error || null, ocr: ocr.result || {} });
+    res.json({ ok: true, has_image: true, image_url: imageUrl, license_image_url: imageUrl, ocr_configured: ocr.configured, ocr_error: ocr.error || null, ocr: ocr.result || {} });
   } catch { res.status(500).json({ error: 'license_upload_failed' }); }
 });
 

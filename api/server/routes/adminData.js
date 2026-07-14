@@ -67,7 +67,6 @@ export function registerAdminDataRoutes(app, { pool, requireAdmin, bcrypt, crypt
     try {
       const pass = 'Password123!';
       const hash = await bcrypt.hash(pass, 10);
-      const sha = crypto.createHash('sha256').update(pass).digest('hex');
 
       const firstNames = ['Minji','Jiwon','Seoyeon','Yuna','Haerin','Sujin','Jisoo','Eunji','Mina','Doyeon','Hyunwoo','Joon','Taehyun','Minho','Jiho','Seungwoo','Dongha','Yejun'];
       const lastNames = ['Kim','Lee','Park','Choi','Jung','Kang','Yoon','Lim','Han','Shin'];
@@ -170,10 +169,10 @@ export function registerAdminDataRoutes(app, { pool, requireAdmin, bcrypt, crypt
 
         await pool.query(
           `INSERT INTO app_users(email,password_hash,password_sha256,username,role,is_blocked)
-           VALUES ($1,$2,$3,$4,'user',false)
+           VALUES ($1,$2,NULL,$3,'user',false)
            ON CONFLICT (email) DO UPDATE SET username=EXCLUDED.username
            RETURNING id::text`,
-          [email, hash, sha, username]
+          [email, hash, username]
         );
         const id = String((await pool.query('SELECT id::text FROM app_users WHERE email=$1', [email])).rows[0].id);
         profileIds.push(id);

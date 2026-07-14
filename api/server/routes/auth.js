@@ -127,6 +127,23 @@ export function registerAuthRoutes(app, deps) {
     };
   };
 
+  const buildAuthResultFromUserId = async (userId, sessionDays) => {
+    const q = await pool.query(
+      'SELECT id,email,username,is_blocked FROM app_users WHERE id=$1 LIMIT 1',
+      [String(userId)]
+    );
+    if (!q.rows.length) throw new Error('user_not_found');
+
+    const row = q.rows[0];
+    if (row.is_blocked) throw new Error('user_blocked');
+
+    const user = { id: String(row.id), email: row.email };
+    const pq = await pool.query(`SELECT ${PROFILE_SELECT_COLUMNS} FROM app_profiles WHERE id=$1`, [user.id]);
+    const profile = buildProfileFromRow(pq.rows[0], row.id, row.username);
+    const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
+    return { user, profile, token };
+  };
+
   const ensureOAuthIdentityTable = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS app_user_oauth_identities (
@@ -167,12 +184,11 @@ export function registerAuthRoutes(app, deps) {
     if (!userRow) {
       const tempPassword = crypto.randomBytes(20).toString('hex') + '!Aa1';
       const hash = await bcrypt.hash(tempPassword, 12);
-      const sha = crypto.createHash('sha256').update(tempPassword).digest('hex');
       const uq = await pool.query(
         `INSERT INTO app_users(email,password_hash,password_sha256,username,role,email_verified)
-         VALUES ($1,$2,$3,$4,$5,true)
+         VALUES ($1,$2,NULL,$3,$4,true)
          RETURNING id,email,username`,
-        [normalizedEmail, hash, sha, usernameBase, isAdminEmail(normalizedEmail) ? 'admin' : 'user']
+        [normalizedEmail, hash, usernameBase, isAdminEmail(normalizedEmail) ? 'admin' : 'user']
       );
       userRow = uq.rows[0];
     }
@@ -350,8 +366,43 @@ export function registerAuthRoutes(app, deps) {
     };
   };
 
-  const fetchMobileOAuthProfile = async (provider, accessToken, userInfo = {}) => {
-    if (provider === 'google') return fetchGoogleProfileByAnyToken(accessToken);
+  const normalizeMobileUserInfo = (userInfo = {}, idToken = '') => {
+    const providerSub = String(userInfo?.providerUserId || userInfo?.provider_user_id || userInfo?.sub || userInfo?.id || '').trim();
+    const email = normalizeEmail(userInfo?.email || '');
+    const name = String(userInfo?.name || userInfo?.nickname || userInfo?.full_name || '').trim();
+    const normalizedIdToken = String(idToken || userInfo?.idToken || userInfo?.id_token || '').trim();
+    return { sub: providerSub, email, name, idToken: normalizedIdToken };
+  };
+
+  const fetchMobileOAuthProfile = async (provider, accessToken, userInfo = {}, idToken = '') => {
+    if (provider === 'google') {
+      const fallback = normalizeMobileUserInfo(userInfo, idToken);
+      try {
+        const profile = await fetchGoogleProfileByAnyToken(accessToken);
+        if (profile?.sub && profile?.email) return profile;
+      } catch (error) {
+        if (fallback.idToken) {
+          try {
+            const profile = await fetchGoogleProfileByAnyToken(fallback.idToken);
+            if (profile?.sub && profile?.email) return profile;
+          } catch {
+            // fall through to normalized fallback below
+          }
+        }
+        if (fallback.sub && fallback.email) return fallback;
+        throw error;
+      }
+      if (fallback.idToken) {
+        try {
+          const profile = await fetchGoogleProfileByAnyToken(fallback.idToken);
+          if (profile?.sub && profile?.email) return profile;
+        } catch {
+          // ignore and use direct fallback below
+        }
+      }
+      if (fallback.sub && fallback.email) return fallback;
+      return fetchGoogleProfileByAnyToken(accessToken);
+    }
     if (provider === 'apple') return fetchAppleProfileByIdentityToken(accessToken, userInfo);
     if (provider === 'kakao') return fetchKakaoProfileByAccessToken(accessToken);
     if (provider === 'naver') return fetchNaverProfileByAccessToken(accessToken);
@@ -437,7 +488,10 @@ export function registerAuthRoutes(app, deps) {
   const OAUTH_LINK_PENDING_TTL_MS = 30 * 60 * 1000;
   const oauthStateStore = new Map();
   const oauthLinkPendingStore = new Map();
+  const instagramMobileStateStore = new Map();
+  const instagramMobileTicketStore = new Map();
   const oauthStateTtlMs = 10 * 60 * 1000;
+  const instagramMobileTicketTtlMs = 5 * 60 * 1000;
 
   const getOAuthProviders = () => {
     const googleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -470,6 +524,98 @@ export function registerAuthRoutes(app, deps) {
     }
   };
 
+  const cleanupInstagramMobileOAuth = () => {
+    const now = Date.now();
+    for (const [key, value] of instagramMobileStateStore.entries()) {
+      if (!value || value.expiresAt < now) instagramMobileStateStore.delete(key);
+    }
+    for (const [key, value] of instagramMobileTicketStore.entries()) {
+      if (!value || value.expiresAt < now) instagramMobileTicketStore.delete(key);
+    }
+  };
+
+  app.get('/api/auth/oauth/instagram/mobile/start', authRateLimit(20, 60_000), (req, res) => {
+    cleanupInstagramMobileOAuth();
+    const clientId = String(process.env.INSTAGRAM_CLIENT_ID || '').trim();
+    const clientSecret = String(process.env.INSTAGRAM_CLIENT_SECRET || '').trim();
+    if (!clientId || !clientSecret) {
+      return res.status(503).json({ error: 'instagram_config_missing' });
+    }
+
+    const callbackUri = String(
+      process.env.INSTAGRAM_REDIRECT_URI || `${API_PUBLIC_BASE_URL}/api/auth/oauth/instagram/mobile/callback`
+    ).trim();
+    const appReturnUri = String(process.env.INSTAGRAM_APP_RETURN_URI || 'divergram://auth/instagram').trim();
+    const state = crypto.randomBytes(24).toString('hex');
+    instagramMobileStateStore.set(state, {
+      callbackUri,
+      appReturnUri,
+      expiresAt: Date.now() + oauthStateTtlMs,
+    });
+
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: callbackUri,
+      response_type: 'code',
+      scope: String(process.env.INSTAGRAM_OAUTH_SCOPES || 'instagram_business_basic').trim(),
+      state,
+    });
+    const authorizationEndpoint = String(
+      process.env.INSTAGRAM_AUTHORIZATION_ENDPOINT || 'https://www.instagram.com/oauth/authorize'
+    ).trim();
+    return res.json({ url: `${authorizationEndpoint}?${params.toString()}`, returnUrl: appReturnUri });
+  });
+
+  app.get('/api/auth/oauth/instagram/mobile/callback', async (req, res) => {
+    cleanupInstagramMobileOAuth();
+    const state = String(req.query?.state || '').trim();
+    const code = String(req.query?.code || '').trim();
+    const pending = instagramMobileStateStore.get(state);
+    instagramMobileStateStore.delete(state);
+    if (!pending || !code) {
+      return res.status(400).send('Instagram login request is invalid or expired.');
+    }
+
+    try {
+      const tokenResp = await fetch('https://api.instagram.com/oauth/access_token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: String(process.env.INSTAGRAM_CLIENT_ID || '').trim(),
+          client_secret: String(process.env.INSTAGRAM_CLIENT_SECRET || '').trim(),
+          grant_type: 'authorization_code',
+          redirect_uri: pending.callbackUri,
+          code,
+        }),
+      });
+      const tokenBody = await tokenResp.json().catch(() => ({}));
+      if (!tokenResp.ok || !tokenBody.access_token) {
+        throw new Error(`instagram_token_exchange_failed_${tokenResp.status}`);
+      }
+
+      const profile = await fetchInstagramProfileByAccessToken(String(tokenBody.access_token));
+      const ticket = crypto.randomBytes(32).toString('hex');
+      instagramMobileTicketStore.set(ticket, {
+        accessToken: String(tokenBody.access_token),
+        userInfo: { id: profile.sub, username: profile.name, email: profile.email },
+        expiresAt: Date.now() + instagramMobileTicketTtlMs,
+      });
+      return res.redirect(appendQuery(pending.appReturnUri, { ticket }));
+    } catch (error) {
+      console.error('[oauth/instagram/mobile/callback] failed', String(error?.message || error));
+      return res.redirect(appendQuery(pending.appReturnUri, { error: 'instagram_token_exchange_failed' }));
+    }
+  });
+
+  app.post('/api/auth/oauth/instagram/mobile/complete', authRateLimit(20, 60_000), (req, res) => {
+    cleanupInstagramMobileOAuth();
+    const ticket = String(req.body?.ticket || '').trim();
+    const result = instagramMobileTicketStore.get(ticket);
+    instagramMobileTicketStore.delete(ticket);
+    if (!result) return res.status(400).json({ error: 'instagram_ticket_invalid_or_expired' });
+    return res.json({ accessToken: result.accessToken, userInfo: result.userInfo });
+  });
+
   app.get('/api/auth/oauth/providers', (_req, res) => {
     return res.json({ providers: getOAuthProviders() });
   });
@@ -477,6 +623,7 @@ export function registerAuthRoutes(app, deps) {
   app.post('/api/auth/oauth/mobile', authRateLimit(20, 60_000), async (req, res) => {
     const provider = String(req.body?.provider || '').toLowerCase();
     const accessToken = String(req.body?.accessToken || '').trim();
+    const idToken = String(req.body?.idToken || '').trim();
     const sessionDays = parseSessionDays(req.body?.sessionDays);
     const rawAutoCreate = req.body?.autoCreate ?? req.body?.createUser ?? req.body?.signup;
     const shouldAutoCreate = rawAutoCreate === true || String(rawAutoCreate || '').toLowerCase() === 'true';
@@ -486,7 +633,7 @@ export function registerAuthRoutes(app, deps) {
     if (!accessToken) return res.status(400).json({ error: 'access_token_required' });
 
     try {
-      const oauthProfile = await fetchMobileOAuthProfile(provider, accessToken, userInfo);
+      const oauthProfile = await fetchMobileOAuthProfile(provider, accessToken, userInfo, idToken);
       if (!oauthProfile.sub) {
         return res.status(400).json({ error: 'profile_missing_fields' });
       }
@@ -556,12 +703,22 @@ export function registerAuthRoutes(app, deps) {
       return res.json({ ...authResult, provider, linked: true });
     } catch (e) {
       const message = String(e?.message || '');
+      console.error('[oauth/mobile] failed', {
+        provider,
+        message,
+        hasAccessToken: !!accessToken,
+        hasIdToken: !!idToken,
+        hasUserInfo: !!(userInfo && Object.keys(userInfo).length),
+      });
       if (message === 'user_not_found') return res.status(404).json({ error: 'user_not_found' });
       if (message === 'user_blocked') return res.status(403).json({ error: 'user_blocked' });
       if (message === 'unsupported_provider_for_mobile') return res.status(400).json({ error: message });
       if (message.startsWith('apple_identity_') || message.startsWith('apple_keys_failed_')) return res.status(400).json({ error: message });
       if (/_userinfo_failed_/.test(message) || /_tokeninfo_failed_/.test(message) || message.startsWith('google_userinfo_failed_')) {
         return res.status(400).json({ error: message });
+      }
+      if (/fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|network/i.test(message)) {
+        return res.status(502).json({ error: 'google_profile_fetch_failed' });
       }
       return res.status(500).json({ error: 'oauth_mobile_failed' });
     }
@@ -612,6 +769,59 @@ export function registerAuthRoutes(app, deps) {
         return res.status(409).json({ error: 'oauth_already_linked' });
       }
       return res.status(500).json({ error: 'oauth_link_failed' });
+    }
+  });
+
+  app.post('/api/auth/oauth/mobile/link/provider', authRateLimit(20, 60_000), async (req, res) => {
+    const authToken = getRequestToken(req);
+    const provider = String(req.body?.provider || '').trim().toLowerCase();
+    const accessToken = String(req.body?.accessToken || '').trim();
+    const idToken = String(req.body?.idToken || '').trim();
+    const userInfo = req.body?.userInfo && typeof req.body.userInfo === 'object' ? req.body.userInfo : {};
+    const sessionDays = parseSessionDays(req.body?.sessionDays);
+
+    if (!authToken) return res.status(401).json({ error: 'unauthorized' });
+    if (!['google', 'apple', 'instagram'].includes(provider)) {
+      return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
+    }
+    if (!accessToken) return res.status(400).json({ error: 'access_token_required' });
+
+    let authPayload = null;
+    try {
+      authPayload = jwt.verify(authToken, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+
+    const userId = String(authPayload?.sub || '').trim();
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+
+    try {
+      const userQ = await pool.query('SELECT email FROM app_users WHERE id=$1 LIMIT 1', [userId]);
+      if (!userQ.rows.length) return res.status(404).json({ error: 'user_not_found' });
+
+      const oauthProfile = await fetchMobileOAuthProfile(provider, accessToken, userInfo, idToken);
+      if (!oauthProfile.sub) return res.status(400).json({ error: 'profile_missing_fields' });
+
+      const email = normalizeEmail(userQ.rows[0].email || authPayload?.email || '');
+      const authResult = await linkOAuthIdentityToUser({
+        userId,
+        provider,
+        providerSub: oauthProfile.sub,
+        email,
+        sessionDays,
+      });
+      setSessionCookie(res, authResult.token, sessionDays);
+      return res.json({ ok: true, linked: true, provider, ...authResult });
+    } catch (e) {
+      const message = String(e?.message || '');
+      if (message === 'oauth_already_linked') return res.status(409).json({ error: message });
+      if (message === 'user_not_found') return res.status(404).json({ error: message });
+      if (/_userinfo_failed_/.test(message) || /_tokeninfo_failed_/.test(message)) {
+        return res.status(400).json({ error: message });
+      }
+      console.error('[oauth/mobile/link/provider] failed', { provider, message });
+      return res.status(500).json({ error: 'oauth_provider_link_failed' });
     }
   });
 
@@ -746,10 +956,9 @@ export function registerAuthRoutes(app, deps) {
 
     try {
       const hash = await bcrypt.hash(password, 12);
-      const sha = crypto.createHash('sha256').update(password).digest('hex');
       const q = await pool.query(
-        'INSERT INTO app_users(email, password_hash, password_sha256, username, role) VALUES ($1,$2,$3,$4,$5) RETURNING id,email,username',
-        [email, hash, sha, username, isAdminEmail(email) ? 'admin' : 'user']
+        'INSERT INTO app_users(email, password_hash, password_sha256, username, role) VALUES ($1,$2,NULL,$3,$4) RETURNING id,email,username',
+        [email, hash, username, isAdminEmail(email) ? 'admin' : 'user']
       );
       const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
       const verifyToken = jwt.sign({ purpose: 'email_verify', sub: String(q.rows[0].id), email }, JWT_SECRET, { expiresIn: '24h' });
@@ -804,7 +1013,7 @@ export function registerAuthRoutes(app, deps) {
         ok = sha === row.password_sha256;
         if (ok) {
           const upgraded = await bcrypt.hash(password, 12);
-          await pool.query('UPDATE app_users SET password_hash=$1 WHERE id=$2', [upgraded, row.id]);
+          await pool.query('UPDATE app_users SET password_hash=$1, password_sha256=NULL WHERE id=$2', [upgraded, row.id]);
         }
       }
 
@@ -964,7 +1173,7 @@ export function registerAuthRoutes(app, deps) {
           currentPasswordOk = sha === row.password_sha256;
           if (currentPasswordOk) {
             const upgraded = await bcrypt.hash(currentPassword, 12);
-            await pool.query('UPDATE app_users SET password_hash=$1 WHERE id=$2', [upgraded, userId]);
+            await pool.query('UPDATE app_users SET password_hash=$1, password_sha256=NULL WHERE id=$2', [upgraded, userId]);
           }
         }
         if (!currentPasswordOk) return res.status(403).json({ error: 'invalid_current_password' });
@@ -978,9 +1187,8 @@ export function registerAuthRoutes(app, deps) {
       if (contactPhone !== undefined) { vals.push(String(contactPhone).trim()); fields.push(`contact_phone=$${vals.length}`); }
       if (password !== undefined) {
         const hash = await bcrypt.hash(password, 12);
-        const sha = crypto.createHash('sha256').update(password).digest('hex');
         vals.push(hash); fields.push(`password_hash=$${vals.length}`);
-        vals.push(sha); fields.push(`password_sha256=$${vals.length}`);
+        fields.push('password_sha256=NULL');
       }
 
       let emailVerificationRequested = false;

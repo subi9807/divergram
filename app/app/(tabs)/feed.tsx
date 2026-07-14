@@ -19,6 +19,20 @@ type FeedListItem =
   | { type: 'post'; id: string; post: any }
   | { type: 'ad'; id: string; ad: ActiveAdSlot };
 
+function pickAdForSlot(ads: ActiveAdSlot[], slotIndex: number, previousAdId?: string) {
+  if (ads.length === 0) return null;
+  if (ads.length === 1) return ads[0];
+
+  const baseIndex = slotIndex % ads.length;
+  let selected = ads[baseIndex];
+
+  if (selected?.id === previousAdId) {
+    selected = ads[(baseIndex + 1) % ads.length];
+  }
+
+  return selected ?? null;
+}
+
 export default function FeedScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -60,14 +74,18 @@ export default function FeedScreen() {
   const resolvedAds = [...usableAds, ...fallbackAds];
   const feedItems = React.useMemo<FeedListItem[]>(() => {
     const items: FeedListItem[] = [];
+    let adSlotIndex = 0;
+    let previousAdId: string | undefined;
+
     posts.forEach((post, index) => {
       items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
 
       if (resolvedAds.length > 0 && (index + 1) % 3 === 0) {
-        const adIndex = Math.floor(index / 3) % resolvedAds.length;
-        const ad = resolvedAds[adIndex];
+        const ad = pickAdForSlot(resolvedAds, adSlotIndex, previousAdId);
         if (ad) {
-          items.push({ type: 'ad', id: `ad-${ad.id}-${Math.floor(index / 3)}-${index}`, ad });
+          items.push({ type: 'ad', id: `ad-${ad.id}-${adSlotIndex}-${index}`, ad });
+          previousAdId = ad.id;
+          adSlotIndex += 1;
         }
       }
     });

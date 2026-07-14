@@ -20,7 +20,7 @@ export async function connectSuuntoAccount(authCode?: string): Promise<{ connect
     updateProviderTokenFromAuthResult('suunto', result);
     return { connected: result.connected, accountLabel: result.accountLabel || 'Suunto Diver' };
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return { connected: true, accountLabel: 'Suunto Diver (mock)' };
     }
     throw error;
@@ -50,9 +50,9 @@ export async function fetchSuuntoDiveLogs(): Promise<ExternalDiveLog[]> {
       accessToken,
     });
     const mapped = mapProviderLogs('suunto', rows);
-    return mapped.length ? mapped : buildMockExternalLogs('suunto');
+    return mapped.length ? mapped : (__DEV__ ? buildMockExternalLogs('suunto') : []);
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return buildMockExternalLogs('suunto');
     }
     throw error;

@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
-import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useToast } from '../../src/components/Toast';
@@ -12,6 +11,7 @@ import { useSettingsFeatureStore, type SocialProvider } from '../../src/stores/s
 import { bottomTabCandidates, bottomTabDefault, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
 import { appRouteMap } from '../../src/config/sitemap';
 import { apiClient } from '../../src/lib/api';
+import { instagramAuth } from '../../src/lib/auth/instagram';
 
 function pickParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return String(value[0] || '').trim();
@@ -59,10 +59,9 @@ export default function SettingsDetailScreen() {
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ mode?: string | string[] }>();
   const mode = asMode(pickParam(params.mode));
-  const { loginWithGoogle, loginWithApple, loginWithInstagram, linkSocialAccount, logout } = useAuth();
+  const { loginWithGoogle, loginWithApple, linkSocialAccount, logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
-  const socialAuth = getSocialAuthConfig();
-  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
+  const hasInstagramLogin = true;
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const setSocialLinked = useSettingsFeatureStore((state) => state.setSocialLinked);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
@@ -212,7 +211,14 @@ export default function SettingsDetailScreen() {
     try {
       if (socialProvider === 'google') await loginWithGoogle();
       if (socialProvider === 'apple') await loginWithApple();
-      if (socialProvider === 'instagram') await loginWithInstagram();
+      if (socialProvider === 'instagram') {
+        const { accessToken, userInfo } = await instagramAuth.login();
+        await apiClient.linkOAuthProvider('instagram', accessToken, {
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.username,
+        });
+      }
       await refreshSocialLinks();
       showToast({
         type: 'success',

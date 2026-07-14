@@ -15,16 +15,17 @@ import { AuthProvider } from '../src/providers/AuthProvider';
 import { GlobalEdgeSwipeNav } from '../src/components/GlobalEdgeSwipeNav';
 import { useAuth } from '../src/hooks/useAuth';
 import { useResolvedTheme } from '../src/hooks/useResolvedTheme';
-import { isAdMobEnabled } from '../src/config/ads';
+import { initializeAdMob } from '../src/lib/initAdMob';
 import { loadAiSettings } from '../src/services/aiSettingsService';
 import { useNotifications } from '../src/lib/notifications';
+import { Sentry } from '../src/lib/sentry';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 WebBrowser.maybeCompleteAuthSession();
 
 const queryClient = new QueryClient();
 
-export default function RootLayout() {
+function RootLayout() {
   useFrameworkReady();
   const { resolvedTheme } = useResolvedTheme();
   const { setColorScheme } = useNativewindColorScheme();
@@ -64,27 +65,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (!isAdMobEnabled()) return;
-    const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
-    import('react-native-google-mobile-ads')
-      .then(({ default: mobileAdsModule }) => {
-        const mobileAds = mobileAdsModule();
-        return mobileAds
-          .setRequestConfiguration({
-            testDeviceIdentifiers: shouldUseTestAds ? ['EMULATOR'] : [],
-          })
-          .catch(() => {
-            // 테스트 기기 설정은 실패해도 앱 실행을 막지 않는다.
-          })
-          .then(() =>
-            mobileAds.initialize().catch(() => {
-              // 광고 초기화 실패는 앱 실행을 막지 않는다.
-            })
-          );
-      })
-      .catch(() => {
-        // 광고 SDK가 없더라도 앱 진입은 유지한다.
-      });
+    void initializeAdMob();
   }, []);
 
   const handleSwipeProgress = useCallback(
@@ -155,6 +136,8 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function SettingsHydrationBridge() {
   const { user } = useAuth();

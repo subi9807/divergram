@@ -2604,6 +2604,29 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNSentry (8.18.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNSVG (15.15.4):
     - hermes-engine
     - RCTRequired
@@ -2880,6 +2903,7 @@ DEPENDENCIES:
   - "RNGoogleMobileAds (from `../node_modules/.pnpm/react-native-google-mobile-ads@16.4.0_expo@56.0.14_react@19.2.3/node_modules/react-native-google-mobile-ads`)"
   - "RNReanimated (from `../node_modules/.pnpm/react-native-reanimated@4.3.1_react-native-worklets@0.8.3_@babel+core@7.29.7_supports-c_cd059b3a578d7f79ed424ab74f7c0f79/node_modules/react-native-reanimated`)"
   - "RNScreens (from `../node_modules/.pnpm/react-native-screens@4.25.2_react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1_bf2c352e104b87ca58a8fa4e499f8944/node_modules/react-native-screens`)"
+  - "RNSentry (from `../node_modules/.pnpm/@sentry+react-native@8.18.0_@expo+env@2.4.1_dotenv@16.4.7_expo@56.0.14_react-native@0.8_f14e258194112511264a7b9d06c3fa64/node_modules/@sentry/react-native`)"
   - "RNSVG (from `../node_modules/.pnpm/react-native-svg@15.15.4_react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1__@_7098bbc2e0353189886b4df7042c2806/node_modules/react-native-svg`)"
   - "RNWorklets (from `../node_modules/.pnpm/react-native-worklets@0.8.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metr_05aabdc452e6c02e297ddf2cd410d8f3/node_modules/react-native-worklets`)"
   - "UMAppLoader (from `../node_modules/.pnpm/unimodules-app-loader@56.0.1/node_modules/unimodules-app-loader/ios`)"
@@ -3178,6 +3202,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/.pnpm/react-native-reanimated@4.3.1_react-native-worklets@0.8.3_@babel+core@7.29.7_supports-c_cd059b3a578d7f79ed424ab74f7c0f79/node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/.pnpm/react-native-screens@4.25.2_react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1_bf2c352e104b87ca58a8fa4e499f8944/node_modules/react-native-screens"
+  RNSentry:
+    :path: "../node_modules/.pnpm/@sentry+react-native@8.18.0_@expo+env@2.4.1_dotenv@16.4.7_expo@56.0.14_react-native@0.8_f14e258194112511264a7b9d06c3fa64/node_modules/@sentry/react-native"
   RNSVG:
     :path: "../node_modules/.pnpm/react-native-svg@15.15.4_react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1__@_7098bbc2e0353189886b4df7042c2806/node_modules/react-native-svg"
   RNWorklets:
@@ -3226,7 +3252,7 @@ SPEC CHECKSUMS:
   ExpoNotifications: d95d9a54ac370743260a4ccbf6038a12cfabbb06
   ExpoRouter: c82c4297fdca966ec5fb98422e8c72015a341e00
   ExpoSplashScreen: db432721a17dc8a718d5e2562f8edebe310e524f
-  ExpoSQLite: eba0f88d7c17165f4af12fb311b30d5a6a34b00e
+  ExpoSQLite: 15dbe554c7e5d70330de64a116432a39bb80e5e7
   ExpoSymbols: 377747de25bcb1ab68ec68f23d81fb81d43eae83
   ExpoSystemUI: 8f4fb641c6a6ebe2a01dda0fbd3fdd952ab5823a
   ExpoTaskManager: 6bb6debe614a5f28fabb07f2b73b0c19b8562b73
@@ -3339,6 +3365,7 @@ SPEC CHECKSUMS:
   RNGoogleMobileAds: 10d1a7a38343f18a98f08624c15ced3b0796e603
   RNReanimated: 0587f107a72612c2fd2a4cfcae808e4d58a83aa5
   RNScreens: 991cc417cd396602a6cf59a42139e5a9d91462a9
+  RNSentry: 24270e6048b9a963edc12934cb84b59cde8546a9
   RNSVG: 04044c3abcf177fd674a1a3d13097efa1adebcbe
   RNWorklets: f285c79dd46dae5730eb4a49f6e9657077ea8e48
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
@@ -3349,6 +3376,6 @@ SPEC CHECKSUMS:
   Yoga: 77dfa8673de2874e1855002ae59c68b8be9b007b
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 3796a1083fed1e779297dfd05c3fa899140c4eab
+PODFILE CHECKSUM: 5e19f6cfcb319f806aa8d729a49babd37373fc20
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

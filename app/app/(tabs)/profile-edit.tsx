@@ -1,17 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, ImagePlus } from 'lucide-react-native';
+import { Camera, CreditCard, ImagePlus } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useToast } from '../../src/components/Toast';
 import { apiClient } from '../../src/lib/api';
 import { appRouteMap } from '../../src/config/sitemap';
-import { uploadImage } from '../../src/services/cloudinaryService';
 
 type ScubaLevel = 'none' | 'open_water' | 'advanced' | 'rescue' | 'master' | 'instructor' | 'trainer' | 'course_director';
 type FreedivingLevel = 'none' | 'level_1' | 'level_2' | 'level_3' | 'level_4' | 'instructor' | 'trainer' | 'course_director';
@@ -92,6 +91,7 @@ export default function ProfileEditScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [ocrNotice, setOcrNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const [licenseModalOpen, setLicenseModalOpen] = useState(false);
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- 프로필 로드 결과를 편집 폼의 초기값으로 동기화 */
@@ -159,7 +159,7 @@ export default function ProfileEditScreen() {
   );
 
   const pickAvatar = async () => {
-    if (pickerBusy || avatarUploading) return;
+    if (!user?.id || pickerBusy || avatarUploading) return;
     setPickerBusy(true);
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -176,24 +176,39 @@ export default function ProfileEditScreen() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.65,
+        base64: true,
       });
 
       if (result.canceled || !result.assets?.length) return;
       const asset = result.assets[0];
       const pickedUri = String(asset.uri || '').trim();
-      if (!pickedUri) return;
+      if (!pickedUri || !asset.base64) throw new Error('avatar_image_data_missing');
 
       setAvatarUploading(true);
-      const uploaded = await uploadImage(pickedUri);
-      if (uploaded?.url) {
-        setAvatarUri(uploaded.url);
-        showToast({
-          type: uploaded.source === 'mock' ? 'info' : 'success',
-          title: t('pages.profileEdit.photoSelectDone', { defaultValue: '프로필 사진이 서버에 저장되었습니다.' }),
-        });
-      } else {
-        throw new Error('avatar_upload_url_missing');
-      }
+      const pickedMimeType = String(asset.mimeType || '').trim().toLowerCase();
+      const mimeType = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(pickedMimeType)
+        ? pickedMimeType
+        : 'image/jpeg';
+      const uploaded = await apiClient.uploadProfileAvatar(`data:${mimeType};base64,${asset.base64}`);
+      const savedAvatarUrl = String(uploaded.avatar_url || '').trim();
+      if (!savedAvatarUrl) throw new Error('avatar_profile_save_failed');
+
+      setAvatarUri(savedAvatarUrl);
+      queryClient.setQueryData(['profile', user.id], (prev: any) => ({
+        ...(prev || {}),
+        avatar_url: savedAvatarUrl,
+      }));
+      syncCurrentUserProfile({ avatar_url: savedAvatarUrl });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profile'] }),
+        queryClient.invalidateQueries({ queryKey: ['feed'] }),
+        queryClient.invalidateQueries({ queryKey: ['saved-feed'] }),
+        queryClient.invalidateQueries({ queryKey: ['account-profile'] }),
+      ]);
+      showToast({
+        type: 'success',
+        title: t('pages.profileEdit.photoSelectDone', { defaultValue: '프로필 사진이 서버에 저장되었습니다.' }),
+      });
     } catch {
       showToast({
         type: 'error',
@@ -304,7 +319,7 @@ export default function ProfileEditScreen() {
     }
   };
 
-  const saveProfile = async () => {
+  const saveProfile = async (closeLicenseModal = false) => {
     if (!user?.id || saving) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -352,7 +367,11 @@ export default function ProfileEditScreen() {
         title: t('pages.profileEdit.doneTitle'),
         message: t('pages.profileEdit.doneBody'),
       });
-      router.replace(appRouteMap.profile.path as never);
+      if (closeLicenseModal) {
+        setLicenseModalOpen(false);
+      } else {
+        router.replace(appRouteMap.profile.path as never);
+      }
     } catch {
       showToast({
         type: 'error',
@@ -472,82 +491,48 @@ export default function ProfileEditScreen() {
               {t('pages.profileEdit.license.subtitle', { defaultValue: '라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.' })}
             </Text>
 
-            <View className="mt-3 flex-row items-center">
+            <View className="mt-3 flex-row flex-wrap items-center gap-2">
               <TouchableOpacity
-                className={`mr-2 flex-row items-center rounded-xl border px-3 py-2 ${ocrPending ? 'border-gray-300 bg-gray-100 dark:bg-surface-800' : 'border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
+                className="flex-row items-center rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 dark:border-brand-500/30 dark:bg-brand-500/10"
                 activeOpacity={0.88}
-                onPress={pickLicenseImageWithOcr}
-                disabled={ocrPending || pickerBusy}
+                onPress={() => setLicenseModalOpen(true)}
+              >
+                <CreditCard size={15} color="#0d5fa8" />
+                <Text className="ml-1 text-xs font-semibold text-brand-700">
+                  {t('pages.profileEdit.license.register', { defaultValue: '라이선스 등록' })}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`flex-row items-center rounded-xl border px-3 py-2 ${ocrPending ? 'border-gray-300 bg-gray-100 dark:bg-surface-800' : 'border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`}
+                activeOpacity={0.88}
+                onPress={() => setLicenseModalOpen(true)}
               >
                 {ocrPending ? <ActivityIndicator size="small" color="#0f172a" /> : <ImagePlus size={15} color="#0f172a" />}
                 <Text className="ml-1 text-xs font-semibold text-gray-900 dark:text-surface-50">
                   {ocrPending
                     ? t('pages.profileEdit.license.processing', { defaultValue: '인식 중...' })
-                    : t('pages.profileEdit.license.upload', { defaultValue: '라이선스 사진 업로드 + OCR' })}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="rounded-xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-2"
-                activeOpacity={0.88}
-                onPress={() => {
-                  setLicenseImageUrl('');
-                  setLicenseImagePreviewUri('');
-                }}
-              >
-                <Text className="text-xs font-semibold text-gray-700">
-                  {t('pages.profileEdit.license.remove', { defaultValue: '사진 제거' })}
+                    : t('pages.profileEdit.license.upload', { defaultValue: '사진 업로드 + OCR' })}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {licenseImagePreviewUri ? (
-              <View className="mt-3 overflow-hidden rounded-xl border border-gray-200 dark:border-surface-700 bg-gray-50">
-                <Image source={{ uri: licenseImagePreviewUri }} className="h-36 w-full" resizeMode="contain" />
-              </View>
-            ) : null}
-
-            {ocrNotice ? <Text className="mt-2 text-xs text-blue-700">{ocrNotice}</Text> : null}
-
-            <Text className="mb-2 mt-3 text-xs font-semibold text-gray-500">
-              {t('pages.profileEdit.license.agency', { defaultValue: '단체명' })}
-            </Text>
-            <TextInput
-              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
-              placeholder={t('pages.profileEdit.license.agencyPlaceholder', { defaultValue: '예: PADI, SSI, AIDA' })}
-              placeholderTextColor="#9ca3af"
-              value={licenseAgency}
-              onChangeText={setLicenseAgency}
-              maxLength={60}
-            />
-
-            <Text className="mb-2 mt-3 text-xs font-semibold text-gray-500">
-              {t('pages.profileEdit.license.number', { defaultValue: '라이선스 번호' })}
-            </Text>
-            <TextInput
-              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
-              placeholder={t('pages.profileEdit.license.numberPlaceholder', { defaultValue: '예: 12345678' })}
-              placeholderTextColor="#9ca3af"
-              value={licenseNumber}
-              onChangeText={setLicenseNumber}
-              maxLength={60}
-            />
-
-            <Text className="mb-2 mt-3 text-xs font-semibold text-gray-500">
-              {t('pages.profileEdit.license.issuedAt', { defaultValue: '취득일' })}
-            </Text>
-            <TextInput
-              className="rounded-xl border border-gray-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3 text-sm text-surface-900 dark:text-surface-50"
-              placeholder={t('pages.profileEdit.license.issuedAtPlaceholder', { defaultValue: 'YYYY-MM-DD' })}
-              placeholderTextColor="#9ca3af"
-              value={licenseIssuedAt}
-              onChangeText={setLicenseIssuedAt}
-              maxLength={20}
-            />
+            <View className="mt-3 rounded-xl border border-dashed border-gray-200 dark:border-surface-700 bg-gray-50 dark:bg-surface-800 px-3 py-3">
+              <Text className="text-xs font-semibold text-gray-500">
+                {licenseAgency || licenseNumber || licenseIssuedAt
+                  ? t('pages.profileEdit.license.registeredSummary', { defaultValue: '현재 입력된 라이선스 정보가 있습니다.' })
+                  : t('pages.profileEdit.license.registeredEmpty', { defaultValue: '아직 등록된 라이선스가 없습니다.' })}
+              </Text>
+              {licenseAgency || licenseNumber || licenseIssuedAt ? (
+                <Text className="mt-1 text-xs text-gray-600 dark:text-surface-300">
+                  {[licenseAgency, licenseNumber, licenseIssuedAt].filter(Boolean).join(' · ')}
+                </Text>
+              ) : null}
+            </View>
           </View>
 
           <TouchableOpacity
             className={`mt-5 h-12 items-center justify-center rounded-2xl ${saving ? 'bg-gray-500' : 'bg-gray-950'}`}
-            onPress={saveProfile}
+            onPress={() => void saveProfile()}
             disabled={saving}
           >
             {saving ? (
@@ -558,6 +543,171 @@ export default function ProfileEditScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <Modal transparent visible={licenseModalOpen} animationType="slide" onRequestClose={() => setLicenseModalOpen(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(10,18,30,0.5)', justifyContent: 'flex-end' }} onPress={() => setLicenseModalOpen(false)}>
+          <Pressable
+            style={{
+              maxHeight: '90%',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              backgroundColor: '#f8fbff',
+              paddingHorizontal: 16,
+              paddingTop: 10,
+              paddingBottom: 18,
+              shadowColor: '#0f172a',
+              shadowOpacity: 0.16,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: -6 },
+              elevation: 16,
+            }}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <View className="mb-2 items-center">
+              <View className="mb-2 h-1.5 w-12 rounded-full bg-gray-300" />
+              <View className="items-center rounded-3xl border border-brand-200 bg-white px-4 py-3 shadow-sm">
+                <View className="mb-2 h-10 w-10 items-center justify-center rounded-2xl bg-brand-50">
+                  <CreditCard size={20} color="#0d5fa8" />
+                </View>
+                <Text className="text-sm font-semibold text-gray-900">
+                  {t('pages.profileEdit.license.register', { defaultValue: '라이선스 등록' })}
+                </Text>
+                <Text className="mt-1 text-center text-[11px] leading-4 text-gray-500">
+                  {t('pages.profileEdit.license.subtitle', { defaultValue: '라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.' })}
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 8 }}>
+              <View className="rounded-3xl border border-gray-200 bg-white p-3">
+                <Text className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">
+                  1. {t('pages.profileEdit.license.photoSection', { defaultValue: '사진 등록' })}
+                </Text>
+                <View className="mt-2 flex-row flex-wrap gap-2">
+                  <TouchableOpacity
+                    className={`flex-row items-center rounded-2xl border px-3 py-2.5 ${ocrPending ? 'border-brand-200 bg-brand-50' : 'border-gray-200 bg-white'}`}
+                    activeOpacity={0.88}
+                    onPress={pickLicenseImageWithOcr}
+                    disabled={ocrPending || pickerBusy}
+                  >
+                    {ocrPending ? <ActivityIndicator size="small" color="#0f172a" /> : <ImagePlus size={14} color="#0f172a" />}
+                    <Text className="ml-2 text-[11px] font-semibold text-gray-900">
+                      {ocrPending
+                        ? t('pages.profileEdit.license.processing', { defaultValue: '인식 중...' })
+                        : t('pages.profileEdit.license.upload', { defaultValue: '사진 업로드 + OCR' })}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className="flex-row items-center rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2.5"
+                    activeOpacity={0.88}
+                    onPress={() => {
+                      setLicenseImageUrl('');
+                      setLicenseImagePreviewUri('');
+                    }}
+                  >
+                    <Text className="text-[11px] font-semibold text-gray-700">
+                      {t('pages.profileEdit.license.remove', { defaultValue: '사진 제거' })}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {licenseImagePreviewUri ? (
+                  <View className="mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                    <Image source={{ uri: licenseImagePreviewUri }} className="h-28 w-full" resizeMode="contain" />
+                  </View>
+                ) : (
+                  <View className="mt-2 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-4">
+                    <Text className="text-center text-[11px] text-gray-500">
+                      {t('pages.profileEdit.license.photoEmpty', { defaultValue: '등록할 라이선스 사진을 선택해 주세요.' })}
+                    </Text>
+                  </View>
+                )}
+
+                {ocrNotice ? <Text className="mt-2 text-[11px] leading-4 text-blue-700">{ocrNotice}</Text> : null}
+              </View>
+
+              <View className="mt-3 rounded-3xl border border-gray-200 bg-white p-3">
+                <Text className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-600">
+                  2. {t('pages.profileEdit.license.formSection', { defaultValue: '정보 입력' })}
+                </Text>
+
+                <Text className="mb-2 mt-3 text-[11px] font-semibold text-gray-500">
+                  {t('pages.profileEdit.license.agency', { defaultValue: '단체명' })}
+                </Text>
+                <TextInput
+                  className="rounded-2xl border border-gray-200 bg-surface-50 px-3 py-2.5 text-sm text-surface-900"
+                  placeholder={t('pages.profileEdit.license.agencyPlaceholder', { defaultValue: '예: PADI, SSI, AIDA' })}
+                  placeholderTextColor="#9ca3af"
+                  value={licenseAgency}
+                  onChangeText={setLicenseAgency}
+                  maxLength={60}
+                />
+
+                <Text className="mb-2 mt-3 text-[11px] font-semibold text-gray-500">
+                  {t('pages.profileEdit.license.number', { defaultValue: '라이선스 번호' })}
+                </Text>
+                <TextInput
+                  className="rounded-2xl border border-gray-200 bg-surface-50 px-3 py-2.5 text-sm text-surface-900"
+                  placeholder={t('pages.profileEdit.license.numberPlaceholder', { defaultValue: '예: 12345678' })}
+                  placeholderTextColor="#9ca3af"
+                  value={licenseNumber}
+                  onChangeText={setLicenseNumber}
+                  maxLength={60}
+                />
+
+                <Text className="mb-2 mt-3 text-[11px] font-semibold text-gray-500">
+                  {t('pages.profileEdit.license.issuedAt', { defaultValue: '취득일' })}
+                </Text>
+                <TextInput
+                  className="rounded-2xl border border-gray-200 bg-surface-50 px-3 py-2.5 text-sm text-surface-900"
+                  placeholder={t('pages.profileEdit.license.issuedAtPlaceholder', { defaultValue: 'YYYY-MM-DD' })}
+                  placeholderTextColor="#9ca3af"
+                  value={licenseIssuedAt}
+                  onChangeText={setLicenseIssuedAt}
+                  maxLength={20}
+                />
+
+                <View className="mt-3 rounded-2xl bg-brand-50 px-3 py-2.5">
+                  <Text className="text-[11px] font-semibold text-brand-700">
+                    {licenseAgency || licenseNumber || licenseIssuedAt
+                      ? t('pages.profileEdit.license.registeredSummary', { defaultValue: '현재 입력된 라이선스 정보가 있습니다.' })
+                      : t('pages.profileEdit.license.registeredEmpty', { defaultValue: '아직 등록된 라이선스가 없습니다.' })}
+                  </Text>
+                  {licenseAgency || licenseNumber || licenseIssuedAt ? (
+                    <Text className="mt-1 text-[11px] leading-4 text-brand-700">
+                      {[licenseAgency, licenseNumber, licenseIssuedAt].filter(Boolean).join(' · ')}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              <View className="mt-3 flex-row gap-2">
+                <TouchableOpacity
+                  className="flex-1 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2.5"
+                  activeOpacity={0.88}
+                  onPress={() => setLicenseModalOpen(false)}
+                >
+                  <Text className="text-sm font-semibold text-gray-700">
+                    {t('common.close', { defaultValue: '닫기' })}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className={`flex-1 items-center justify-center rounded-2xl ${saving ? 'bg-gray-500' : 'bg-gray-950'} px-4 py-2.5`}
+                  activeOpacity={0.88}
+                  onPress={() => saveProfile(true)}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
+                    <Text className="text-sm font-semibold text-white">{t('pages.profileEdit.save', { defaultValue: '변경사항 저장' })}</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }

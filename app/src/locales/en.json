@@ -517,6 +517,7 @@
     "account": {
       "googleLink": "Link Google login",
       "appleLink": "Link Apple login",
+      "instagramLink": "Link Instagram login",
       "kakaoLink": "Link Kakao login",
       "devices": "Manage dive computers",
       "deleteAccount": "Delete account",
@@ -549,6 +550,8 @@
     "diving": {
       "certifications": "Certification management",
       "certificationsSubtitle": "Update your certifications and current level.",
+      "licenseManagement": "License management",
+      "licenseManagementSubtitle": "View, add, edit, and delete your licenses.",
       "equipment": "Equipment registration",
       "integration": "External integrations",
       "integrationSubtitle": "Manage Google Maps, Stormglass, Garmin, Suunto, and Shearwater status.",
@@ -596,7 +599,21 @@
       "policyCenter": "Policy Center",
       "openSourceLicenses": "Open Source Licenses",
       "appInfo": "App Info",
-      "appInfoSubtitle": "Manage terms, policies, and customer support items."
+      "appInfoSubtitle": "Manage terms, policies, and customer support items.",
+      "licenseManagement": "License management",
+      "licenseManagementSubtitle": "View, add, edit, and delete your licenses.",
+      "donate": "Donate",
+      "donateSubtitle": "Support Divergram and help fund development."
+    },
+    "donate": {
+      "title": "Donate",
+      "subtitle": "Support Divergram through PayPal's official donation button.",
+      "buttonTitle": "Open PayPal donation page",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "Info",
+      "guideBody": "Donation amounts and options are managed in the PayPal Hosted Button settings.",
+      "thanks": "Thank you for supporting Divergram."
     },
     "safety": {
       "emergencyContact": "Emergency contact",
@@ -618,18 +635,19 @@
   "menu": {
     "quick": "Quick settings",
     "more": "More",
-    "desc": {
-      "messages": "Buddy chat and dive plans",
-      "settings": "Language, theme, privacy",
-      "activity": "Your actions and records",
-      "saved": "Saved posts and reels",
-      "reels": "Short dive videos",
-      "resorts": "Dive resort discovery",
-      "location": "Dive points on map",
-      "notifications": "Latest alerts and updates",
-      "admin": "Operational dashboard",
-      "app_info": "Terms, policy, support"
-    }
+      "desc": {
+        "messages": "Buddy chat and dive plans",
+        "settings": "Language, theme, privacy",
+        "activity": "Your actions and records",
+        "saved": "Saved posts and reels",
+        "reels": "Short dive videos",
+        "resorts": "Dive resort discovery",
+        "location": "Dive points on map",
+        "notifications": "Latest alerts and updates",
+        "license_management": "Register and manage your licenses",
+        "admin": "Operational dashboard",
+        "app_info": "Terms, policy, support"
+      }
   },
   "pages": {
     "messages": {
@@ -723,6 +741,7 @@
         "title": "License verification",
         "subtitle": "Upload your license photo to auto-detect agency, number, and issue date.",
         "upload": "Upload license photo + OCR",
+        "register": "Register license",
         "remove": "Remove Photo",
         "processing": "Processing...",
         "agency": "Agency",

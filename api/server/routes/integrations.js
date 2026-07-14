@@ -14,8 +14,8 @@ function buildIntegrationRecord({ provider, userId, payload = {}, previous = {} 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
   const accountLabel = String(payload.accountLabel || previous.accountLabel || `${getProviderLabel(provider)} Diver`).trim();
-  const accessToken = String(payload.accessToken || previous.accessToken || `mock_${provider}_${Math.random().toString(36).slice(2, 12)}`);
-  const refreshToken = String(payload.refreshToken || previous.refreshToken || `mock_refresh_${provider}_${Math.random().toString(36).slice(2, 12)}`);
+  const accessToken = String(payload.accessToken || previous.accessToken || '');
+  const refreshToken = String(payload.refreshToken || previous.refreshToken || '');
   const providerUserId = String(payload.providerUserId || previous.providerUserId || `${provider}_${userId}`);
 
   return {
@@ -113,6 +113,7 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
     try {
       const previous = await readIntegrationRecord(pool, userId, provider);
       const data = buildIntegrationRecord({ provider, userId, payload: req.body || {}, previous: previous || {} });
+      if (!data.accessToken) return res.status(501).json({ error: 'integration_provider_not_configured' });
       await writeIntegrationRecord(pool, userId, provider, data);
       return res.json({ ok: true, data });
     } catch {
@@ -130,6 +131,7 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
     try {
       const previous = (await readIntegrationRecord(pool, userId, provider)) || {};
       const data = buildIntegrationRecord({ provider, userId, payload: req.body || {}, previous });
+      if (!data.accessToken) return res.status(501).json({ error: 'integration_provider_not_configured' });
       await writeIntegrationRecord(pool, userId, provider, data);
       return res.json({ ok: true, data });
     } catch {
@@ -176,6 +178,13 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
         return res.json({ ok: true, connected: false, logs: [] });
       }
 
+      if (!integration.accessToken || String(integration.accessToken).startsWith('mock_')) {
+        return res.status(501).json({ error: 'integration_provider_not_configured' });
+      }
+
+      if (process.env.ENABLE_MOCK_INTEGRATIONS !== 'true' || process.env.NODE_ENV === 'production') {
+        return res.status(501).json({ error: 'integration_sync_not_implemented' });
+      }
       const logs = buildMockLogs(provider, String(userId), limit);
       const nextRecord = {
         ...integration,

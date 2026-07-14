@@ -12,6 +12,7 @@ import { useToast } from '../components/Toast';
 import i18n from '../lib/i18n';
 import { storage } from '../lib/storage';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
+import { startUserPreferencesSync, stopUserPreferencesSync } from '../services/userPreferencesSyncService';
 
 function normalizeEnvValue(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -206,6 +207,41 @@ function buildSocialSignupInput(provider: SocialProvider, accessToken: string, u
   };
 }
 
+function decodeBase64JsonSegment(segment: string): Record<string, any> | null {
+  const raw = String(segment || '').trim();
+  if (!raw) return null;
+  try {
+    const normalized = raw.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    const decoded = typeof globalThis.atob === 'function' ? globalThis.atob(padded) : '';
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function buildGoogleUserInfoHint(token: string, fallback?: Record<string, any>) {
+  const claims = decodeBase64JsonSegment(String(token || '').split('.')[1] || '');
+  const source = claims || fallback || {};
+  const providerUserId = String(source.sub || source.user_id || source.providerUserId || source.id || '').trim();
+  const email = String(source.email || '').trim().toLowerCase();
+  const name = String(source.name || source.given_name || source.nickname || source.full_name || '').trim();
+  const avatar = String(source.picture || source.avatar || source.photoURL || '').trim();
+  if (!providerUserId && !email && !name && !avatar) return undefined;
+  return {
+    id: providerUserId || undefined,
+    sub: providerUserId || undefined,
+    providerUserId: providerUserId || undefined,
+    email: email || undefined,
+    name: name || undefined,
+    avatar: avatar || undefined,
+  };
+}
+
+function buildGoogleUserInfoFromTokens(accessToken: string, idToken?: string, fallback?: Record<string, any>) {
+  return buildGoogleUserInfoHint(idToken || accessToken, fallback);
+}
+
 function buildSocialSignupError(provider: SocialProvider, accessToken: string, userInfo?: any, error?: any) {
   const signupError = new Error('sso_signup_required');
   (signupError as any).code = 'sso_signup_required';
@@ -241,6 +277,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectUri: googleRedirectUri,
       scopes: ['openid', 'profile', 'email'],
       selectAccount: true,
+      // loginWithGoogle exchanges the code synchronously so the caller can finish
+      // the API login before navigating. Prevent the hook from consuming it first.
+      shouldAutoExchangeCode: false,
       extraParams: { access_type: 'offline', prompt: 'select_account' },
     } as any,
     { native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined }
@@ -399,9 +438,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persistAuthPayload, syncSocialLinksFromServer]);
 
   const signInOrSignUpWithGoogle = useCallback(
-    async (googleAccessToken: string) => {
+    async (googleAccessToken: string, userInfoHint?: Record<string, any>, googleIdToken?: string) => {
       try {
-        const response = await apiClient.authWithOAuthMobile('google', googleAccessToken, 30);
+        const response = await apiClient.authWithOAuthMobile('google', googleAccessToken, 30, userInfoHint, googleIdToken);
         persistAuthPayload(response.data, undefined, { sessionDays: 30 });
         void syncSocialLinksFromServer();
       } catch (error: any) {
@@ -541,10 +580,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userId = String(user?.id || '').trim();
     if (!userId) {
       pushInitUserIdRef.current = null;
+      stopUserPreferencesSync();
       return;
     }
     if (pushInitUserIdRef.current === userId) return;
     pushInitUserIdRef.current = userId;
+    void startUserPreferencesSync(userId);
     void syncSocialLinksFromServer();
   }, [syncSocialLinksFromServer, user?.id]);
 
@@ -575,6 +616,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           result.params.id_token ||
           ''
       ).trim();
+      let googleIdToken = String(
+        result.authentication?.idToken ||
+          result.params.id_token ||
+          ''
+      ).trim();
       if (!access_token && result.params.code) {
         const discovery = {
           authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -595,13 +641,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         const exchangePayload = exchange as any;
         access_token = String(exchangePayload.accessToken || exchangePayload.authentication?.accessToken || exchangePayload.idToken || '').trim();
+        googleIdToken = String(exchangePayload.idToken || exchangePayload.authentication?.idToken || '').trim();
       }
 
       if (!access_token) {
         throw new Error('google_access_token_missing');
       }
 
-      await signInOrSignUpWithGoogle(access_token);
+      const googleUserInfoHint = buildGoogleUserInfoHint(access_token, {
+        id: result.params.sub || result.params.user_id || result.params.id || (result.authentication as any)?.userId || '',
+        sub: result.params.sub || result.params.user_id || result.params.id || (result.authentication as any)?.userId || '',
+        email: result.params.email || (result.authentication as any)?.email || '',
+        name: result.params.name || (result.authentication as any)?.fullName || (result.authentication as any)?.displayName || '',
+        avatar: result.params.picture || (result.authentication as any)?.picture || '',
+      });
+
+      const fallbackGoogleUserInfo = buildGoogleUserInfoFromTokens(access_token, googleIdToken, googleUserInfoHint);
+      await signInOrSignUpWithGoogle(access_token, fallbackGoogleUserInfo, googleIdToken);
     } catch (error) {
       console.error('Google login error:', error);
       throw error;

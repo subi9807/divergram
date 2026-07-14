@@ -12,7 +12,22 @@ import {
   NativeMediaView,
   TestIds,
 } from 'react-native-google-mobile-ads';
-import { getAdMobBannerUnitId } from '../../config/ads';
+import { getAdMobNativeUnitId } from '../../config/ads';
+import { initializeAdMob } from '../../lib/initAdMob';
+
+const MAX_LOAD_ATTEMPTS = 2;
+let adRequestQueue: Promise<void> = Promise.resolve();
+
+function enqueueAdRequest<T>(request: () => Promise<T>): Promise<T> {
+  const queuedRequest = adRequestQueue
+    .catch(() => undefined)
+    .then(() => request());
+  adRequestQueue = queuedRequest.then(
+    () => undefined,
+    () => undefined,
+  );
+  return queuedRequest;
+}
 
 type FeedAdSlotProps = {
   label?: string;
@@ -25,12 +40,13 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
   const { t } = useTranslation();
   const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
   const [adFailed, setAdFailed] = useState(false);
-  const nativeAdUnitId = getAdMobBannerUnitId();
+  const nativeAdUnitId = getAdMobNativeUnitId();
   const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
   const resolvedUnitId = shouldUseTestAds ? TestIds.NATIVE : nativeAdUnitId;
 
   useEffect(() => {
     let mounted = true;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     setNativeAd(null);
     setAdFailed(false);
 
@@ -41,25 +57,44 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
       };
     }
 
-    NativeAd.createForAdRequest(resolvedUnitId, {
-      adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT,
-      aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
-      requestNonPersonalizedAdsOnly: true,
-      startVideoMuted: true,
-    })
-      .then((ad) => {
+    const loadAd = async (attempt: number) => {
+      const initialized = await initializeAdMob();
+      if (!mounted) return;
+      if (!initialized) {
+        setAdFailed(true);
+        return;
+      }
+
+      try {
+        const ad = await enqueueAdRequest(() =>
+          NativeAd.createForAdRequest(resolvedUnitId, {
+            adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT,
+            aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
+            requestNonPersonalizedAdsOnly: true,
+            startVideoMuted: true,
+          }),
+        );
         if (!mounted) {
           ad.destroy();
           return;
         }
         setNativeAd(ad);
-      })
-      .catch(() => {
-        if (mounted) setAdFailed(true);
-      });
+      } catch (error) {
+        console.warn(`[AdMob] Native ad load failed (${attempt}/${MAX_LOAD_ATTEMPTS})`, error);
+        if (!mounted) return;
+        if (attempt < MAX_LOAD_ATTEMPTS) {
+          retryTimer = setTimeout(() => void loadAd(attempt + 1), attempt * 10000);
+        } else {
+          setAdFailed(true);
+        }
+      }
+    };
+
+    void loadAd(1);
 
     return () => {
       mounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [resolvedUnitId]);
 

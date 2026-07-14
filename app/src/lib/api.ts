@@ -437,6 +437,78 @@ function normalizeAdSlot(row: any): ActiveAdSlot {
 }
 
 export const apiClient = {
+  generateAiText: async (task: string, prompt: string): Promise<string> => {
+    const response = await axiosInstance.post('/ai/generate', { task, prompt });
+    return normalizeString(response.data?.text || '');
+  },
+  getUserPreferences: async () => {
+    const response = await axiosInstance.get('/preferences/me');
+    return {
+      data: response.data?.data || {},
+      exists: response.data?.exists === true,
+      updatedAt: response.data?.updatedAt || null,
+    };
+  },
+
+  updateUserPreferences: async (preferences: Record<string, unknown>) => {
+    const response = await axiosInstance.put('/preferences/me', preferences);
+    return response.data?.data || response.data || {};
+  },
+
+  getDivingLicenses: async () => {
+    const response = await axiosInstance.get('/diving-licenses/me');
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      exists: response.data?.exists === true,
+    };
+  },
+
+  saveDivingLicenses: async (items: Record<string, unknown>[]) => {
+    const response = await axiosInstance.put('/diving-licenses/me', { items });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  getDiveLogDraft: async (logId: string) => {
+    const response = await axiosInstance.get(`/dive-log-drafts/${encodeURIComponent(logId)}`);
+    return { data: response.data?.data || null, exists: response.data?.exists === true };
+  },
+
+  saveDiveLogDraft: async (logId: string, data: Record<string, unknown>) => {
+    const response = await axiosInstance.put(`/dive-log-drafts/${encodeURIComponent(logId)}`, { data });
+    return response.data?.data || null;
+  },
+
+  deleteDiveLogDraft: async (logId: string) => {
+    await axiosInstance.delete(`/dive-log-drafts/${encodeURIComponent(logId)}`);
+  },
+
+  uploadProfileAvatar: async (imageData: string): Promise<{ avatar_url: string }> => {
+    const normalized = normalizeString(imageData);
+    if (!normalized.startsWith('data:image/')) throw new Error('invalid_avatar_image');
+    const response = await axiosInstance.post('/profile/avatar', { imageData: normalized });
+    const row = response.data?.data || response.data || {};
+    const avatarUrl = normalizeString(row.avatar_url);
+    if (!avatarUrl) throw new Error('avatar_upload_url_missing');
+    return { avatar_url: avatarUrl };
+  },
+
+  startInstagramOAuth: async () => {
+    const data = await tryCandidateRequests<{ url: string; returnUrl: string }>([
+      { method: 'get', path: '/auth/oauth/instagram/mobile/start' },
+    ]);
+    return data;
+  },
+
+  completeInstagramOAuth: async (ticket: string) => {
+    const data = await tryCandidateRequests<{
+      accessToken: string;
+      userInfo: { id: string; username: string; email?: string };
+    }>([
+      { method: 'post', path: '/auth/oauth/instagram/mobile/complete', data: { ticket } },
+    ]);
+    return data;
+  },
+
   authWithOAuth: async (provider: string, accessToken: string, userInfo?: any, sessionDays = 30) => {
     const body = { provider, accessToken, userInfo, sessionDays };
     const data = await tryCandidateRequests<any>([
@@ -446,10 +518,16 @@ export const apiClient = {
     return { data };
   },
 
-  authWithOAuthMobile: async (provider: string, accessToken: string, sessionDays = 7) => {
+  authWithOAuthMobile: async (
+    provider: string,
+    accessToken: string,
+    sessionDays = 7,
+    userInfo?: any,
+    idToken?: string
+  ) => {
     const data = await tryCandidateRequests<any>([
-      { method: 'post', path: '/auth/oauth/mobile', data: { provider, accessToken, sessionDays } },
-      { method: 'post', path: '/auth/oauth', data: { provider, accessToken, sessionDays } },
+      { method: 'post', path: '/auth/oauth/mobile', data: { provider, accessToken, sessionDays, userInfo, idToken } },
+      { method: 'post', path: '/auth/oauth', data: { provider, accessToken, sessionDays, userInfo, idToken } },
     ]);
     return { data };
   },
@@ -479,6 +557,19 @@ export const apiClient = {
 
   linkOAuthMobile: (linkToken: string) =>
     axiosInstance.post('/auth/oauth/mobile/link', { linkToken }),
+
+  linkOAuthProvider: (
+    provider: 'google' | 'apple' | 'instagram',
+    accessToken: string,
+    userInfo?: Record<string, unknown>,
+    idToken?: string
+  ) => axiosInstance.post('/auth/oauth/mobile/link/provider', {
+    provider,
+    accessToken,
+    userInfo,
+    idToken,
+    sessionDays: 30,
+  }),
 
   linkOAuthMobileConfirm: (linkToken: string, action: 'approve' | 'cancel' = 'approve') =>
     axiosInstance.post('/auth/oauth/mobile/link/confirm', { linkToken, action }),
@@ -647,7 +738,9 @@ export const apiClient = {
       type: normalizeString(payload.mimeType || '') || 'application/octet-stream',
     } as any);
 
-    const response = await axiosInstance.post('/uploads', formData);
+    const response = await axiosInstance.post('/uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     const row = response.data?.data || response.data || {};
     return {
       url: normalizeString(row?.url || ''),
@@ -983,9 +1076,11 @@ export const apiClient = {
     if (patch.license_number !== undefined) cleanPatch.license_number = normalizeString(patch.license_number);
     if (patch.license_issued_at !== undefined) cleanPatch.license_issued_at = normalizeString(patch.license_issued_at);
 
-    const filters = [{ column: 'id', op: 'eq' as const, value: uid }];
     try {
-      await dataApi.update<any>('profiles', filters, cleanPatch);
+      const response = await axiosInstance.patch('/profile/me', cleanPatch);
+      const savedProfile = response.data?.data || response.data;
+      writeProfileExtrasToStorage(uid, cleanPatch);
+      return savedProfile || apiClient.getProfileById(uid);
     } catch (error: any) {
       const message = String(error?.response?.data?.error || error?.message || '').toLowerCase();
       const hasOptionalFieldsPatch =
@@ -1002,15 +1097,14 @@ export const apiClient = {
         if (cleanPatch.full_name !== undefined) fallbackPatch.full_name = cleanPatch.full_name;
         if (cleanPatch.bio !== undefined) fallbackPatch.bio = cleanPatch.bio;
         if (cleanPatch.avatar_url !== undefined) fallbackPatch.avatar_url = cleanPatch.avatar_url;
-        await dataApi.update<any>('profiles', filters, fallbackPatch);
+        const response = await axiosInstance.patch('/profile/me', fallbackPatch);
+        const savedProfile = response.data?.data || response.data;
+        writeProfileExtrasToStorage(uid, fallbackPatch);
+        return savedProfile || apiClient.getProfileById(uid);
       } else {
         throw error;
       }
     }
-
-    writeProfileExtrasToStorage(uid, cleanPatch);
-
-    return apiClient.getProfileById(uid);
   },
 
   uploadLicenseImageWithOcr: async (imageData: string) => {
@@ -1820,7 +1914,9 @@ export const apiClient = {
       .filter((post) => post.publish_to_feed !== false)
       .map((post) => {
         const normalized = normalizeFeedItem({ ...post, post_media: mediaMap[String(post.id)] || [] }, profileMap, likesCount, commentsCount);
-        const firstMedia = Array.isArray(normalized.media) ? normalized.media[0] : null;
+        const mediaItems = Array.isArray(normalized.media) ? normalized.media : [];
+        const firstMedia = mediaItems[0] || null;
+        const firstImageMedia = mediaItems.find((item) => item?.type === 'image') || null;
         const location = String(normalized.location || normalized.diveSite || '').trim();
         const tags = Array.isArray(normalized.tags) ? normalized.tags : [];
         const metaParts = [
@@ -1835,7 +1931,7 @@ export const apiClient = {
           title: String(normalized.diveSite || normalized.location || normalized.content || i18n.t('api.explore.defaultTitle')).trim(),
           location: location || i18n.t('api.explore.noLocation', { defaultValue: '위치 정보 없음' }),
           meta: metaParts.join(' · '),
-          imageUrl: normalizeImageUrl(firstMedia?.url || normalized.image) || '',
+          imageUrl: normalizeImageUrl(firstImageMedia?.url || normalized.image || firstMedia?.url) || '',
           tags,
           content: normalized.content,
           createdAt: normalized.createdAt,

@@ -506,6 +506,7 @@
     "account": {
       "googleLink": "Google ログイン連携",
       "appleLink": "Apple ログイン連携",
+      "instagramLink": "Instagram ログイン連携",
       "kakaoLink": "Kakao ログイン連携",
       "devices": "ダイブコンピュータ管理",
       "deleteAccount": "アカウント削除",
@@ -538,6 +539,8 @@
     "diving": {
       "certifications": "資格管理",
       "certificationsSubtitle": "保有資格と現在レベルを更新します。",
+      "licenseManagement": "ライセンス管理",
+      "licenseManagementSubtitle": "ライセンスの一覧、登録、編集、削除ができます。",
       "equipment": "器材情報登録",
       "integration": "外部サービス連携",
       "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater の状態を管理します。",
@@ -585,7 +588,21 @@
       "policyCenter": "ポリシー文書センター",
       "openSourceLicenses": "オープンソースライセンス",
       "appInfo": "アプリ情報",
-      "appInfoSubtitle": "利用規約・ポリシー・サポート項目を管理します。"
+      "appInfoSubtitle": "利用規約・ポリシー・サポート項目を管理します。",
+      "licenseManagement": "ライセンス管理",
+      "licenseManagementSubtitle": "ライセンスの一覧、登録、編集、削除ができます。",
+      "donate": "寄付する",
+      "donateSubtitle": "Divergramを応援して開発を支援します。"
+    },
+    "donate": {
+      "title": "寄付する",
+      "subtitle": "PayPal公式の寄付ボタンでDivergramを応援できます。",
+      "buttonTitle": "PayPal寄付ページを開く",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "案内",
+      "guideBody": "寄付金額とオプションはPayPal Hosted Buttonの設定で管理します。",
+      "thanks": "Divergramを応援してくださりありがとうございます。"
     },
     "safety": {
       "emergencyContact": "緊急連絡先登録",
@@ -616,6 +633,7 @@
       "resorts": "ダイビングリゾート探索",
       "location": "地図でポイント確認",
       "notifications": "最新通知と更新情報",
+      "license_management": "ライセンスを登録・管理",
       "admin": "運用専用ページ",
       "app_info": "規約・ポリシー・サポート"
     }
@@ -712,6 +730,7 @@
         "title": "ライセンス認証",
         "subtitle": "ライセンス写真をアップロードすると、団体名・番号・取得日を自動認識します。",
         "upload": "ライセンス写真アップロード + OCR",
+        "register": "ライセンス登録",
         "remove": "写真を削除",
         "processing": "認識中...",
         "agency": "団体名",

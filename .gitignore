@@ -53,6 +53,13 @@ app/.release/
 app/android/.gradle/
 app/android/build/
 app/android/app/build/
+app/android/.kotlin/
+
+# local Codex and test artifacts
+.codex-bin/
+.codex-sim/
+.codex-*.png
+tmp/
 
 # local env / helper scripts
 .env.server.local

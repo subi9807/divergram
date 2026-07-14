@@ -19,7 +19,6 @@ import {
 import { Link, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
-  Apple,
   ArrowLeft,
   ChevronRight,
   Eye,
@@ -30,6 +29,7 @@ import {
 import { Screen } from '../../src/components/Screen';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
+import { SocialBrandIcon } from '../../src/components/SocialBrandIcon';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { SocialLinkInput, SocialSignupInput } from '../../src/providers/AuthProvider';
 import { setPendingSignupDraft } from '../../src/services/signupFlowService';
@@ -70,7 +70,7 @@ export default function LoginScreen() {
   const socialAuth = getSocialAuthConfig();
   const isIOS = Platform.OS === 'ios';
   const hasGoogleLogin = Boolean(socialAuth.googleClientIdIos || socialAuth.googleClientIdAndroid || socialAuth.googleClientIdWeb);
-  const hasInstagramLogin = Boolean(socialAuth.instagramClientId && socialAuth.instagramClientSecret);
+  const hasInstagramLogin = true;
   const isSigninDisabled = !email.trim() || !password;
   const isSignupDisabled = !name.trim() || !contact.trim() || !email.trim() || !password;
 
@@ -90,13 +90,13 @@ export default function LoginScreen() {
     if (raw.includes('google_request_not_ready')) return 'Google 로그인을 준비하는 중입니다. 잠시 후 다시 시도해주세요.';
     if (raw.includes('google_access_token_missing')) return 'Google 인증 토큰을 확인할 수 없습니다. 다시 로그인해주세요.';
     if (raw.includes('google_tokeninfo_failed') || raw.includes('google_userinfo_failed')) return 'Google 계정 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
+    if (raw.includes('profile_missing_fields') || raw.includes('google_profile_missing_fields')) return t('auth.googleProfileMissing');
     if (raw.includes('apple_requires_ios')) return 'Apple 로그인은 iOS 기기에서만 사용할 수 있습니다.';
     if (raw.includes('apple_login_unavailable')) return '현재 기기에서 Apple 로그인을 사용할 수 없습니다.';
     if (raw.includes('apple_identity_token_missing')) return 'Apple 인증 토큰을 확인할 수 없습니다.';
     if (raw.includes('apple_identity_verify_failed')) return 'Apple 인증 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
     if (raw.includes('missing_google_client_id')) return t('auth.googleConfigMissing');
     if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
-    if (raw.includes('google_profile_missing_fields')) return t('auth.googleProfileMissing');
     if (raw.includes('oauth_backend_not_available')) return t('auth.oauthBackendMissing');
     if (raw.includes('google_userinfo_failed')) return t('auth.googleUserInfoFailed');
     if (raw.includes('sso_signup_required')) return t('auth.socialSignupFailed');
@@ -367,7 +367,7 @@ export default function LoginScreen() {
                   <SocialLoginButton
                     label={t('auth.continueWithGoogle')}
                     onPress={() => handleSocialLogin('google')}
-                    icon="G"
+                    icon={<SocialBrandIcon provider="google" size={20} />}
                     disabled={loading}
                   />
                 ) : null}
@@ -375,7 +375,7 @@ export default function LoginScreen() {
                   <SocialLoginButton
                     label={t('auth.continueWithApple')}
                     onPress={() => handleSocialLogin('apple')}
-                    icon={<Apple size={18} color="#0f172a" />}
+                    icon={<SocialBrandIcon provider="apple" size={20} />}
                     disabled={loading}
                     containerStyle={styles.spacingMd}
                   />
@@ -384,12 +384,9 @@ export default function LoginScreen() {
                   <SocialLoginButton
                     label={t('auth.continueWithInstagram', { defaultValue: 'Instagram으로 계속하기' })}
                     onPress={() => handleSocialLogin('instagram')}
-                    icon={<Text style={styles.instagramIconText}>◎</Text>}
+                    icon={<SocialBrandIcon provider="instagram" size={22} />}
                     disabled={loading}
-                    containerStyle={[styles.spacingMd, styles.instagramButton]}
-                    iconWrapStyle={styles.instagramIconWrap}
-                    labelStyle={styles.instagramLabel}
-                    chevronColor="#ffffff"
+                    containerStyle={styles.spacingMd}
                   />
                 ) : null}
 
@@ -647,7 +644,7 @@ function SocialLoginButton({
       style={[styles.socialButton, containerStyle, disabled && styles.disabledButton]}
     >
       <View style={[styles.socialIconWrap, iconWrapStyle]}>
-        {typeof icon === 'string' ? <Text style={styles.googleText}>{icon}</Text> : icon}
+        {icon}
       </View>
       <Text style={[styles.socialLabel, labelStyle]} numberOfLines={1}>
         {label}
@@ -809,33 +806,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  googleText: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '800',
-  },
   socialLabel: {
     flex: 1,
     marginLeft: 10,
     color: '#0f172a',
     fontSize: 15,
     fontWeight: '700',
-  },
-  instagramButton: {
-    borderColor: '#d946ef',
-    backgroundColor: '#18181b',
-  },
-  instagramIconWrap: {
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  instagramIconText: {
-    color: '#f9fafb',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  instagramLabel: {
-    color: '#ffffff',
   },
   dividerRow: {
     marginVertical: 16,

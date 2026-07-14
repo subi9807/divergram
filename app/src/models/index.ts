@@ -1,4 +1,5 @@
 export * from './Certification';
+export * from './DivingLicense';
 export * from './Consent';
 export * from './DeviceInfo';
 export * from './DiveDevice';

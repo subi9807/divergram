@@ -2,6 +2,7 @@
 
 def kotlinVersion = '2.3.0'
 def kspVersion = '2.3.0'
+def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
 
 ext.kotlinVersion = kotlinVersion
 ext.kspVersion = kspVersion
@@ -22,7 +23,7 @@ buildscript {
 def reactNativeAndroidDir = new File(
         providers.exec {
           workingDir(rootDir)
-          commandLine("node", "--print", "require.resolve('react-native/package.json')")
+          commandLine(nodeBinary, "--print", "require.resolve('react-native/package.json')")
         }.standardOutput.asText.get().trim(),
         "../android"
 )
