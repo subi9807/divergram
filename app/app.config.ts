@@ -118,6 +118,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       buildNumber: '39',
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
+      entitlements: {
+        'aps-environment': isProductionBuild ? 'production' : 'development'
+      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
