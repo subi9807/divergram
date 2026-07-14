@@ -6,9 +6,14 @@ apply plugin: "com.google.gms.google-services"
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
 def hermesPlatform = System.getProperty('os.name').toLowerCase().contains('mac') ? 'osx-bin' : 'linux64-bin'
-def hermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
-if (hermesCompiler.exists() && !hermesCompiler.setExecutable(true, false)) {
-    throw new GradleException("Unable to make the Hermes compiler executable: ${hermesCompiler}")
+def installedHermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
+def hermesCompiler = new File(buildDir, "hermesc/${hermesPlatform}/hermesc")
+if (installedHermesCompiler.exists()) {
+    hermesCompiler.parentFile.mkdirs()
+    hermesCompiler.bytes = installedHermesCompiler.bytes
+    if (!hermesCompiler.setExecutable(true, false)) {
+        throw new GradleException("Unable to make the Hermes compiler executable: ${hermesCompiler}")
+    }
 }
 
 /**
