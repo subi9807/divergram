@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleProp,
   StyleSheet,
   Text,
@@ -320,7 +321,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen safe={false} tone="plain">
+    <Screen safe={false} tone="plain" style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="#07131f" translucent={false} />
       <LoadingOverlay visible={loading} text={t('auth.processing')} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
@@ -655,6 +657,9 @@ function SocialLoginButton({
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: '#07131f',
+  },
   flex: {
     flex: 1,
   },

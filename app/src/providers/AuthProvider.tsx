@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
+import {
+  GoogleSignin,
+  isSuccessResponse as isGoogleSignInSuccess,
+} from '@react-native-google-signin/google-signin';
 import type * as AppleAuthenticationTypes from 'expo-apple-authentication';
 import { Platform } from 'react-native';
 import { apiClient } from '../lib/api';
@@ -289,6 +293,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } as any,
     { native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined }
   );
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !socialAuth.googleClientIdWeb) return;
+    GoogleSignin.configure({
+      webClientId: socialAuth.googleClientIdWeb,
+      scopes: ['profile', 'email'],
+      offlineAccess: false,
+    });
+  }, [socialAuth.googleClientIdWeb]);
 
   // OAuth configuration
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -602,6 +615,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (!googleClientId) {
         throw new Error('missing_google_client_id');
+      }
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        const nativeResult = await GoogleSignin.signIn();
+        if (!isGoogleSignInSuccess(nativeResult)) {
+          throw new Error('google_login_cancelled');
+        }
+        const tokens = await GoogleSignin.getTokens();
+        const accessToken = String(tokens.accessToken || '').trim();
+        const idToken = String(tokens.idToken || nativeResult.data.idToken || '').trim();
+        if (!accessToken && !idToken) {
+          throw new Error('google_access_token_missing');
+        }
+        const nativeUser = nativeResult.data.user;
+        await signInOrSignUpWithGoogle(
+          accessToken || idToken,
+          {
+            id: nativeUser.id,
+            sub: nativeUser.id,
+            email: nativeUser.email,
+            name: nativeUser.name || '',
+            avatar: nativeUser.photo || '',
+          },
+          idToken
+        );
+        return;
       }
       if (!googleAuthRequest) {
         throw new Error('google_request_not_ready');

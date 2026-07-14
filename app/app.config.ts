@@ -209,6 +209,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ? [['@sentry/react-native/expo', { organization: sentryOrg, project: sentryProject }]]
         : []),
       'expo-apple-authentication',
+      '@react-native-google-signin/google-signin',
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',
       ...(adMobAndroidAppId || adMobIosAppId
