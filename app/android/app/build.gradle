@@ -7,6 +7,9 @@ def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
 def hermesPlatform = System.getProperty('os.name').toLowerCase().contains('mac') ? 'osx-bin' : 'linux64-bin'
 def hermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
+if (hermesCompiler.exists() && !hermesCompiler.setExecutable(true, false)) {
+    throw new GradleException("Unable to make the Hermes compiler executable: ${hermesCompiler}")
+}
 
 /**
  * This is the configuration block to customize your React Native Android app.
