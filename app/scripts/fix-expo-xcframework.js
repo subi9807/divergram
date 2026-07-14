@@ -68,6 +68,20 @@ const googleMobileAdsModuleTarget = path.join(
   'RNGoogleMobileAds',
   'RNGoogleMobileAdsModule.mm'
 );
+const linuxHermesCompilerTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'hermes-compiler',
+  'hermesc',
+  'linux64-bin',
+  'hermesc'
+);
+
+if (fs.existsSync(linuxHermesCompilerTarget)) {
+  fs.chmodSync(linuxHermesCompilerTarget, 0o755);
+  console.log('[fix-expo-xcframework] Restored executable permission for the Linux Hermes compiler.');
+}
 
 const marker = "    console.error(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}`);\n    process.exit(1);\n";
 const replacement = "    console.log(`${LOG_PREFIX} ${moduleName}: Directory not found: ${xcframeworksDir}, skipping.`);\n    return;\n";
