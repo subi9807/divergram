@@ -39,6 +39,8 @@ expo-env.d.ts
 
 .secrets/
 .keys/
+app/credentials.json
+app/credentials/
 **/android/keys/*.json
 **/*service-account*.json
 **/*.p8
