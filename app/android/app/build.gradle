@@ -6,9 +6,13 @@ apply plugin: "com.google.gms.google-services"
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
 def hermesPlatform = System.getProperty('os.name').toLowerCase().contains('mac') ? 'osx-bin' : 'linux64-bin'
-def installedHermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
-if (!installedHermesCompiler.exists()) {
-    throw new GradleException("Hermes compiler not found: ${installedHermesCompiler}")
+def linkedHermesCompiler = new File(projectRoot, "node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc")
+def pnpmHermesCompiler = fileTree(new File(projectRoot, "node_modules/.pnpm")) {
+    include "hermes-compiler@*/node_modules/hermes-compiler/hermesc/${hermesPlatform}/hermesc"
+}.files.find { it.isFile() }
+def installedHermesCompiler = linkedHermesCompiler.exists() ? linkedHermesCompiler : pnpmHermesCompiler
+if (installedHermesCompiler == null || !installedHermesCompiler.exists()) {
+    throw new GradleException("Hermes compiler not found in linked or pnpm store paths")
 }
 
 /**
