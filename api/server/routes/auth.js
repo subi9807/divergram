@@ -15,6 +15,7 @@ export function registerAuthRoutes(app, deps) {
   const WEB_APP_BASE_URL = String(process.env.WEB_APP_BASE_URL || 'https://divergram.com').replace(/\/$/, '');
   const SESSION_COOKIE_NAME = 'dg_session';
   const SESSION_COOKIE_DOMAIN = String(process.env.SESSION_COOKIE_DOMAIN || '.divergram.com').trim();
+  const OAUTH_PLACEHOLDER_EMAIL_DOMAIN = 'oauth.divergram.local';
   const ADMIN_EMAILS = new Set(
     String(process.env.ADMIN_EMAILS || 'subi9807@gmail.com')
       .split(',')
@@ -141,7 +142,12 @@ export function registerAuthRoutes(app, deps) {
     const pq = await pool.query(`SELECT ${PROFILE_SELECT_COLUMNS} FROM app_profiles WHERE id=$1`, [user.id]);
     const profile = buildProfileFromRow(pq.rows[0], row.id, row.username);
     const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
-    return { user, profile, token };
+    return {
+      user,
+      profile,
+      token,
+      profileCompletionRequired: String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
+    };
   };
 
   const ensureOAuthIdentityTable = async () => {
@@ -159,11 +165,18 @@ export function registerAuthRoutes(app, deps) {
     `);
   };
 
+  const buildPlaceholderOAuthEmail = (provider, providerSub) => {
+    const safeProvider = String(provider || 'oauth').toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'oauth';
+    const safeSub = String(providerSub || crypto.randomBytes(8).toString('hex')).replace(/[^a-zA-Z0-9_-]+/g, '_') || crypto.randomBytes(8).toString('hex');
+    return `${safeProvider}_${safeSub}@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`;
+  };
+
   const upsertOAuthUser = async ({ provider, providerSub, email, name, sessionDays }) => {
     await ensureOAuthIdentityTable();
     const normalizedEmail = normalizeEmail(email || '');
-    if (!normalizedEmail) throw new Error('oauth_email_required');
     const usernameBase = String(name || normalizedEmail.split('@')[0] || 'diver').replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 24) || 'diver_user';
+    const resolvedEmail = normalizedEmail || buildPlaceholderOAuthEmail(provider, providerSub);
+    const emailVerified = Boolean(normalizedEmail);
 
     let userRow = null;
     let q = await pool.query(
@@ -185,10 +198,18 @@ export function registerAuthRoutes(app, deps) {
       const tempPassword = crypto.randomBytes(20).toString('hex') + '!Aa1';
       const hash = await bcrypt.hash(tempPassword, 12);
       const uq = await pool.query(
-        `INSERT INTO app_users(email,password_hash,password_sha256,username,role,email_verified)
-         VALUES ($1,$2,NULL,$3,$4,true)
+        `INSERT INTO app_users(email,password_hash,password_sha256,username,role,email_verified,oauth_provider,oauth_sub)
+         VALUES ($1,$2,NULL,$3,$4,$5,$6,$7)
          RETURNING id,email,username`,
-        [normalizedEmail, hash, usernameBase, isAdminEmail(normalizedEmail) ? 'admin' : 'user']
+        [
+          resolvedEmail,
+          hash,
+          usernameBase,
+          isAdminEmail(normalizedEmail) ? 'admin' : 'user',
+          emailVerified,
+          provider,
+          providerSub,
+        ]
       );
       userRow = uq.rows[0];
     }
@@ -196,14 +217,14 @@ export function registerAuthRoutes(app, deps) {
     if (isAdminEmail(normalizedEmail)) {
       await pool.query('UPDATE app_users SET role=$1, email_verified=true WHERE id=$2', ['admin', userRow.id]);
     } else {
-      await pool.query('UPDATE app_users SET email_verified=true WHERE id=$1', [userRow.id]);
+      await pool.query('UPDATE app_users SET email_verified=$1 WHERE id=$2', [emailVerified, userRow.id]);
     }
 
     await pool.query(
       `INSERT INTO app_user_oauth_identities(user_id, provider, provider_sub, email_at_link)
        VALUES ($1,$2,$3,$4)
        ON CONFLICT (provider, provider_sub) DO UPDATE SET user_id=EXCLUDED.user_id, email_at_link=EXCLUDED.email_at_link`,
-      [userRow.id, provider, providerSub, normalizedEmail]
+      [userRow.id, provider, providerSub, normalizedEmail || resolvedEmail]
     );
 
     await pool.query(
@@ -217,7 +238,12 @@ export function registerAuthRoutes(app, deps) {
     const user = { id: String(userRow.id), email: userRow.email };
     const profile = buildProfileFromRow(pq.rows[0], userRow.id, userRow.username);
     const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
-    return { user, profile, token };
+    return {
+      user,
+      profile,
+      token,
+      profileCompletionRequired: String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
+    };
   };
 
   const fetchGoogleProfileByAccessToken = async (accessToken) => {
@@ -361,7 +387,7 @@ export function registerAuthRoutes(app, deps) {
     const sub = String(info.id || '').trim();
     return {
       sub,
-      email: sub ? `instagram_${sub}@oauth.divergram.local` : '',
+      email: '',
       name: String(info.username || '').trim(),
     };
   };
@@ -654,11 +680,9 @@ export function registerAuthRoutes(app, deps) {
         return res.json({ ...authResult, provider, linked: true });
       }
 
-      if (!oauthProfile.email) {
-        return res.status(400).json({ error: 'profile_missing_fields' });
-      }
-
-      const existingEmail = await pool.query('SELECT id FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email]);
+      const existingEmail = oauthProfile.email
+        ? await pool.query('SELECT id FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email])
+        : { rows: [] };
       if (existingEmail.rows.length) {
         const linkToken = jwt.sign(
           {
@@ -679,6 +703,18 @@ export function registerAuthRoutes(app, deps) {
           email: oauthProfile.email,
           linkToken,
         });
+      }
+
+      if (!oauthProfile.email) {
+        const authResult = await upsertOAuthUser({
+          provider,
+          providerSub: oauthProfile.sub,
+          email: '',
+          name: oauthProfile.name,
+          sessionDays,
+        });
+        setSessionCookie(res, authResult.token, sessionDays);
+        return res.json({ ...authResult, provider, linked: true, profileCompletionRequired: true });
       }
 
       if (!shouldAutoCreate) {
@@ -1199,7 +1235,7 @@ export function registerAuthRoutes(app, deps) {
         const code = String(Math.floor(100000 + Math.random() * 900000));
         const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
         await pool.query(
-          'UPDATE app_users SET email_pending=$1, email_verify_code=$2, email_verify_expires=$3 WHERE id=$4',
+          'UPDATE app_users SET email=$1, email_pending=$1, email_verify_code=$2, email_verify_expires=$3, email_verified=false WHERE id=$4',
           [email, code, expires, userId]
         );
         const verifyToken = jwt.sign({ purpose: 'email_verify', sub: String(userId), email }, JWT_SECRET, { expiresIn: '24h' });
@@ -1408,7 +1444,7 @@ export function registerAuthRoutes(app, deps) {
         oauthProfile = { sub: String(decoded.sub || ''), email: normalizeEmail(decoded.email || ''), name: '' };
       }
 
-      if (!oauthProfile?.sub || !oauthProfile?.email) {
+      if (!oauthProfile?.sub) {
         return res.redirect(redirectTo({ oauth: 'failed', reason: 'profile_missing_fields' }));
       }
 
@@ -1441,7 +1477,9 @@ export function registerAuthRoutes(app, deps) {
       );
 
       if (!linked.rows.length) {
-        const existingEmail = await pool.query('SELECT id,email,username FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email]);
+        const existingEmail = oauthProfile.email
+          ? await pool.query('SELECT id,email,username FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email])
+          : { rows: [] };
         if (existingEmail.rows.length) {
           const existingUserId = String(existingEmail.rows[0].id);
           const pendingToken = crypto.randomBytes(24).toString('hex');
@@ -1467,7 +1505,13 @@ export function registerAuthRoutes(app, deps) {
       });
 
       setSessionCookie(res, authResult.token, sessionDays);
-      return res.redirect(redirectTo(shouldExposeToken ? { oauth: 'success', oauthToken: authResult.token } : { oauth: 'success' }));
+      return res.redirect(
+        redirectTo(
+          shouldExposeToken
+            ? { oauth: 'success', oauthToken: authResult.token, profile_completion: authResult.profileCompletionRequired ? '1' : '0' }
+            : { oauth: 'success', profile_completion: authResult.profileCompletionRequired ? '1' : '0' }
+        )
+      );
     } catch (e) {
       const reason = String(e?.message || 'oauth_callback_error').slice(0, 120);
       return res.redirect(redirectTo({ oauth: 'failed', reason }));

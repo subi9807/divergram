@@ -105,7 +105,7 @@ android {
         applicationId 'com.divergram.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 36
+        versionCode 37
         versionName "1.2.4"
     }
     signingConfigs {
@@ -117,7 +117,7 @@ android {
         }
         release {
             if (findProperty('DIVERGRAM_UPLOAD_STORE_FILE')) {
-                storeFile file(findProperty('DIVERGRAM_UPLOAD_STORE_FILE'))
+                storeFile rootProject.file("../${findProperty('DIVERGRAM_UPLOAD_STORE_FILE')}")
                 storePassword findProperty('DIVERGRAM_UPLOAD_STORE_PASSWORD')
                 keyAlias findProperty('DIVERGRAM_UPLOAD_KEY_ALIAS')
                 keyPassword findProperty('DIVERGRAM_UPLOAD_KEY_PASSWORD')

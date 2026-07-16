@@ -1108,6 +1108,13 @@ export const apiClient = {
     }
   },
 
+  updateAccountEmail: async (email: string) => {
+    const normalizedEmail = normalizeString(email);
+    if (!normalizedEmail) throw new Error('invalid_email');
+    const response = await axiosInstance.patch('/auth/me', { email: normalizedEmail });
+    return response.data?.data || response.data || {};
+  },
+
   uploadLicenseImageWithOcr: async (imageData: string) => {
     const dataUrl = normalizeString(imageData);
     if (!dataUrl) throw new Error('invalid_image_data');

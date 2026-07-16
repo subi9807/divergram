@@ -159,26 +159,34 @@ export default function LoginScreen() {
   };
 
   const completeSocialSignup = async (socialSignup: SocialSignupInput) => {
-    await signupWithSocialAccount(socialSignup);
-    Alert.alert(
-      t('auth.socialSignupCompleteTitle'),
-      t('auth.socialSignupCompleteMessage')
-    );
+    const outcome = await signupWithSocialAccount(socialSignup);
+    if (!outcome.profileCompletionRequired) {
+      Alert.alert(
+        t('auth.socialSignupCompleteTitle'),
+        t('auth.socialSignupCompleteMessage')
+      );
+    }
+    return outcome;
   };
 
   const handleSocialLogin = async (provider: Provider) => {
     setLoading(true);
     try {
+      let authOutcome: { profileCompletionRequired?: boolean } | undefined;
       switch (provider) {
         case 'google':
-          await loginWithGoogle();
+          authOutcome = await loginWithGoogle();
           break;
         case 'apple':
-          await loginWithApple();
+          authOutcome = await loginWithApple();
           break;
         case 'instagram':
-          await loginWithInstagram();
+          authOutcome = await loginWithInstagram();
           break;
+      }
+      if (authOutcome?.profileCompletionRequired) {
+        router.replace('/(tabs)/profile-edit');
+        return;
       }
       router.replace('/(tabs)/feed');
     } catch (error) {
@@ -204,7 +212,11 @@ export default function LoginScreen() {
               onPress: async () => {
                 setLoading(true);
                 try {
-                  await completeSocialSignup(socialSignup);
+                  const signupOutcome = await completeSocialSignup(socialSignup);
+                  if (signupOutcome?.profileCompletionRequired) {
+                    router.replace('/(tabs)/profile-edit');
+                    return;
+                  }
                   router.replace('/(tabs)/feed');
                 } catch (signupError) {
                   Alert.alert(t('auth.error'), resolveErrorMessage(signupError, 'signup'));

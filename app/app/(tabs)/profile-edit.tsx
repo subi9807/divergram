@@ -68,6 +68,10 @@ function toLegacyDiveLevel(scuba: ScubaLevel, freediving: FreedivingLevel): stri
   return '';
 }
 
+function isPlaceholderOAuthEmail(email: string) {
+  return String(email || '').trim().toLowerCase().endsWith('@oauth.divergram.local');
+}
+
 export default function ProfileEditScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -76,6 +80,7 @@ export default function ProfileEditScreen() {
   const { data: profile } = useProfile();
   const { showToast } = useToast();
 
+  const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
@@ -95,6 +100,8 @@ export default function ProfileEditScreen() {
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- 프로필 로드 결과를 편집 폼의 초기값으로 동기화 */
+    const currentEmail = String(user?.email || '').trim();
+    setEmail(isPlaceholderOAuthEmail(currentEmail) ? '' : currentEmail);
     setName(String(profile?.full_name || user?.name || '').trim());
     setBio(String(profile?.bio || '').trim());
     setAvatarUri(String(profile?.avatar_url || user?.avatar || '').trim());
@@ -126,6 +133,7 @@ export default function ProfileEditScreen() {
     profile?.license_issued_at,
     profile?.license_number,
     profile?.scuba_level,
+    user?.email,
     user?.avatar,
     user?.name,
   ]);
@@ -322,6 +330,9 @@ export default function ProfileEditScreen() {
   const saveProfile = async (closeLicenseModal = false) => {
     if (!user?.id || saving) return;
     const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const currentEmail = String(user?.email || '').trim().toLowerCase();
+    const emailWasPlaceholder = isPlaceholderOAuthEmail(currentEmail);
     if (!trimmedName) {
       showToast({
         type: 'info',
@@ -329,9 +340,33 @@ export default function ProfileEditScreen() {
       });
       return;
     }
+    if ((emailWasPlaceholder || !currentEmail) && !trimmedEmail) {
+      showToast({
+        type: 'info',
+        title: t('pages.profileEdit.emailRequired', { defaultValue: '이메일을 입력해주세요.' }),
+      });
+      return;
+    }
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      showToast({
+        type: 'error',
+        title: t('pages.profileEdit.invalidEmail', { defaultValue: '올바른 이메일 형식이 아닙니다.' }),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
+      if (trimmedEmail && trimmedEmail !== currentEmail) {
+        const emailResult: any = await apiClient.updateAccountEmail(trimmedEmail);
+        if (emailResult?.emailVerificationRequested) {
+          showToast({
+            type: 'info',
+            title: t('pages.profileEdit.emailVerifyRequested', { defaultValue: '이메일 인증 메일을 보냈습니다.' }),
+          });
+        }
+      }
+
       const nextProfilePatch = {
         full_name: trimmedName,
         bio: bio.trim(),
@@ -353,6 +388,7 @@ export default function ProfileEditScreen() {
       syncCurrentUserProfile({
         full_name: nextProfilePatch.full_name,
         avatar_url: nextProfilePatch.avatar_url,
+        email: trimmedEmail || undefined,
       });
 
       await Promise.all([
@@ -426,6 +462,19 @@ export default function ProfileEditScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          <Text className="mb-2 text-sm font-semibold text-gray-700">
+            {t('pages.profileEdit.email', { defaultValue: '이메일' })}
+          </Text>
+          <TextInput
+            className="mb-4 rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-gray-950 dark:text-surface-50"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+            maxLength={120}
+          />
 
           <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.profileEdit.name')}</Text>
           <TextInput
