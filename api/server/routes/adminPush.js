@@ -165,6 +165,7 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
 
     try {
       const result = await sendPushToToken(token, title, body, data);
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
       await pool.query(
         `INSERT INTO admin_audit_logs(action, target_user_id, detail)
@@ -174,7 +175,8 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
           String(req.adminAuth?.userId || '').trim() ? Number(req.adminAuth?.userId) || null : null,
           JSON.stringify({
             actorUserId: req.adminAuth?.userId || null,
-            token,
+            tokenHash,
+            tokenSuffix: token.slice(-8),
             title,
             body,
             data,
@@ -214,6 +216,8 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
     const data = normalizePushData(req.body?.data || {});
     const filters = buildFilters(req.body || {});
     const scheduledAt = normalizeScheduleAt(req.body?.scheduleAt || req.body?.scheduledAt);
+    const type = String(req.body?.type || req.body?.notificationType || 'admin_broadcast').trim() || 'admin_broadcast';
+    const deepLink = String(req.body?.deepLink || req.body?.deep_link || 'divergram://notifications').trim();
 
     if (!title || !body) {
       return res.status(400).json({ ok: false, error: 'title_and_body_required' });
@@ -225,6 +229,8 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
           title,
           body,
           data,
+          type,
+          deepLink,
           filters,
           scheduledAt,
         });
@@ -242,7 +248,7 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
 
       const result = await processAdminPushJob(
         pool,
-        { title, body, data, filters, scheduledAt: '' },
+        { title, body, data, type, deepLink, filters, scheduledAt: '' },
         { actorUserId: String(req.adminAuth?.userId || '').trim() || null }
       );
       return res.json(result);

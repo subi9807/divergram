@@ -1,3 +1,5 @@
+import { deliverUserEventNotification } from '../lib/userNotificationDelivery.js';
+
 function applyJsonFilters(rows, filters = []) {
   const get = (obj, key) => obj?.[key];
   return rows.filter((r) => filters.every((f) => {
@@ -68,7 +70,7 @@ const DATA_TABLES = {
   comments: { table: 'app_comments', columns: ['id','post_id','user_id','content','created_at'] },
   follows: { table: 'app_follows', columns: ['id','follower_id','following_id','created_at'] },
   saved_posts: { table: 'app_saved_posts', columns: ['id','user_id','post_id','created_at'] },
-  notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','is_read','created_at'] },
+  notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','title','body','image_url','deep_link','source','event_key','data','delivery_status','is_read','read_at','opened_at','sent_at','updated_at','created_at'] },
   rooms: { table: 'app_rooms', columns: ['id','type','created_at'] },
   participants: { table: 'app_participants', columns: ['id','room_id','user_id','joined_at'] },
   messages: { table: 'app_messages', columns: ['id','room_id','sender_id','content','created_at','read_at'] },
@@ -213,6 +215,40 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
           `INSERT INTO ${spec.table}(${cols.join(',')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${updates || 'id=EXCLUDED.id'}`,
           vals
         );
+        if (key === 'likes') {
+          const post = await pool.query(`SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1`, [payload.post_id]);
+          const targetUserId = post.rows[0]?.user_id;
+          if (targetUserId) await deliverUserEventNotification(pool, {
+            userId: targetUserId,
+            actorUserId: identity.userId,
+            type: 'like',
+            eventKey: `like:${payload.id}`,
+            postId: payload.post_id,
+            body: '회원님의 게시물을 좋아합니다.',
+            deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
+          }).catch(() => undefined);
+        } else if (key === 'comments') {
+          const post = await pool.query(`SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1`, [payload.post_id]);
+          const targetUserId = post.rows[0]?.user_id;
+          if (targetUserId) await deliverUserEventNotification(pool, {
+            userId: targetUserId,
+            actorUserId: identity.userId,
+            type: 'comment',
+            eventKey: `comment:${payload.id}`,
+            postId: payload.post_id,
+            body: '회원님의 게시물에 댓글을 남겼습니다.',
+            deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
+          }).catch(() => undefined);
+        } else if (key === 'follows') {
+          await deliverUserEventNotification(pool, {
+            userId: payload.following_id,
+            actorUserId: identity.userId,
+            type: 'follow',
+            eventKey: `follow:${payload.id}`,
+            body: '회원님을 팔로우하기 시작했습니다.',
+            deepLink: 'divergram://notifications',
+          }).catch(() => undefined);
+        }
       }
       res.json({ data: rows, error: null });
     } catch {

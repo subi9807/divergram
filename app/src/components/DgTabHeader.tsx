@@ -8,6 +8,8 @@ import { Image as ExpoImage } from 'expo-image';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
 import { useAuth } from '../hooks/useAuth';
 import { appRouteMap, type AppRouteId } from '../config/sitemap';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../lib/api';
 
 const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity'];
 const moreRouteIdsBase: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'license_management', 'app_info'];
@@ -51,6 +53,13 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
   const { isDark } = useResolvedTheme();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: notificationRows = [] } = useQuery({
+    queryKey: ['notifications', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => apiClient.getNotifications(String(user?.id || '')),
+    refetchInterval: menuOpen ? 30_000 : false,
+  });
+  const unreadCount = notificationRows.filter((row) => row.unread).length;
   const isAdminUser =
     String(user?.email || '').toLowerCase().startsWith('admin@') ||
     ADMIN_EMAILS.has(String(user?.email || '').toLowerCase());
@@ -158,6 +167,9 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
                         <Text style={[styles.menuTitle, { color: palette.menuTitle }]}>{t(appRouteMap[id].titleKey)}</Text>
                         <Text style={[styles.menuSub, { color: palette.menuSub }]}>{t(`menu.desc.${id}`)}</Text>
                       </View>
+                      {id === 'notifications' && unreadCount > 0 ? (
+                        <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
+                      ) : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -171,6 +183,20 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  unreadBadge: {
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dc2626',
+  },
+  unreadBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   headerSafe: {
     backgroundColor: '#ffffff',
     borderBottomColor: '#e4ecf4',

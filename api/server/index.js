@@ -412,10 +412,36 @@ async function ensureSchema() {
       actor_id TEXT,
       type TEXT NOT NULL,
       post_id TEXT,
+      title TEXT,
+      body TEXT,
+      image_url TEXT,
+      deep_link TEXT,
+      source TEXT,
+      event_key TEXT,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      delivery_status TEXT NOT NULL DEFAULT 'stored',
       is_read BOOLEAN NOT NULL DEFAULT false,
+      read_at TIMESTAMPTZ,
+      opened_at TIMESTAMPTZ,
+      sent_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS title TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS body TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS image_url TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS deep_link TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS source TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS event_key TEXT;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jsonb;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS delivery_status TEXT NOT NULL DEFAULT 'stored';`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS opened_at TIMESTAMPTZ;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ;`);
+  await pool.query(`ALTER TABLE app_notifications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS app_notifications_user_created_idx ON app_notifications(user_id, created_at DESC);`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS app_notifications_user_event_idx ON app_notifications(user_id, event_key) WHERE event_key IS NOT NULL AND event_key <> '';`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_rooms (

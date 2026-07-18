@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, ChevronLeft, CircleAlert, CircleCheck, Link2, Trash2 } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, CalendarDays, ChevronLeft, CircleAlert, CircleCheck, Link2, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
@@ -52,9 +52,17 @@ function cardInputBaseClassName(error = false) {
   return `rounded-xl border px-3 py-3 text-surface-900 dark:text-surface-50 ${error ? 'border-red-300 bg-red-50/40' : 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900'}`;
 }
 
+const ACCOUNT_DELETION_GRACE_DAYS = 30;
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
 export default function SettingsDetailScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isDark } = useResolvedTheme();
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ mode?: string | string[] }>();
@@ -88,6 +96,17 @@ export default function SettingsDetailScreen() {
 
   const [confirmDeleteText, setConfirmDeleteText] = useState('');
   const canDelete = confirmDeleteText.trim().toUpperCase() === 'DELETE';
+  const deletionSchedule = useMemo(() => {
+    const requestedAt = new Date();
+    const effectiveAt = addDays(requestedAt, ACCOUNT_DELETION_GRACE_DAYS);
+    const locale = i18n.resolvedLanguage || i18n.language || 'ko';
+    const format = (date: Date) => date.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+    return {
+      requestedAt: format(requestedAt),
+      recoverableUntil: format(effectiveAt),
+      permanentDeletionAt: format(effectiveAt),
+    };
+  }, [i18n.language, i18n.resolvedLanguage]);
 
   const [blockedName, setBlockedName] = useState('');
   const [blockedReason, setBlockedReason] = useState('');
@@ -144,7 +163,7 @@ export default function SettingsDetailScreen() {
 
   const subtitle = useMemo(() => {
     if (mode.startsWith('link-')) return t('settingsPage.account.socialSubtitle', { defaultValue: '소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.' });
-    if (mode === 'account-delete') return t('settingsPage.account.deleteSubtitle', { defaultValue: '계정 삭제는 복구할 수 없습니다.' });
+    if (mode === 'account-delete') return t('settingsPage.account.deleteSubtitle', { defaultValue: '탈퇴 요청 후 30일 동안 계정을 복구할 수 있습니다.' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('pages.report.subtitle', { defaultValue: '서비스 문제를 남겨주세요' });
     if (mode === 'unit-settings') return t('settingsPage.diving.unitSettingsSubtitle', { defaultValue: '수심/수온/기체 단위를 한 곳에서 설정하세요.' });
@@ -301,7 +320,7 @@ export default function SettingsDetailScreen() {
     if (!canDelete || busy) return;
     Alert.alert(
       t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' }),
-      t('settingsPage.account.deleteConfirm', { defaultValue: '계정 삭제는 되돌릴 수 없습니다. 계속할까요?' }),
+      t('settingsPage.account.deleteConfirm', { defaultValue: '탈퇴를 요청하면 계정이 즉시 비활성화되고 30일 후 영구 삭제됩니다. 계속할까요?' }),
       [
         { text: t('common.cancel', { defaultValue: '취소' }), style: 'cancel' },
         {
@@ -561,7 +580,44 @@ export default function SettingsDetailScreen() {
             <View className="rounded-3xl border border-red-200 bg-white dark:bg-surface-900 p-4">
               <View className="mb-3 flex-row items-center">
                 <Trash2 size={18} color="#ef4444" />
-                <Text className="ml-2 text-sm font-semibold text-red-600">{t('settingsPage.account.deleteSubtitle', { defaultValue: '계정 삭제는 복구할 수 없습니다.' })}</Text>
+                <Text className="ml-2 text-sm font-semibold text-red-600">{t('settingsPage.account.deleteSubtitle', { defaultValue: '탈퇴 요청 후 30일 동안 계정을 복구할 수 있습니다.' })}</Text>
+              </View>
+              <View className="mb-4 rounded-2xl bg-surface-50 dark:bg-surface-800 p-4">
+                <View className="mb-3 flex-row items-start">
+                  <CalendarDays size={17} color="#0a79d4" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs text-surface-500 dark:text-surface-400">{t('settingsPage.account.deletionRequestedAt', { defaultValue: '탈퇴 요청일' })}</Text>
+                    <Text className="mt-1 text-sm font-semibold text-surface-900 dark:text-white">{deletionSchedule.requestedAt}</Text>
+                  </View>
+                </View>
+                <View className="mb-3 flex-row items-start">
+                  <RotateCcw size={17} color="#0a79d4" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs text-surface-500 dark:text-surface-400">{t('settingsPage.account.recoverableUntil', { defaultValue: '복구 가능한 마지막 날짜' })}</Text>
+                    <Text className="mt-1 text-sm font-semibold text-surface-900 dark:text-white">{deletionSchedule.recoverableUntil}</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-start">
+                  <Trash2 size={17} color="#ef4444" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-xs text-surface-500 dark:text-surface-400">{t('settingsPage.account.permanentDeletionAt', { defaultValue: '영구 삭제 예정일' })}</Text>
+                    <Text className="mt-1 text-sm font-semibold text-red-600">{deletionSchedule.permanentDeletionAt}</Text>
+                  </View>
+                </View>
+              </View>
+              <View className="mb-4 rounded-2xl border border-brand-100 bg-brand-50/60 dark:border-surface-700 dark:bg-surface-800 p-4">
+                <View className="mb-3 flex-row items-start">
+                  <RotateCcw size={16} color="#0a79d4" />
+                  <Text className="ml-2 flex-1 text-xs leading-5 text-surface-700 dark:text-surface-200">
+                    {t('settingsPage.account.withdrawalRecoveryNotice', { defaultValue: '30일 유예기간 중 다시 로그인하면 탈퇴를 철회하고 계정을 복구할 수 있습니다.' })}
+                  </Text>
+                </View>
+                <View className="flex-row items-start">
+                  <ShieldCheck size={16} color="#64748b" />
+                  <Text className="ml-2 flex-1 text-xs leading-5 text-surface-600 dark:text-surface-300">
+                    {t('settingsPage.account.legalRetentionNotice', { defaultValue: '법령에 따라 일부 기록은 정해진 기간 동안 별도로 보관될 수 있습니다.' })}
+                  </Text>
+                </View>
               </View>
               <Text className="mb-2 text-xs text-surface-500 dark:text-surface-400">Type DELETE to continue</Text>
               <TextInput

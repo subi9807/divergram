@@ -9,6 +9,7 @@ export default function AuthLayout() {
       <Stack.Screen name="tutorial" />
       <Stack.Screen name="welcome" />
       <Stack.Screen name="login" />
+      <Stack.Screen name="account-recovery" />
       <Stack.Screen name="consent" />
       <Stack.Screen name="policy-document" />
       <Stack.Screen name="callback" />

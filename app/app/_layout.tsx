@@ -1,12 +1,13 @@
 import '../global.css';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { Animated, Easing, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Device from 'expo-device';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -113,6 +114,7 @@ function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <AuthProvider>
+              <AccountDeletionNavigationGuard />
               <SettingsHydrationBridge />
               <NotificationBootstrapBridge />
               <Animated.View style={[styles.stackShell, { transform: [{ translateX: swipeTranslateX }] }]}>
@@ -139,6 +141,26 @@ function RootLayout() {
 
 export default Sentry.wrap(RootLayout);
 
+function AccountDeletionNavigationGuard() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { user, loading, accountDeletion, accountDeletionLoading } = useAuth();
+  const isRecoveryRoute = segments[0] === '(auth)' && segments[1] === 'account-recovery';
+
+  useEffect(() => {
+    if (loading || accountDeletionLoading || !user) return;
+    if (accountDeletion?.pending && !isRecoveryRoute) {
+      router.replace('/(auth)/account-recovery');
+      return;
+    }
+    if (!accountDeletion?.pending && isRecoveryRoute) {
+      router.replace('/(tabs)/feed');
+    }
+  }, [accountDeletion?.pending, accountDeletionLoading, isRecoveryRoute, loading, router, user]);
+
+  return null;
+}
+
 function SettingsHydrationBridge() {
   const { user } = useAuth();
 
@@ -151,8 +173,53 @@ function SettingsHydrationBridge() {
 }
 
 function NotificationBootstrapBridge() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
-  useNotifications(Boolean(user?.id) && !(Platform.OS === 'ios' && !Device.isDevice));
+  useNotifications(Boolean(user?.id) && !(Platform.OS === 'ios' && !Device.isDevice), String(user?.id || ''));
+
+  useEffect(() => {
+    if (!user?.id || Platform.OS === 'web') return;
+
+    const openNotification = (data: Record<string, unknown> | undefined) => {
+      const raw = String(data?.deepLink || data?.deep_link || '').trim();
+      if (!raw) {
+        router.push('/(tabs)/notifications' as never);
+        return;
+      }
+      const internal = raw
+        .replace(/^https?:\/\/(www\.)?divergram\.com/i, '')
+        .replace(/^divergram:\/\//i, '/');
+      const postQueryId = internal.match(/^\/post\?(?:.*&)?post=([^&]+)/)?.[1];
+      if (postQueryId) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(decodeURIComponent(postQueryId))}` as never);
+      } else if (internal.startsWith('/posts/')) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(internal.slice('/posts/'.length))}` as never);
+      } else if (internal === '/notifications' || internal.startsWith('/notifications?')) {
+        router.push('/(tabs)/notifications' as never);
+      } else if (internal.startsWith('/')) {
+        router.push(internal as never);
+      } else {
+        router.push('/(tabs)/notifications' as never);
+      }
+    };
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+      openNotification(response.notification.request.content.data as Record<string, unknown>);
+    });
+    const receivedSubscription = Notifications.addNotificationReceivedListener(() => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+    });
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) openNotification(response.notification.request.content.data as Record<string, unknown>);
+    });
+    return () => {
+      subscription.remove();
+      receivedSubscription.remove();
+    };
+  }, [queryClient, router, user?.id]);
+
   return null;
 }
 

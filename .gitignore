@@ -57,6 +57,9 @@ app/android/build/
 app/android/app/build/
 app/android/.kotlin/
 app/android/.hermesc/
+app/build-*.aab
+app/build-*.apk
+app/build-*.ipa
 
 # local Codex and test artifacts
 .codex-bin/

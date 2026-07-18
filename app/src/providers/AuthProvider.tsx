@@ -9,7 +9,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 import type * as AppleAuthenticationTypes from 'expo-apple-authentication';
 import { Platform } from 'react-native';
-import { apiClient } from '../lib/api';
+import { apiClient, type AccountDeletionStatus } from '../lib/api';
 import { getLayoutPreviewPayload, isLayoutPreviewEnabled } from '../lib/layoutPreview';
 import { getSocialAuthConfig, toGoogleIosUrlScheme } from '../config/socialAuth';
 import { useToast } from '../components/Toast';
@@ -25,6 +25,7 @@ import {
 } from '../lib/secureAuthStorage';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
 import { startUserPreferencesSync, stopUserPreferencesSync } from '../services/userPreferencesSyncService';
+import { notificationManager } from '../lib/notifications';
 
 function normalizeEnvValue(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -147,6 +148,10 @@ function isSyntheticOAuthEmail(email: string | null | undefined) {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  accountDeletion: AccountDeletionStatus | null;
+  accountDeletionLoading: boolean;
+  refreshAccountDeletionStatus: () => Promise<AccountDeletionStatus | null>;
+  cancelAccountDeletion: () => Promise<boolean>;
   syncCurrentUserProfile: (profile: { full_name?: string; username?: string; avatar_url?: string; email?: string }) => void;
   loginWithGoogle: () => Promise<AuthOutcome>;
   loginWithApple: () => Promise<AuthOutcome>;
@@ -272,6 +277,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accountDeletion, setAccountDeletion] = useState<AccountDeletionStatus | null>(null);
+  const [accountDeletionLoading, setAccountDeletionLoading] = useState(true);
   const pushInitUserIdRef = useRef<string | null>(null);
   const { showToast } = useToast();
   const socialAuth = getSocialAuthConfig();
@@ -329,6 +336,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     storage.delete(AUTH_SESSION_EXPIRES_AT_KEY);
     clearAuthBackup();
     useSettingsFeatureStore.getState().syncSocialLinks([]);
+    setAccountDeletion(null);
+    setAccountDeletionLoading(false);
     setUser(null);
   }, []);
 
@@ -361,6 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: profilePayload.full_name || profilePayload.username || fallback?.name,
         avatar: profilePayload.avatar_url || fallback?.avatar,
       });
+      setAccountDeletionLoading(Boolean(nextUser));
       setUser(nextUser);
       if (nextUser) {
         storage.set(AUTH_USER_KEY, JSON.stringify(nextUser));
@@ -372,6 +382,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: nextUser,
         sessionExpiresAt: new Date(sessionExpiryMs).toISOString(),
       });
+      if (nextUser) {
+        void notificationManager.initialize();
+      }
       return nextUser;
     },
     [extendAuthSession]
@@ -408,6 +421,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result.links;
     } catch {
       return [];
+    }
+  }, []);
+
+  const refreshAccountDeletionStatus = useCallback(async () => {
+    setAccountDeletionLoading(true);
+    try {
+      const status = await apiClient.getAccountDeletionStatus();
+      setAccountDeletion(status.pending ? status : null);
+      return status.pending ? status : null;
+    } catch (error) {
+      console.warn('Account deletion status check failed:', error);
+      setAccountDeletion(null);
+      return null;
+    } finally {
+      setAccountDeletionLoading(false);
+    }
+  }, []);
+
+  const cancelAccountDeletion = useCallback(async () => {
+    setAccountDeletionLoading(true);
+    try {
+      const cancelled = await apiClient.cancelAccountDeletion();
+      if (cancelled) setAccountDeletion(null);
+      return cancelled;
+    } finally {
+      setAccountDeletionLoading(false);
     }
   }, []);
 
@@ -613,15 +652,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const userId = String(user?.id || '').trim();
     if (!userId) {
+      setAccountDeletion(null);
+      setAccountDeletionLoading(false);
       pushInitUserIdRef.current = null;
       stopUserPreferencesSync();
       return;
     }
+    void refreshAccountDeletionStatus();
     if (pushInitUserIdRef.current === userId) return;
     pushInitUserIdRef.current = userId;
     void startUserPreferencesSync(userId);
     void syncSocialLinksFromServer();
-  }, [syncSocialLinksFromServer, user?.id]);
+  }, [refreshAccountDeletionStatus, syncSocialLinksFromServer, user?.id]);
 
   const loginWithGoogle = async (): Promise<AuthOutcome> => {
     try {
@@ -912,6 +954,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     user,
     loading,
+    accountDeletion,
+    accountDeletionLoading,
+    refreshAccountDeletionStatus,
+    cancelAccountDeletion,
     syncCurrentUserProfile,
     loginWithGoogle,
     loginWithApple,

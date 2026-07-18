@@ -11,6 +11,8 @@ const EMPTY_PUSH_FORM = {
   scubaLevel: '',
   freedivingLevel: '',
   blockedState: 'all',
+  notificationType: 'admin_broadcast',
+  deepLink: 'divergram://notifications',
   scheduleEnabled: false,
   scheduleAt: '',
   dataJson: '',
@@ -42,6 +44,9 @@ export default function PushSection({ reports = [], certifications = [], reportB
   const [testResult, setTestResult] = useState(null);
   const [pushHistory, setPushHistory] = useState([]);
   const [savedTemplates, setSavedTemplates] = useState([]);
+  const [memberQuery, setMemberQuery] = useState('');
+  const [memberResults, setMemberResults] = useState([]);
+  const [memberBusy, setMemberBusy] = useState(false);
   const hasPushDataJson = pushForm.dataJson.trim().length > 0;
   const hasTestDataJson = testForm.dataJson.trim().length > 0;
 
@@ -67,6 +72,26 @@ export default function PushSection({ reports = [], certifications = [], reportB
   };
 
   useEffect(() => { loadPushHistory(); loadTemplates(); }, []);
+
+  const searchMembers = async () => {
+    const query = memberQuery.trim();
+    if (!query) return setMemberResults([]);
+    setMemberBusy(true);
+    try {
+      const result = await api(`/api/admin/users?q=${encodeURIComponent(query)}&limit=20`);
+      setMemberResults(Array.isArray(result?.users) ? result.users : []);
+    } catch (error) {
+      setPushError(error.message || '회원 검색 실패');
+    } finally {
+      setMemberBusy(false);
+    }
+  };
+
+  const addTargetMember = (userId) => {
+    const ids = pushForm.targetUserIds.split(/[\s,]+/).map((value) => value.trim()).filter(Boolean);
+    if (!ids.includes(String(userId))) ids.push(String(userId));
+    setPushForm((prev) => ({ ...prev, targetUserIds: ids.join(', ') }));
+  };
 
   const pushPreview = useMemo(() => {
     try {
@@ -106,6 +131,8 @@ export default function PushSection({ reports = [], certifications = [], reportB
           scubaLevel: pushForm.scubaLevel || undefined,
           freedivingLevel: pushForm.freedivingLevel || undefined,
           blockedState: pushForm.blockedState,
+          type: pushForm.notificationType,
+          deepLink: pushForm.deepLink,
           scheduleAt: pushForm.scheduleEnabled ? pushForm.scheduleAt || undefined : undefined,
           data: payloadData,
         },
@@ -340,6 +367,33 @@ export default function PushSection({ reports = [], certifications = [], reportB
           <div className="field-grid push-grid">
             <label><span>특정 사용자 ID</span><input value={pushForm.targetUserIds} onChange={(e) => setPushForm((prev) => ({ ...prev, targetUserIds: e.target.value }))} placeholder="쉼표로 구분 (예: 12, 15, 28)" /></label>
             <label><span>추가 데이터 JSON</span><input value={pushForm.dataJson} onChange={(e) => setPushForm((prev) => ({ ...prev, dataJson: e.target.value }))} placeholder='{"type":"notice"}' /></label>
+          </div>
+          <div className="field-grid push-grid">
+            <label><span>회원 검색 (이메일·이름)</span><div className="row"><input value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void searchMembers(); } }} placeholder="이메일 또는 사용자명" /><button type="button" className="chip" onClick={() => void searchMembers()} disabled={memberBusy}>{memberBusy ? '검색 중' : '검색'}</button></div></label>
+            <label><span>알림 이동 주소</span><input value={pushForm.deepLink} onChange={(e) => setPushForm((prev) => ({ ...prev, deepLink: e.target.value }))} placeholder="divergram://notifications 또는 https://divergram.com/posts/ID" /></label>
+          </div>
+          {memberResults.length > 0 && (
+            <div className="push-template-saved-list" style={{ marginBottom: 16 }}>
+              {memberResults.map((member) => (
+                <button key={member.id} type="button" className="push-template-saved-main" onClick={() => addTargetMember(member.id)}>
+                  <strong>{member.full_name || member.username || member.email}</strong>
+                  <span>{member.email} · ID {member.id}</span>
+                  <small>{member.role || 'user'} · {member.is_blocked ? '차단됨' : '정상'}</small>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="field-grid push-grid">
+            <label><span>알림 유형</span>
+              <select value={pushForm.notificationType} onChange={(e) => setPushForm((prev) => ({ ...prev, notificationType: e.target.value }))}>
+                <option value="admin_broadcast">운영 공지</option>
+                <option value="update">앱 업데이트</option>
+                <option value="safety_notice">안전 알림</option>
+                <option value="event">이벤트</option>
+                <option value="account_notice">계정 안내</option>
+              </select>
+            </label>
+            <div className="push-hint">회원 검색 결과를 누르면 특정 사용자 ID에 자동 추가됩니다. 이동 주소는 알림 선택 시 열 화면입니다.</div>
           </div>
           <div className="field-grid push-grid">
             <label><span>가입일 이후</span><input type="datetime-local" value={pushForm.createdAfter} onChange={(e) => setPushForm((prev) => ({ ...prev, createdAfter: e.target.value }))} /></label>

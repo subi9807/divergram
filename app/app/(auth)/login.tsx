@@ -18,6 +18,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Link, router } from 'expo-router';
+import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -72,6 +73,8 @@ export default function LoginScreen() {
   const isIOS = Platform.OS === 'ios';
   const hasGoogleLogin = Boolean(socialAuth.googleClientIdIos || socialAuth.googleClientIdAndroid || socialAuth.googleClientIdWeb);
   const hasInstagramLogin = true;
+  const appVersion = Constants.nativeAppVersion || Constants.expoConfig?.version || '-';
+  const appBuildVersion = Constants.nativeBuildVersion;
   const isSigninDisabled = !email.trim() || !password;
   const isSignupDisabled = !name.trim() || !contact.trim() || !email.trim() || !password;
 
@@ -625,6 +628,9 @@ export default function LoginScreen() {
               </Pressable>
             </Link>
           </View>
+          <Text style={styles.versionText}>
+            v{appVersion}{appBuildVersion ? ` (${appBuildVersion})` : ''}
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
@@ -1013,6 +1019,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  versionText: {
+    marginTop: 14,
+    marginRight: 20,
+    alignSelf: 'flex-end',
+    color: 'rgba(148, 163, 184, 0.72)',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
   legalLink: {
     color: '#64748b',

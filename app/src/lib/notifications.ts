@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { analytics } from './analytics';
 import i18n from './i18n';
 import { registerFcmToken } from '../services/notificationService';
@@ -31,7 +31,7 @@ class NotificationManager {
   async initialize() {
     try {
       const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
-      if (__DEV__ && debugToken) {
+      if (__DEV__ && Platform.OS === 'ios' && !Device.isDevice && debugToken) {
         this.pushToken = debugToken;
         await this.registerPushToken();
         analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true, debugFallback: true });
@@ -224,12 +224,46 @@ class NotificationManager {
 export const notificationManager = new NotificationManager();
 
 // React hook for notifications
-export const useNotifications = (enabled = true) => {
+export const useNotifications = (enabled = true, registrationKey = '') => {
   const [fcmToken, setFcmToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!enabled) return;
     notificationManager.initialize().then(setFcmToken);
+  }, [enabled, registrationKey]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void notificationManager.initialize().then(setFcmToken);
+    });
+    return () => subscription.remove();
+  }, [enabled, registrationKey]);
+
+  React.useEffect(() => {
+    if (!enabled || Platform.OS === 'web') return;
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    void import('@react-native-firebase/messaging')
+      .then(({ default: messaging }) => {
+        if (cancelled) return;
+        unsubscribe = messaging().onTokenRefresh((token) => {
+          const normalizedToken = String(token || '').trim();
+          if (!normalizedToken) return;
+          setFcmToken(normalizedToken);
+          void registerFcmToken(normalizedToken, Platform.OS).catch((error) => {
+            console.error('Failed to refresh FCM token registration:', error);
+          });
+        });
+      })
+      .catch((error) => console.error('Failed to subscribe to FCM token refresh:', error));
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [enabled]);
 
   return {

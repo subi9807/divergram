@@ -11,15 +11,34 @@ export function registerPushRoutes(app, { pool, authRateLimit, getAuthUserId, cr
 
     try {
       const id = crypto.randomUUID();
-      await pool.query(
-        `INSERT INTO app_device_tokens(id, user_id, platform, device_id, push_token, is_active)
-         VALUES ($1,$2,$3,$4,$5,true)
-         ON CONFLICT (push_token)
-         DO UPDATE SET user_id=EXCLUDED.user_id, platform=EXCLUDED.platform, device_id=COALESCE(EXCLUDED.device_id, app_device_tokens.device_id), is_active=true`,
-        [id, userId, platform, deviceId || null, pushToken]
-      );
-      return res.json({ ok: true });
-    } catch {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        if (deviceId) {
+          await client.query(
+            `UPDATE app_device_tokens
+             SET is_active=false
+             WHERE user_id=$1 AND platform=$2 AND device_id=$3 AND push_token<>$4 AND is_active=true`,
+            [userId, platform, deviceId, pushToken]
+          );
+        }
+        await client.query(
+          `INSERT INTO app_device_tokens(id, user_id, platform, device_id, push_token, is_active)
+           VALUES ($1,$2,$3,$4,$5,true)
+           ON CONFLICT (push_token)
+           DO UPDATE SET user_id=EXCLUDED.user_id, platform=EXCLUDED.platform, device_id=COALESCE(EXCLUDED.device_id, app_device_tokens.device_id), is_active=true`,
+          [id, userId, platform, deviceId || null, pushToken]
+        );
+        await client.query('COMMIT');
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => undefined);
+        throw error;
+      } finally {
+        client.release();
+      }
+      return res.json({ ok: true, registered: true, platform, device_id: deviceId || null });
+    } catch (error) {
+      console.error('Push token upsert failed:', error);
       return res.status(500).json({ error: 'push_token_upsert_failed' });
     }
   });

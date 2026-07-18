@@ -1,4 +1,5 @@
 import { ALL_USERS_TOPIC, isExpoPushToken, sendPushToToken, sendFcmPushToTopic } from './pushDelivery.js';
+import crypto from 'node:crypto';
 
 export function normalizeAudienceRole(value) {
   const role = String(value || '').trim().toLowerCase();
@@ -133,12 +134,37 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
   const body = String(jobPayload?.body || '').trim();
   const data = normalizePushData(jobPayload?.data || {});
   const filters = jobPayload?.filters || {};
+  const notificationType = String(jobPayload?.type || data.type || 'admin_broadcast').trim() || 'admin_broadcast';
+  const deepLink = String(jobPayload?.deepLink || jobPayload?.deep_link || data.deepLink || data.deep_link || 'divergram://notifications').trim();
+  const eventKey = String(jobPayload?.eventKey || jobPayload?.event_key || data.eventKey || data.event_key || `admin:${crypto.randomUUID()}`).trim();
 
   if (!title || !body) {
     throw new Error('title_and_body_required');
   }
 
   const { rows, unsupportedCount } = await collectPushRecipients(pool, filters);
+  const targetUsers = Array.from(new Set(rows.map((row) => String(row.user_id || '').trim()).filter(Boolean)));
+  if (targetUsers.length) {
+    const notificationRows = targetUsers.map((userId) => ({
+      id: crypto.randomUUID(),
+      userId,
+      eventKey,
+    }));
+    const values = [];
+    const tuples = notificationRows.map((row) => {
+      values.push(row.id, row.userId, actorUserId ? String(actorUserId) : null, notificationType, title, body, deepLink, 'admin', row.eventKey, JSON.stringify(data));
+      const offset = values.length - 10;
+      return `($${offset + 1},$${offset + 2},$${offset + 3},$${offset + 4},$${offset + 5},$${offset + 6},$${offset + 7},$${offset + 8},$${offset + 9},$${offset + 10}::jsonb,'queued',now(),now())`;
+    });
+    await pool.query(
+      `INSERT INTO app_notifications(id,user_id,actor_id,type,title,body,deep_link,source,event_key,data,delivery_status,sent_at,updated_at)
+       VALUES ${tuples.join(',')}
+       ON CONFLICT (user_id,event_key) WHERE event_key IS NOT NULL AND event_key <> ''
+       DO UPDATE SET title=EXCLUDED.title, body=EXCLUDED.body, deep_link=EXCLUDED.deep_link,
+                     data=EXCLUDED.data, delivery_status='queued', sent_at=now(), updated_at=now()`,
+      values
+    );
+  }
   const isBroadAudience =
     String(filters?.targetRole || 'all').trim().toLowerCase() === 'all' &&
     (!normalizeUserIds(filters?.targetUserIds || filters?.target_user_ids || filters?.userIds).length) &&
@@ -147,6 +173,7 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     !String(filters?.scubaLevel || filters?.scuba_level || '').trim() &&
     !String(filters?.freedivingLevel || filters?.freediving_level || '').trim() &&
     String(filters?.blockedState || filters?.blocked_state || 'all').trim().toLowerCase() === 'all';
+  const useTopicDelivery = isBroadAudience && jobPayload?.useTopic === true;
   if (!rows.length) {
     await pool.query(
       `INSERT INTO admin_audit_logs(action, target_user_id, detail)
@@ -187,7 +214,9 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
 
   const baseData = {
     ...data,
-    type: 'admin_broadcast',
+    type: notificationType,
+    deepLink,
+    eventKey,
     targetRole: filters.targetRole || 'all',
   };
 
@@ -198,7 +227,7 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
   let fcmTokenCount = rows.filter((row) => row.tokenType === 'fcm').length;
   let topicDelivery = null;
 
-  if (isBroadAudience) {
+  if (useTopicDelivery) {
     topicDelivery = await sendFcmPushToTopic(ALL_USERS_TOPIC, title, body, baseData);
     deliveryResults = [topicDelivery];
     successCount = topicDelivery?.ok ? 1 : 0;
@@ -227,6 +256,26 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     );
     successCount = deliveryResults.filter((item) => item.status === 'fulfilled' && item.value?.ok).length;
     failureCount = deliveryResults.length - successCount;
+    const invalidTokens = deliveryResults.flatMap((item, index) => {
+      if (item.status !== 'fulfilled' || item.value?.ok) return [];
+      const reason = String(item.value?.reason || item.value?.detail?.error?.details?.[0]?.errorCode || '').toLowerCase();
+      return reason.includes('notregistered') || reason.includes('unregistered') ? [rows[index]?.push_token] : [];
+    }).filter(Boolean);
+    if (invalidTokens.length) {
+      await pool.query(
+        'UPDATE app_device_tokens SET is_active=false WHERE push_token=ANY($1::text[])',
+        [invalidTokens]
+      );
+    }
+  }
+
+  if (targetUsers.length) {
+    await pool.query(
+      `UPDATE app_notifications
+       SET delivery_status=$1, updated_at=now()
+       WHERE user_id::text=ANY($2::text[]) AND event_key=$3`,
+      [successCount > 0 ? 'sent' : 'failed', targetUsers, eventKey]
+    );
   }
 
   await pool.query(
@@ -240,8 +289,8 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
         title,
         body,
         filters,
-        deliveryMode: isBroadAudience ? 'topic' : 'tokens',
-        topic: isBroadAudience ? ALL_USERS_TOPIC : '',
+        deliveryMode: useTopicDelivery ? 'topic' : 'tokens',
+        topic: useTopicDelivery ? ALL_USERS_TOPIC : '',
         tokenCount: rows.length,
         expoTokenCount,
         fcmTokenCount,
@@ -257,8 +306,8 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     ok: true,
     queued: successCount > 0,
     message: successCount > 0 ? 'push_queued' : 'push_not_queued',
-    deliveryMode: isBroadAudience ? 'topic' : 'tokens',
-    topic: isBroadAudience ? ALL_USERS_TOPIC : '',
+    deliveryMode: useTopicDelivery ? 'topic' : 'tokens',
+    topic: useTopicDelivery ? ALL_USERS_TOPIC : '',
     targetRole: filters.targetRole || 'all',
     targetUserIds: filters.targetUserIds || [],
     tokenCount: rows.length,
@@ -267,7 +316,7 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
     unsupportedCount,
     successCount,
     failureCount,
-    deliveryPreview: isBroadAudience
+    deliveryPreview: useTopicDelivery
       ? [topicDelivery]
       : deliveryResults.slice(0, 5).map((item) => (item.status === 'fulfilled' ? item.value : { ok: false, reason: String(item.reason || 'rejected') })),
     sentAt: new Date().toISOString(),

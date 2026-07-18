@@ -1,4 +1,16 @@
 PODS:
+  - AppAuth (2.1.0):
+    - AppAuth/Core (= 2.1.0)
+    - AppAuth/ExternalUserAgent (= 2.1.0)
+  - AppAuth/Core (2.1.0)
+  - AppAuth/ExternalUserAgent (2.1.0):
+    - AppAuth/Core
+  - AppCheckCore (11.3.1):
+    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - PromisesObjC (~> 2.4)
+    - PromisesSwift (~> 2.4)
+    - RecaptchaInterop (~> 101.0)
   - EASClient (56.0.1):
     - ExpoModulesCore
   - EXApplication (56.0.3):
@@ -182,6 +194,10 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoAdapterGoogleSignIn (16.1.2):
+    - ExpoModulesCore
+    - GoogleSignIn (~> 9.0)
+    - React-Core
   - ExpoAppleAuthentication (56.0.4):
     - ExpoModulesCore
   - ExpoAsset (56.0.18):
@@ -354,6 +370,11 @@ PODS:
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
+  - GoogleSignIn (9.2.0):
+    - AppAuth (~> 2.1)
+    - AppCheckCore (~> 11.0)
+    - GTMAppAuth (~> 5.0)
+    - GTMSessionFetcher/Core (~> 3.3)
   - GoogleUserMessagingPlatform (3.1.0)
   - GoogleUtilities (8.1.2):
     - GoogleUtilities/AppDelegateSwizzler (= 8.1.2)
@@ -395,6 +416,10 @@ PODS:
   - GoogleUtilities/UserDefaults (8.1.2):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - GTMAppAuth (5.0.0):
+    - AppAuth/Core (~> 2.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3)
+  - GTMSessionFetcher/Core (3.5.0)
   - hermes-engine (250829098.0.10):
     - hermes-engine/Pre-built (= 250829098.0.10)
   - hermes-engine/Pre-built (250829098.0.10)
@@ -425,6 +450,8 @@ PODS:
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.1)
+  - PromisesSwift (2.4.1):
+    - PromisesObjC (= 2.4.1)
   - RCTDeprecation (0.85.3)
   - RCTRequired (0.85.3)
   - RCTSwiftUI (0.85.3)
@@ -2347,6 +2374,7 @@ PODS:
     - React-utils (= 0.85.3)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.85.3)
+  - RecaptchaInterop (101.0.0)
   - RNCAsyncStorage (2.2.0):
     - hermes-engine
     - RCTRequired
@@ -2464,6 +2492,29 @@ PODS:
   - RNGoogleMobileAds (16.4.0):
     - Google-Mobile-Ads-SDK (= 13.5.0)
     - GoogleUserMessagingPlatform (= 3.1.0)
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNGoogleSignin (16.1.2):
+    - GoogleSignIn (~> 9.0)
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2775,6 +2826,7 @@ DEPENDENCIES:
   - "expo-dev-launcher (from `../node_modules/.pnpm/expo-dev-launcher@56.0.23_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_supports-_05bf17e53c23bbc9a747670379356404/node_modules/expo-dev-launcher`)"
   - "expo-dev-menu (from `../node_modules/.pnpm/expo-dev-menu@56.0.19_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_supports-colo_d54f46d7bef0417d9b9a44c1be0e637a/node_modules/expo-dev-menu`)"
   - "expo-dev-menu-interface (from `../node_modules/.pnpm/expo-dev-menu-interface@56.0.1_expo@56.0.14/node_modules/expo-dev-menu-interface/ios`)"
+  - "ExpoAdapterGoogleSignIn (from `../node_modules/.pnpm/@react-native-google-signin+google-signin@16.1.2_expo@56.0.14_react-native@0.85.3_@babe_e62a0d74a9c66b122054d2e1c3b9a03a/node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - "ExpoAppleAuthentication (from `../node_modules/.pnpm/expo-apple-authentication@56.0.4_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_su_02248e831a4dbe12ca2dd98f02e36694/node_modules/expo-apple-authentication/ios`)"
   - "ExpoAsset (from `../node_modules/.pnpm/expo-asset@56.0.18_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_supports-color@8_9ca2273c88af3092237e7e12990eb733/node_modules/expo-asset/ios`)"
   - "ExpoBackgroundFetch (from `../node_modules/.pnpm/expo-background-fetch@56.0.20_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_suppo_d20d1b9ec044fb76d43e39292ab7427c/node_modules/expo-background-fetch/ios`)"
@@ -2898,12 +2950,14 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - "ReactCommon/turbomodule/core (from `../node_modules/.pnpm/react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metro-config_8de280a928a118f60e7d7c2201729118/node_modules/react-native/ReactCommon`)"
   - "ReactNativeDependencies (from `../node_modules/.pnpm/react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metro-config_8de280a928a118f60e7d7c2201729118/node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)"
+  - RecaptchaInterop
   - "RNCAsyncStorage (from `../node_modules/.pnpm/@react-native-async-storage+async-storage@2.2.0_react-native@0.85.3_@babel+core@7.29.7__a829cf2c478637a5d045a8e10dbd6909/node_modules/@react-native-async-storage/async-storage`)"
   - "RNCMaskedView (from `../node_modules/.pnpm/@react-native-masked-view+masked-view@0.3.2_react-native@0.85.3_@babel+core@7.29.7_supp_18951d788324029f7996e9e0a1e9aeac/node_modules/@react-native-masked-view/masked-view`)"
   - "RNFBApp (from `../node_modules/.pnpm/@react-native-firebase+app@25.1.0_@react-native-async-storage+async-storage@2.2.0_react_1825c54e039ca2602686bf74c44c9254/node_modules/@react-native-firebase/app`)"
   - "RNFBMessaging (from `../node_modules/.pnpm/@react-native-firebase+messaging@25.1.0_@react-native-firebase+app@25.1.0_@react-native_97ef08952ec91e48692900d7f94e5efc/node_modules/@react-native-firebase/messaging`)"
   - "RNGestureHandler (from `../node_modules/.pnpm/react-native-gesture-handler@2.31.2_react-native@0.85.3_@babel+core@7.29.7_supports-col_f5d2c0b31a77834d86147a7aa94be859/node_modules/react-native-gesture-handler`)"
   - "RNGoogleMobileAds (from `../node_modules/.pnpm/react-native-google-mobile-ads@16.4.0_expo@56.0.14_react@19.2.3/node_modules/react-native-google-mobile-ads`)"
+  - "RNGoogleSignin (from `../node_modules/.pnpm/@react-native-google-signin+google-signin@16.1.2_expo@56.0.14_react-native@0.85.3_@babe_e62a0d74a9c66b122054d2e1c3b9a03a/node_modules/@react-native-google-signin/google-signin`)"
   - "RNReanimated (from `../node_modules/.pnpm/react-native-reanimated@4.3.1_react-native-worklets@0.8.3_@babel+core@7.29.7_supports-c_cd059b3a578d7f79ed424ab74f7c0f79/node_modules/react-native-reanimated`)"
   - "RNScreens (from `../node_modules/.pnpm/react-native-screens@4.25.2_react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1_bf2c352e104b87ca58a8fa4e499f8944/node_modules/react-native-screens`)"
   - "RNSentry (from `../node_modules/.pnpm/@sentry+react-native@8.18.0_@expo+env@2.4.1_dotenv@16.4.7_expo@56.0.14_react-native@0.8_f14e258194112511264a7b9d06c3fa64/node_modules/@sentry/react-native`)"
@@ -2914,6 +2968,8 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - AppAuth
+    - AppCheckCore
     - Firebase
     - FirebaseCore
     - FirebaseCoreExtension
@@ -2922,8 +2978,11 @@ SPEC REPOS:
     - FirebaseMessaging
     - Google-Mobile-Ads-SDK
     - GoogleDataTransport
+    - GoogleSignIn
     - GoogleUserMessagingPlatform
     - GoogleUtilities
+    - GTMAppAuth
+    - GTMSessionFetcher
     - libavif
     - libdav1d
     - libwebp
@@ -2932,7 +2991,9 @@ SPEC REPOS:
     - MultiplatformBleAdapter
     - nanopb
     - PromisesObjC
+    - PromisesSwift
     - ReachabilitySwift
+    - RecaptchaInterop
     - SDWebImage
     - SDWebImageAVIFCoder
     - SDWebImageSVGCoder
@@ -2960,6 +3021,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/.pnpm/expo-dev-menu@56.0.19_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_supports-colo_d54f46d7bef0417d9b9a44c1be0e637a/node_modules/expo-dev-menu"
   expo-dev-menu-interface:
     :path: "../node_modules/.pnpm/expo-dev-menu-interface@56.0.1_expo@56.0.14/node_modules/expo-dev-menu-interface/ios"
+  ExpoAdapterGoogleSignIn:
+    :path: "../node_modules/.pnpm/@react-native-google-signin+google-signin@16.1.2_expo@56.0.14_react-native@0.85.3_@babe_e62a0d74a9c66b122054d2e1c3b9a03a/node_modules/@react-native-google-signin/google-signin/expo/ios"
   ExpoAppleAuthentication:
     :path: "../node_modules/.pnpm/expo-apple-authentication@56.0.4_expo@56.0.14_react-native@0.85.3_@babel+core@7.29.7_su_02248e831a4dbe12ca2dd98f02e36694/node_modules/expo-apple-authentication/ios"
   ExpoAsset:
@@ -3203,6 +3266,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/.pnpm/react-native-gesture-handler@2.31.2_react-native@0.85.3_@babel+core@7.29.7_supports-col_f5d2c0b31a77834d86147a7aa94be859/node_modules/react-native-gesture-handler"
   RNGoogleMobileAds:
     :path: "../node_modules/.pnpm/react-native-google-mobile-ads@16.4.0_expo@56.0.14_react@19.2.3/node_modules/react-native-google-mobile-ads"
+  RNGoogleSignin:
+    :path: "../node_modules/.pnpm/@react-native-google-signin+google-signin@16.1.2_expo@56.0.14_react-native@0.85.3_@babe_e62a0d74a9c66b122054d2e1c3b9a03a/node_modules/@react-native-google-signin/google-signin"
   RNReanimated:
     :path: "../node_modules/.pnpm/react-native-reanimated@4.3.1_react-native-worklets@0.8.3_@babel+core@7.29.7_supports-c_cd059b3a578d7f79ed424ab74f7c0f79/node_modules/react-native-reanimated"
   RNScreens:
@@ -3219,6 +3284,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/.pnpm/react-native@0.85.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metro-config_8de280a928a118f60e7d7c2201729118/node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  AppAuth: ef4da5a3fc2e10b90c09a0a94a9baeaedc0341d5
+  AppCheckCore: e215d35177a9cf469927863e69c13e220df32a8b
   EASClient: 2321f8d99fa86c710a6f68e017f3b54366baed9f
   EXApplication: e6040c92edc5522accd62852342e6b14742d42c0
   EXConstants: 5120c651b684c629efa1bafcf0d0ddb96b0de62f
@@ -3229,6 +3296,7 @@ SPEC CHECKSUMS:
   expo-dev-launcher: bc47194e2f18957d77f384bcf7eca52a91e4b074
   expo-dev-menu: 03c2584bc53a500f9eaf96aa51b502adea2f75cb
   expo-dev-menu-interface: 65402d4affb8b418aa6cec29b3abb0e313c8f443
+  ExpoAdapterGoogleSignIn: ab4d9fc38cb91077a4138d178395525ec65d0c2e
   ExpoAppleAuthentication: 3dd8ddd3016396a8171f06af8cc5e3e008e8eaf4
   ExpoAsset: b4d20fb5e56abe866465a1bb0cc22870a6a4e4d3
   ExpoBackgroundFetch: ed61c91b193b20ea05991af54d7ed6c8c8cd3d43
@@ -3276,8 +3344,11 @@ SPEC CHECKSUMS:
   FirebaseMessaging: 40017d7bc8457ee295b0f41d480a80fdabc9994e
   Google-Mobile-Ads-SDK: 2171620c6497804b57dc88b95644cc82e7dfb5b0
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
+  GoogleSignIn: e449a40a92e9f2eea56e98b5214d13725dc5a00a
   GoogleUserMessagingPlatform: befe603da6501006420c206222acd449bba45a9c
   GoogleUtilities: 766ace00c6b10d8148408f329d10c4f051931850
+  GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: d853bcc22f04de5c34ffb9eea76c49aa9cdd5bab
   libavif: 5f8e715bea24debec477006f21ef9e95432e254d
   libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
@@ -3287,6 +3358,7 @@ SPEC CHECKSUMS:
   MultiplatformBleAdapter: b1fddd0d499b96b607e00f0faa8e60648343dc1d
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
+  PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   RCTDeprecation: a4c521821fab57cbb125b36effe84d897d0dfa12
   RCTRequired: 9f3a7e5645d4bc3f551593de7550bb66ab6e42bc
   RCTSwiftUI: 239ed2eb9e73de5a6f518810630f0c95e01c8702
@@ -3363,12 +3435,14 @@ SPEC CHECKSUMS:
   ReactCodegen: 859fc96a72b90706396547d205da964a994aa1b3
   ReactCommon: 7dfc3250793bf36cf221096ff59e1179e13eef7f
   ReactNativeDependencies: 42c68f7531ba6e318fd871087488cc3ebfd7eb62
+  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNCAsyncStorage: 2ad919e88b8bc2cd80e8697ce66d04d006743283
   RNCMaskedView: eb2b2e538afa907f05a5848a1a1ac26092e6fec9
   RNFBApp: 7a4ebe0527993ec03c2e996f01db0fa0da3e20b7
   RNFBMessaging: ad2713f386fa15c77ae0f5dabf42ad35c1dd72de
   RNGestureHandler: 2ff61eac036eaf89f6818bf4ed9c39771a17d134
   RNGoogleMobileAds: 10d1a7a38343f18a98f08624c15ced3b0796e603
+  RNGoogleSignin: 0d72ae233fe10522497424748acf00fcc1ed2ee7
   RNReanimated: 0587f107a72612c2fd2a4cfcae808e4d58a83aa5
   RNScreens: 991cc417cd396602a6cf59a42139e5a9d91462a9
   RNSentry: 24270e6048b9a963edc12934cb84b59cde8546a9
@@ -3382,6 +3456,6 @@ SPEC CHECKSUMS:
   Yoga: 77dfa8673de2874e1855002ae59c68b8be9b007b
   ZXingObjC: 8898711ab495761b2dbbdec76d90164a6d7e14c5
 
-PODFILE CHECKSUM: 5e19f6cfcb319f806aa8d729a49babd37373fc20
+PODFILE CHECKSUM: 150a8dae4d3ea156b0c39c1459e90b99157429e7
 
 COCOAPODS: 1.17.0

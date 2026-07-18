@@ -43,6 +43,15 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="divergram"/>
       </intent-filter>
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="https" android:host="divergram.com" android:pathPrefix="/post"/>
+        <data android:scheme="https" android:host="www.divergram.com" android:pathPrefix="/post"/>
+        <data android:scheme="https" android:host="divergram.com" android:pathPrefix="/notifications"/>
+        <data android:scheme="https" android:host="www.divergram.com" android:pathPrefix="/notifications"/>
+      </intent-filter>
     </activity>
   </application>
 </manifest>

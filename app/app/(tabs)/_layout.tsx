@@ -23,7 +23,7 @@ function tabIcon(Icon: typeof House, isDark: boolean) {
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const { loading, user } = useAuth();
+  const { loading, user, accountDeletion, accountDeletionLoading } = useAuth();
   const { isDark } = useResolvedTheme();
   const bottomTabItemsRaw = useSettingsStore((state) => state.bottomTabItems);
   const bottomTabItems = useMemo(() => {
@@ -62,7 +62,7 @@ export default function TabLayout() {
     resorts: { icon: Store, titleKey: appRouteMap.resorts.titleKey },
   };
 
-  if (loading) {
+  if (loading || (Boolean(user) && accountDeletionLoading)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#0d5fa8" />
@@ -72,6 +72,10 @@ export default function TabLayout() {
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  if (accountDeletion?.pending) {
+    return <Redirect href="/(auth)/account-recovery" />;
   }
 
   return (

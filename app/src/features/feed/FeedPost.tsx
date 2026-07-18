@@ -286,7 +286,7 @@ export function FeedPost({ post }: FeedPostProps) {
     try {
       const result = await shareToInstagramFeed(
         `Divergram • ${post.user.name}`,
-        `https://divergram.com/post/${encodeURIComponent(post.id)}`
+        `https://divergram.com/post?post=${encodeURIComponent(post.id)}`
       );
       if (!result.installed) {
         showToast({

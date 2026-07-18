@@ -142,6 +142,15 @@ export type AccountDeletionRequestResult = {
   message?: string;
 };
 
+export type AccountDeletionStatus = {
+  pending: boolean;
+  requestId?: string;
+  requestedAt?: string;
+  recoverableUntil?: string;
+  permanentDeletionAt?: string;
+  gracePeriodDays: number;
+};
+
 function normalizeIsoDate(value: unknown): string | undefined {
   const raw = normalizeString(value);
   if (!raw) return undefined;
@@ -338,6 +347,9 @@ export interface NotificationFeedItem {
   };
   postId?: string;
   commentId?: string;
+  title?: string;
+  deepLink?: string;
+  imageUrl?: string;
 }
 
 export interface ActiveAdSlot {
@@ -833,8 +845,9 @@ export const apiClient = {
       return {
         id: String(row.id),
         type: String(row.type || 'system'),
-        unread: !Boolean(row.read),
-        text: normalizeString(row.message || row.text || row.summary || row.reason || '알림'),
+        unread: !Boolean(row.is_read),
+        title: normalizeString(row.title || ''),
+        text: normalizeString(row.body || row.message || row.text || row.summary || row.reason || '알림'),
         when,
         createdAt,
         actor: {
@@ -844,6 +857,8 @@ export const apiClient = {
         },
         postId: row.post_id ? String(row.post_id) : undefined,
         commentId: row.comment_id ? String(row.comment_id) : undefined,
+        deepLink: normalizeString(row.deep_link || row.data?.deepLink || row.data?.deep_link || '') || undefined,
+        imageUrl: normalizeString(row.image_url || '') || undefined,
       } satisfies NotificationFeedItem;
     });
   },
@@ -891,7 +906,12 @@ export const apiClient = {
   markNotificationRead: async (notificationId: string, read = true) => {
     const id = normalizeString(notificationId);
     if (!id) throw new Error('invalid_notification_id');
-    await dataApi.update<any>('notifications', [{ column: 'id', op: 'eq', value: id }], { read, updated_at: new Date().toISOString() });
+    const now = new Date().toISOString();
+    await dataApi.update<any>('notifications', [{ column: 'id', op: 'eq', value: id }], {
+      is_read: read,
+      read_at: read ? now : null,
+      updated_at: now,
+    });
     return true;
   },
 
@@ -917,7 +937,7 @@ export const apiClient = {
       if (!userId) throw createUnsupportedFeatureError('account_deletion_endpoint_unavailable');
 
       const now = new Date();
-      const gracePeriodDays = 7;
+      const gracePeriodDays = 30;
       const effectiveAt = new Date(now.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
       const reason =
         body.feedback.length > 0
@@ -948,6 +968,88 @@ export const apiClient = {
       { method: 'delete', path: '/auth/account' },
     ]);
     return normalizeAccountDeletionResult(data);
+  },
+
+  getAccountDeletionStatus: async (): Promise<AccountDeletionStatus> => {
+    if (isKnownProdApi) {
+      const me = await apiClient.getMe().catch(() => null);
+      const userId = normalizeString(me?.id || '');
+      if (!userId) throw new Error('account_deletion_user_missing');
+      const result = await dataApi.list<any>('reports', {
+        filters: [{ column: 'user_id', op: 'eq', value: userId }],
+        order: { column: 'created_at', ascending: false },
+        limit: 100,
+      });
+      const request = result.data.find((row) => normalizeString(row?.reason).toLowerCase().startsWith('account_delete_request:'));
+      if (!request) return { pending: false, gracePeriodDays: 30 };
+      const latestStatus = normalizeString(request.status).toLowerCase();
+      if (latestStatus !== 'requested' && latestStatus !== 'scheduled') {
+        return { pending: false, gracePeriodDays: 30 };
+      }
+      const requestedAt = normalizeIsoDate(request.created_at) || new Date().toISOString();
+      const gracePeriodDays = 30;
+      const permanentDeletionAt = new Date(new Date(requestedAt).getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
+      return {
+        pending: true,
+        requestId: normalizeString(request.id) || undefined,
+        requestedAt,
+        recoverableUntil: permanentDeletionAt,
+        permanentDeletionAt,
+        gracePeriodDays,
+      };
+    }
+
+    const data = await tryCandidateRequests<any>([
+      { method: 'get', path: '/auth/account/delete-request' },
+      { method: 'get', path: '/auth/account/deletion-status' },
+    ]);
+    const source = data?.data || data || {};
+    const pending = Boolean(source.pending ?? source.requested ?? (source.status === 'requested' || source.status === 'scheduled'));
+    const requestedAt = normalizeIsoDate(source.requestedAt || source.createdAt || source.created_at);
+    const gracePeriodDays = Math.max(0, Math.round(normalizeNumber(source.gracePeriodDays || source.grace_period_days) || 30));
+    const permanentDeletionAt =
+      normalizeIsoDate(source.permanentDeletionAt || source.effectiveAt || source.deleteAt) ||
+      (requestedAt ? new Date(new Date(requestedAt).getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString() : undefined);
+    return {
+      pending,
+      requestId: normalizeString(source.requestId || source.id) || undefined,
+      requestedAt,
+      recoverableUntil: normalizeIsoDate(source.recoverableUntil) || permanentDeletionAt,
+      permanentDeletionAt,
+      gracePeriodDays,
+    };
+  },
+
+  cancelAccountDeletion: async (): Promise<boolean> => {
+    if (isKnownProdApi) {
+      const me = await apiClient.getMe().catch(() => null);
+      const userId = normalizeString(me?.id || '');
+      if (!userId) throw new Error('account_deletion_user_missing');
+      const result = await dataApi.list<any>('reports', {
+        filters: [{ column: 'user_id', op: 'eq', value: userId }],
+        order: { column: 'created_at', ascending: false },
+        limit: 100,
+      });
+      const activeRequestIds = result.data
+        .filter((row) => {
+          const reason = normalizeString(row?.reason).toLowerCase();
+          const status = normalizeString(row?.status).toLowerCase();
+          return reason.startsWith('account_delete_request:') && (status === 'requested' || status === 'scheduled');
+        })
+        .map((row) => normalizeString(row.id))
+        .filter(Boolean);
+      if (activeRequestIds.length) {
+        await dataApi.update<any>('reports', [{ column: 'id', op: 'in', value: activeRequestIds }], {
+          status: 'cancelled',
+        });
+      }
+      return true;
+    }
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/account/delete-request/cancel' },
+      { method: 'post', path: '/auth/account/deletion-cancel' },
+    ]);
+    return Boolean(data?.cancelled ?? data?.ok ?? data?.success ?? true);
   },
 
   deleteAccount: async () => {
