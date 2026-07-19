@@ -241,7 +241,7 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
           row.push_token,
           title,
           body,
-          {
+          normalizePushData({
             ...baseData,
             userId: row.user_id,
             username: row.username,
@@ -250,7 +250,7 @@ export async function processAdminPushJob(pool, jobPayload = {}, { actorUserId =
             scubaLevel: row.scuba_level || '',
             freedivingLevel: row.freediving_level || '',
             isBlocked: Boolean(row.is_blocked),
-          }
+          })
         )
       )
     );

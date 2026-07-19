@@ -81,6 +81,8 @@ Updated: 2026-07-19
 - [x] Increment marketing version to 1.2.6, iOS build number to 44, and Android version code to 40.
 - [x] Build iOS 1.2.6 (44) successfully and schedule App Store Connect/TestFlight submission (EAS submission 04719092-47d1-45e0-8adb-8ec42218fa66).
 - [x] Build Android 1.2.6 (40) and upload it successfully to the Google Play alpha/closed-test track (EAS submission b45ef899-daa2-415a-8448-82067c1508d3).
+- [x] Verify Android 1.2.6 (40) from the Google Play closed-test track on a Galaxy S20+: fresh install, notification/location permission flow, cold start, and no fatal/ANR/React Native crash log.
+- [x] Verify the current iOS 1.2.6 source build on an iPhone 17 simulator: native build/install, feed startup, and no fatal/exception crash log. TestFlight physical-device validation is still required.
 - [ ] Verify installed builds, login, push, notification inbox, deep links, sharing, AdMob, and crash-free startup.
 - [ ] Update release notes and the project work log.
 - [ ] Commit all approved source/configuration changes and push them to GitHub.
@@ -93,4 +95,6 @@ Updated: 2026-07-19
 - The custom `divergram://` scheme exists, but iOS Universal Links, Android verified App Links, AASA, and `assetlinks.json` were not found.
 - iOS is publicly available; Android fallback behavior must remain test-track aware until public release.
 - Production API, notification schema, admin UI, web association files, and root-domain association responses have been deployed and health-checked.
-- Current store builds: iOS 1.2.6 (44) submitted successfully to App Store Connect and Android 1.2.6 (40) uploaded successfully to the Google Play alpha/closed-test track. Store processing and installed-build smoke tests remain release gates.
+- Google Play app-signing SHA-1 is registered in Google Auth Platform as `Divergram-Android-Play`; Google login succeeded on the Play-installed Galaxy S20+ build.
+- Admin FCM payload metadata is normalized to strings as required by FCM. Production background delivery, notification-tray display, inbox deep-link navigation, unread count, and mark-read synchronization passed on Android; one stale token was automatically deactivated.
+- Current store builds: iOS 1.2.6 (44) submitted successfully to App Store Connect and Android 1.2.6 (40) uploaded successfully to the Google Play alpha/closed-test track. Android installed-build startup passed on a Galaxy S20+; iOS source-build startup passed in the simulator. TestFlight physical-device and feature smoke tests remain release gates.
