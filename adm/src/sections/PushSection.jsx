@@ -11,9 +11,18 @@ const EMPTY_PUSH_FORM = {
   scubaLevel: '',
   freedivingLevel: '',
   blockedState: 'all',
+  notificationType: 'admin_broadcast',
+  deepLink: 'divergram://notifications',
   scheduleEnabled: false,
   scheduleAt: '',
   dataJson: '',
+};
+
+const EMPTY_TEST_FORM = {
+  token: '',
+  title: 'FCM 테스트',
+  body: 'Divergram push test',
+  dataJson: '{"kind":"push_test"}',
 };
 
 const PUSH_TEMPLATES = [
@@ -26,12 +35,20 @@ const PUSH_TEMPLATES = [
 
 export default function PushSection({ reports = [], certifications = [], reportBreakdown = {} }) {
   const [pushForm, setPushForm] = useState(EMPTY_PUSH_FORM);
+  const [testForm, setTestForm] = useState(EMPTY_TEST_FORM);
   const [pushBusy, setPushBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
   const [pushError, setPushError] = useState('');
+  const [testError, setTestError] = useState('');
   const [pushResult, setPushResult] = useState(null);
+  const [testResult, setTestResult] = useState(null);
   const [pushHistory, setPushHistory] = useState([]);
   const [savedTemplates, setSavedTemplates] = useState([]);
+  const [memberQuery, setMemberQuery] = useState('');
+  const [memberResults, setMemberResults] = useState([]);
+  const [memberBusy, setMemberBusy] = useState(false);
   const hasPushDataJson = pushForm.dataJson.trim().length > 0;
+  const hasTestDataJson = testForm.dataJson.trim().length > 0;
 
   const loadPushHistory = async () => {
     try {
@@ -56,6 +73,26 @@ export default function PushSection({ reports = [], certifications = [], reportB
 
   useEffect(() => { loadPushHistory(); loadTemplates(); }, []);
 
+  const searchMembers = async () => {
+    const query = memberQuery.trim();
+    if (!query) return setMemberResults([]);
+    setMemberBusy(true);
+    try {
+      const result = await api(`/api/admin/users?q=${encodeURIComponent(query)}&limit=20`);
+      setMemberResults(Array.isArray(result?.users) ? result.users : []);
+    } catch (error) {
+      setPushError(error.message || '회원 검색 실패');
+    } finally {
+      setMemberBusy(false);
+    }
+  };
+
+  const addTargetMember = (userId) => {
+    const ids = pushForm.targetUserIds.split(/[\s,]+/).map((value) => value.trim()).filter(Boolean);
+    if (!ids.includes(String(userId))) ids.push(String(userId));
+    setPushForm((prev) => ({ ...prev, targetUserIds: ids.join(', ') }));
+  };
+
   const pushPreview = useMemo(() => {
     try {
       return hasPushDataJson ? JSON.parse(pushForm.dataJson) : {};
@@ -63,6 +100,14 @@ export default function PushSection({ reports = [], certifications = [], reportB
       return null;
     }
   }, [hasPushDataJson, pushForm.dataJson]);
+
+  const testPreview = useMemo(() => {
+    try {
+      return hasTestDataJson ? JSON.parse(testForm.dataJson) : {};
+    } catch {
+      return null;
+    }
+  }, [hasTestDataJson, testForm.dataJson]);
 
   const sendPush = async (event) => {
     event.preventDefault();
@@ -86,6 +131,8 @@ export default function PushSection({ reports = [], certifications = [], reportB
           scubaLevel: pushForm.scubaLevel || undefined,
           freedivingLevel: pushForm.freedivingLevel || undefined,
           blockedState: pushForm.blockedState,
+          type: pushForm.notificationType,
+          deepLink: pushForm.deepLink,
           scheduleAt: pushForm.scheduleEnabled ? pushForm.scheduleAt || undefined : undefined,
           data: payloadData,
         },
@@ -99,10 +146,43 @@ export default function PushSection({ reports = [], certifications = [], reportB
     }
   };
 
+  const sendPushTest = async (event) => {
+    event.preventDefault();
+    setTestBusy(true);
+    setTestError('');
+    try {
+      let payloadData = {};
+      if (testForm.dataJson.trim()) {
+        payloadData = JSON.parse(testForm.dataJson);
+        if (!payloadData || typeof payloadData !== 'object' || Array.isArray(payloadData)) throw new Error('data_json_must_be_object');
+      }
+      const result = await api('/api/admin/push/test', {
+        method: 'POST',
+        body: {
+          token: testForm.token.trim(),
+          title: testForm.title,
+          body: testForm.body,
+          data: payloadData,
+        },
+      });
+      setTestResult(result);
+    } catch (error) {
+      setTestError(error.message || '푸시 테스트 실패');
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
   const clearPush = () => {
     setPushForm(EMPTY_PUSH_FORM);
     setPushResult(null);
     setPushError('');
+  };
+
+  const clearTest = () => {
+    setTestForm(EMPTY_TEST_FORM);
+    setTestResult(null);
+    setTestError('');
   };
 
   const applyTemplate = (template) => {
@@ -186,6 +266,50 @@ export default function PushSection({ reports = [], certifications = [], reportB
             <button type="button" className="chip" onClick={applyAllUsersBroadcast}>전체 사용자 발송</button>
           </div>
         </div>
+        <div className="push-template-saved" style={{ marginBottom: 16 }}>
+          <div className="panel-head">
+            <strong>FCM 직접 테스트</strong>
+            <div className="row">
+              <span className="muted">앱에서 받은 FCM registration token을 바로 붙여서 보내는 용도야.</span>
+              <button type="button" className="chip" onClick={clearTest}>초기화</button>
+            </div>
+          </div>
+          <form className="push-form" onSubmit={sendPushTest}>
+            <div className="field-grid push-grid">
+              <label><span>FCM 토큰</span><input value={testForm.token} onChange={(e) => setTestForm((prev) => ({ ...prev, token: e.target.value }))} placeholder="앱에서 복사한 FCM registration token" /></label>
+              <label><span>제목</span><input value={testForm.title} onChange={(e) => setTestForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="테스트 제목" /></label>
+            </div>
+            <label className="textarea-field"><span>본문</span><textarea rows={3} value={testForm.body} onChange={(e) => setTestForm((prev) => ({ ...prev, body: e.target.value }))} placeholder="테스트 본문" /></label>
+            <div className="field-grid push-grid">
+              <label><span>추가 데이터 JSON</span><input value={testForm.dataJson} onChange={(e) => setTestForm((prev) => ({ ...prev, dataJson: e.target.value }))} placeholder='{"kind":"push_test"}' /></label>
+              <div className="push-hint">토큰이 유효하면 바로 FCM으로 전송돼. iPhone 시뮬레이터 토큰은 테스트용 가짜 값이라 실패할 수 있어.</div>
+            </div>
+            <div className="preview-box push-preview">
+              <span className="muted">테스트 미리보기</span>
+              <div className="preview-card">
+                <strong>{testForm.title || 'FCM 테스트'}</strong>
+                <p>{testForm.body || 'Divergram push test'}</p>
+                <div className="preview-pill-row">
+                  <span className="badge active">{testForm.token.trim() ? '토큰 입력됨' : '토큰 필요'}</span>
+                  <span className="badge">{!hasTestDataJson ? '추가 데이터 없음' : testPreview ? 'JSON 확인됨' : 'JSON 오류'}</span>
+                </div>
+                <small>{testPreview ? JSON.stringify(testPreview) : 'test payload'}</small>
+              </div>
+            </div>
+            <div className="detail-actions">
+              <button type="submit" disabled={testBusy}>{testBusy ? '전송 중...' : 'FCM 테스트 발송'}</button>
+            </div>
+            {testError && <p className="error">{testError}</p>}
+            {testResult && (
+              <div className="auth-check-box">
+                <p>전송 방식: <strong>{testResult.provider || 'fcm'}</strong></p>
+                <p>성공: <strong>{testResult.successCount ?? 0}개</strong></p>
+                <p>실패: <strong>{testResult.failureCount ?? 0}개</strong></p>
+                <p>상태: <strong>{testResult.message || '-'}</strong></p>
+              </div>
+            )}
+          </form>
+        </div>
         <div className="push-template-grid">
           {PUSH_TEMPLATES.map((template) => (
             <button key={template.key} type="button" className="push-template-card" onClick={() => applyTemplate(template)}>
@@ -243,6 +367,33 @@ export default function PushSection({ reports = [], certifications = [], reportB
           <div className="field-grid push-grid">
             <label><span>특정 사용자 ID</span><input value={pushForm.targetUserIds} onChange={(e) => setPushForm((prev) => ({ ...prev, targetUserIds: e.target.value }))} placeholder="쉼표로 구분 (예: 12, 15, 28)" /></label>
             <label><span>추가 데이터 JSON</span><input value={pushForm.dataJson} onChange={(e) => setPushForm((prev) => ({ ...prev, dataJson: e.target.value }))} placeholder='{"type":"notice"}' /></label>
+          </div>
+          <div className="field-grid push-grid">
+            <label><span>회원 검색 (이메일·이름)</span><div className="row"><input value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void searchMembers(); } }} placeholder="이메일 또는 사용자명" /><button type="button" className="chip" onClick={() => void searchMembers()} disabled={memberBusy}>{memberBusy ? '검색 중' : '검색'}</button></div></label>
+            <label><span>알림 이동 주소</span><input value={pushForm.deepLink} onChange={(e) => setPushForm((prev) => ({ ...prev, deepLink: e.target.value }))} placeholder="divergram://notifications 또는 https://divergram.com/posts/ID" /></label>
+          </div>
+          {memberResults.length > 0 && (
+            <div className="push-template-saved-list" style={{ marginBottom: 16 }}>
+              {memberResults.map((member) => (
+                <button key={member.id} type="button" className="push-template-saved-main" onClick={() => addTargetMember(member.id)}>
+                  <strong>{member.full_name || member.username || member.email}</strong>
+                  <span>{member.email} · ID {member.id}</span>
+                  <small>{member.role || 'user'} · {member.is_blocked ? '차단됨' : '정상'}</small>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="field-grid push-grid">
+            <label><span>알림 유형</span>
+              <select value={pushForm.notificationType} onChange={(e) => setPushForm((prev) => ({ ...prev, notificationType: e.target.value }))}>
+                <option value="admin_broadcast">운영 공지</option>
+                <option value="update">앱 업데이트</option>
+                <option value="safety_notice">안전 알림</option>
+                <option value="event">이벤트</option>
+                <option value="account_notice">계정 안내</option>
+              </select>
+            </label>
+            <div className="push-hint">회원 검색 결과를 누르면 특정 사용자 ID에 자동 추가됩니다. 이동 주소는 알림 선택 시 열 화면입니다.</div>
           </div>
           <div className="field-grid push-grid">
             <label><span>가입일 이후</span><input type="datetime-local" value={pushForm.createdAfter} onChange={(e) => setPushForm((prev) => ({ ...prev, createdAfter: e.target.value }))} /></label>

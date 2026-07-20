@@ -1,3 +1,5 @@
+import { deliverUserEventNotification } from '../lib/userNotificationDelivery.js';
+
 function applyJsonFilters(rows, filters = []) {
   const get = (obj, key) => obj?.[key];
   return rows.filter((r) => filters.every((f) => {
@@ -68,7 +70,7 @@ const DATA_TABLES = {
   comments: { table: 'app_comments', columns: ['id','post_id','user_id','content','created_at'] },
   follows: { table: 'app_follows', columns: ['id','follower_id','following_id','created_at'] },
   saved_posts: { table: 'app_saved_posts', columns: ['id','user_id','post_id','created_at'] },
-  notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','is_read','created_at'] },
+  notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','title','body','image_url','deep_link','source','event_key','data','delivery_status','is_read','read_at','opened_at','sent_at','updated_at','created_at'] },
   rooms: { table: 'app_rooms', columns: ['id','type','created_at'] },
   participants: { table: 'app_participants', columns: ['id','room_id','user_id','joined_at'] },
   messages: { table: 'app_messages', columns: ['id','room_id','sender_id','content','created_at','read_at'] },
@@ -81,15 +83,94 @@ function resolveDataTable(name) {
   return DATA_TABLES[name] || null;
 }
 
-export function registerDataRoutes(app, { pool, crypto }) {
+const PRIVATE_READ_TABLES = new Set(['saved_posts', 'notifications', 'rooms', 'participants', 'messages', 'reports', 'certifications']);
+
+async function getRequestIdentity(req, pool, getAuthUserId) {
+  const userId = getAuthUserId(req);
+  if (!userId) return null;
+  const result = await pool.query('SELECT role, is_blocked FROM app_users WHERE id=$1 LIMIT 1', [userId]);
+  const user = result.rows[0];
+  if (!user || user.is_blocked) return null;
+  return { userId, isAdmin: String(user.role || '').toLowerCase() === 'admin' };
+}
+
+function requireIdentity(identity, res) {
+  if (identity) return true;
+  res.status(401).json({ error: 'unauthorized' });
+  return false;
+}
+
+async function scopeRowsForRead(key, rows, identity, pool) {
+  const userId = identity?.userId;
+  if (identity?.isAdmin) return rows;
+  if (key === 'posts') {
+    return rows.filter((row) => row.user_id === userId || !row.visibility || row.visibility === 'public');
+  }
+  if (key === 'saved_posts' || key === 'notifications' || key === 'reports' || key === 'certifications') {
+    return rows.filter((row) => row.user_id === userId);
+  }
+  if (key === 'rooms' || key === 'participants' || key === 'messages') {
+    if (!userId) return [];
+    const memberships = await pool.query('SELECT room_id FROM app_participants WHERE user_id=$1', [userId]);
+    const roomIds = new Set(memberships.rows.map((row) => row.room_id));
+    return key === 'rooms' ? rows.filter((row) => roomIds.has(row.id)) : rows.filter((row) => roomIds.has(row.room_id));
+  }
+  if (['post_media', 'likes', 'comments'].includes(key)) {
+    const visiblePosts = userId
+      ? await pool.query(
+          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public' OR user_id=$1`,
+          [userId]
+        )
+      : await pool.query(
+          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public'`
+        );
+    const postIds = new Set(visiblePosts.rows.map((row) => row.id));
+    return rows.filter((row) => postIds.has(row.post_id));
+  }
+  return rows;
+}
+
+async function canWriteRow(key, row, identity, pool, operation) {
+  if (identity.isAdmin) return true;
+  const userId = identity.userId;
+  if (key === 'profiles') return row.id === userId;
+  if (key === 'posts') return row.user_id === userId;
+  if (['likes', 'comments', 'saved_posts', 'reports', 'certifications', 'resort_reviews'].includes(key)) return row.user_id === userId;
+  if (key === 'follows') return row.follower_id === userId;
+  if (key === 'notifications') return operation === 'create' ? row.actor_id === userId : row.user_id === userId;
+  if (key === 'post_media') {
+    const post = await pool.query('SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1', [row.post_id]);
+    return post.rows[0]?.user_id === userId;
+  }
+  if (key === 'messages') {
+    if (operation === 'create' && row.sender_id !== userId) return false;
+    const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.room_id, userId]);
+    return member.rows.length > 0;
+  }
+  if (key === 'rooms') {
+    if (operation === 'create') return true;
+    const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.id, userId]);
+    return member.rows.length > 0;
+  }
+  if (key === 'participants') {
+    if (row.user_id === userId) return true;
+    const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.room_id, userId]);
+    return member.rows.length > 0;
+  }
+  return false;
+}
+
+export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAdmin }) {
   app.get('/api/data/:table', async (req, res) => {
     const key = String(req.params.table || '').trim();
     const spec = resolveDataTable(key);
     if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
     try {
+      const identity = await getRequestIdentity(req, pool, getAuthUserId);
+      if (PRIVATE_READ_TABLES.has(key) && !requireIdentity(identity, res)) return;
       const raw = await pool.query(`SELECT * FROM ${spec.table}`);
-      let rows = raw.rows;
+      let rows = await scopeRowsForRead(key, raw.rows, identity, pool);
       const filters = req.query.filters ? JSON.parse(String(req.query.filters)) : [];
       rows = applyJsonFilters(rows, filters);
 
@@ -118,8 +199,13 @@ export function registerDataRoutes(app, { pool, crypto }) {
     if (!spec) return res.status(400).json({ error: 'invalid_table' });
 
     try {
+      const identity = await getRequestIdentity(req, pool, getAuthUserId);
+      if (!requireIdentity(identity, res)) return;
       for (const row of rows) {
         const payload = { ...row, id: String(row.id || crypto.randomUUID()) };
+        if (!(await canWriteRow(key, payload, identity, pool, 'create'))) {
+          return res.status(403).json({ error: 'forbidden' });
+        }
         const cols = spec.columns.filter((c) => payload[c] !== undefined);
         if (!cols.includes('id')) cols.unshift('id');
         const vals = cols.map((c) => payload[c]);
@@ -129,6 +215,40 @@ export function registerDataRoutes(app, { pool, crypto }) {
           `INSERT INTO ${spec.table}(${cols.join(',')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${updates || 'id=EXCLUDED.id'}`,
           vals
         );
+        if (key === 'likes') {
+          const post = await pool.query(`SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1`, [payload.post_id]);
+          const targetUserId = post.rows[0]?.user_id;
+          if (targetUserId) await deliverUserEventNotification(pool, {
+            userId: targetUserId,
+            actorUserId: identity.userId,
+            type: 'like',
+            eventKey: `like:${payload.id}`,
+            postId: payload.post_id,
+            body: '회원님의 게시물을 좋아합니다.',
+            deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
+          }).catch(() => undefined);
+        } else if (key === 'comments') {
+          const post = await pool.query(`SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1`, [payload.post_id]);
+          const targetUserId = post.rows[0]?.user_id;
+          if (targetUserId) await deliverUserEventNotification(pool, {
+            userId: targetUserId,
+            actorUserId: identity.userId,
+            type: 'comment',
+            eventKey: `comment:${payload.id}`,
+            postId: payload.post_id,
+            body: '회원님의 게시물에 댓글을 남겼습니다.',
+            deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
+          }).catch(() => undefined);
+        } else if (key === 'follows') {
+          await deliverUserEventNotification(pool, {
+            userId: payload.following_id,
+            actorUserId: identity.userId,
+            type: 'follow',
+            eventKey: `follow:${payload.id}`,
+            body: '회원님을 팔로우하기 시작했습니다.',
+            deepLink: 'divergram://notifications',
+          }).catch(() => undefined);
+        }
       }
       res.json({ data: rows, error: null });
     } catch {
@@ -142,11 +262,29 @@ export function registerDataRoutes(app, { pool, crypto }) {
     const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
     const patch = req.body?.patch || {};
     if (!spec) return res.status(400).json({ error: 'invalid_table' });
+    if (!filters.length) return res.status(400).json({ error: 'filters_required' });
 
     try {
+      const identity = await getRequestIdentity(req, pool, getAuthUserId);
+      if (!requireIdentity(identity, res)) return;
       const raw = await pool.query(`SELECT * FROM ${spec.table}`);
       const matched = applyJsonFilters(raw.rows, filters);
       const patchCols = spec.columns.filter((c) => c !== 'id' && patch[c] !== undefined);
+
+      const ownerColumns = {
+        posts: ['user_id'], likes: ['user_id'], comments: ['user_id'], follows: ['follower_id'],
+        saved_posts: ['user_id'], notifications: ['user_id', 'actor_id'], messages: ['sender_id', 'room_id'],
+        reports: ['user_id'], certifications: ['user_id'], resort_reviews: ['user_id'], post_media: ['post_id'],
+        participants: ['room_id', 'user_id'],
+      };
+      if (!identity.isAdmin && (ownerColumns[key] || []).some((column) => patch[column] !== undefined)) {
+        return res.status(403).json({ error: 'ownership_fields_immutable' });
+      }
+      for (const row of matched) {
+        if (!(await canWriteRow(key, row, identity, pool, 'update'))) {
+          return res.status(403).json({ error: 'forbidden' });
+        }
+      }
 
       for (const row of matched) {
         if (!patchCols.length) continue;
@@ -167,10 +305,18 @@ export function registerDataRoutes(app, { pool, crypto }) {
     const spec = resolveDataTable(key);
     const filters = Array.isArray(req.body?.filters) ? req.body.filters : [];
     if (!spec) return res.status(400).json({ error: 'invalid_table' });
+    if (!filters.length) return res.status(400).json({ error: 'filters_required' });
 
     try {
+      const identity = await getRequestIdentity(req, pool, getAuthUserId);
+      if (!requireIdentity(identity, res)) return;
       const raw = await pool.query(`SELECT * FROM ${spec.table}`);
       const matched = applyJsonFilters(raw.rows, filters);
+      for (const row of matched) {
+        if (!(await canWriteRow(key, row, identity, pool, 'delete'))) {
+          return res.status(403).json({ error: 'forbidden' });
+        }
+      }
       for (const row of matched) {
         await pool.query(`DELETE FROM ${spec.table} WHERE id=$1`, [row.id]);
       }
@@ -180,7 +326,7 @@ export function registerDataRoutes(app, { pool, crypto }) {
     }
   });
 
-  app.post('/api/data/seed/default', async (_req, res) => {
+  app.post('/api/data/seed/default', requireAdmin, async (_req, res) => {
     const now = new Date().toISOString();
     try {
       const exists = await pool.query('SELECT COUNT(*)::int AS count FROM app_profiles');

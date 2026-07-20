@@ -1,7 +1,7 @@
 import React from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { analytics } from './analytics';
 import i18n from './i18n';
 import { registerFcmToken } from '../services/notificationService';
@@ -30,7 +30,20 @@ class NotificationManager {
 
   async initialize() {
     try {
-      // Request permissions
+      const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
+      if (__DEV__ && Platform.OS === 'ios' && !Device.isDevice && debugToken) {
+        this.pushToken = debugToken;
+        await this.registerPushToken();
+        analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true, debugFallback: true });
+        return debugToken;
+      }
+
+      if (Platform.OS === 'ios' && !Device.isDevice) {
+        console.log('Must use physical device for push notifications');
+        return null;
+      }
+
+      // Request permissions only after we know the runtime can actually support push.
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -41,19 +54,6 @@ class NotificationManager {
 
       if (finalStatus !== 'granted') {
         console.log('Push notification permission denied');
-        return null;
-      }
-
-      // Get push token
-      if (!Device.isDevice) {
-        const debugToken = String(process.env.EXPO_PUBLIC_SIMULATOR_FCM_TOKEN || '').trim();
-        if (debugToken) {
-          this.pushToken = debugToken;
-          await this.registerPushToken();
-          analytics.action('Push Token Registered', { platform: Platform.OS, simulator: true });
-          return debugToken;
-        }
-        console.log('Must use physical device for push notifications');
         return null;
       }
 
@@ -224,12 +224,46 @@ class NotificationManager {
 export const notificationManager = new NotificationManager();
 
 // React hook for notifications
-export const useNotifications = (enabled = true) => {
+export const useNotifications = (enabled = true, registrationKey = '') => {
   const [fcmToken, setFcmToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!enabled) return;
     notificationManager.initialize().then(setFcmToken);
+  }, [enabled, registrationKey]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      void notificationManager.initialize().then(setFcmToken);
+    });
+    return () => subscription.remove();
+  }, [enabled, registrationKey]);
+
+  React.useEffect(() => {
+    if (!enabled || Platform.OS === 'web') return;
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    void import('@react-native-firebase/messaging')
+      .then(({ default: messaging }) => {
+        if (cancelled) return;
+        unsubscribe = messaging().onTokenRefresh((token) => {
+          const normalizedToken = String(token || '').trim();
+          if (!normalizedToken) return;
+          setFcmToken(normalizedToken);
+          void registerFcmToken(normalizedToken, Platform.OS).catch((error) => {
+            console.error('Failed to refresh FCM token registration:', error);
+          });
+        });
+      })
+      .catch((error) => console.error('Failed to subscribe to FCM token refresh:', error));
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [enabled]);
 
   return {

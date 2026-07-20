@@ -506,16 +506,29 @@
     "account": {
       "googleLink": "Google ログイン連携",
       "appleLink": "Apple ログイン連携",
+      "instagramLink": "Instagram ログイン連携",
       "kakaoLink": "Kakao ログイン連携",
       "devices": "ダイブコンピュータ管理",
       "deleteAccount": "アカウント削除",
-      "deleteConfirm": "アカウント削除は取り消せません。続行しますか？",
+      "deleteConfirm": "アカウントは直ちに無効化され、30日後に完全に削除されます。続行しますか？",
       "socialSubtitle": "ソーシャル連携でログインの利便性と安全性を高めます。",
       "linkAction": "連携する",
       "unlinkAction": "連携解除",
       "devicesSubtitle": "Garmin/Suunto/Shearwater の接続と同期を管理します。",
-      "deleteSubtitle": "アカウント削除は復旧できません。",
-      "deleteTextLink": "Divergram 退会"
+      "deleteSubtitle": "削除リクエスト後30日間はアカウントを復旧できます。",
+      "deleteTextLink": "Divergram 退会",
+      "deletionRequestedAt": "退会リクエスト日",
+      "recoverableUntil": "復旧可能な最終日",
+      "permanentDeletionAt": "完全削除予定日",
+      "withdrawalRecoveryNotice": "30日間の猶予期間中に再ログインすると、退会を取り消してアカウントを復旧できます。",
+      "legalRetentionNotice": "法令に基づき、一部の記録は定められた期間、別途保管される場合があります。",
+      "deletionPendingTitle": "アカウント削除が予約されています",
+      "deletionPendingSubtitle": "復旧可能期間中は他の機能を利用できません。アカウントを復旧するとすぐに再開できます。",
+      "recoverAccount": "アカウントを復旧",
+      "recoverAccountConfirm": "退会申請を取り消してアカウントを復旧しますか？",
+      "recoveryCompleteTitle": "アカウント復旧完了",
+      "recoveryCompleteMessage": "退会申請が取り消されました。Divergramを引き続き利用できます。",
+      "recoveryFailed": "アカウントの復旧に失敗しました。しばらくしてからもう一度お試しください。"
     },
     "notifications": {
       "likes": "いいね通知",
@@ -538,6 +551,8 @@
     "diving": {
       "certifications": "資格管理",
       "certificationsSubtitle": "保有資格と現在レベルを更新します。",
+      "licenseManagement": "ライセンス管理",
+      "licenseManagementSubtitle": "ライセンスの一覧、登録、編集、削除ができます。",
       "equipment": "器材情報登録",
       "integration": "外部サービス連携",
       "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater の状態を管理します。",
@@ -585,7 +600,21 @@
       "policyCenter": "ポリシー文書センター",
       "openSourceLicenses": "オープンソースライセンス",
       "appInfo": "アプリ情報",
-      "appInfoSubtitle": "利用規約・ポリシー・サポート項目を管理します。"
+      "appInfoSubtitle": "利用規約・ポリシー・サポート項目を管理します。",
+      "licenseManagement": "ライセンス管理",
+      "licenseManagementSubtitle": "ライセンスの一覧、登録、編集、削除ができます。",
+      "donate": "寄付する",
+      "donateSubtitle": "Divergramを応援して開発を支援します。"
+    },
+    "donate": {
+      "title": "寄付する",
+      "subtitle": "PayPal公式の寄付ボタンでDivergramを応援できます。",
+      "buttonTitle": "PayPal寄付ページを開く",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "案内",
+      "guideBody": "寄付金額とオプションはPayPal Hosted Buttonの設定で管理します。",
+      "thanks": "Divergramを応援してくださりありがとうございます。"
     },
     "safety": {
       "emergencyContact": "緊急連絡先登録",
@@ -616,6 +645,7 @@
       "resorts": "ダイビングリゾート探索",
       "location": "地図でポイント確認",
       "notifications": "最新通知と更新情報",
+      "license_management": "ライセンスを登録・管理",
       "admin": "運用専用ページ",
       "app_info": "規約・ポリシー・サポート"
     }
@@ -712,6 +742,7 @@
         "title": "ライセンス認証",
         "subtitle": "ライセンス写真をアップロードすると、団体名・番号・取得日を自動認識します。",
         "upload": "ライセンス写真アップロード + OCR",
+        "register": "ライセンス登録",
         "remove": "写真を削除",
         "processing": "認識中...",
         "agency": "団体名",

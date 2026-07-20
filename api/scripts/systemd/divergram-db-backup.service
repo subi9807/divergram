@@ -1,0 +1,14 @@
+[Unit]
+Description=Divergram PostgreSQL verified backup
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+Environment=DIVERGRAM_ENV_FILE=/home/divergram/api/.env
+Environment=DIVERGRAM_BACKUP_DIR=/var/backups/divergram/postgres
+ExecStart=/usr/local/sbin/divergram-db-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

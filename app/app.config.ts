@@ -11,8 +11,8 @@ function getGoogleMapsApiKey(): string {
 function getAdMobAppId(platform: 'android' | 'ios'): string {
   const fallback =
     platform === 'android'
-      ? 'ca-app-pub-3940256099942544~3347511713'
-      : 'ca-app-pub-3940256099942544~1458002511';
+      ? 'ca-app-pub-6018533601998790~9736334888'
+      : 'ca-app-pub-6018533601998790~5278215124';
   if (platform === 'android') {
     return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_APP_ID || process.env.GOOGLE_ADMOB_ANDROID_APP_ID || fallback;
   }
@@ -21,9 +21,48 @@ function getAdMobAppId(platform: 'android' | 'ios'): string {
 
 function getAdMobBannerUnitId(platform: 'android' | 'ios'): string {
   if (platform === 'android') {
-    return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID || '';
+    return (
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      'ca-app-pub-6018533601998790/6886397577'
+    );
   }
-  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || '';
+  return process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID || 'ca-app-pub-6018533601998790/8455042807';
+}
+
+function getAdMobNativeUnitId(platform: 'android' | 'ios'): string {
+  if (platform === 'android') {
+    return (
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_NATIVE_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_NATIVE_UNIT_ID ||
+      process.env.EXPO_PUBLIC_GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      process.env.GOOGLE_ADMOB_ANDROID_BANNER_UNIT_ID ||
+      'ca-app-pub-6018533601998790/6886397577'
+    );
+  }
+  return (
+    process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_NATIVE_UNIT_ID ||
+    process.env.GOOGLE_ADMOB_IOS_NATIVE_UNIT_ID ||
+    process.env.EXPO_PUBLIC_GOOGLE_ADMOB_IOS_BANNER_UNIT_ID ||
+    process.env.GOOGLE_ADMOB_IOS_BANNER_UNIT_ID ||
+    'ca-app-pub-6018533601998790/8455042807'
+  );
+}
+
+function getPaypalDonationUrl(): string {
+  return process.env.EXPO_PUBLIC_PAYPAL_DONATE_URL || process.env.PAYPAL_DONATE_URL || '';
+}
+
+function getPaypalClientId(): string {
+  return (
+    process.env.EXPO_PUBLIC_PAYPAL_CLIENT_ID ||
+    process.env.PAYPAL_CLIENT_ID ||
+    'BAAnnRigmVrw7Ackm5yYkRNTEofhNYC6HRrYlKNZj08Hk2fHQWLTYqIG3i3OjZjmmhk8zfzktmm4YZR1Ow'
+  );
+}
+
+function getPaypalHostedButtonId(): string {
+  return process.env.EXPO_PUBLIC_PAYPAL_HOSTED_BUTTON_ID || process.env.PAYPAL_HOSTED_BUTTON_ID || 'ZE8JLS99SK2EU';
 }
 
 function toGoogleIosUrlScheme(clientId: string): string | null {
@@ -40,7 +79,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const googleMapsApiKey = getGoogleMapsApiKey();
   const adMobAndroidAppId = getAdMobAppId('android');
   const adMobIosAppId = getAdMobAppId('ios');
+  const paypalDonationUrl = getPaypalDonationUrl();
+  const paypalClientId = getPaypalClientId();
+  const paypalHostedButtonId = getPaypalHostedButtonId();
   const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production';
+  const sentryOrg = String(process.env.SENTRY_ORG || '').trim();
+  const sentryProject = String(process.env.SENTRY_PROJECT || '').trim();
   const expoDevClientPlugin = isProductionBuild
     ? []
     : [
@@ -62,7 +106,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2',
+    version: '1.2.6',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
@@ -71,9 +115,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '26',
+      buildNumber: '44',
+      associatedDomains: ['applinks:divergram.com', 'applinks:www.divergram.com'],
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
+      entitlements: {
+        'aps-environment': isProductionBuild ? 'production' : 'development'
+      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
@@ -108,7 +156,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 25,
+      versionCode: 40,
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [
+            { scheme: 'https', host: 'divergram.com', pathPrefix: '/post' },
+            { scheme: 'https', host: 'www.divergram.com', pathPrefix: '/post' },
+            { scheme: 'https', host: 'divergram.com', pathPrefix: '/notifications' },
+            { scheme: 'https', host: 'www.divergram.com', pathPrefix: '/notifications' }
+          ],
+          category: ['BROWSABLE', 'DEFAULT']
+        }
+      ],
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
@@ -139,12 +200,30 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       ...expoDevClientPlugin,
+      [
+        'expo-splash-screen',
+        {
+          backgroundColor: '#FFFFFF',
+          image: './assets/images/splash.png',
+          imageWidth: 380,
+          resizeMode: 'cover',
+          ios: {
+            enableFullScreenImage_legacy: true,
+            resizeMode: 'cover'
+          }
+        }
+      ],
       'expo-router',
       'expo-font',
       'expo-image',
       'expo-image-picker',
       'expo-sqlite',
+      'expo-secure-store',
+      ...(sentryOrg && sentryProject
+        ? [['@sentry/react-native/expo', { organization: sentryOrg, project: sentryProject }]]
+        : []),
       'expo-apple-authentication',
+      '@react-native-google-signin/google-signin',
       '@react-native-firebase/app',
       '@react-native-firebase/messaging',
       ...(adMobAndroidAppId || adMobIosAppId
@@ -187,7 +266,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         iosAppId: adMobIosAppId,
         androidBannerUnitId: getAdMobBannerUnitId('android'),
         iosBannerUnitId: getAdMobBannerUnitId('ios'),
+        androidNativeUnitId: getAdMobNativeUnitId('android'),
+        iosNativeUnitId: getAdMobNativeUnitId('ios'),
         enabled: Boolean(adMobAndroidAppId || adMobIosAppId)
+      },
+      paypal: {
+        donateUrl: paypalDonationUrl,
+        clientId: paypalClientId,
+        hostedButtonId: paypalHostedButtonId
       },
       socialAuth: {
         googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '',
@@ -209,6 +295,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.2'
+    runtimeVersion: '1.2.6'
   } as ExpoConfig;
 };

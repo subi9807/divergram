@@ -1,0 +1,26 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "6G5RCDLQLG.com.divergram.app.ios"
+        ],
+        "components": [
+          {
+            "/": "/post*",
+            "comment": "Shared Divergram posts"
+          },
+          {
+            "/": "/notifications*",
+            "comment": "Notification inbox"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "6G5RCDLQLG.com.divergram.app.ios"
+    ]
+  }
+}

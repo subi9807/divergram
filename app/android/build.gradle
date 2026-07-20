@@ -1,5 +1,12 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+def kotlinVersion = '2.3.0'
+def kspVersion = '2.3.0'
+def nodeBinary = System.getenv('NODE_BINARY') ?: 'node'
+
+ext.kotlinVersion = kotlinVersion
+ext.kspVersion = kspVersion
+
 buildscript {
   repositories {
     google()
@@ -8,14 +15,15 @@ buildscript {
   dependencies {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
-    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0')
+    classpath('com.google.gms:google-services:4.4.2')
   }
 }
 
 def reactNativeAndroidDir = new File(
         providers.exec {
           workingDir(rootDir)
-          commandLine("node", "--print", "require.resolve('react-native/package.json')")
+          commandLine(nodeBinary, "--print", "require.resolve('react-native/package.json')")
         }.standardOutput.asText.get().trim(),
         "../android"
 )

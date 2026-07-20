@@ -517,16 +517,29 @@
     "account": {
       "googleLink": "Google 로그인 연동",
       "appleLink": "Apple 로그인 연동",
+      "instagramLink": "Instagram 로그인 연동",
       "kakaoLink": "Kakao 로그인 연동",
       "devices": "다이빙 컴퓨터 관리",
       "deleteAccount": "계정 삭제",
-      "deleteConfirm": "계정 삭제는 되돌릴 수 없습니다. 계속할까요?",
+      "deleteConfirm": "탈퇴를 요청하면 계정이 즉시 비활성화되고 30일 후 영구 삭제됩니다. 계속할까요?",
       "socialSubtitle": "소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.",
       "linkAction": "연동하기",
       "unlinkAction": "연동끊기",
       "devicesSubtitle": "가민/순토/쉐어워터 기기 연결과 동기화를 관리합니다.",
-      "deleteSubtitle": "계정 삭제는 복구할 수 없습니다.",
-      "deleteTextLink": "다이버그램 계정탈퇴"
+      "deleteSubtitle": "탈퇴 요청 후 30일 동안 계정을 복구할 수 있습니다.",
+      "deleteTextLink": "다이버그램 계정탈퇴",
+      "deletionRequestedAt": "탈퇴 요청일",
+      "recoverableUntil": "복구 가능한 마지막 날짜",
+      "permanentDeletionAt": "영구 삭제 예정일",
+      "withdrawalRecoveryNotice": "30일 유예기간 중 다시 로그인하면 탈퇴를 철회하고 계정을 복구할 수 있습니다.",
+      "legalRetentionNotice": "법령에 따라 일부 기록은 정해진 기간 동안 별도로 보관될 수 있습니다.",
+      "deletionPendingTitle": "계정 삭제가 예약되어 있습니다",
+      "deletionPendingSubtitle": "복구 가능 기간에는 다른 기능을 이용할 수 없습니다. 계정을 복구하면 즉시 다시 이용할 수 있습니다.",
+      "recoverAccount": "계정 복구하기",
+      "recoverAccountConfirm": "탈퇴 신청을 철회하고 계정을 복구하시겠습니까?",
+      "recoveryCompleteTitle": "계정 복구 완료",
+      "recoveryCompleteMessage": "탈퇴 신청이 철회되었습니다. Divergram을 계속 이용할 수 있습니다.",
+      "recoveryFailed": "계정 복구에 실패했습니다. 잠시 후 다시 시도해주세요."
     },
     "notifications": {
       "likes": "좋아요 알림 ON/OFF",
@@ -549,6 +562,8 @@
     "diving": {
       "certifications": "자격증 관리",
       "certificationsSubtitle": "보유 자격과 레벨을 갱신합니다.",
+      "licenseManagement": "라이선스 관리",
+      "licenseManagementSubtitle": "내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.",
       "equipment": "장비 정보 등록",
       "integration": "외부 서비스 연동",
       "integrationSubtitle": "Google Maps, Stormglass, Garmin, Suunto, Shearwater 상태를 관리합니다.",
@@ -596,7 +611,21 @@
       "bottomMenuMax": "하단메뉴는 최대 5개까지 선택할 수 있습니다.",
       "openSourceLicenses": "오픈소스 라이선스",
       "appInfo": "앱 정보",
-      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다."
+      "appInfoSubtitle": "약관, 정책, 고객 지원 항목을 관리합니다.",
+      "licenseManagement": "라이선스 관리",
+      "licenseManagementSubtitle": "내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.",
+      "donate": "후원하기",
+      "donateSubtitle": "Divergram을 응원하고 개발을 지원합니다."
+    },
+    "donate": {
+      "title": "후원하기",
+      "subtitle": "PayPal 공식 후원 버튼을 통해 Divergram을 응원할 수 있습니다.",
+      "buttonTitle": "PayPal 후원 페이지 열기",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "안내",
+      "guideBody": "후원 금액과 옵션은 PayPal Hosted Button 설정에서 관리합니다.",
+      "thanks": "Divergram을 응원해주셔서 감사합니다."
     },
     "safety": {
       "emergencyContact": "비상 연락처 등록",
@@ -618,18 +647,19 @@
   "menu": {
     "quick": "빠른 설정",
     "more": "더보기",
-    "desc": {
-      "messages": "버디와 채팅, 약속 조율",
-      "settings": "언어, 테마, 개인정보",
-      "activity": "내 활동과 기록",
-      "saved": "저장한 게시물/릴스",
-      "reels": "짧은 다이빙 영상",
-      "resorts": "다이빙 리조트 탐색",
-      "location": "지도에서 포인트 찾기",
-      "notifications": "최신 알림과 업데이트",
-      "admin": "운영 전용 화면",
-      "app_info": "약관, 정책, 고객 지원"
-    }
+      "desc": {
+        "messages": "버디와 채팅, 약속 조율",
+        "settings": "언어, 테마, 개인정보",
+        "activity": "내 활동과 기록",
+        "saved": "저장한 게시물/릴스",
+        "reels": "짧은 다이빙 영상",
+        "resorts": "다이빙 리조트 탐색",
+        "location": "지도에서 포인트 찾기",
+        "notifications": "최신 알림과 업데이트",
+        "license_management": "내 라이선스를 등록하고 관리",
+        "admin": "운영 전용 화면",
+        "app_info": "약관, 정책, 고객 지원"
+      }
   },
   "pages": {
     "messages": {
@@ -651,6 +681,7 @@
     },
     "search": {
       "placeholder": "포인트, 다이버, 리조트 검색",
+      "people": "다이버",
       "empty": "검색 결과가 없습니다."
     },
     "activity": {
@@ -685,6 +716,10 @@
     "profileEdit": {
       "subtitle": "프로필 정보를 수정하세요",
       "name": "표시 이름",
+      "username": "사용자명 (@아이디)",
+      "invalidUsername": "사용자명은 영문, 숫자, 밑줄 4~32자로 입력해주세요.",
+      "usernameTaken": "이미 사용 중인 사용자명입니다.",
+      "usernameTakenBody": "다른 사용자명을 입력해주세요.",
       "bio": "소개",
       "diveLevel": "다이빙 레벨",
       "scubaLevel": "스쿠버다이빙 레벨",
@@ -723,6 +758,7 @@
         "title": "라이선스 검증",
         "subtitle": "라이선스 사진을 업로드하면 단체명, 번호, 취득일을 자동 인식합니다.",
         "upload": "라이선스 사진 업로드 + OCR",
+        "register": "라이선스 등록",
         "remove": "사진 제거",
         "processing": "인식 중...",
         "agency": "단체명",

@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'rea
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCircle2, Heart, MessageCircle, UserPlus } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { PermissionGate } from '../../src/components/PermissionGate';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
@@ -28,6 +29,7 @@ export default function NotificationsScreen() {
   const { isDark } = useResolvedTheme();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const colors = useMemo(
     () => ({
@@ -62,9 +64,27 @@ export default function NotificationsScreen() {
 
   const renderRow = (row: NotificationFeedItem) => {
     const Icon = iconMap[row.type] || Bell;
+    const openRow = async () => {
+      if (row.unread) await apiClient.markNotificationRead(row.id, true).catch(() => undefined);
+      await queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      const raw = String(row.deepLink || '').trim();
+      const postQueryId = raw.match(/[?&]post=([^&]+)/)?.[1];
+      if (postQueryId) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(decodeURIComponent(postQueryId))}` as never);
+      } else if (raw.startsWith('https://divergram.com/posts/') || raw.startsWith('https://www.divergram.com/posts/')) {
+        const postId = raw.split('/posts/')[1]?.split(/[?#]/)[0] || '';
+        if (postId) router.push(`/(tabs)/post?post=${encodeURIComponent(postId)}` as never);
+      } else if (raw.startsWith('divergram://posts/')) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(raw.slice('divergram://posts/'.length))}` as never);
+      } else if (row.postId) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(row.postId)}` as never);
+      }
+    };
     return (
-      <View
+      <TouchableOpacity
         key={row.id}
+        activeOpacity={0.88}
+        onPress={() => void openRow()}
         style={{
           marginBottom: 12,
           borderRadius: 22,
@@ -90,8 +110,8 @@ export default function NotificationsScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, lineHeight: 21, color: colors.text, fontWeight: row.unread ? '700' : '500' }}>
-              <Text style={{ color: colors.title, fontWeight: '800' }}>{row.actor.name}</Text>
-              {' '}
+              <Text style={{ color: colors.title, fontWeight: '800' }}>{row.title || row.actor.name}</Text>
+              {row.title ? '\n' : ' '}
               {row.text}
             </Text>
             <Text style={{ marginTop: 6, fontSize: 12, color: colors.muted }}>{row.when}</Text>
@@ -106,7 +126,7 @@ export default function NotificationsScreen() {
             </Text>
           </View>
         ) : null}
-      </View>
+      </TouchableOpacity>
     );
   };
 

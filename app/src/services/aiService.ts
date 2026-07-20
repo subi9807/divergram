@@ -1,58 +1,15 @@
 import type { DiveLog, MarineWeather } from '../models';
+import { apiClient } from '../lib/api';
 
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY || '';
 const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL || 'gpt-4.1-mini';
-const OPENAI_TIMEOUT_MS = 12000;
 
 export type AiHealthStatus = 'ready' | 'missing_key' | 'unreachable';
 
-function extractResponseText(payload: any): string {
-  const direct = String(payload?.output_text || '').trim();
-  if (direct) return direct;
-
-  const output = Array.isArray(payload?.output) ? payload.output : [];
-  for (const item of output) {
-    const content = Array.isArray(item?.content) ? item.content : [];
-    for (const chunk of content) {
-      const text = String(chunk?.text || chunk?.value || '').trim();
-      if (text) return text;
-    }
-  }
-
-  const messageText = String(payload?.choices?.[0]?.message?.content || '').trim();
-  if (messageText) return messageText;
-  return '';
-}
-
-async function callOpenAiText(prompt: string, fallback: string): Promise<string> {
-  if (!OPENAI_API_KEY) return fallback;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+async function callOpenAiText(task: string, prompt: string, fallback: string): Promise<string> {
   try {
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        input: prompt,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) return fallback;
-
-    const json = await response.json();
-    const text = extractResponseText(json);
-    if (!text) return fallback;
-    return text;
+    return (await apiClient.generateAiText(task, prompt)) || fallback;
   } catch {
     return fallback;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -67,7 +24,7 @@ export async function generateDiveLogSummary(log: DiveLog): Promise<string> {
     `수온: ${log.waterTemperature ?? '-'}℃`,
     `메모: ${log.memo || '-'}`,
   ].join('\n');
-  return callOpenAiText(prompt, fallback);
+  return callOpenAiText('dive_summary', prompt, fallback);
 }
 
 export async function generateDiveCaption(log: DiveLog): Promise<string> {
@@ -79,7 +36,7 @@ export async function generateDiveCaption(log: DiveLog): Promise<string> {
     `수온: ${log.waterTemperature ?? '-'}℃`,
     `메모: ${log.memo || '-'}`,
   ].join('\n');
-  return callOpenAiText(prompt, fallback);
+  return callOpenAiText('dive_caption', prompt, fallback);
 }
 
 export async function generateMarineRiskDescription(weather: MarineWeather): Promise<string> {
@@ -92,7 +49,7 @@ export async function generateMarineRiskDescription(weather: MarineWeather): Pro
     `시야: ${weather.visibilityM ?? '-'}m`,
     `위험도: ${weather.riskLevel}`,
   ].join('\n');
-  return callOpenAiText(prompt, fallback);
+  return callOpenAiText('marine_risk', prompt, fallback);
 }
 
 export async function recommendDivePoint(profile: { level?: string; tags?: string[] }): Promise<string[]> {
@@ -103,7 +60,7 @@ export async function recommendDivePoint(profile: { level?: string; tags?: strin
     `관심 태그: ${(profile.tags || []).join(', ') || '-'}`,
   ].join('\n');
 
-  const text = await callOpenAiText(prompt, fallback.join('\n'));
+  const text = await callOpenAiText('dive_point_recommendation', prompt, fallback.join('\n'));
   const items = text
     .split('\n')
     .map((line) => line.replace(/^[\-\d\.\s]+/, '').trim())
@@ -114,17 +71,14 @@ export async function recommendDivePoint(profile: { level?: string; tags?: strin
 
 export function getAiRuntimeConfig() {
   return {
-    hasApiKey: Boolean(OPENAI_API_KEY),
+    hasApiKey: true,
     model: OPENAI_MODEL,
   };
 }
 
 export async function checkAiHealth(): Promise<{ status: AiHealthStatus; message: string }> {
-  if (!OPENAI_API_KEY) {
-    return { status: 'missing_key', message: 'API Key 필요' };
-  }
   const fallbackToken = `__ai_health_fallback__${Date.now()}`;
-  const text = await callOpenAiText('Reply with "ok" only.', fallbackToken);
+  const text = await callOpenAiText('health', 'Reply with "ok" only.', fallbackToken);
   if (!text || text === fallbackToken) {
     return { status: 'unreachable', message: '응답 점검 필요' };
   }

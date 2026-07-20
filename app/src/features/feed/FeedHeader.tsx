@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Bell, Search } from 'lucide-react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { appRouteMap } from '../../config/sitemap';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 
@@ -44,7 +45,12 @@ export function FeedHeader() {
             <Text className="mt-1 text-xl font-bold text-surface-900 dark:text-surface-50">{t('feed.header.tabs.forYou')}</Text>
           </View>
           <View className="rounded-2xl bg-brand-50 px-3 py-2">
-            <Text className="text-xs font-semibold text-brand-700">DG</Text>
+            <ExpoImage
+              source={require('../../../assets/images/divergram-logo-blue.png')}
+              style={{ width: 26, height: 26 }}
+              contentFit="cover"
+              transition={120}
+            />
           </View>
         </View>
         <View className="mt-3 h-px bg-surface-100 dark:bg-surface-800" />

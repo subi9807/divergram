@@ -22,7 +22,7 @@ export async function connectShearwaterAccount(authCode?: string): Promise<{ con
     const isMockToken = String(result.accessToken || '').toLowerCase().startsWith('mock_');
     return { connected: result.connected, accountLabel: isMockToken ? `${accountLabel} (mock)` : accountLabel };
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return { connected: true, accountLabel: 'Shearwater Diver (mock)' };
     }
     throw error;
@@ -52,9 +52,9 @@ export async function fetchShearwaterDiveLogs(): Promise<ExternalDiveLog[]> {
       accessToken,
     });
     const mapped = mapProviderLogs('shearwater', rows);
-    return mapped.length ? mapped : buildMockExternalLogs('shearwater');
+    return mapped.length ? mapped : (__DEV__ ? buildMockExternalLogs('shearwater') : []);
   } catch (error: any) {
-    if (isEndpointUnavailable(error)) {
+    if (__DEV__ && isEndpointUnavailable(error)) {
       return buildMockExternalLogs('shearwater');
     }
     throw error;

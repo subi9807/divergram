@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, FileText, HelpCircle, Link2, Mail, MapPin, Shield } from 'lucide-react-native';
+import { ChevronRight, CreditCard, FileText, HandCoins, HelpCircle, Link2, Mail, MapPin, Shield } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { appRouteMap } from '../../src/config/sitemap';
@@ -86,6 +86,20 @@ export default function AppInfoScreen() {
       title: t('settingsPage.app.openSourceLicenses', { defaultValue: '오픈소스 라이선스' }),
       icon: <FileText size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.open_source_licenses.path as never),
+    },
+    {
+      key: 'license_management',
+      title: t('settingsPage.diving.licenseManagement', { defaultValue: '라이선스 관리' }),
+      subtitle: t('settingsPage.diving.licenseManagementSubtitle', { defaultValue: '내 라이선스를 조회, 등록, 수정, 삭제할 수 있습니다.' }),
+      icon: <CreditCard size={18} color="#4d5d6b" />,
+      onPress: () => router.push(appRouteMap.license_management.path as never),
+    },
+    {
+      key: 'donate',
+      title: t('settingsPage.app.donate', { defaultValue: '후원하기' }),
+      subtitle: t('settingsPage.app.donateSubtitle', { defaultValue: 'Divergram을 응원하고 개발을 지원합니다.' }),
+      icon: <HandCoins size={18} color="#4d5d6b" />,
+      onPress: () => router.push(appRouteMap.donate.path as never),
     },
     {
       key: 'customer_center',

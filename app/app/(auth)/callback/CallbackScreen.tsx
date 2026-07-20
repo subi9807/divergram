@@ -19,6 +19,7 @@ export function CallbackScreen() {
     const oauth = pickParam(params.oauth);
     const oauthLink = pickParam(params.oauth_link);
     const error = pickParam(params.error) || pickParam(params.reason) || pickParam(params.error_description);
+    const profileCompletion = pickParam(params.profile_completion) === '1';
     const success = oauth === 'success' || oauthLink === 'success' || pickParam(params.linked) === '1' || pickParam(params.success) === '1';
 
     const timer = setTimeout(() => {
@@ -33,6 +34,10 @@ export function CallbackScreen() {
       }
 
       if (success) {
+        if (profileCompletion) {
+          router.replace('/(tabs)/profile-edit');
+          return;
+        }
         router.replace('/(tabs)/feed');
         return;
       }

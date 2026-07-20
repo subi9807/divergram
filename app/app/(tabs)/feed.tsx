@@ -19,6 +19,20 @@ type FeedListItem =
   | { type: 'post'; id: string; post: any }
   | { type: 'ad'; id: string; ad: ActiveAdSlot };
 
+function pickAdForSlot(ads: ActiveAdSlot[], slotIndex: number, previousAdId?: string) {
+  if (ads.length === 0) return null;
+  if (ads.length === 1) return ads[0];
+
+  const baseIndex = slotIndex % ads.length;
+  let selected = ads[baseIndex];
+
+  if (selected?.id === previousAdId) {
+    selected = ads[(baseIndex + 1) % ads.length];
+  }
+
+  return selected ?? null;
+}
+
 export default function FeedScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -59,28 +73,24 @@ export default function FeedScreen() {
       ];
   const resolvedAds = [...usableAds, ...fallbackAds];
   const feedItems = React.useMemo<FeedListItem[]>(() => {
-    return posts.reduce<FeedListItem[]>((items, post, index) => {
-      const shouldInsertAd =
-        resolvedAds.length > 0 &&
-        ((shouldUseFallbackAd && index === 0) || (index + 1) % 3 === 0);
-      if (shouldInsertAd) {
-        const ad = resolvedAds[Math.floor(index / 3) % resolvedAds.length];
+    const items: FeedListItem[] = [];
+    let adSlotIndex = 0;
+    let previousAdId: string | undefined;
+
+    posts.forEach((post, index) => {
+      items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
+
+      if (resolvedAds.length > 0 && (index + 1) % 3 === 0) {
+        const ad = pickAdForSlot(resolvedAds, adSlotIndex, previousAdId);
         if (ad) {
-          const adId = `ad-${ad.id}-${Math.floor(index / 3)}-${index}`;
-          if (shouldUseFallbackAd && index === 0) {
-            items.push({ type: 'ad', id: adId, ad });
-          }
-          items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
-          if (!shouldUseFallbackAd || index !== 0) {
-            items.push({ type: 'ad', id: adId, ad });
-          }
-          return items;
+          items.push({ type: 'ad', id: `ad-${ad.id}-${adSlotIndex}-${index}`, ad });
+          previousAdId = ad.id;
+          adSlotIndex += 1;
         }
       }
-      items.push({ type: 'post', id: `post-${post.id}-${index}`, post });
-      return items;
-    }, []);
-  }, [posts, resolvedAds, shouldUseFallbackAd]);
+    });
+    return items;
+  }, [posts, resolvedAds]);
 
   const renderPost = ({ item }: { item: FeedListItem }) => {
     if (item.type === 'ad') {
@@ -105,12 +115,21 @@ export default function FeedScreen() {
   if (error) {
     return (
       <Screen>
-        <EmptyState
-          title={t('feed.error')}
-          subtitle={t('feed.errorSubtitle')}
-          actionText={t('common.retry')}
-          onAction={refetch}
-        />
+        <View style={styles.errorState}>
+          <EmptyState
+            title={t('feed.error')}
+            subtitle={t('feed.errorSubtitle')}
+            actionText={t('common.retry')}
+            onAction={refetch}
+          />
+          {__DEV__ || isAdMobEnabled() ? (
+            <FeedAdSlot
+              label="AdMob test"
+              subtitle="피드 API 오류가 있어도 광고 SDK 동작을 확인하기 위한 테스트 슬롯입니다."
+              ctaLabel="테스트"
+            />
+          ) : null}
+        </View>
       </Screen>
     );
   }
@@ -151,6 +170,10 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  errorState: {
+    flex: 1,
+    justifyContent: 'center',
   },
   fab: {
     position: 'absolute',

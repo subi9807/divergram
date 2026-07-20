@@ -14,8 +14,8 @@ function buildIntegrationRecord({ provider, userId, payload = {}, previous = {} 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
   const accountLabel = String(payload.accountLabel || previous.accountLabel || `${getProviderLabel(provider)} Diver`).trim();
-  const accessToken = String(payload.accessToken || previous.accessToken || `mock_${provider}_${Math.random().toString(36).slice(2, 12)}`);
-  const refreshToken = String(payload.refreshToken || previous.refreshToken || `mock_refresh_${provider}_${Math.random().toString(36).slice(2, 12)}`);
+  const accessToken = String(payload.accessToken || previous.accessToken || '');
+  const refreshToken = String(payload.refreshToken || previous.refreshToken || '');
   const providerUserId = String(payload.providerUserId || previous.providerUserId || `${provider}_${userId}`);
 
   return {
@@ -88,17 +88,30 @@ async function readIntegrationRecord(pool, userId, provider) {
     "SELECT data FROM app_records WHERE table_name=$1 AND record_id=$2 LIMIT 1",
     ["external_integrations", recordId]
   );
-  return q.rows[0]?.data || null;
+  const data = q.rows[0]?.data || null;
+  if (!data?.encryptedCredentials) return data;
+  const credentials = decryptSensitiveJson(data.encryptedCredentials, {});
+  const { encryptedCredentials: _encryptedCredentials, ...safe } = data;
+  return { ...safe, ...credentials };
 }
 
 async function writeIntegrationRecord(pool, userId, provider, data) {
   const recordId = `${userId}:${provider}`;
+  const stored = { ...data };
+  stored.encryptedCredentials = encryptSensitiveJson({
+    accessToken: stored.accessToken || '',
+    refreshToken: stored.refreshToken || '',
+    authCode: stored.authCode || '',
+  });
+  delete stored.accessToken;
+  delete stored.refreshToken;
+  delete stored.authCode;
   await pool.query(
     `INSERT INTO app_records(table_name, record_id, data, updated_at)
      VALUES ($1,$2,$3::jsonb,now())
      ON CONFLICT (table_name, record_id)
      DO UPDATE SET data=EXCLUDED.data, updated_at=now()`,
-    ["external_integrations", recordId, JSON.stringify(data)]
+    ["external_integrations", recordId, JSON.stringify(stored)]
   );
 }
 
@@ -113,8 +126,9 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
     try {
       const previous = await readIntegrationRecord(pool, userId, provider);
       const data = buildIntegrationRecord({ provider, userId, payload: req.body || {}, previous: previous || {} });
+      if (!data.accessToken) return res.status(501).json({ error: 'integration_provider_not_configured' });
       await writeIntegrationRecord(pool, userId, provider, data);
-      return res.json({ ok: true, data });
+      return res.json({ ok: true, data: redactIntegrationTokens(data) });
     } catch {
       return res.status(500).json({ error: "integration_connect_failed" });
     }
@@ -130,8 +144,9 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
     try {
       const previous = (await readIntegrationRecord(pool, userId, provider)) || {};
       const data = buildIntegrationRecord({ provider, userId, payload: req.body || {}, previous });
+      if (!data.accessToken) return res.status(501).json({ error: 'integration_provider_not_configured' });
       await writeIntegrationRecord(pool, userId, provider, data);
-      return res.json({ ok: true, data });
+      return res.json({ ok: true, data: redactIntegrationTokens(data) });
     } catch {
       return res.status(500).json({ error: "integration_refresh_failed" });
     }
@@ -156,7 +171,7 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
         updatedAt: new Date().toISOString(),
       };
       await writeIntegrationRecord(pool, userId, provider, data);
-      return res.json({ ok: true, data });
+      return res.json({ ok: true, data: redactIntegrationTokens(data) });
     } catch {
       return res.status(500).json({ error: "integration_disconnect_failed" });
     }
@@ -176,6 +191,13 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
         return res.json({ ok: true, connected: false, logs: [] });
       }
 
+      if (!integration.accessToken || String(integration.accessToken).startsWith('mock_')) {
+        return res.status(501).json({ error: 'integration_provider_not_configured' });
+      }
+
+      if (process.env.ENABLE_MOCK_INTEGRATIONS !== 'true' || process.env.NODE_ENV === 'production') {
+        return res.status(501).json({ error: 'integration_sync_not_implemented' });
+      }
       const logs = buildMockLogs(provider, String(userId), limit);
       const nextRecord = {
         ...integration,
@@ -197,3 +219,4 @@ export function registerIntegrationRoutes(app, { pool, getAuthUserId, authRateLi
     }
   });
 }
+import { decryptSensitiveJson, encryptSensitiveJson, redactIntegrationTokens } from '../lib/dataEncryption.js';

@@ -1,7 +1,7 @@
 import { apiClient } from '../lib/api';
 import { storage } from '../lib/storage';
 
-export type UploadResult = { url: string; thumbnailUrl?: string; source: 'cloudinary' | 'mock' };
+export type UploadResult = { url: string; thumbnailUrl?: string; source: 'cloudinary' | 'server' | 'mock' };
 
 const CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || '';
 const UPLOAD_PRESET = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET || '';
@@ -14,11 +14,6 @@ export function getCloudinaryConfig() {
     hasUploadPreset: Boolean(UPLOAD_PRESET.trim()),
     canUnsignedUpload: Boolean(CLOUD_NAME.trim() && UPLOAD_PRESET.trim()),
   };
-}
-
-function makeMockUploadUrl(type: 'image' | 'video') {
-  if (type === 'image') return 'https://res.cloudinary.com/demo/image/upload/divergram-placeholder.jpg';
-  return 'https://res.cloudinary.com/demo/video/upload/divergram-placeholder.mp4';
 }
 
 function inferMimeType(uri: string, type: 'image' | 'video') {
@@ -173,33 +168,41 @@ async function uploadToCloudinary(uri: string, type: 'image' | 'video'): Promise
 
 export async function uploadImage(uri: string): Promise<UploadResult> {
   const normalized = String(uri || '').trim();
-  if (!normalized) {
-    return { url: makeMockUploadUrl('image'), source: 'mock' };
-  }
+  if (!normalized) throw new Error('image_upload_uri_required');
   try {
     return await uploadToCloudinary(normalized, 'image');
-  } catch {
-    return { url: makeMockUploadUrl('image'), source: 'mock' };
+  } catch (cloudinaryError) {
+    try {
+      const uploaded = await apiClient.uploadBinaryMedia({
+        uri: normalized,
+        fileName: inferFileName(normalized, 'image'),
+        mimeType: inferMimeType(normalized, 'image'),
+      });
+      if (!uploaded.url) throw new Error('server_image_upload_url_missing');
+      return { url: uploaded.url, source: 'server' };
+    } catch {
+      throw cloudinaryError;
+    }
   }
 }
 
 export async function uploadVideo(uri: string): Promise<UploadResult> {
   const normalized = String(uri || '').trim();
-  if (!normalized) {
-    return {
-      url: makeMockUploadUrl('video'),
-      thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/divergram-placeholder-thumb.jpg',
-      source: 'mock',
-    };
-  }
+  if (!normalized) throw new Error('video_upload_uri_required');
   try {
     return await uploadToCloudinary(normalized, 'video');
-  } catch {
-    return {
-      url: makeMockUploadUrl('video'),
-      thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/divergram-placeholder-thumb.jpg',
-      source: 'mock',
-    };
+  } catch (cloudinaryError) {
+    try {
+      const uploaded = await apiClient.uploadBinaryMedia({
+        uri: normalized,
+        fileName: inferFileName(normalized, 'video'),
+        mimeType: inferMimeType(normalized, 'video'),
+      });
+      if (!uploaded.url) throw new Error('server_video_upload_url_missing');
+      return { url: uploaded.url, thumbnailUrl: generateThumbnail(uploaded.url), source: 'server' };
+    } catch {
+      throw cloudinaryError;
+    }
   }
 }
 

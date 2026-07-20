@@ -16,6 +16,7 @@ import {
 import { generateDiveCaption, generateDiveLogSummary } from '../../services/aiService';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { storage } from '../../lib/storage';
+import { apiClient } from '../../lib/api';
 
 const MAX_MEDIA_COUNT = 10;
 const MAX_PARALLEL_UPLOADS = 2;
@@ -254,33 +255,29 @@ export default function DiveLogEditScreen() {
       return;
     }
     const key = draftStorageKey(safeLogId);
-    const raw = storage.getString(key);
-    if (!raw) {
-      setDraftRecoveryReady(true);
-      return;
-    }
+    let cancelled = false;
+    const restoreDraft = async () => {
+      const raw = storage.getString(key);
+      let localSnapshot: DiveLogDraftSnapshot | null = null;
+      try { localSnapshot = raw ? JSON.parse(raw) as DiveLogDraftSnapshot : null; } catch { storage.delete(key); }
+      let remoteSnapshot: DiveLogDraftSnapshot | null = null;
+      try { remoteSnapshot = (await apiClient.getDiveLogDraft(safeLogId)).data as DiveLogDraftSnapshot | null; } catch { /* local cache remains available offline */ }
+      if (cancelled) return;
+      const localTime = Date.parse(String(localSnapshot?.updatedAt || '')) || 0;
+      const remoteTime = Date.parse(String(remoteSnapshot?.updatedAt || '')) || 0;
+      const snapshot = remoteTime >= localTime ? remoteSnapshot : localSnapshot;
+      if (!snapshot || typeof snapshot !== 'object') {
+        setDraftRecoveryReady(true);
+        return;
+      }
 
-    let snapshot: DiveLogDraftSnapshot | null = null;
-    try {
-      snapshot = JSON.parse(raw) as DiveLogDraftSnapshot;
-    } catch {
-      storage.delete(key);
-      setDraftRecoveryReady(true);
-      return;
-    }
-
-    if (!snapshot || typeof snapshot !== 'object') {
-      storage.delete(key);
-      setDraftRecoveryReady(true);
-      return;
-    }
-
-    Alert.alert('임시 저장된 편집 내용', '이전에 저장하지 못한 편집 내용을 복원할까요?', [
+      Alert.alert('임시 저장된 편집 내용', '이전에 저장하지 못한 편집 내용을 복원할까요?', [
       {
         text: '버리기',
         style: 'destructive',
         onPress: () => {
           storage.delete(key);
+          void apiClient.deleteDiveLogDraft(safeLogId).catch(() => undefined);
           setDraftRecoveryReady(true);
         },
       },
@@ -304,7 +301,10 @@ export default function DiveLogEditScreen() {
           setDraftRecoveryReady(true);
         },
       },
-    ]);
+      ]);
+    };
+    void restoreDraft();
+    return () => { cancelled = true; };
   }, [safeLogId]);
 
   const baseline = useMemo(
@@ -370,6 +370,7 @@ export default function DiveLogEditScreen() {
     const key = draftStorageKey(safeLogId);
     if (!hasUnsavedChanges) {
       storage.delete(key);
+      void apiClient.deleteDiveLogDraft(safeLogId).catch(() => undefined);
       return;
     }
     const snapshot: DiveLogDraftSnapshot = {
@@ -390,6 +391,10 @@ export default function DiveLogEditScreen() {
       updatedAt: new Date().toISOString(),
     };
     storage.set(key, JSON.stringify(snapshot));
+    const timer = setTimeout(() => {
+      void apiClient.saveDiveLogDraft(safeLogId, snapshot as unknown as Record<string, unknown>).catch(() => undefined);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [
     draftRecoveryReady,
     safeLogId,
@@ -897,6 +902,7 @@ export default function DiveLogEditScreen() {
         aiCaption: shouldGenerateCaption ? nextCaption : log?.aiCaption,
       });
       storage.delete(draftStorageKey(safeLogId));
+      await apiClient.deleteDiveLogDraft(safeLogId);
     } catch (error: any) {
       Alert.alert('입력 확인', String(error?.message || error));
       return;

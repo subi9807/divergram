@@ -3,15 +3,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
+import {
+  GoogleSignin,
+  isSuccessResponse as isGoogleSignInSuccess,
+} from '@react-native-google-signin/google-signin';
 import type * as AppleAuthenticationTypes from 'expo-apple-authentication';
 import { Platform } from 'react-native';
-import { apiClient } from '../lib/api';
+import { apiClient, type AccountDeletionStatus } from '../lib/api';
 import { getLayoutPreviewPayload, isLayoutPreviewEnabled } from '../lib/layoutPreview';
 import { getSocialAuthConfig, toGoogleIosUrlScheme } from '../config/socialAuth';
 import { useToast } from '../components/Toast';
 import i18n from '../lib/i18n';
 import { storage } from '../lib/storage';
+import {
+  AUTH_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  deleteSecureAuthValue,
+  getSecureAuthValue,
+  hydrateSecureAuthStorage,
+  setSecureAuthValue,
+} from '../lib/secureAuthStorage';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
+import { startUserPreferencesSync, stopUserPreferencesSync } from '../services/userPreferencesSyncService';
+import { notificationManager } from '../lib/notifications';
 
 function normalizeEnvValue(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -21,8 +35,6 @@ function normalizeEnvValue(value: string | null | undefined): string {
   return normalized;
 }
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 const AUTH_USER_KEY = 'auth_user';
 const AUTH_SESSION_EXPIRES_AT_KEY = 'auth_session_expires_at';
 const AUTH_STORAGE_KEYS = [AUTH_TOKEN_KEY, REFRESH_TOKEN_KEY, AUTH_USER_KEY, AUTH_SESSION_EXPIRES_AT_KEY] as const;
@@ -59,7 +71,8 @@ async function hydrateAuthBackup() {
   try {
     const entries = await AsyncStorage.multiGet([...AUTH_STORAGE_KEYS]);
     const lookup = Object.fromEntries(entries.map(([key, value]) => [key, value || '']));
-    const token = String(lookup[AUTH_TOKEN_KEY] || '').trim();
+    await hydrateSecureAuthStorage();
+    const token = String(getSecureAuthValue(AUTH_TOKEN_KEY) || '').trim();
     if (!token) return null;
     let cachedUser: User | null = null;
     const rawUser = String(lookup[AUTH_USER_KEY] || '').trim();
@@ -72,7 +85,7 @@ async function hydrateAuthBackup() {
     }
     return {
       token,
-      refreshToken: String(lookup[REFRESH_TOKEN_KEY] || '').trim() || null,
+      refreshToken: String(getSecureAuthValue(REFRESH_TOKEN_KEY) || '').trim() || null,
       user: cachedUser,
       sessionExpiresAt: parseDateMs(lookup[AUTH_SESSION_EXPIRES_AT_KEY]),
     };
@@ -83,15 +96,13 @@ async function hydrateAuthBackup() {
 
 function persistAuthBackup(payload: { token: string; refreshToken?: string | null; user?: User | null; sessionExpiresAt?: string | null }) {
   void AsyncStorage.multiSet([
-    [AUTH_TOKEN_KEY, payload.token],
-    [REFRESH_TOKEN_KEY, payload.refreshToken || ''],
     [AUTH_USER_KEY, payload.user ? JSON.stringify(payload.user) : ''],
     [AUTH_SESSION_EXPIRES_AT_KEY, payload.sessionExpiresAt || ''],
   ]).catch(() => undefined);
 }
 
 function clearAuthBackup() {
-  void AsyncStorage.multiRemove([...AUTH_STORAGE_KEYS]).catch(() => undefined);
+  void AsyncStorage.multiRemove([AUTH_USER_KEY, AUTH_SESSION_EXPIRES_AT_KEY]).catch(() => undefined);
 }
 
 function resolveSessionExpiryMs(sessionDays?: number) {
@@ -116,6 +127,10 @@ interface User {
   avatar?: string;
 }
 
+type AuthOutcome = {
+  profileCompletionRequired?: boolean;
+};
+
 function normalizeUser(raw: any): User | null {
   const id = String(raw?.id || '').trim();
   const email = String(raw?.email || '').trim().toLowerCase();
@@ -125,25 +140,31 @@ function normalizeUser(raw: any): User | null {
   return { id, email, name, avatar };
 }
 
+function isSyntheticOAuthEmail(email: string | null | undefined) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return Boolean(normalized) && normalized.endsWith('@oauth.divergram.local');
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  syncCurrentUserProfile: (profile: { full_name?: string; username?: string; avatar_url?: string }) => void;
-  loginWithGoogle: () => Promise<void>;
-  loginWithApple: () => Promise<void>;
-  loginWithFacebook: () => Promise<void>;
-  loginWithKakao: () => Promise<void>;
-  loginWithNaver: () => Promise<void>;
-  loginWithInstagram: () => Promise<void>;
+  accountDeletion: AccountDeletionStatus | null;
+  accountDeletionLoading: boolean;
+  refreshAccountDeletionStatus: () => Promise<AccountDeletionStatus | null>;
+  cancelAccountDeletion: () => Promise<boolean>;
+  syncCurrentUserProfile: (profile: { full_name?: string; username?: string; avatar_url?: string; email?: string }) => void;
+  loginWithGoogle: () => Promise<AuthOutcome>;
+  loginWithApple: () => Promise<AuthOutcome>;
+  loginWithInstagram: () => Promise<AuthOutcome>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<User | null>;
-  signupWithSocialAccount: (signup: SocialSignupInput) => Promise<User | null>;
+  signupWithSocialAccount: (signup: SocialSignupInput) => Promise<AuthOutcome>;
   linkSocialAccount: (link: SocialLinkInput, options?: { requireCurrentSession?: boolean }) => Promise<void>;
   logout: () => void;
   getAccessToken: () => string | null;
 }
 
-type SocialProvider = 'google' | 'apple' | 'facebook' | 'kakao' | 'naver' | 'instagram';
+type SocialProvider = 'google' | 'apple' | 'instagram';
 
 export type SocialLinkInput = {
   provider: SocialProvider;
@@ -209,6 +230,41 @@ function buildSocialSignupInput(provider: SocialProvider, accessToken: string, u
   };
 }
 
+function decodeBase64JsonSegment(segment: string): Record<string, any> | null {
+  const raw = String(segment || '').trim();
+  if (!raw) return null;
+  try {
+    const normalized = raw.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    const decoded = typeof globalThis.atob === 'function' ? globalThis.atob(padded) : '';
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function buildGoogleUserInfoHint(token: string, fallback?: Record<string, any>) {
+  const claims = decodeBase64JsonSegment(String(token || '').split('.')[1] || '');
+  const source = claims || fallback || {};
+  const providerUserId = String(source.sub || source.user_id || source.providerUserId || source.id || '').trim();
+  const email = String(source.email || '').trim().toLowerCase();
+  const name = String(source.name || source.given_name || source.nickname || source.full_name || '').trim();
+  const avatar = String(source.picture || source.avatar || source.photoURL || '').trim();
+  if (!providerUserId && !email && !name && !avatar) return undefined;
+  return {
+    id: providerUserId || undefined,
+    sub: providerUserId || undefined,
+    providerUserId: providerUserId || undefined,
+    email: email || undefined,
+    name: name || undefined,
+    avatar: avatar || undefined,
+  };
+}
+
+function buildGoogleUserInfoFromTokens(accessToken: string, idToken?: string, fallback?: Record<string, any>) {
+  return buildGoogleUserInfoHint(idToken || accessToken, fallback);
+}
+
 function buildSocialSignupError(provider: SocialProvider, accessToken: string, userInfo?: any, error?: any) {
   const signupError = new Error('sso_signup_required');
   (signupError as any).code = 'sso_signup_required';
@@ -221,6 +277,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accountDeletion, setAccountDeletion] = useState<AccountDeletionStatus | null>(null);
+  const [accountDeletionLoading, setAccountDeletionLoading] = useState(true);
   const pushInitUserIdRef = useRef<string | null>(null);
   const { showToast } = useToast();
   const socialAuth = getSocialAuthConfig();
@@ -244,10 +302,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectUri: googleRedirectUri,
       scopes: ['openid', 'profile', 'email'],
       selectAccount: true,
+      // loginWithGoogle exchanges the code synchronously so the caller can finish
+      // the API login before navigating. Prevent the hook from consuming it first.
+      shouldAutoExchangeCode: false,
       extraParams: { access_type: 'offline', prompt: 'select_account' },
     } as any,
     { native: Platform.OS === 'ios' && googleIosUrlScheme ? `${googleIosUrlScheme}:/oauthredirect` : undefined }
   );
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !socialAuth.googleClientIdWeb) return;
+    GoogleSignin.configure({
+      webClientId: socialAuth.googleClientIdWeb,
+      scopes: ['profile', 'email'],
+      offlineAccess: false,
+    });
+  }, [socialAuth.googleClientIdWeb]);
 
   // OAuth configuration
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -260,12 +330,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
   const clearAuthSession = useCallback(() => {
-    storage.delete(AUTH_TOKEN_KEY);
-    storage.delete(REFRESH_TOKEN_KEY);
+    deleteSecureAuthValue(AUTH_TOKEN_KEY);
+    deleteSecureAuthValue(REFRESH_TOKEN_KEY);
     storage.delete(AUTH_USER_KEY);
     storage.delete(AUTH_SESSION_EXPIRES_AT_KEY);
     clearAuthBackup();
     useSettingsFeatureStore.getState().syncSocialLinks([]);
+    setAccountDeletion(null);
+    setAccountDeletionLoading(false);
     setUser(null);
   }, []);
 
@@ -285,10 +357,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ) => {
       const token = String(payload?.token || payload?.accessToken || payload?.access_token || '').trim();
       if (!token) throw new Error('missing_auth_token');
-      storage.set(AUTH_TOKEN_KEY, token);
+      setSecureAuthValue(AUTH_TOKEN_KEY, token);
       const nextRefreshToken = String(payload?.refreshToken || payload?.refresh_token || '').trim();
-      if (nextRefreshToken) storage.set(REFRESH_TOKEN_KEY, nextRefreshToken);
-      else if (!storage.getString(REFRESH_TOKEN_KEY)) storage.delete(REFRESH_TOKEN_KEY);
+      if (nextRefreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, nextRefreshToken);
+      else if (!getSecureAuthValue(REFRESH_TOKEN_KEY)) deleteSecureAuthValue(REFRESH_TOKEN_KEY);
 
       const userPayload = payload?.user || {};
       const profilePayload = payload?.profile || {};
@@ -298,6 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: profilePayload.full_name || profilePayload.username || fallback?.name,
         avatar: profilePayload.avatar_url || fallback?.avatar,
       });
+      setAccountDeletionLoading(Boolean(nextUser));
       setUser(nextUser);
       if (nextUser) {
         storage.set(AUTH_USER_KEY, JSON.stringify(nextUser));
@@ -309,17 +382,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: nextUser,
         sessionExpiresAt: new Date(sessionExpiryMs).toISOString(),
       });
+      if (nextUser) {
+        void notificationManager.initialize();
+      }
       return nextUser;
     },
     [extendAuthSession]
   );
 
-  const syncCurrentUserProfile = useCallback((profile: { full_name?: string; username?: string; avatar_url?: string }) => {
+  const syncCurrentUserProfile = useCallback((profile: { full_name?: string; username?: string; avatar_url?: string; email?: string }) => {
     setUser((current) => {
       if (!current) return current;
       const nextUser = normalizeUser({
         id: current.id,
-        email: current.email,
+        email: String(profile.email || current.email || '').trim(),
         name: String(profile.full_name || profile.username || current.name || '').trim(),
         avatar: String(profile.avatar_url || current.avatar || '').trim(),
       });
@@ -346,6 +422,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       return [];
     }
+  }, []);
+
+  const refreshAccountDeletionStatus = useCallback(async () => {
+    setAccountDeletionLoading(true);
+    try {
+      const status = await apiClient.getAccountDeletionStatus();
+      setAccountDeletion(status.pending ? status : null);
+      return status.pending ? status : null;
+    } catch (error) {
+      console.warn('Account deletion status check failed:', error);
+      setAccountDeletion(null);
+      return null;
+    } finally {
+      setAccountDeletionLoading(false);
+    }
+  }, []);
+
+  const cancelAccountDeletion = useCallback(async () => {
+    setAccountDeletionLoading(true);
+    try {
+      const cancelled = await apiClient.cancelAccountDeletion();
+      if (cancelled) setAccountDeletion(null);
+      return cancelled;
+    } finally {
+      setAccountDeletionLoading(false);
+    }
+  }, []);
+
+  const buildAuthOutcome = useCallback((payload: any): AuthOutcome => {
+    const profileCompletionRequired = Boolean(payload?.profileCompletionRequired) || isSyntheticOAuthEmail(payload?.user?.email || payload?.profile?.email);
+    return { profileCompletionRequired };
   }, []);
 
   const linkCurrentSocialAccountFromError = useCallback(async (provider: SocialProvider, error: any, userInfo?: any) => {
@@ -402,14 +509,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persistAuthPayload, syncSocialLinksFromServer]);
 
   const signInOrSignUpWithGoogle = useCallback(
-    async (googleAccessToken: string) => {
+    async (googleAccessToken: string, userInfoHint?: Record<string, any>, googleIdToken?: string) => {
       try {
-        const response = await apiClient.authWithOAuthMobile('google', googleAccessToken, 30);
+        const response = await apiClient.authWithOAuthMobile('google', googleAccessToken, 30, userInfoHint, googleIdToken);
         persistAuthPayload(response.data, undefined, { sessionDays: 30 });
         void syncSocialLinksFromServer();
+        return buildAuthOutcome(response.data);
       } catch (error: any) {
         if (isSocialEmailExistsError(error)) {
-          if (await linkCurrentSocialAccountFromError('google', error)) return;
+          if (await linkCurrentSocialAccountFromError('google', error)) return { profileCompletionRequired: false };
           throw buildSocialLinkError('google', error);
         }
         if (isSocialSignupRequiredError(error)) {
@@ -418,7 +526,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [linkCurrentSocialAccountFromError, persistAuthPayload, syncSocialLinksFromServer]
+    [buildAuthOutcome, linkCurrentSocialAccountFromError, persistAuthPayload, syncSocialLinksFromServer]
   );
 
   const checkAuthState = useCallback(async () => {
@@ -429,8 +537,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const previewToken = String(previewPayload.auth.token || 'layout-preview-token').trim();
         const previewRefreshToken = String(previewPayload.auth.refreshToken || '').trim();
         const sessionExpiresAt = previewPayload.auth.sessionExpiresAt || new Date(resolveSessionExpiryMs(DEFAULT_SESSION_DAYS)).toISOString();
-        storage.set(AUTH_TOKEN_KEY, previewToken);
-        if (previewRefreshToken) storage.set(REFRESH_TOKEN_KEY, previewRefreshToken);
+        setSecureAuthValue(AUTH_TOKEN_KEY, previewToken);
+        if (previewRefreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, previewRefreshToken);
         storage.set(AUTH_USER_KEY, JSON.stringify(previewUser));
         storage.set(AUTH_SESSION_EXPIRES_AT_KEY, sessionExpiresAt);
         setUser(previewUser);
@@ -439,7 +547,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    let token = storage.getString(AUTH_TOKEN_KEY);
+    await hydrateSecureAuthStorage();
+    let token = getSecureAuthValue(AUTH_TOKEN_KEY);
     let rawUser = storage.getString(AUTH_USER_KEY);
     let sessionExpiresAt = parseDateMs(storage.getString(AUTH_SESSION_EXPIRES_AT_KEY));
     if (!token || !rawUser || !sessionExpiresAt) {
@@ -452,8 +561,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!sessionExpiresAt && backup.sessionExpiresAt) {
           sessionExpiresAt = backup.sessionExpiresAt;
         }
-        storage.set(AUTH_TOKEN_KEY, token);
-        if (backup.refreshToken) storage.set(REFRESH_TOKEN_KEY, backup.refreshToken);
+        setSecureAuthValue(AUTH_TOKEN_KEY, token);
+        if (backup.refreshToken) setSecureAuthValue(REFRESH_TOKEN_KEY, backup.refreshToken);
         if (backup.user) storage.set(AUTH_USER_KEY, JSON.stringify(backup.user));
         if (backup.sessionExpiresAt) storage.set(AUTH_SESSION_EXPIRES_AT_KEY, new Date(backup.sessionExpiresAt).toISOString());
       }
@@ -504,7 +613,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 401 || status === 403) {
-        const refreshToken = storage.getString(REFRESH_TOKEN_KEY);
+        const refreshToken = getSecureAuthValue(REFRESH_TOKEN_KEY);
         if (refreshToken) {
           try {
             const refreshed = await withTimeout(
@@ -543,21 +652,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const userId = String(user?.id || '').trim();
     if (!userId) {
+      setAccountDeletion(null);
+      setAccountDeletionLoading(false);
       pushInitUserIdRef.current = null;
+      stopUserPreferencesSync();
       return;
     }
+    void refreshAccountDeletionStatus();
     if (pushInitUserIdRef.current === userId) return;
     pushInitUserIdRef.current = userId;
+    void startUserPreferencesSync(userId);
     void syncSocialLinksFromServer();
-  }, [syncSocialLinksFromServer, user?.id]);
+  }, [refreshAccountDeletionStatus, syncSocialLinksFromServer, user?.id]);
 
-  const loginWithGoogle = async () => {
+  const loginWithGoogle = async (): Promise<AuthOutcome> => {
     try {
       if (isExpoGo) {
         throw new Error('google_requires_dev_build');
       }
       if (!googleClientId) {
         throw new Error('missing_google_client_id');
+      }
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        const nativeResult = await GoogleSignin.signIn();
+        if (!isGoogleSignInSuccess(nativeResult)) {
+          throw new Error('google_login_cancelled');
+        }
+        const tokens = await GoogleSignin.getTokens();
+        const accessToken = String(tokens.accessToken || '').trim();
+        const idToken = String(tokens.idToken || nativeResult.data.idToken || '').trim();
+        if (!accessToken && !idToken) {
+          throw new Error('google_access_token_missing');
+        }
+        const nativeUser = nativeResult.data.user;
+        return await signInOrSignUpWithGoogle(
+          accessToken || idToken,
+          {
+            id: nativeUser.id,
+            sub: nativeUser.id,
+            email: nativeUser.email,
+            name: nativeUser.name || '',
+            avatar: nativeUser.photo || '',
+          },
+          idToken
+        );
       }
       if (!googleAuthRequest) {
         throw new Error('google_request_not_ready');
@@ -575,6 +714,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         result.authentication?.accessToken ||
           result.authentication?.idToken ||
           result.params.access_token ||
+          result.params.id_token ||
+          ''
+      ).trim();
+      let googleIdToken = String(
+        result.authentication?.idToken ||
           result.params.id_token ||
           ''
       ).trim();
@@ -598,20 +742,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         const exchangePayload = exchange as any;
         access_token = String(exchangePayload.accessToken || exchangePayload.authentication?.accessToken || exchangePayload.idToken || '').trim();
+        googleIdToken = String(exchangePayload.idToken || exchangePayload.authentication?.idToken || '').trim();
       }
 
       if (!access_token) {
         throw new Error('google_access_token_missing');
       }
 
-      await signInOrSignUpWithGoogle(access_token);
+      const googleUserInfoHint = buildGoogleUserInfoHint(access_token, {
+        id: result.params.sub || result.params.user_id || result.params.id || (result.authentication as any)?.userId || '',
+        sub: result.params.sub || result.params.user_id || result.params.id || (result.authentication as any)?.userId || '',
+        email: result.params.email || (result.authentication as any)?.email || '',
+        name: result.params.name || (result.authentication as any)?.fullName || (result.authentication as any)?.displayName || '',
+        avatar: result.params.picture || (result.authentication as any)?.picture || '',
+      });
+
+      const fallbackGoogleUserInfo = buildGoogleUserInfoFromTokens(access_token, googleIdToken, googleUserInfoHint);
+      return await signInOrSignUpWithGoogle(access_token, fallbackGoogleUserInfo, googleIdToken);
     } catch (error) {
       console.error('Google login error:', error);
       throw error;
     }
   };
 
-  const loginWithApple = async () => {
+  const loginWithApple = async (): Promise<AuthOutcome> => {
     try {
       const AppleAuthentication = await import('expo-apple-authentication');
       if (Platform.OS !== 'ios') {
@@ -631,7 +785,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!identityToken) {
         throw new Error('apple_identity_token_missing');
       }
-      await handleOAuthSuccess('apple', identityToken, {
+      return await handleOAuthSuccess('apple', identityToken, {
         id: credential.user,
         email: credential.email || '',
         name: formatAppleFullName(credential.fullName),
@@ -644,54 +798,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithFacebook = async () => {
-    try {
-      // Facebook OAuth implementation would go here
-      // For now, using mock data
-      await handleOAuthSuccess('facebook', 'mock_token');
-    } catch (error) {
-      console.error('Facebook login error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithKakao = async () => {
-    try {
-      const { kakaoAuth } = await import('../lib/auth/kakao');
-      const { accessToken, userInfo } = await kakaoAuth.login();
-      await handleOAuthSuccess('kakao', accessToken, {
-        id: userInfo.id.toString(),
-        email: userInfo.kakao_account.email,
-        name: userInfo.properties.nickname,
-        avatar: userInfo.properties.profile_image,
-      });
-    } catch (error) {
-      console.error('Kakao login error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithNaver = async () => {
-    try {
-      const { naverAuth } = await import('../lib/auth/naver');
-      const { accessToken, userInfo } = await naverAuth.login();
-      await handleOAuthSuccess('naver', accessToken, {
-        id: userInfo.response.id,
-        email: userInfo.response.email,
-        name: userInfo.response.name,
-        avatar: userInfo.response.profile_image,
-      });
-    } catch (error) {
-      console.error('Naver login error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithInstagram = async () => {
+  const loginWithInstagram = async (): Promise<AuthOutcome> => {
     try {
       const { instagramAuth } = await import('../lib/auth/instagram');
       const { accessToken, userInfo } = await instagramAuth.login();
-      await handleOAuthSuccess('instagram', accessToken, {
+      return await handleOAuthSuccess('instagram', accessToken, {
         id: userInfo.id,
         email: userInfo.email,
         name: userInfo.username,
@@ -768,7 +879,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     throw lastError || new Error('signup_failed');
   };
 
-  const signupWithSocialAccount = async (signup: SocialSignupInput): Promise<User | null> => {
+  const signupWithSocialAccount = async (signup: SocialSignupInput): Promise<AuthOutcome> => {
     try {
       const userInfo = {
         ...(signup.userInfo || {}),
@@ -790,14 +901,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: i18n.t('auth.socialSignupCompleteTitle'),
         message: i18n.t('auth.socialSignupCompleteMessage')
       });
-      return createdUser;
+      void createdUser;
+      return buildAuthOutcome(response.data);
     } catch (error) {
       console.error('Social signup error:', error);
       throw error;
     }
   };
 
-  const handleOAuthSuccess = async (provider: SocialProvider, accessToken: string, userInfo?: any) => {
+  const handleOAuthSuccess = async (provider: SocialProvider, accessToken: string, userInfo?: any): Promise<AuthOutcome> => {
     try {
       const response = await apiClient.authWithOAuth(provider, accessToken, userInfo, DEFAULT_SESSION_DAYS);
       persistAuthPayload(response.data, undefined, { sessionDays: DEFAULT_SESSION_DAYS });
@@ -808,9 +920,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: i18n.t('auth.welcomeTitle'),
         message: i18n.t('auth.welcomeMessage')
       });
+      return buildAuthOutcome(response.data);
     } catch (error: any) {
       if (isSocialEmailExistsError(error)) {
-        if (await linkCurrentSocialAccountFromError(provider, error, userInfo)) return;
+        if (await linkCurrentSocialAccountFromError(provider, error, userInfo)) return { profileCompletionRequired: false };
         throw buildSocialLinkError(provider, error, userInfo);
       }
       if (isSocialSignupRequiredError(error)) {
@@ -835,18 +948,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuthSession, showToast]);
 
   const getAccessToken = () => {
-    return storage.getString(AUTH_TOKEN_KEY) || null;
+    return getSecureAuthValue(AUTH_TOKEN_KEY);
   };
 
   const value = {
     user,
     loading,
+    accountDeletion,
+    accountDeletionLoading,
+    refreshAccountDeletionStatus,
+    cancelAccountDeletion,
     syncCurrentUserProfile,
     loginWithGoogle,
     loginWithApple,
-    loginWithFacebook,
-    loginWithKakao,
-    loginWithNaver,
     loginWithInstagram,
     loginWithEmail,
     signupWithEmail,

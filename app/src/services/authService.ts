@@ -1,21 +1,18 @@
 import { apiClient } from '../lib/api';
 import { useSettingsFeatureStore, type SocialProvider } from '../stores/settingsFeatureStore';
 
-export type LoginProvider = 'google' | 'apple' | 'kakao' | 'naver' | 'instagram' | 'facebook' | 'email';
+export type LoginProvider = 'google' | 'apple' | 'instagram' | 'email';
 
 const providerMap: Record<LoginProvider, SocialProvider | null> = {
   google: 'google',
   apple: 'apple',
-  kakao: 'kakao',
-  naver: 'naver',
   instagram: 'instagram',
-  facebook: null,
   email: null,
 };
 
 function normalizeLinkedProvider(value: unknown): LoginProvider | null {
   const provider = String(value || '').trim().toLowerCase();
-  if (provider === 'google' || provider === 'apple' || provider === 'kakao' || provider === 'naver' || provider === 'instagram') return provider;
+  if (provider === 'google' || provider === 'apple' || provider === 'instagram') return provider;
   return null;
 }
 
@@ -44,7 +41,7 @@ export async function listConnectedProviders(): Promise<LoginProvider[]> {
     return (Object.entries(snapshot) as [SocialProvider, { linked: boolean; linkedAt: string }][])
       .filter(([, item]) => item.linked)
       .map(([provider]) => provider)
-      .filter((provider) => provider === 'google' || provider === 'apple' || provider === 'kakao' || provider === 'naver' || provider === 'instagram') as LoginProvider[];
+      .filter((provider) => provider === 'google' || provider === 'apple' || provider === 'instagram') as LoginProvider[];
 }
 }
 

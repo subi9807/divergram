@@ -38,6 +38,9 @@ expo-env.d.ts
 .firebase/
 
 .secrets/
+.keys/
+app/credentials.json
+app/credentials/
 **/android/keys/*.json
 **/*service-account*.json
 **/*.p8
@@ -48,9 +51,21 @@ ios/build/
 app/ios/Pods/
 app/ios/build/
 app/.build/
+app/.release/
 app/android/.gradle/
 app/android/build/
 app/android/app/build/
+app/android/.kotlin/
+app/android/.hermesc/
+app/build-*.aab
+app/build-*.apk
+app/build-*.ipa
+
+# local Codex and test artifacts
+.codex-bin/
+.codex-sim/
+.codex-*.png
+tmp/
 
 # local env / helper scripts
 .env.server.local

@@ -1,87 +1,158 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Image as ExpoImage } from 'expo-image';
-import { Filter, MapPin, Search } from 'lucide-react-native';
+import { Filter, Search, Video } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { apiClient } from '../../src/lib/api';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { appRouteMap } from '../../src/config/sitemap';
+import { isVideoFile } from '../../src/utils/videoUtils';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 24;
+const DEFAULT_VIDEO_POSTER = require('../../assets/images/splash.png');
 
 type ExploreGridItem = {
   id: string;
   postId: string;
-  title: string;
-  location: string;
-  meta: string;
   imageUrl: string;
+  mediaType?: 'image' | 'video' | '';
+  title?: string;
+  location?: string;
+  meta?: string;
   tags?: string[];
   createdAt?: string;
 };
+
+type GridPlacement = ExploreGridItem & {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+function getGridSpan(index: number) {
+  const cycle = index % 12;
+  if (cycle === 0 || cycle === 9) return { cols: 2, rows: 2 };
+  if (cycle === 3 || cycle === 8) return { cols: 2, rows: 1 };
+  if (cycle === 5) return { cols: 1, rows: 2 };
+  return { cols: 1, rows: 1 };
+}
+
+function buildGridPlacements(items: ExploreGridItem[], cellSize: number) {
+  const columns = 3;
+  const occupancy: boolean[][] = [];
+  const placements: GridPlacement[] = [];
+  let maxRow = 0;
+
+  const ensureRows = (rowCount: number) => {
+    while (occupancy.length < rowCount) {
+      occupancy.push(Array.from({ length: columns }, () => false));
+    }
+  };
+
+  const canPlace = (row: number, col: number, cols: number, rows: number) => {
+    if (col + cols > columns) return false;
+    ensureRows(row + rows);
+    for (let r = row; r < row + rows; r += 1) {
+      for (let c = col; c < col + cols; c += 1) {
+        if (occupancy[r][c]) return false;
+      }
+    }
+    return true;
+  };
+
+  const mark = (row: number, col: number, cols: number, rows: number) => {
+    ensureRows(row + rows);
+    for (let r = row; r < row + rows; r += 1) {
+      for (let c = col; c < col + cols; c += 1) {
+        occupancy[r][c] = true;
+      }
+    }
+    maxRow = Math.max(maxRow, row + rows);
+  };
+
+  items.forEach((item, index) => {
+    const { cols, rows } = getGridSpan(index);
+    let placed = false;
+
+    for (let row = 0; !placed; row += 1) {
+      for (let col = 0; col < columns; col += 1) {
+        if (!canPlace(row, col, cols, rows)) continue;
+
+        mark(row, col, cols, rows);
+        placements.push({
+          ...item,
+          left: col * cellSize,
+          top: row * cellSize,
+          width: cols * cellSize,
+          height: rows * cellSize,
+        });
+        placed = true;
+        break;
+      }
+    }
+  });
+
+  return {
+    placements,
+    height: maxRow * cellSize,
+  };
+}
 
 export default function ExploreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ q?: string; tag?: string }>();
+  const { width } = useWindowDimensions();
   const { isDark } = useResolvedTheme();
   const [searchText, setSearchText] = useState('');
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [activeTopicIndex, setActiveTopicIndex] = useState(0);
 
   const colors = useMemo(
     () => ({
-      cardBorder: isDark ? '#243447' : '#DCE8F4',
-      cardBg: isDark ? '#0F1B2A' : '#ffffff',
-      title: isDark ? '#E2E8F0' : '#0F172A',
-      text: isDark ? '#CBD5E1' : '#334155',
-      muted: isDark ? '#94A3B8' : '#64748B',
-      searchBg: isDark ? '#0F1B2A' : '#ffffff',
-      searchBorder: isDark ? '#243447' : '#DCE8F4',
-      chipBg: isDark ? '#0F1B2A' : '#ffffff',
-      chipBorder: isDark ? '#243447' : '#DCE8F4',
-      chipText: isDark ? '#CBD5E1' : '#334155',
+      text: isDark ? '#E5E7EB' : '#111827',
+      muted: isDark ? '#9CA3AF' : '#64748B',
+      searchBg: isDark ? '#121722' : '#E8EDF3',
+      searchBorder: isDark ? '#243041' : '#D6DEE8',
+      pageBg: isDark ? '#0B0F14' : '#FFFFFF',
     }),
     [isDark]
   );
 
-  const topics = useMemo(
-    () => [t('common.all'), t('explore.topics.jeju'), t('explore.topics.freediving'), t('explore.topics.scuba'), t('explore.topics.night'), t('explore.topics.beginner'), t('explore.topics.photo')],
-    [t]
-  );
-
-  const { data: exploreData = [], isLoading, refetch } = useQuery({
+  const { data: exploreData = [], isLoading } = useQuery({
     queryKey: ['explore'],
     queryFn: apiClient.getExplore,
+  });
+  const normalizedProfileQuery = searchText.trim().replace(/^@+/, '');
+  const { data: profileResults = [] } = useQuery({
+    queryKey: ['profile-search', normalizedProfileQuery],
+    queryFn: () => apiClient.searchProfiles(normalizedProfileQuery),
+    enabled: normalizedProfileQuery.length >= 2,
   });
 
   useEffect(() => {
     const incoming = String(params.tag || params.q || '').trim();
     if (incoming) {
       setSearchText(incoming);
-      setActiveTopicIndex(0);
       setVisibleCount(PAGE_SIZE);
     }
   }, [params.q, params.tag]);
 
   const filteredItems = useMemo(() => {
     const keyword = searchText.trim().toLowerCase().replace(/^#/, '');
-    const selectedTopic = String(topics[activeTopicIndex] || '').trim().toLowerCase();
-
     return (exploreData as ExploreGridItem[]).filter((item) => {
+      if (!keyword) return true;
       const haystack = `${item.title || ''} ${item.location || ''} ${item.meta || ''} ${(item.tags || []).join(' ')}`.toLowerCase();
-      const matchSearch = !keyword || haystack.includes(keyword);
-      const matchTopic = activeTopicIndex === 0 || haystack.includes(selectedTopic);
-      return matchSearch && matchTopic;
+      return haystack.includes(keyword);
     });
-  }, [activeTopicIndex, exploreData, searchText, topics]);
+  }, [exploreData, searchText]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [activeTopicIndex, searchText]);
+  }, [searchText]);
 
   const visibleItems = filteredItems.slice(0, visibleCount);
   const hasMore = visibleCount < filteredItems.length;
@@ -90,111 +161,149 @@ export default function ExploreScreen() {
     setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredItems.length));
   };
 
+  const cellSize = width / 3;
+  const board = useMemo(() => buildGridPlacements(visibleItems, cellSize), [cellSize, visibleItems]);
+
   return (
     <Screen>
       <FlatList
-        data={visibleItems}
+        data={[{ id: 'explore-board' }]}
         keyExtractor={(item) => item.id}
-        numColumns={3}
         showsVerticalScrollIndicator={false}
-        columnWrapperStyle={{ paddingHorizontal: 16 }}
-        contentContainerStyle={{ paddingBottom: 28 }}
-        onEndReachedThreshold={0.25}
+        contentContainerStyle={{ paddingBottom: 28, paddingTop: 2, backgroundColor: colors.pageBg }}
+        onEndReachedThreshold={0.4}
         onEndReached={loadMore}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              if (!item.postId) return;
-              router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(item.postId)}` as never);
-            }}
-            style={{
-              width: '33.333%',
-              paddingHorizontal: 4,
-              marginBottom: 8,
-            }}
-          >
-            <View style={{ borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg }}>
-              <ExpoImage source={{ uri: item.imageUrl }} style={{ width: '100%', aspectRatio: 1 }} contentFit="cover" />
-              <View style={{ padding: 8 }}>
-                <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>
-                  {item.title}
-                </Text>
-                <View style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center' }}>
-                  <MapPin size={11} color={colors.muted} />
-                  <Text numberOfLines={1} style={{ marginLeft: 3, fontSize: 11, color: colors.muted, flex: 1 }}>
-                    {item.location}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
+        renderItem={() => (
+          <View style={{ width, height: board.height, position: 'relative', backgroundColor: colors.pageBg }}>
+            {board.placements.map((item) => {
+              const isVideo = item.mediaType === 'video' || isVideoFile(item.imageUrl);
+              const imageSource = isVideo && isVideoFile(item.imageUrl)
+                ? DEFAULT_VIDEO_POSTER
+                : { uri: item.imageUrl };
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.92}
+                  onPress={() => {
+                    if (!item.postId) return;
+                    router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(item.postId)}` as never);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: item.left,
+                    top: item.top,
+                    width: item.width,
+                    height: item.height,
+                    overflow: 'hidden',
+                    borderRadius: 0,
+                    backgroundColor: isDark ? '#10151D' : '#EDF2F7',
+                  }}
+                >
+                  <ExpoImage
+                    source={imageSource}
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit="cover"
+                    transition={180}
+                  />
+                  {isVideo ? (
+                    <>
+                      <View
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                          backgroundColor: 'rgba(2, 6, 23, 0.20)',
+                        }}
+                      />
+                      <View
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          bottom: 8,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 10,
+                          backgroundColor: 'rgba(15, 23, 42, 0.72)',
+                          width: 24,
+                          height: 24,
+                        }}
+                      >
+                        <Video size={14} color="#FFFFFF" />
+                      </View>
+                    </>
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
         ListHeaderComponent={
-          <>
-            <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
-              <Text style={{ fontSize: 28, fontWeight: '800', color: colors.title }}>{t('explore.title')}</Text>
-              <Text style={{ marginTop: 4, color: colors.muted }}>{t('explore.subtitle')}</Text>
+          <View style={{ paddingHorizontal: 12, paddingTop: 10, paddingBottom: 8, backgroundColor: colors.pageBg }}>
+            <View
+              style={{
+                height: 38,
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderRadius: 15,
+                borderWidth: 1,
+                borderColor: colors.searchBorder,
+                backgroundColor: colors.searchBg,
+                paddingHorizontal: 12,
+                shadowColor: '#000',
+                shadowOpacity: isDark ? 0.12 : 0.03,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 5 },
+                elevation: 1,
+              }}
+            >
+              <Search size={15} color={colors.muted} />
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                style={{ marginLeft: 8, flex: 1, color: colors.text, fontSize: 13, fontWeight: '500' }}
+                placeholder={t('explore.searchPlaceholder')}
+                placeholderTextColor={colors.muted}
+              />
               <View
                 style={{
-                  marginTop: 14,
-                  height: 48,
-                  flexDirection: 'row',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
                   alignItems: 'center',
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: colors.searchBorder,
-                  backgroundColor: colors.searchBg,
-                  paddingHorizontal: 14,
+                  justifyContent: 'center',
+                  backgroundColor: isDark ? '#1A2230' : '#F7FAFC',
                 }}
               >
-                <Search size={18} color={colors.muted} />
-                <TextInput
-                  value={searchText}
-                  onChangeText={setSearchText}
-                  style={{ marginLeft: 8, flex: 1, color: colors.text }}
-                  placeholder={t('explore.searchPlaceholder')}
-                  placeholderTextColor="#94A3B8"
-                />
-                <Filter size={18} color={colors.muted} />
+                <Filter size={14} color={colors.muted} />
               </View>
             </View>
-
-            <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
-              <FlatList
-                horizontal
-                data={topics}
-                keyExtractor={(item, index) => `${item}-${index}`}
-                showsHorizontalScrollIndicator={false}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity
-                    activeOpacity={0.86}
-                    onPress={() => setActiveTopicIndex(index)}
-                    style={{
-                      marginRight: 8,
-                      borderRadius: 999,
-                      paddingHorizontal: 14,
-                      paddingVertical: 8,
-                      borderWidth: activeTopicIndex === index ? 0 : 1,
-                      borderColor: colors.chipBorder,
-                      backgroundColor: activeTopicIndex === index ? '#0D5FA8' : colors.chipBg,
-                    }}
-                  >
-                    <Text style={{ color: activeTopicIndex === index ? '#fff' : colors.chipText, fontWeight: '700' }}>{item}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
-
-            <View style={{ paddingHorizontal: 20, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '700' }}>
-                {t('tabs.explore')} · {filteredItems.length}개
-              </Text>
-              <TouchableOpacity onPress={() => void refetch()}>
-                <Text style={{ color: '#0D5FA8', fontSize: 12, fontWeight: '700' }}>{t('common.retry')}</Text>
-              </TouchableOpacity>
-            </View>
-          </>
+            {profileResults.length > 0 ? (
+              <View style={{ paddingTop: 10 }}>
+                <Text style={{ marginBottom: 8, color: colors.muted, fontSize: 13, fontWeight: '700' }}>
+                  {t('pages.search.people', { defaultValue: '다이버' })}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {profileResults.map((profile: any) => (
+                    <View
+                      key={String(profile.id)}
+                      style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 18, borderWidth: 1, borderColor: colors.searchBorder, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.searchBg }}
+                    >
+                      {profile.avatar_url ? (
+                        <ExpoImage source={{ uri: String(profile.avatar_url) }} style={{ width: 36, height: 36, borderRadius: 18 }} contentFit="cover" />
+                      ) : null}
+                      <View style={{ marginLeft: profile.avatar_url ? 8 : 0 }}>
+                        <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>{profile.full_name || profile.username}</Text>
+                        <Text style={{ color: colors.muted, fontSize: 12 }}>@{profile.username}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
+          </View>
         }
         ListEmptyComponent={
           isLoading ? null : (

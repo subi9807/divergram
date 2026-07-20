@@ -1,9 +1,33 @@
-import React, { useMemo, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import * as Device from 'expo-device';
 import { useTranslation } from 'react-i18next';
-import { Megaphone } from 'lucide-react-native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
-import { getAdMobBannerUnitId } from '../../config/ads';
+import {
+  NativeAd,
+  NativeAdChoicesPlacement,
+  NativeAdView,
+  NativeAsset,
+  NativeAssetType,
+  NativeMediaAspectRatio,
+  NativeMediaView,
+  TestIds,
+} from 'react-native-google-mobile-ads';
+import { getAdMobNativeUnitId } from '../../config/ads';
+import { initializeAdMob } from '../../lib/initAdMob';
+
+const MAX_LOAD_ATTEMPTS = 2;
+let adRequestQueue: Promise<void> = Promise.resolve();
+
+function enqueueAdRequest<T>(request: () => Promise<T>): Promise<T> {
+  const queuedRequest = adRequestQueue
+    .catch(() => undefined)
+    .then(() => request());
+  adRequestQueue = queuedRequest.then(
+    () => undefined,
+    () => undefined,
+  );
+  return queuedRequest;
+}
 
 type FeedAdSlotProps = {
   label?: string;
@@ -12,76 +36,236 @@ type FeedAdSlotProps = {
   onPress?: () => void;
 };
 
-export function FeedAdSlot({
-  label,
-  subtitle,
-  ctaLabel,
-  onPress,
-}: FeedAdSlotProps) {
+export function FeedAdSlot(_props: FeedAdSlotProps) {
   const { t } = useTranslation();
-  const [bannerFailed, setBannerFailed] = useState(false);
-  const bannerUnitId = getAdMobBannerUnitId();
-  const bannerReady = useMemo(() => {
-    if (bannerFailed) return false;
-    if (bannerUnitId) return true;
-    return __DEV__;
-  }, [bannerFailed, bannerUnitId]);
-  const resolvedUnitId = __DEV__ ? TestIds.BANNER : bannerUnitId;
+  const [nativeAd, setNativeAd] = useState<NativeAd | null>(null);
+  const [adFailed, setAdFailed] = useState(false);
+  const nativeAdUnitId = getAdMobNativeUnitId();
+  const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
+  const resolvedUnitId = shouldUseTestAds ? TestIds.NATIVE : nativeAdUnitId;
+
+  useEffect(() => {
+    let mounted = true;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    setNativeAd(null);
+    setAdFailed(false);
+
+    if (!resolvedUnitId) {
+      setAdFailed(true);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    const loadAd = async (attempt: number) => {
+      const initialized = await initializeAdMob();
+      if (!mounted) return;
+      if (!initialized) {
+        setAdFailed(true);
+        return;
+      }
+
+      try {
+        const ad = await enqueueAdRequest(() =>
+          NativeAd.createForAdRequest(resolvedUnitId, {
+            adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT,
+            aspectRatio: NativeMediaAspectRatio.LANDSCAPE,
+            requestNonPersonalizedAdsOnly: true,
+            startVideoMuted: true,
+          }),
+        );
+        if (!mounted) {
+          ad.destroy();
+          return;
+        }
+        setNativeAd(ad);
+      } catch (error) {
+        console.warn(`[AdMob] Native ad load failed (${attempt}/${MAX_LOAD_ATTEMPTS})`, error);
+        if (!mounted) return;
+        if (attempt < MAX_LOAD_ATTEMPTS) {
+          retryTimer = setTimeout(() => void loadAd(attempt + 1), attempt * 10000);
+        } else {
+          setAdFailed(true);
+        }
+      }
+    };
+
+    void loadAd(1);
+
+    return () => {
+      mounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [resolvedUnitId]);
+
+  useEffect(() => {
+    if (!nativeAd) return undefined;
+    return () => {
+      nativeAd.destroy();
+    };
+  }, [nativeAd]);
 
   return (
-    <View className="mx-4 mb-5 overflow-hidden rounded-[28px] border border-brand-200/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 dark:border-brand-900/40 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
-      <View className="px-4 py-4">
-        <View className="mb-3 flex-row items-center">
-          <View className="mr-3 h-11 w-11 items-center justify-center rounded-2xl bg-brand-600">
-            <Megaphone size={20} color="#ffffff" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-700 dark:text-brand-200">
-              {t('feed.ad.slotLabel', { defaultValue: '광고 슬롯' })}
-            </Text>
-            <Text className="mt-1 text-base font-bold text-surface-900 dark:text-surface-50">
-              {label || t('feed.ad.defaultTitle', { defaultValue: 'Divergram 추천 광고' })}
-            </Text>
-          </View>
-        </View>
-        <Text className="text-sm leading-5 text-surface-600 dark:text-surface-300">
-          {subtitle || t('feed.ad.defaultSubtitle', { defaultValue: '피드 3번째 카드 이후에 자연스럽게 노출되는 운영용 광고 슬롯입니다.' })}
-        </Text>
-
-        <View className="mt-4 overflow-hidden rounded-3xl border border-dashed border-brand-200/80 bg-white/80 px-3 py-3 dark:border-brand-900/40 dark:bg-slate-950/40">
-          {bannerReady ? (
-            <BannerAd
-              unitId={resolvedUnitId}
-              size={BannerAdSize.BANNER}
-              requestOptions={{ requestNonPersonalizedAdsOnly: true }}
-              onAdFailedToLoad={() => setBannerFailed(true)}
-            />
-          ) : (
-            <View className="min-h-[50px] items-center justify-center">
-              <Text className="text-xs font-medium text-surface-500 dark:text-surface-400">
-                {t('feed.ad.placeholder', { defaultValue: '광고 ID가 연결되면 이 영역에 실제 Google AdMob 배너가 표시됩니다.' })}
-              </Text>
+    <View style={styles.container}>
+      {nativeAd ? (
+        <NativeAdView nativeAd={nativeAd} style={styles.card}>
+          <View style={styles.header}>
+            {nativeAd.icon ? (
+              <NativeAsset assetType={NativeAssetType.ICON}>
+                <Image source={{ uri: nativeAd.icon.url }} style={styles.icon} />
+              </NativeAsset>
+            ) : (
+              <View style={styles.iconPlaceholder} />
+            )}
+            <View style={styles.titleGroup}>
+              <NativeAsset assetType={NativeAssetType.HEADLINE}>
+                <Text style={styles.headline} numberOfLines={1}>
+                  {nativeAd.headline}
+                </Text>
+              </NativeAsset>
+              {nativeAd.advertiser ? (
+                <NativeAsset assetType={NativeAssetType.ADVERTISER}>
+                  <Text style={styles.advertiser} numberOfLines={1}>
+                    {nativeAd.advertiser}
+                  </Text>
+                </NativeAsset>
+              ) : (
+                <Text style={styles.advertiser}>{t('feed.ad.sponsored', { defaultValue: 'Sponsored' })}</Text>
+              )}
             </View>
-          )}
-        </View>
+            <Text style={styles.badge}>{t('feed.ad.badge', { defaultValue: '광고' })}</Text>
+          </View>
 
-        <View className="mt-4 flex-row items-center justify-between">
-          <Text className="text-xs font-medium text-surface-500 dark:text-surface-400">
-            {t('feed.ad.googleReady', { defaultValue: 'Google AdMob 연동 가능 위치' })}
-          </Text>
-          {onPress ? (
-            <TouchableOpacity
-              activeOpacity={0.86}
-              onPress={onPress}
-              className="rounded-full bg-brand-600 px-4 py-2"
-            >
-              <Text className="text-xs font-semibold text-white">
-                {ctaLabel || t('feed.ad.cta', { defaultValue: '자세히 보기' })}
+          <NativeMediaView resizeMode="cover" style={styles.media} />
+
+          {nativeAd.body ? (
+            <NativeAsset assetType={NativeAssetType.BODY}>
+              <Text style={styles.body} numberOfLines={2}>
+                {nativeAd.body}
               </Text>
-            </TouchableOpacity>
+            </NativeAsset>
           ) : null}
+
+          {nativeAd.callToAction ? (
+            <NativeAsset assetType={NativeAssetType.CALL_TO_ACTION}>
+              <Text style={styles.cta}>
+                {nativeAd.callToAction}
+              </Text>
+            </NativeAsset>
+          ) : null}
+        </NativeAdView>
+      ) : (
+        <View style={styles.placeholder}>
+          <Text style={styles.placeholderText}>
+            {adFailed
+              ? t('feed.ad.unavailable', { defaultValue: '광고를 불러오지 못했습니다.' })
+              : t('feed.ad.placeholder', { defaultValue: '광고를 불러오는 중입니다.' })}
+          </Text>
         </View>
-      </View>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  card: {
+    overflow: 'hidden',
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(15, 23, 42, 0.12)',
+    backgroundColor: '#fff',
+    shadowColor: '#0f172a',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  icon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+  },
+  iconPlaceholder: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#e2e8f0',
+  },
+  titleGroup: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headline: {
+    color: '#0f172a',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  advertiser: {
+    marginTop: 2,
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  badge: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: '#facc15',
+    color: '#422006',
+    fontSize: 11,
+    fontWeight: '900',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  media: {
+    width: '100%',
+    minHeight: 180,
+    backgroundColor: '#e2e8f0',
+  },
+  body: {
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    color: '#334155',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  cta: {
+    alignSelf: 'flex-start',
+    overflow: 'hidden',
+    marginHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 14,
+    borderRadius: 999,
+    backgroundColor: '#0f172a',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  placeholder: {
+    height: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderStyle: 'dashed',
+    borderColor: '#cbd5e1',
+    backgroundColor: '#fff',
+  },
+  placeholderText: {
+    color: '#64748b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+});

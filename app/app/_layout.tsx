@@ -1,11 +1,13 @@
 import '../global.css';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { Animated, Easing, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import * as Device from 'expo-device';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -14,16 +16,17 @@ import { AuthProvider } from '../src/providers/AuthProvider';
 import { GlobalEdgeSwipeNav } from '../src/components/GlobalEdgeSwipeNav';
 import { useAuth } from '../src/hooks/useAuth';
 import { useResolvedTheme } from '../src/hooks/useResolvedTheme';
-import { isAdMobEnabled } from '../src/config/ads';
+import { initializeAdMob } from '../src/lib/initAdMob';
 import { loadAiSettings } from '../src/services/aiSettingsService';
 import { useNotifications } from '../src/lib/notifications';
+import { Sentry } from '../src/lib/sentry';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 WebBrowser.maybeCompleteAuthSession();
 
 const queryClient = new QueryClient();
 
-export default function RootLayout() {
+function RootLayout() {
   useFrameworkReady();
   const { resolvedTheme } = useResolvedTheme();
   const { setColorScheme } = useNativewindColorScheme();
@@ -63,26 +66,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (!isAdMobEnabled()) return;
-    import('react-native-google-mobile-ads')
-      .then(({ default: mobileAdsModule }) => {
-        const mobileAds = mobileAdsModule();
-        return mobileAds
-          .setRequestConfiguration({
-            testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : [],
-          })
-          .catch(() => {
-            // 테스트 기기 설정은 실패해도 앱 실행을 막지 않는다.
-          })
-          .then(() =>
-            mobileAds.initialize().catch(() => {
-              // 광고 초기화 실패는 앱 실행을 막지 않는다.
-            })
-          );
-      })
-      .catch(() => {
-        // 광고 SDK가 없더라도 앱 진입은 유지한다.
-      });
+    void initializeAdMob();
   }, []);
 
   const handleSwipeProgress = useCallback(
@@ -130,6 +114,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <AuthProvider>
+              <AccountDeletionNavigationGuard />
               <SettingsHydrationBridge />
               <NotificationBootstrapBridge />
               <Animated.View style={[styles.stackShell, { transform: [{ translateX: swipeTranslateX }] }]}>
@@ -154,6 +139,28 @@ export default function RootLayout() {
   );
 }
 
+export default Sentry.wrap(RootLayout);
+
+function AccountDeletionNavigationGuard() {
+  const router = useRouter();
+  const segments = useSegments();
+  const { user, loading, accountDeletion, accountDeletionLoading } = useAuth();
+  const isRecoveryRoute = segments[0] === '(auth)' && segments[1] === 'account-recovery';
+
+  useEffect(() => {
+    if (loading || accountDeletionLoading || !user) return;
+    if (accountDeletion?.pending && !isRecoveryRoute) {
+      router.replace('/(auth)/account-recovery');
+      return;
+    }
+    if (!accountDeletion?.pending && isRecoveryRoute) {
+      router.replace('/(tabs)/feed');
+    }
+  }, [accountDeletion?.pending, accountDeletionLoading, isRecoveryRoute, loading, router, user]);
+
+  return null;
+}
+
 function SettingsHydrationBridge() {
   const { user } = useAuth();
 
@@ -166,8 +173,53 @@ function SettingsHydrationBridge() {
 }
 
 function NotificationBootstrapBridge() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
-  useNotifications(Boolean(user?.id));
+  useNotifications(Boolean(user?.id) && !(Platform.OS === 'ios' && !Device.isDevice), String(user?.id || ''));
+
+  useEffect(() => {
+    if (!user?.id || Platform.OS === 'web') return;
+
+    const openNotification = (data: Record<string, unknown> | undefined) => {
+      const raw = String(data?.deepLink || data?.deep_link || '').trim();
+      if (!raw) {
+        router.push('/(tabs)/notifications' as never);
+        return;
+      }
+      const internal = raw
+        .replace(/^https?:\/\/(www\.)?divergram\.com/i, '')
+        .replace(/^divergram:\/\//i, '/');
+      const postQueryId = internal.match(/^\/post\?(?:.*&)?post=([^&]+)/)?.[1];
+      if (postQueryId) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(decodeURIComponent(postQueryId))}` as never);
+      } else if (internal.startsWith('/posts/')) {
+        router.push(`/(tabs)/post?post=${encodeURIComponent(internal.slice('/posts/'.length))}` as never);
+      } else if (internal === '/notifications' || internal.startsWith('/notifications?')) {
+        router.push('/(tabs)/notifications' as never);
+      } else if (internal.startsWith('/')) {
+        router.push(internal as never);
+      } else {
+        router.push('/(tabs)/notifications' as never);
+      }
+    };
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+      openNotification(response.notification.request.content.data as Record<string, unknown>);
+    });
+    const receivedSubscription = Notifications.addNotificationReceivedListener(() => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+    });
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) openNotification(response.notification.request.content.data as Record<string, unknown>);
+    });
+    return () => {
+      subscription.remove();
+      receivedSubscription.remove();
+    };
+  }, [queryClient, router, user?.id]);
+
   return null;
 }
 

@@ -6,7 +6,6 @@ const USER_KEY = 'dg_user';
 const PROFILE_KEY = 'dg_profile';
 const _DB_KEY = 'dg_mockdb_v3_legacy';
 const STORAGE_KEY = 'dg_mock_storage_v1';
-let seedPromise: Promise<void> | null = null;
 
 export interface User { id: string; email: string; }
 export interface Profile {
@@ -60,17 +59,15 @@ function getSessionLocal() {
   return { user: JSON.parse(userRaw), profile: JSON.parse(profileRaw), token };
 }
 
-async function ensureSeeded() {
-  if (!seedPromise) {
-    seedPromise = fetch(`${API_BASE}/api/data/seed/default`, { method: 'POST' })
-      .then(() => undefined)
-      .catch(() => undefined);
-  }
-  await seedPromise;
+function authHeaders(json = false) {
+  const token = getToken();
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
 async function fetchTable(table: string, options: AnyObj = {}) {
-  await ensureSeeded();
   const q = new URLSearchParams();
   if (options.filters?.length) q.set('filters', JSON.stringify(options.filters));
   if (options.order) q.set('order', JSON.stringify(options.order));
@@ -78,7 +75,7 @@ async function fetchTable(table: string, options: AnyObj = {}) {
   if (options.range) q.set('range', JSON.stringify(options.range));
 
   try {
-    const r = await fetch(`${API_BASE}/api/data/${table}?${q.toString()}`);
+    const r = await fetch(`${API_BASE}/api/data/${table}?${q.toString()}`, { headers: authHeaders() });
     if (!r.ok) throw new Error(`fetchTable failed: ${r.status}`);
     const j = await r.json();
     return j.data || [];
@@ -121,7 +118,7 @@ async function writeTable(table: string, rows: AnyObj[]) {
   try {
     const r = await fetch(`${API_BASE}/api/data/${table}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify({ rows }),
     });
     if (!r.ok) throw new Error(`writeTable failed: ${r.status}`);
@@ -139,7 +136,7 @@ async function patchTable(table: string, filters: AnyObj[], patch: AnyObj) {
   try {
     const r = await fetch(`${API_BASE}/api/data/${table}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify({ filters, patch }),
     });
     if (!r.ok) throw new Error(`patchTable failed: ${r.status}`);
@@ -157,7 +154,7 @@ async function deleteTable(table: string, filters: AnyObj[]) {
   try {
     const r = await fetch(`${API_BASE}/api/data/${table}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify({ filters }),
     });
     if (!r.ok) throw new Error(`deleteTable failed: ${r.status}`);

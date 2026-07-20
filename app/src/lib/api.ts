@@ -1,6 +1,7 @@
 import { create } from 'axios';
 import i18n from './i18n';
 import { storage } from './storage';
+import { getSecureAuthValue } from './secureAuthStorage';
 
 const RAW_API_BASE =
   process.env.EXPO_PUBLIC_DIVERGRAM_API_BASE ||
@@ -21,7 +22,7 @@ const axiosInstance = create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = storage.getString('auth_token');
+    const token = getSecureAuthValue('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -139,6 +140,15 @@ export type AccountDeletionRequestResult = {
   gracePeriodDays?: number;
   effectiveAt?: string;
   message?: string;
+};
+
+export type AccountDeletionStatus = {
+  pending: boolean;
+  requestId?: string;
+  requestedAt?: string;
+  recoverableUntil?: string;
+  permanentDeletionAt?: string;
+  gracePeriodDays: number;
 };
 
 function normalizeIsoDate(value: unknown): string | undefined {
@@ -337,6 +347,9 @@ export interface NotificationFeedItem {
   };
   postId?: string;
   commentId?: string;
+  title?: string;
+  deepLink?: string;
+  imageUrl?: string;
 }
 
 export interface ActiveAdSlot {
@@ -437,6 +450,78 @@ function normalizeAdSlot(row: any): ActiveAdSlot {
 }
 
 export const apiClient = {
+  generateAiText: async (task: string, prompt: string): Promise<string> => {
+    const response = await axiosInstance.post('/ai/generate', { task, prompt });
+    return normalizeString(response.data?.text || '');
+  },
+  getUserPreferences: async () => {
+    const response = await axiosInstance.get('/preferences/me');
+    return {
+      data: response.data?.data || {},
+      exists: response.data?.exists === true,
+      updatedAt: response.data?.updatedAt || null,
+    };
+  },
+
+  updateUserPreferences: async (preferences: Record<string, unknown>) => {
+    const response = await axiosInstance.put('/preferences/me', preferences);
+    return response.data?.data || response.data || {};
+  },
+
+  getDivingLicenses: async () => {
+    const response = await axiosInstance.get('/diving-licenses/me');
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      exists: response.data?.exists === true,
+    };
+  },
+
+  saveDivingLicenses: async (items: Record<string, unknown>[]) => {
+    const response = await axiosInstance.put('/diving-licenses/me', { items });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  getDiveLogDraft: async (logId: string) => {
+    const response = await axiosInstance.get(`/dive-log-drafts/${encodeURIComponent(logId)}`);
+    return { data: response.data?.data || null, exists: response.data?.exists === true };
+  },
+
+  saveDiveLogDraft: async (logId: string, data: Record<string, unknown>) => {
+    const response = await axiosInstance.put(`/dive-log-drafts/${encodeURIComponent(logId)}`, { data });
+    return response.data?.data || null;
+  },
+
+  deleteDiveLogDraft: async (logId: string) => {
+    await axiosInstance.delete(`/dive-log-drafts/${encodeURIComponent(logId)}`);
+  },
+
+  uploadProfileAvatar: async (imageData: string): Promise<{ avatar_url: string }> => {
+    const normalized = normalizeString(imageData);
+    if (!normalized.startsWith('data:image/')) throw new Error('invalid_avatar_image');
+    const response = await axiosInstance.post('/profile/avatar', { imageData: normalized });
+    const row = response.data?.data || response.data || {};
+    const avatarUrl = normalizeString(row.avatar_url);
+    if (!avatarUrl) throw new Error('avatar_upload_url_missing');
+    return { avatar_url: avatarUrl };
+  },
+
+  startInstagramOAuth: async () => {
+    const data = await tryCandidateRequests<{ url: string; returnUrl: string }>([
+      { method: 'get', path: '/auth/oauth/instagram/mobile/start' },
+    ]);
+    return data;
+  },
+
+  completeInstagramOAuth: async (ticket: string) => {
+    const data = await tryCandidateRequests<{
+      accessToken: string;
+      userInfo: { id: string; username: string; email?: string };
+    }>([
+      { method: 'post', path: '/auth/oauth/instagram/mobile/complete', data: { ticket } },
+    ]);
+    return data;
+  },
+
   authWithOAuth: async (provider: string, accessToken: string, userInfo?: any, sessionDays = 30) => {
     const body = { provider, accessToken, userInfo, sessionDays };
     const data = await tryCandidateRequests<any>([
@@ -446,10 +531,16 @@ export const apiClient = {
     return { data };
   },
 
-  authWithOAuthMobile: async (provider: string, accessToken: string, sessionDays = 7) => {
+  authWithOAuthMobile: async (
+    provider: string,
+    accessToken: string,
+    sessionDays = 7,
+    userInfo?: any,
+    idToken?: string
+  ) => {
     const data = await tryCandidateRequests<any>([
-      { method: 'post', path: '/auth/oauth/mobile', data: { provider, accessToken, sessionDays } },
-      { method: 'post', path: '/auth/oauth', data: { provider, accessToken, sessionDays } },
+      { method: 'post', path: '/auth/oauth/mobile', data: { provider, accessToken, sessionDays, userInfo, idToken } },
+      { method: 'post', path: '/auth/oauth', data: { provider, accessToken, sessionDays, userInfo, idToken } },
     ]);
     return { data };
   },
@@ -479,6 +570,19 @@ export const apiClient = {
 
   linkOAuthMobile: (linkToken: string) =>
     axiosInstance.post('/auth/oauth/mobile/link', { linkToken }),
+
+  linkOAuthProvider: (
+    provider: 'google' | 'apple' | 'instagram',
+    accessToken: string,
+    userInfo?: Record<string, unknown>,
+    idToken?: string
+  ) => axiosInstance.post('/auth/oauth/mobile/link/provider', {
+    provider,
+    accessToken,
+    userInfo,
+    idToken,
+    sessionDays: 30,
+  }),
 
   linkOAuthMobileConfirm: (linkToken: string, action: 'approve' | 'cancel' = 'approve') =>
     axiosInstance.post('/auth/oauth/mobile/link/confirm', { linkToken, action }),
@@ -647,7 +751,9 @@ export const apiClient = {
       type: normalizeString(payload.mimeType || '') || 'application/octet-stream',
     } as any);
 
-    const response = await axiosInstance.post('/uploads', formData);
+    const response = await axiosInstance.post('/uploads', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     const row = response.data?.data || response.data || {};
     return {
       url: normalizeString(row?.url || ''),
@@ -739,8 +845,9 @@ export const apiClient = {
       return {
         id: String(row.id),
         type: String(row.type || 'system'),
-        unread: !Boolean(row.read),
-        text: normalizeString(row.message || row.text || row.summary || row.reason || '알림'),
+        unread: !Boolean(row.is_read),
+        title: normalizeString(row.title || ''),
+        text: normalizeString(row.body || row.message || row.text || row.summary || row.reason || '알림'),
         when,
         createdAt,
         actor: {
@@ -750,6 +857,8 @@ export const apiClient = {
         },
         postId: row.post_id ? String(row.post_id) : undefined,
         commentId: row.comment_id ? String(row.comment_id) : undefined,
+        deepLink: normalizeString(row.deep_link || row.data?.deepLink || row.data?.deep_link || '') || undefined,
+        imageUrl: normalizeString(row.image_url || '') || undefined,
       } satisfies NotificationFeedItem;
     });
   },
@@ -797,7 +906,12 @@ export const apiClient = {
   markNotificationRead: async (notificationId: string, read = true) => {
     const id = normalizeString(notificationId);
     if (!id) throw new Error('invalid_notification_id');
-    await dataApi.update<any>('notifications', [{ column: 'id', op: 'eq', value: id }], { read, updated_at: new Date().toISOString() });
+    const now = new Date().toISOString();
+    await dataApi.update<any>('notifications', [{ column: 'id', op: 'eq', value: id }], {
+      is_read: read,
+      read_at: read ? now : null,
+      updated_at: now,
+    });
     return true;
   },
 
@@ -823,7 +937,7 @@ export const apiClient = {
       if (!userId) throw createUnsupportedFeatureError('account_deletion_endpoint_unavailable');
 
       const now = new Date();
-      const gracePeriodDays = 7;
+      const gracePeriodDays = 30;
       const effectiveAt = new Date(now.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
       const reason =
         body.feedback.length > 0
@@ -854,6 +968,88 @@ export const apiClient = {
       { method: 'delete', path: '/auth/account' },
     ]);
     return normalizeAccountDeletionResult(data);
+  },
+
+  getAccountDeletionStatus: async (): Promise<AccountDeletionStatus> => {
+    if (isKnownProdApi) {
+      const me = await apiClient.getMe().catch(() => null);
+      const userId = normalizeString(me?.id || '');
+      if (!userId) throw new Error('account_deletion_user_missing');
+      const result = await dataApi.list<any>('reports', {
+        filters: [{ column: 'user_id', op: 'eq', value: userId }],
+        order: { column: 'created_at', ascending: false },
+        limit: 100,
+      });
+      const request = result.data.find((row) => normalizeString(row?.reason).toLowerCase().startsWith('account_delete_request:'));
+      if (!request) return { pending: false, gracePeriodDays: 30 };
+      const latestStatus = normalizeString(request.status).toLowerCase();
+      if (latestStatus !== 'requested' && latestStatus !== 'scheduled') {
+        return { pending: false, gracePeriodDays: 30 };
+      }
+      const requestedAt = normalizeIsoDate(request.created_at) || new Date().toISOString();
+      const gracePeriodDays = 30;
+      const permanentDeletionAt = new Date(new Date(requestedAt).getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString();
+      return {
+        pending: true,
+        requestId: normalizeString(request.id) || undefined,
+        requestedAt,
+        recoverableUntil: permanentDeletionAt,
+        permanentDeletionAt,
+        gracePeriodDays,
+      };
+    }
+
+    const data = await tryCandidateRequests<any>([
+      { method: 'get', path: '/auth/account/delete-request' },
+      { method: 'get', path: '/auth/account/deletion-status' },
+    ]);
+    const source = data?.data || data || {};
+    const pending = Boolean(source.pending ?? source.requested ?? (source.status === 'requested' || source.status === 'scheduled'));
+    const requestedAt = normalizeIsoDate(source.requestedAt || source.createdAt || source.created_at);
+    const gracePeriodDays = Math.max(0, Math.round(normalizeNumber(source.gracePeriodDays || source.grace_period_days) || 30));
+    const permanentDeletionAt =
+      normalizeIsoDate(source.permanentDeletionAt || source.effectiveAt || source.deleteAt) ||
+      (requestedAt ? new Date(new Date(requestedAt).getTime() + gracePeriodDays * 24 * 60 * 60 * 1000).toISOString() : undefined);
+    return {
+      pending,
+      requestId: normalizeString(source.requestId || source.id) || undefined,
+      requestedAt,
+      recoverableUntil: normalizeIsoDate(source.recoverableUntil) || permanentDeletionAt,
+      permanentDeletionAt,
+      gracePeriodDays,
+    };
+  },
+
+  cancelAccountDeletion: async (): Promise<boolean> => {
+    if (isKnownProdApi) {
+      const me = await apiClient.getMe().catch(() => null);
+      const userId = normalizeString(me?.id || '');
+      if (!userId) throw new Error('account_deletion_user_missing');
+      const result = await dataApi.list<any>('reports', {
+        filters: [{ column: 'user_id', op: 'eq', value: userId }],
+        order: { column: 'created_at', ascending: false },
+        limit: 100,
+      });
+      const activeRequestIds = result.data
+        .filter((row) => {
+          const reason = normalizeString(row?.reason).toLowerCase();
+          const status = normalizeString(row?.status).toLowerCase();
+          return reason.startsWith('account_delete_request:') && (status === 'requested' || status === 'scheduled');
+        })
+        .map((row) => normalizeString(row.id))
+        .filter(Boolean);
+      if (activeRequestIds.length) {
+        await dataApi.update<any>('reports', [{ column: 'id', op: 'in', value: activeRequestIds }], {
+          status: 'cancelled',
+        });
+      }
+      return true;
+    }
+    const data = await tryCandidateRequests<any>([
+      { method: 'post', path: '/auth/account/delete-request/cancel' },
+      { method: 'post', path: '/auth/account/deletion-cancel' },
+    ]);
+    return Boolean(data?.cancelled ?? data?.ok ?? data?.success ?? true);
   },
 
   deleteAccount: async () => {
@@ -983,9 +1179,11 @@ export const apiClient = {
     if (patch.license_number !== undefined) cleanPatch.license_number = normalizeString(patch.license_number);
     if (patch.license_issued_at !== undefined) cleanPatch.license_issued_at = normalizeString(patch.license_issued_at);
 
-    const filters = [{ column: 'id', op: 'eq' as const, value: uid }];
     try {
-      await dataApi.update<any>('profiles', filters, cleanPatch);
+      const response = await axiosInstance.patch('/profile/me', cleanPatch);
+      const savedProfile = response.data?.data || response.data;
+      writeProfileExtrasToStorage(uid, cleanPatch);
+      return savedProfile || apiClient.getProfileById(uid);
     } catch (error: any) {
       const message = String(error?.response?.data?.error || error?.message || '').toLowerCase();
       const hasOptionalFieldsPatch =
@@ -1002,15 +1200,36 @@ export const apiClient = {
         if (cleanPatch.full_name !== undefined) fallbackPatch.full_name = cleanPatch.full_name;
         if (cleanPatch.bio !== undefined) fallbackPatch.bio = cleanPatch.bio;
         if (cleanPatch.avatar_url !== undefined) fallbackPatch.avatar_url = cleanPatch.avatar_url;
-        await dataApi.update<any>('profiles', filters, fallbackPatch);
+        const response = await axiosInstance.patch('/profile/me', fallbackPatch);
+        const savedProfile = response.data?.data || response.data;
+        writeProfileExtrasToStorage(uid, fallbackPatch);
+        return savedProfile || apiClient.getProfileById(uid);
       } else {
         throw error;
       }
     }
+  },
 
-    writeProfileExtrasToStorage(uid, cleanPatch);
+  updateAccountEmail: async (email: string) => {
+    const normalizedEmail = normalizeString(email);
+    if (!normalizedEmail) throw new Error('invalid_email');
+    const response = await axiosInstance.patch('/auth/me', { email: normalizedEmail });
+    return response.data?.data || response.data || {};
+  },
 
-    return apiClient.getProfileById(uid);
+  updateAccountUsername: async (username: string) => {
+    const normalizedUsername = normalizeString(username).replace(/^@+/, '');
+    if (!/^[a-zA-Z0-9_]{4,32}$/.test(normalizedUsername)) throw new Error('invalid_username');
+    const response = await axiosInstance.patch('/auth/me', { username: normalizedUsername });
+    return response.data?.data || response.data || {};
+  },
+
+  searchProfiles: async (query: string) => {
+    const normalizedQuery = normalizeString(query).replace(/^@+/, '');
+    if (normalizedQuery.length < 2) return [];
+    const response = await axiosInstance.get('/profiles/search', { params: { q: normalizedQuery } });
+    const rows = response.data?.data || response.data || [];
+    return Array.isArray(rows) ? rows : [];
   },
 
   uploadLicenseImageWithOcr: async (imageData: string) => {
@@ -1820,7 +2039,9 @@ export const apiClient = {
       .filter((post) => post.publish_to_feed !== false)
       .map((post) => {
         const normalized = normalizeFeedItem({ ...post, post_media: mediaMap[String(post.id)] || [] }, profileMap, likesCount, commentsCount);
-        const firstMedia = Array.isArray(normalized.media) ? normalized.media[0] : null;
+        const mediaItems = Array.isArray(normalized.media) ? normalized.media : [];
+        const firstMedia = mediaItems[0] || null;
+        const firstImageMedia = mediaItems.find((item) => item?.type === 'image') || null;
         const location = String(normalized.location || normalized.diveSite || '').trim();
         const tags = Array.isArray(normalized.tags) ? normalized.tags : [];
         const metaParts = [
@@ -1835,7 +2056,7 @@ export const apiClient = {
           title: String(normalized.diveSite || normalized.location || normalized.content || i18n.t('api.explore.defaultTitle')).trim(),
           location: location || i18n.t('api.explore.noLocation', { defaultValue: '위치 정보 없음' }),
           meta: metaParts.join(' · '),
-          imageUrl: normalizeImageUrl(firstMedia?.url || normalized.image) || '',
+          imageUrl: normalizeImageUrl(firstImageMedia?.url || normalized.image || firstMedia?.url) || '',
           tags,
           content: normalized.content,
           createdAt: normalized.createdAt,

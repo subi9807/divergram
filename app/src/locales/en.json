@@ -517,16 +517,29 @@
     "account": {
       "googleLink": "Link Google login",
       "appleLink": "Link Apple login",
+      "instagramLink": "Link Instagram login",
       "kakaoLink": "Link Kakao login",
       "devices": "Manage dive computers",
       "deleteAccount": "Delete account",
-      "deleteConfirm": "Account deletion cannot be undone. Continue?",
+      "deleteConfirm": "Your account will be deactivated immediately and permanently deleted after 30 days. Continue?",
       "socialSubtitle": "Link social accounts to improve sign-in convenience and security.",
       "linkAction": "Link now",
       "unlinkAction": "Unlink",
       "devicesSubtitle": "Manage Garmin/Suunto/Shearwater device connection and sync.",
-      "deleteSubtitle": "Account deletion is permanent.",
-      "deleteTextLink": "Delete Divergram Account"
+      "deleteSubtitle": "You can recover your account for 30 days after requesting deletion.",
+      "deleteTextLink": "Delete Divergram Account",
+      "deletionRequestedAt": "Deletion request date",
+      "recoverableUntil": "Last recovery date",
+      "permanentDeletionAt": "Permanent deletion date",
+      "withdrawalRecoveryNotice": "Sign in during the 30-day grace period to cancel deletion and recover your account.",
+      "legalRetentionNotice": "Some records may be retained separately for the period required by law.",
+      "deletionPendingTitle": "Account deletion is scheduled",
+      "deletionPendingSubtitle": "Other features are unavailable during the recovery period. Recover your account to resume using Divergram immediately.",
+      "recoverAccount": "Recover account",
+      "recoverAccountConfirm": "Cancel your deletion request and recover your account?",
+      "recoveryCompleteTitle": "Account recovered",
+      "recoveryCompleteMessage": "Your deletion request has been cancelled. You can continue using Divergram.",
+      "recoveryFailed": "Account recovery failed. Please try again shortly."
     },
     "notifications": {
       "likes": "Like notifications",
@@ -549,6 +562,8 @@
     "diving": {
       "certifications": "Certification management",
       "certificationsSubtitle": "Update your certifications and current level.",
+      "licenseManagement": "License management",
+      "licenseManagementSubtitle": "View, add, edit, and delete your licenses.",
       "equipment": "Equipment registration",
       "integration": "External integrations",
       "integrationSubtitle": "Manage Google Maps, Stormglass, Garmin, Suunto, and Shearwater status.",
@@ -596,7 +611,21 @@
       "policyCenter": "Policy Center",
       "openSourceLicenses": "Open Source Licenses",
       "appInfo": "App Info",
-      "appInfoSubtitle": "Manage terms, policies, and customer support items."
+      "appInfoSubtitle": "Manage terms, policies, and customer support items.",
+      "licenseManagement": "License management",
+      "licenseManagementSubtitle": "View, add, edit, and delete your licenses.",
+      "donate": "Donate",
+      "donateSubtitle": "Support Divergram and help fund development."
+    },
+    "donate": {
+      "title": "Donate",
+      "subtitle": "Support Divergram through PayPal's official donation button.",
+      "buttonTitle": "Open PayPal donation page",
+      "buttonLabel": "PayPal Hosted Button",
+      "buttonHint": "PayPal hosted button ID: {{id}}",
+      "guideTitle": "Info",
+      "guideBody": "Donation amounts and options are managed in the PayPal Hosted Button settings.",
+      "thanks": "Thank you for supporting Divergram."
     },
     "safety": {
       "emergencyContact": "Emergency contact",
@@ -618,18 +647,19 @@
   "menu": {
     "quick": "Quick settings",
     "more": "More",
-    "desc": {
-      "messages": "Buddy chat and dive plans",
-      "settings": "Language, theme, privacy",
-      "activity": "Your actions and records",
-      "saved": "Saved posts and reels",
-      "reels": "Short dive videos",
-      "resorts": "Dive resort discovery",
-      "location": "Dive points on map",
-      "notifications": "Latest alerts and updates",
-      "admin": "Operational dashboard",
-      "app_info": "Terms, policy, support"
-    }
+      "desc": {
+        "messages": "Buddy chat and dive plans",
+        "settings": "Language, theme, privacy",
+        "activity": "Your actions and records",
+        "saved": "Saved posts and reels",
+        "reels": "Short dive videos",
+        "resorts": "Dive resort discovery",
+        "location": "Dive points on map",
+        "notifications": "Latest alerts and updates",
+        "license_management": "Register and manage your licenses",
+        "admin": "Operational dashboard",
+        "app_info": "Terms, policy, support"
+      }
   },
   "pages": {
     "messages": {
@@ -651,6 +681,7 @@
     },
     "search": {
       "placeholder": "Search points, divers, resorts",
+      "people": "Divers",
       "empty": "No matching results."
     },
     "activity": {
@@ -685,6 +716,10 @@
     "profileEdit": {
       "subtitle": "Update your profile information",
       "name": "Display name",
+      "username": "Username (@handle)",
+      "invalidUsername": "Use 4–32 letters, numbers, or underscores for your username.",
+      "usernameTaken": "This username is already in use.",
+      "usernameTakenBody": "Please choose another username.",
       "bio": "Bio",
       "diveLevel": "Dive Level",
       "scubaLevel": "Scuba level",
@@ -723,6 +758,7 @@
         "title": "License verification",
         "subtitle": "Upload your license photo to auto-detect agency, number, and issue date.",
         "upload": "Upload license photo + OCR",
+        "register": "Register license",
         "remove": "Remove Photo",
         "processing": "Processing...",
         "agency": "Agency",

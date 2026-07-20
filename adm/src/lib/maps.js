@@ -11,8 +11,19 @@ export async function loadGoogleMaps() {
     s.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&loading=async`;
     s.async = true;
     s.defer = true;
-    s.onload = () => resolve(true);
-    s.onerror = () => reject(new Error('google_maps_load_failed'));
+    const timeout = window.setTimeout(() => reject(new Error('google_maps_load_timeout')), 10000);
+    s.onload = () => {
+      window.clearTimeout(timeout);
+      resolve(true);
+    };
+    s.onerror = () => {
+      window.clearTimeout(timeout);
+      reject(new Error('google_maps_load_failed'));
+    };
+    window.gm_authFailure = () => {
+      window.clearTimeout(timeout);
+      reject(new Error('google_maps_auth_failed'));
+    };
     document.head.appendChild(s);
   });
   return mapsPromise;

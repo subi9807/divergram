@@ -1,16 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bell, Compass, Film, Info, MapPin, Menu, MessageCircle, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
+import { Bell, Compass, CreditCard, Film, Info, MapPin, Menu, MessageCircle, Search, Settings, Shield, Store, UserRoundCog } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
 import { useAuth } from '../hooks/useAuth';
 import { appRouteMap, type AppRouteId } from '../config/sitemap';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '../lib/api';
 
 const quickRouteIds: AppRouteId[] = ['messages', 'settings', 'activity'];
-const moreRouteIdsBase: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'app_info'];
+const moreRouteIdsBase: AppRouteId[] = ['reels', 'resorts', 'location', 'notifications', 'license_management', 'app_info'];
 const ADMIN_EMAILS = new Set(
   String(process.env.EXPO_PUBLIC_ADMIN_EMAILS || '')
     .split(',')
@@ -27,6 +29,7 @@ const iconMap: Partial<Record<AppRouteId, React.ComponentType<any>>> = {
   location: MapPin,
   notifications: Bell,
   admin: Shield,
+  license_management: CreditCard,
   app_info: Info,
 };
 
@@ -50,6 +53,13 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
   const { isDark } = useResolvedTheme();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: notificationRows = [] } = useQuery({
+    queryKey: ['notifications', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => apiClient.getNotifications(String(user?.id || '')),
+    refetchInterval: menuOpen ? 30_000 : false,
+  });
+  const unreadCount = notificationRows.filter((row) => row.unread).length;
   const isAdminUser =
     String(user?.email || '').toLowerCase().startsWith('admin@') ||
     ADMIN_EMAILS.has(String(user?.email || '').toLowerCase());
@@ -111,9 +121,14 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
       <SafeAreaView edges={['top']} style={[styles.headerSafe, { backgroundColor: palette.safeBg, borderBottomColor: palette.safeBorder }]}>
         <View style={[styles.header, { backgroundColor: palette.safeBg }]}>
           <TouchableOpacity style={styles.brandWrap} activeOpacity={0.85} onPress={() => router.replace(appRouteMap.home.path as never)}>
-            <LinearGradient colors={['#0d5fa8', '#1198f5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoBox}>
-              <Text style={styles.logoText}>DG</Text>
-            </LinearGradient>
+            <View style={styles.logoBox}>
+              <ExpoImage
+                source={require('../../assets/images/divergram-logo-blue.png')}
+                style={styles.logoImage}
+                contentFit="cover"
+                transition={120}
+              />
+            </View>
             <View style={styles.brandTextWrap}>
               <Text style={[styles.brandTitle, { color: palette.title }]}>Divergram</Text>
               <View style={styles.subtitleRow}>
@@ -152,6 +167,9 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
                         <Text style={[styles.menuTitle, { color: palette.menuTitle }]}>{t(appRouteMap[id].titleKey)}</Text>
                         <Text style={[styles.menuSub, { color: palette.menuSub }]}>{t(`menu.desc.${id}`)}</Text>
                       </View>
+                      {id === 'notifications' && unreadCount > 0 ? (
+                        <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
+                      ) : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -165,6 +183,20 @@ export function DgTabHeader({ title }: DgTabHeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  unreadBadge: {
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dc2626',
+  },
+  unreadBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   headerSafe: {
     backgroundColor: '#ffffff',
     borderBottomColor: '#e4ecf4',
@@ -186,17 +218,16 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
     shadowColor: '#0d5fa8',
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.16,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
-  logoText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '700',
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   brandTextWrap: {
     marginLeft: 10,

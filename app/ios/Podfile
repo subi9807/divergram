@@ -17,12 +17,22 @@ prepare_react_native_project!
 target 'Divergram' do
   use_expo_modules!
 
+  # RNFirebase's Swift pods need module maps when CocoaPods integrates
+  # dependencies as static libraries.
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
     config_command = [
-      'npx',
-      'expo-modules-autolinking',
+      File.join(__dir__, '..', 'node_modules', '.bin', 'expo-modules-autolinking'),
       'react-native-config',
       '--json',
       '--platform',

@@ -102,7 +102,7 @@ export async function updateNotificationSetting(setting: NotificationSetting): P
   try {
     const result = await apiClient.updateNotificationSetting(next);
     return normalizeNotificationSetting(result, setting.userId);
-  } catch {
-    return next;
+  } catch (error) {
+    throw error;
   }
 }

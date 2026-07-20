@@ -16,7 +16,7 @@
 
 ## 2) 업로드 실행
 ```bash
-cd /Volumes/WD_Elements/Works/divergram_app
+cd /Users/kimseokgeun/Desktop/Works/divergram/app
 fastlane ios upload_store_assets
 ```
 

@@ -23,7 +23,7 @@ function tabIcon(Icon: typeof House, isDark: boolean) {
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const { loading, user } = useAuth();
+  const { loading, user, accountDeletion, accountDeletionLoading } = useAuth();
   const { isDark } = useResolvedTheme();
   const bottomTabItemsRaw = useSettingsStore((state) => state.bottomTabItems);
   const bottomTabItems = useMemo(() => {
@@ -62,7 +62,7 @@ export default function TabLayout() {
     resorts: { icon: Store, titleKey: appRouteMap.resorts.titleKey },
   };
 
-  if (loading) {
+  if (loading || (Boolean(user) && accountDeletionLoading)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#0d5fa8" />
@@ -72,6 +72,10 @@ export default function TabLayout() {
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  if (accountDeletion?.pending) {
+    return <Redirect href="/(auth)/account-recovery" />;
   }
 
   return (
@@ -129,6 +133,7 @@ export default function TabLayout() {
       <Tabs.Screen name="marine-weather" options={{ href: null }} />
       <Tabs.Screen name="bluetooth-devices" options={{ href: null }} />
       <Tabs.Screen name="certifications" options={{ href: null }} />
+      <Tabs.Screen name="license-management" options={{ href: null }} />
       <Tabs.Screen name="notification-settings" options={{ href: null }} />
       <Tabs.Screen name="ai-settings" options={{ href: null }} />
       <Tabs.Screen name="policy-center" options={{ href: null }} />
@@ -141,6 +146,7 @@ export default function TabLayout() {
       <Tabs.Screen name="ai-usage-policy" options={{ href: null }} />
       <Tabs.Screen name="open-source-licenses" options={{ href: null }} />
       <Tabs.Screen name="app-info" options={{ href: null }} />
+      <Tabs.Screen name="donate" options={{ href: null }} />
       <Tabs.Screen name="devices" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="settings-detail" options={{ href: null }} />

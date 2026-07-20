@@ -4,6 +4,7 @@ import {
   normalizeUserIds,
   processAdminPushJob,
 } from '../lib/adminPushDelivery.js';
+import { sendPushToToken } from '../lib/pushDelivery.js';
 
 function normalizeLimit(value, fallback = 20, max = 100) {
   const next = Number(value || fallback);
@@ -149,12 +150,74 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
     }
   });
 
+  app.post('/api/admin/push/test', requireAdmin, async (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    const title = String(req.body?.title || '').trim();
+    const body = String(req.body?.body || '').trim();
+    const data = normalizePushData(req.body?.data || {});
+
+    if (!token) {
+      return res.status(400).json({ ok: false, error: 'token_required' });
+    }
+    if (!title || !body) {
+      return res.status(400).json({ ok: false, error: 'title_and_body_required' });
+    }
+
+    try {
+      const result = await sendPushToToken(token, title, body, data);
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+      await pool.query(
+        `INSERT INTO admin_audit_logs(action, target_user_id, detail)
+         VALUES ($1, $2, $3::jsonb)`,
+        [
+          'push_test',
+          String(req.adminAuth?.userId || '').trim() ? Number(req.adminAuth?.userId) || null : null,
+          JSON.stringify({
+            actorUserId: req.adminAuth?.userId || null,
+            tokenHash,
+            tokenSuffix: token.slice(-8),
+            title,
+            body,
+            data,
+            provider: result?.provider || 'fcm',
+            ok: Boolean(result?.ok),
+            reason: result?.reason || '',
+          }),
+        ]
+      );
+
+      return res.json({
+        ok: true,
+        queued: false,
+        message: result?.ok ? 'push_sent' : 'push_not_sent',
+        provider: result?.provider || 'fcm',
+        successCount: result?.ok ? 1 : 0,
+        failureCount: result?.ok ? 0 : 1,
+        tokenCount: 1,
+        expoTokenCount: 0,
+        fcmTokenCount: 1,
+        unsupportedCount: 0,
+        deliveryPreview: [result],
+        preview: { title, body, data },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: 'admin_push_test_failed',
+        detail: String(error?.message || error),
+      });
+    }
+  });
+
   app.post('/api/admin/push/send', requireAdmin, async (req, res) => {
     const title = String(req.body?.title || '').trim();
     const body = String(req.body?.body || '').trim();
     const data = normalizePushData(req.body?.data || {});
     const filters = buildFilters(req.body || {});
     const scheduledAt = normalizeScheduleAt(req.body?.scheduleAt || req.body?.scheduledAt);
+    const type = String(req.body?.type || req.body?.notificationType || 'admin_broadcast').trim() || 'admin_broadcast';
+    const deepLink = String(req.body?.deepLink || req.body?.deep_link || 'divergram://notifications').trim();
 
     if (!title || !body) {
       return res.status(400).json({ ok: false, error: 'title_and_body_required' });
@@ -166,6 +229,8 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
           title,
           body,
           data,
+          type,
+          deepLink,
           filters,
           scheduledAt,
         });
@@ -183,7 +248,7 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
 
       const result = await processAdminPushJob(
         pool,
-        { title, body, data, filters, scheduledAt: '' },
+        { title, body, data, type, deepLink, filters, scheduledAt: '' },
         { actorUserId: String(req.adminAuth?.userId || '').trim() || null }
       );
       return res.json(result);
@@ -202,7 +267,7 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
       const sentQ = await pool.query(
         `SELECT id, action, target_user_id, detail, created_at
          FROM admin_audit_logs
-         WHERE action IN ('push_send', 'push_schedule')
+         WHERE action IN ('push_send', 'push_schedule', 'push_test')
          ORDER BY created_at DESC
          LIMIT $1`,
         [limit]
