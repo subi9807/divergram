@@ -81,6 +81,7 @@ export default function ProfileEditScreen() {
   const { showToast } = useToast();
 
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
@@ -102,6 +103,7 @@ export default function ProfileEditScreen() {
     /* eslint-disable react-hooks/set-state-in-effect -- 프로필 로드 결과를 편집 폼의 초기값으로 동기화 */
     const currentEmail = String(user?.email || '').trim();
     setEmail(isPlaceholderOAuthEmail(currentEmail) ? '' : currentEmail);
+    setUsername(String(profile?.username || '').trim());
     setName(String(profile?.full_name || user?.name || '').trim());
     setBio(String(profile?.bio || '').trim());
     setAvatarUri(String(profile?.avatar_url || user?.avatar || '').trim());
@@ -133,6 +135,7 @@ export default function ProfileEditScreen() {
     profile?.license_issued_at,
     profile?.license_number,
     profile?.scuba_level,
+    profile?.username,
     user?.email,
     user?.avatar,
     user?.name,
@@ -330,6 +333,7 @@ export default function ProfileEditScreen() {
   const saveProfile = async (closeLicenseModal = false) => {
     if (!user?.id || saving) return;
     const trimmedName = name.trim();
+    const trimmedUsername = username.trim().replace(/^@+/, '');
     const trimmedEmail = email.trim().toLowerCase();
     const currentEmail = String(user?.email || '').trim().toLowerCase();
     const emailWasPlaceholder = isPlaceholderOAuthEmail(currentEmail);
@@ -337,6 +341,13 @@ export default function ProfileEditScreen() {
       showToast({
         type: 'info',
         title: t('pages.profileEdit.nameRequired', { defaultValue: '표시 이름을 입력해주세요.' }),
+      });
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{4,32}$/.test(trimmedUsername)) {
+      showToast({
+        type: 'error',
+        title: t('pages.profileEdit.invalidUsername', { defaultValue: '사용자명은 영문, 숫자, 밑줄 4~32자로 입력해주세요.' }),
       });
       return;
     }
@@ -366,6 +377,9 @@ export default function ProfileEditScreen() {
           });
         }
       }
+      if (trimmedUsername !== String(profile?.username || '').trim()) {
+        await apiClient.updateAccountUsername(trimmedUsername);
+      }
 
       const nextProfilePatch = {
         full_name: trimmedName,
@@ -384,9 +398,11 @@ export default function ProfileEditScreen() {
       queryClient.setQueryData(['profile', user.id], (prev: any) => ({
         ...(prev || {}),
         ...nextProfilePatch,
+        username: trimmedUsername,
       }));
       syncCurrentUserProfile({
         full_name: nextProfilePatch.full_name,
+        username: trimmedUsername,
         avatar_url: nextProfilePatch.avatar_url,
         email: trimmedEmail || undefined,
       });
@@ -408,11 +424,16 @@ export default function ProfileEditScreen() {
       } else {
         router.replace(appRouteMap.profile.path as never);
       }
-    } catch {
+    } catch (error: any) {
+      const errorCode = String(error?.response?.data?.error || error?.message || '').trim();
       showToast({
         type: 'error',
-        title: t('pages.profileEdit.saveFailTitle', { defaultValue: '저장 실패' }),
-        message: t('pages.profileEdit.saveFailBody', { defaultValue: '프로필 저장 중 오류가 발생했습니다.' }),
+        title: errorCode === 'username_already_exists'
+          ? t('pages.profileEdit.usernameTaken', { defaultValue: '이미 사용 중인 사용자명입니다.' })
+          : t('pages.profileEdit.saveFailTitle', { defaultValue: '저장 실패' }),
+        message: errorCode === 'username_already_exists'
+          ? t('pages.profileEdit.usernameTakenBody', { defaultValue: '다른 사용자명을 입력해주세요.' })
+          : t('pages.profileEdit.saveFailBody', { defaultValue: '프로필 저장 중 오류가 발생했습니다.' }),
       });
     } finally {
       setSaving(false);
@@ -483,6 +504,21 @@ export default function ProfileEditScreen() {
             onChangeText={setName}
             maxLength={40}
           />
+
+          <Text className="mb-2 text-sm font-semibold text-gray-700">
+            {t('pages.profileEdit.username', { defaultValue: '사용자명 (@아이디)' })}
+          </Text>
+          <View className="mb-4 flex-row items-center rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4">
+            <Text className="text-gray-500">@</Text>
+            <TextInput
+              className="ml-1 flex-1 py-3 text-gray-950 dark:text-surface-50"
+              value={username}
+              onChangeText={(value) => setUsername(value.replace(/^@+/, '').replace(/[^a-zA-Z0-9_]/g, ''))}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={32}
+            />
+          </View>
 
           <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.profileEdit.bio')}</Text>
           <TextInput

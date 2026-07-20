@@ -43,6 +43,10 @@ function cleanText(value) {
   return String(value ?? '').trim();
 }
 
+export function normalizeProfileSearchQuery(value) {
+  return cleanText(value).replace(/^@+/, '').slice(0, 80);
+}
+
 function parseAvatarImage(dataUrl) {
   const match = String(dataUrl || '').match(/^data:(image\/(png|jpe?g|webp));base64,(.+)$/i);
   if (!match) return null;
@@ -117,6 +121,50 @@ export function registerProfileRoutes(app, { pool, getAuthUserId, authRateLimit 
     } catch {
       if (nextPath) void fs.unlink(nextPath).catch(() => undefined);
       return res.status(500).json({ error: 'avatar_upload_failed' });
+    }
+  });
+
+  app.get('/api/profiles/search', authRateLimit(120, 60_000), async (req, res) => {
+    const userId = getAuthUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const query = normalizeProfileSearchQuery(req.query.q || req.query.search);
+    if (query.length < 2) return res.json({ ok: true, data: [] });
+
+    try {
+      const pattern = `%${query}%`;
+      const result = await pool.query(
+        `WITH matches AS (
+           SELECT u.id::text AS id,
+                  COALESCE(NULLIF(p.username, ''), u.username) AS username,
+                  COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), u.username) AS full_name,
+                  COALESCE(p.avatar_url, '') AS avatar_url,
+                  COALESCE(p.bio, '') AS bio,
+                  COALESCE(p.account_type, 'personal') AS account_type,
+                  CASE
+                    WHEN lower(u.username)=lower($2) OR lower(COALESCE(p.username, ''))=lower($2) THEN 0
+                    WHEN lower(COALESCE(p.full_name, ''))=lower($2) THEN 1
+                    ELSE 2
+                  END AS relevance,
+                  row_number() OVER (
+                    PARTITION BY lower(COALESCE(NULLIF(p.username, ''), u.username))
+                    ORDER BY (COALESCE(p.avatar_url, '') <> '') DESC, u.id
+                  ) AS handle_rank
+           FROM app_users u
+           LEFT JOIN app_profiles p ON p.id::text=u.id::text
+           WHERE COALESCE(u.is_blocked, false)=false
+             AND (u.username ILIKE $1 OR COALESCE(p.username, '') ILIKE $1
+                  OR COALESCE(p.full_name, '') ILIKE $1 OR u.email ILIKE $1)
+         )
+         SELECT id, username, full_name, avatar_url, bio, account_type
+         FROM matches
+         WHERE handle_rank=1
+         ORDER BY relevance, full_name
+         LIMIT 30`,
+        [pattern, query]
+      );
+      return res.json({ ok: true, data: result.rows || [] });
+    } catch {
+      return res.status(500).json({ error: 'profile_search_failed' });
     }
   });
 

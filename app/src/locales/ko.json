@@ -681,6 +681,7 @@
     },
     "search": {
       "placeholder": "포인트, 다이버, 리조트 검색",
+      "people": "다이버",
       "empty": "검색 결과가 없습니다."
     },
     "activity": {
@@ -715,6 +716,10 @@
     "profileEdit": {
       "subtitle": "프로필 정보를 수정하세요",
       "name": "표시 이름",
+      "username": "사용자명 (@아이디)",
+      "invalidUsername": "사용자명은 영문, 숫자, 밑줄 4~32자로 입력해주세요.",
+      "usernameTaken": "이미 사용 중인 사용자명입니다.",
+      "usernameTakenBody": "다른 사용자명을 입력해주세요.",
       "bio": "소개",
       "diveLevel": "다이빙 레벨",
       "scubaLevel": "스쿠버다이빙 레벨",

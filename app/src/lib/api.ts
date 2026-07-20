@@ -1217,6 +1217,21 @@ export const apiClient = {
     return response.data?.data || response.data || {};
   },
 
+  updateAccountUsername: async (username: string) => {
+    const normalizedUsername = normalizeString(username).replace(/^@+/, '');
+    if (!/^[a-zA-Z0-9_]{4,32}$/.test(normalizedUsername)) throw new Error('invalid_username');
+    const response = await axiosInstance.patch('/auth/me', { username: normalizedUsername });
+    return response.data?.data || response.data || {};
+  },
+
+  searchProfiles: async (query: string) => {
+    const normalizedQuery = normalizeString(query).replace(/^@+/, '');
+    if (normalizedQuery.length < 2) return [];
+    const response = await axiosInstance.get('/profiles/search', { params: { q: normalizedQuery } });
+    const rows = response.data?.data || response.data || [];
+    return Array.isArray(rows) ? rows : [];
+  },
+
   uploadLicenseImageWithOcr: async (imageData: string) => {
     const dataUrl = normalizeString(imageData);
     if (!dataUrl) throw new Error('invalid_image_data');

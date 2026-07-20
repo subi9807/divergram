@@ -1218,7 +1218,15 @@ export function registerAuthRoutes(app, deps) {
       const fields = [];
       const vals = [];
 
-      if (username !== undefined) { vals.push(username); fields.push(`username=$${vals.length}`); }
+      if (username !== undefined) {
+        const existingUsername = await pool.query(
+          'SELECT id FROM app_users WHERE lower(username)=lower($1) AND id::text <> $2 LIMIT 1',
+          [username, userId]
+        );
+        if (existingUsername.rows.length) return res.status(409).json({ error: 'username_already_exists' });
+        vals.push(username);
+        fields.push(`username=$${vals.length}`);
+      }
       if (fullName !== undefined) { vals.push(String(fullName).trim()); fields.push(`full_name=$${vals.length}`); }
       if (contactPhone !== undefined) { vals.push(String(contactPhone).trim()); fields.push(`contact_phone=$${vals.length}`); }
       if (password !== undefined) {

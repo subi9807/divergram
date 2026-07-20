@@ -681,6 +681,7 @@
     },
     "search": {
       "placeholder": "Search points, divers, resorts",
+      "people": "Divers",
       "empty": "No matching results."
     },
     "activity": {
@@ -715,6 +716,10 @@
     "profileEdit": {
       "subtitle": "Update your profile information",
       "name": "Display name",
+      "username": "Username (@handle)",
+      "invalidUsername": "Use 4–32 letters, numbers, or underscores for your username.",
+      "usernameTaken": "This username is already in use.",
+      "usernameTakenBody": "Please choose another username.",
       "bio": "Bio",
       "diveLevel": "Dive Level",
       "scubaLevel": "Scuba level",

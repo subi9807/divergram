@@ -126,6 +126,12 @@ export default function ExploreScreen() {
     queryKey: ['explore'],
     queryFn: apiClient.getExplore,
   });
+  const normalizedProfileQuery = searchText.trim().replace(/^@+/, '');
+  const { data: profileResults = [] } = useQuery({
+    queryKey: ['profile-search', normalizedProfileQuery],
+    queryFn: () => apiClient.searchProfiles(normalizedProfileQuery),
+    enabled: normalizedProfileQuery.length >= 2,
+  });
 
   useEffect(() => {
     const incoming = String(params.tag || params.q || '').trim();
@@ -274,6 +280,29 @@ export default function ExploreScreen() {
                 <Filter size={14} color={colors.muted} />
               </View>
             </View>
+            {profileResults.length > 0 ? (
+              <View style={{ paddingTop: 10 }}>
+                <Text style={{ marginBottom: 8, color: colors.muted, fontSize: 13, fontWeight: '700' }}>
+                  {t('pages.search.people', { defaultValue: '다이버' })}
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {profileResults.map((profile: any) => (
+                    <View
+                      key={String(profile.id)}
+                      style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 18, borderWidth: 1, borderColor: colors.searchBorder, paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.searchBg }}
+                    >
+                      {profile.avatar_url ? (
+                        <ExpoImage source={{ uri: String(profile.avatar_url) }} style={{ width: 36, height: 36, borderRadius: 18 }} contentFit="cover" />
+                      ) : null}
+                      <View style={{ marginLeft: profile.avatar_url ? 8 : 0 }}>
+                        <Text style={{ color: colors.text, fontSize: 13, fontWeight: '700' }}>{profile.full_name || profile.username}</Text>
+                        <Text style={{ color: colors.muted, fontSize: 12 }}>@{profile.username}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
