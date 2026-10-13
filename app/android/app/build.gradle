@@ -105,8 +105,8 @@ android {
         applicationId 'com.divergram.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 40
-        versionName "1.2.6"
+        versionCode 67
+        versionName "1.2.12"
     }
     signingConfigs {
         debug {
@@ -127,9 +127,15 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            if (project.hasProperty('DIVERGRAM_DEVICE_DEV')) {
+                applicationIdSuffix '.dev'
+                versionNameSuffix '-dev'
+            }
         }
         release {
-            signingConfig findProperty('DIVERGRAM_UPLOAD_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
+            if (findProperty('DIVERGRAM_UPLOAD_STORE_FILE')) {
+                signingConfig signingConfigs.release
+            }
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"

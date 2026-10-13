@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>METAbyTREE — Minimal Business Card</title>
+  <style>
+    :root {
+      --ink: #071a34;
+      --teal: #08bda5;
+      --cut: #e83e78;
+      --paper: #ffffff;
+      --trim-w: 90mm;
+      --trim-h: 50mm;
+      --bleed: 2mm;
+      --w: 94mm;
+      --h: 54mm;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #edf0f2;
+      font-family: Inter, Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+    }
+
+    header {
+      max-width: 1020px;
+      margin: auto;
+      padding: 40px 28px 14px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    h1 { margin: 0; font-size: 20px; letter-spacing: -.04em; }
+    header p { margin: 6px 0 0; color: #75808d; font-size: 12px; }
+    button {
+      border: 1px solid #cbd1d6;
+      border-radius: 0;
+      padding: 10px 16px;
+      color: var(--ink);
+      background: white;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    main {
+      max-width: 1020px;
+      margin: auto;
+      padding: 24px 28px 64px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 34px 52px;
+    }
+    .label {
+      margin: 0 0 9px;
+      color: #8a939d;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .card {
+      position: relative;
+      width: var(--w);
+      height: var(--h);
+      max-width: 100%;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: 0 12px 30px rgba(7, 26, 52, .1);
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      z-index: 20;
+      inset: var(--bleed);
+      border: .2mm dashed var(--cut);
+      pointer-events: none;
+    }
+
+    .front { padding: 8mm; }
+    .company {
+      position: absolute;
+      left: 10mm;
+      top: 9.5mm;
+      font-size: 2.45mm;
+      font-weight: 800;
+      letter-spacing: -.025em;
+    }
+    .company::before {
+      content: "";
+      display: inline-block;
+      width: 1.65mm;
+      height: 1.65mm;
+      margin-right: 1.5mm;
+      border-radius: 50%;
+      background: var(--teal);
+      vertical-align: .1mm;
+    }
+    .front-symbol {
+      position: absolute;
+      right: 10mm;
+      top: 8mm;
+      width: 10.5mm;
+      height: 14.5mm;
+      overflow: hidden;
+    }
+    .front-symbol img {
+      position: absolute;
+      left: -2.5mm;
+      top: -.5mm;
+      width: 45mm;
+      max-width: none;
+      height: auto;
+    }
+    .identity {
+      position: absolute;
+      left: 10mm;
+      bottom: 10mm;
+    }
+    .name-ko {
+      font-size: 5.5mm;
+      font-weight: 720;
+      letter-spacing: -.065em;
+    }
+    .name-en {
+      font-size: 4.5mm;
+      font-weight: 720;
+      letter-spacing: -.04em;
+    }
+    .subname {
+      margin-top: 1.25mm;
+      color: #77818d;
+      font-size: 1.85mm;
+      font-weight: 550;
+      letter-spacing: .15em;
+    }
+    .position {
+      margin-top: 1.25mm;
+      color: #77818d;
+      font-size: 1.85mm;
+      font-weight: 650;
+      letter-spacing: .08em;
+    }
+    .contact {
+      position: absolute;
+      right: 10mm;
+      bottom: 9.7mm;
+      text-align: right;
+      font-size: 2.3mm;
+      font-weight: 550;
+      letter-spacing: .03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .website {
+      margin-top: 1.15mm;
+      color: var(--teal);
+      font-weight: 700;
+    }
+    .email { margin-top: 1.15mm; }
+
+    .back {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3mm;
+    }
+    .symbol-crop {
+      position: relative;
+      width: 21mm;
+      height: 29mm;
+      overflow: hidden;
+    }
+    .symbol-crop img {
+      position: absolute;
+      left: -5mm;
+      top: -1mm;
+      width: 90mm;
+      max-width: none;
+      height: auto;
+    }
+    .back-wordmark {
+      color: var(--ink);
+      font-size: 3.1mm;
+      font-weight: 800;
+      letter-spacing: -.025em;
+      line-height: 1;
+    }
+    .back-wordmark span {
+      color: var(--teal);
+      font-weight: 550;
+    }
+
+    .note {
+      grid-column: 1 / -1;
+      margin: 0;
+      color: #78838e;
+      font-size: 11px;
+    }
+
+    @media (max-width: 820px) {
+      main { grid-template-columns: 1fr; }
+      .note { grid-column: auto; }
+    }
+    @media print {
+      @page { size: 94mm 54mm; margin: 0; }
+      body { background: white; }
+      header, .label, .note { display: none !important; }
+      main { display: block; margin: 0; padding: 0; }
+      .sheet { break-after: page; page-break-after: always; }
+      .sheet:last-of-type { break-after: auto; page-break-after: auto; }
+      .card { max-width: none; box-shadow: none; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>METAbyTREE / Minimal</h1>
+      <p>94 × 54mm artwork · 90 × 50mm trim · 2mm bleed</p>
+    </div>
+    <button type="button" onclick="window.print()">인쇄 / PDF</button>
+  </header>
+
+  <main>
+    <section class="sheet">
+      <p class="label">Korean / Front</p>
+      <article class="card front" aria-label="미니멀 국문 명함 앞면">
+        <div class="company">METAbyTREE</div>
+        <div class="front-symbol">
+          <img src="metabytree-logo-concept-v1.png" alt="METAbyTREE 나무 심볼">
+        </div>
+        <div class="identity">
+          <div class="name-ko">김석근</div>
+          <div class="subname">SEOKGEUN KIM</div>
+          <div class="position">대표이사</div>
+        </div>
+        <div class="contact">
+          <div>+82 10 8887 2209</div>
+          <div class="email">ceo@metabytree.com</div>
+          <div class="website">metabytree.com</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="sheet">
+      <p class="label">Back</p>
+      <article class="card back" aria-label="로고 전용 뒷면">
+        <div class="symbol-crop">
+          <img src="metabytree-logo-concept-v1.png" alt="METAbyTREE 나무 심볼">
+        </div>
+        <div class="back-wordmark">META<span>by</span>TREE</div>
+      </article>
+    </section>
+
+    <section class="sheet">
+      <p class="label">English / Front</p>
+      <article class="card front" lang="en" aria-label="Minimal English business card front">
+        <div class="company">METAbyTREE</div>
+        <div class="front-symbol">
+          <img src="metabytree-logo-concept-v1.png" alt="METAbyTREE tree symbol">
+        </div>
+        <div class="identity">
+          <div class="name-en">SEOKGEUN KIM</div>
+          <div class="position">CEO</div>
+        </div>
+        <div class="contact">
+          <div>+82 10 8887 2209</div>
+          <div class="email">ceo@metabytree.com</div>
+          <div class="website">metabytree.com</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="sheet">
+      <p class="label">Back</p>
+      <article class="card back" aria-label="Logo-only back">
+        <div class="symbol-crop">
+          <img src="metabytree-logo-concept-v1.png" alt="METAbyTREE tree symbol">
+        </div>
+        <div class="back-wordmark">META<span>by</span>TREE</div>
+      </article>
+    </section>
+
+    <p class="note">바깥쪽은 94 × 54mm 작업 영역이며, 분홍색 점선은 안쪽 90 × 50mm 실제 재단선입니다. 사방 2mm가 도련 영역입니다.</p>
+  </main>
+</body>
+</html>

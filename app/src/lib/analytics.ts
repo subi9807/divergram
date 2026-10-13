@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Sentry } from './sentry';
 
 interface AnalyticsEvent {
   name: string;
@@ -28,11 +29,13 @@ class Analytics {
     }
 
     this.userId = userId;
-    
-    // TODO: Initialize actual analytics service (Mixpanel, Amplitude, etc.)
-    // Example:
-    // Mixpanel.identify(userId);
-    // Mixpanel.people.set(properties);
+    Sentry.setUser({ id: userId });
+    Sentry.addBreadcrumb({
+      category: 'auth',
+      message: 'user_identified',
+      level: 'info',
+      data: properties?.provider ? { provider: properties.provider } : undefined,
+    });
   }
 
   // Track events
@@ -42,9 +45,12 @@ class Analytics {
       return;
     }
 
-    // TODO: Send to actual analytics service
-    // Example:
-    // Mixpanel.track(event.name, event.properties);
+    Sentry.addBreadcrumb({
+      category: 'analytics',
+      message: event.name,
+      level: 'info',
+      data: event.properties,
+    });
   }
 
   // Track screen views
@@ -91,6 +97,10 @@ class Analytics {
 
   // Track errors
   error(error: Error, context?: Record<string, any>) {
+    if (this.isEnabled) {
+      Sentry.captureException(error, { extra: context });
+      return;
+    }
     this.track({
       name: 'Error',
       properties: {
@@ -110,9 +120,7 @@ class Analytics {
       return;
     }
 
-    // TODO: Reset actual analytics service
-    // Example:
-    // Mixpanel.reset();
+    Sentry.setUser(null);
   }
 }
 

@@ -1,0 +1,7 @@
+ALTER TABLE app_education_applications
+  ADD COLUMN IF NOT EXISTS preferred_date DATE,
+  ADD COLUMN IF NOT EXISTS privacy_consent BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS third_party_consent BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS consented_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS consent_version TEXT NOT NULL DEFAULT '';
+

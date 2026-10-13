@@ -9,10 +9,10 @@ const cache = new Map<string, string>();
 
 export async function hydrateSecureAuthStorage() {
   for (const key of TOKEN_KEYS) {
-    let value = String((await SecureStore.getItemAsync(key)) || '').trim();
+    let value = String((await SecureStore.getItemAsync(key).catch(() => null)) || '').trim();
     if (!value) {
       value = String(storage.getString(key) || (await AsyncStorage.getItem(key)) || '').trim();
-      if (value) await SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK });
+      if (value) await SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }).catch(() => undefined);
     }
     if (value) cache.set(key, value);
     storage.delete(key);
@@ -30,12 +30,12 @@ export function setSecureAuthValue(key: string, value: string) {
   void AsyncStorage.removeItem(key);
   if (!normalized) return deleteSecureAuthValue(key);
   cache.set(key, normalized);
-  void SecureStore.setItemAsync(key, normalized, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK });
+  void SecureStore.setItemAsync(key, normalized, { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }).catch(() => undefined);
 }
 
 export function deleteSecureAuthValue(key: string) {
   cache.delete(key);
   storage.delete(key);
   void AsyncStorage.removeItem(key);
-  void SecureStore.deleteItemAsync(key);
+  void SecureStore.deleteItemAsync(key).catch(() => undefined);
 }

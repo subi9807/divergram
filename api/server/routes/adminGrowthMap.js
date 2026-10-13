@@ -1,7 +1,24 @@
 export function registerAdminGrowthMapRoutes(app, { pool, requireAdmin }) {
   app.get('/api/admin/map-points', requireAdmin, async (_req, res) => {
     try {
-      const r = await pool.query(`SELECT id, location, dive_site, created_at FROM app_posts ORDER BY created_at DESC LIMIT 1000`);
+      const r = await pool.query(`
+        SELECT p.id, p.location, p.dive_site, p.caption, p.location_lat, p.location_lng,
+               p.image_url, p.created_at,
+               COALESCE(
+                 NULLIF(p.image_url, ''),
+                 (SELECT NULLIF(m.media_url, '')
+                    FROM app_post_media m
+                   WHERE m.post_id = p.id AND LOWER(m.media_type) IN ('image', 'photo')
+                   ORDER BY m.order_index ASC, m.created_at ASC
+                   LIMIT 1)
+               ) AS thumbnail_url
+          FROM app_posts p
+         WHERE NULLIF(TRIM(COALESCE(p.location, '')), '') IS NOT NULL
+            OR NULLIF(TRIM(COALESCE(p.dive_site, '')), '') IS NOT NULL
+            OR (p.location_lat IS NOT NULL AND p.location_lng IS NOT NULL)
+         ORDER BY p.created_at DESC
+         LIMIT 1000
+      `);
       res.json({ ok: true, points: r.rows || [] });
     } catch {
       res.status(500).json({ ok: false, error: 'admin_map_points_failed' });

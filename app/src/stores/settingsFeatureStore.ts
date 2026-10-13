@@ -8,7 +8,7 @@ const zustandStorage = {
   removeItem: (name: string) => storage.delete(name),
 };
 
-export type SocialProvider = 'google' | 'apple' | 'instagram';
+export type SocialProvider = 'google' | 'apple' | 'instagram' | 'facebook' | 'threads';
 
 export type BlockedUser = {
   id: string;
@@ -32,14 +32,24 @@ export type InsuranceInfo = {
 
 export type SocialLinkRecord = {
   provider: string;
+  accountName?: string;
   linkedAt?: string;
 };
 
+export type MarineWeatherLocation = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  region?: string;
+};
+
 interface SettingsFeatureState {
-  socialLinks: Record<SocialProvider, { linked: boolean; linkedAt: string }>;
+  socialLinks: Record<SocialProvider, { linked: boolean; linkedAt: string; accountName: string }>;
   blockedUsers: BlockedUser[];
   emergencyContact: EmergencyContact;
   insuranceInfo: InsuranceInfo;
+  marineWeatherLocations: MarineWeatherLocation[];
 
   setSocialLinked: (provider: SocialProvider, linked: boolean) => void;
   syncSocialLinks: (links: SocialLinkRecord[]) => void;
@@ -47,6 +57,8 @@ interface SettingsFeatureState {
   removeBlockedUser: (id: string) => void;
   setEmergencyContact: (contact: EmergencyContact) => void;
   setInsuranceInfo: (info: InsuranceInfo) => void;
+  addMarineWeatherLocation: (location: MarineWeatherLocation) => void;
+  removeMarineWeatherLocation: (id: string) => void;
 }
 
 const defaultEmergencyContact: EmergencyContact = {
@@ -62,10 +74,12 @@ const defaultInsuranceInfo: InsuranceInfo = {
   validUntil: '',
 };
 
-const defaultSocialLinks: Record<SocialProvider, { linked: boolean; linkedAt: string }> = {
-  google: { linked: false, linkedAt: '' },
-  apple: { linked: false, linkedAt: '' },
-  instagram: { linked: false, linkedAt: '' },
+const defaultSocialLinks: Record<SocialProvider, { linked: boolean; linkedAt: string; accountName: string }> = {
+  google: { linked: false, linkedAt: '', accountName: '' },
+  apple: { linked: false, linkedAt: '', accountName: '' },
+  instagram: { linked: false, linkedAt: '', accountName: '' },
+  facebook: { linked: false, linkedAt: '', accountName: '' },
+  threads: { linked: false, linkedAt: '', accountName: '' },
 };
 
 export const useSettingsFeatureStore = create<SettingsFeatureState>()(
@@ -75,6 +89,7 @@ export const useSettingsFeatureStore = create<SettingsFeatureState>()(
       blockedUsers: [],
       emergencyContact: defaultEmergencyContact,
       insuranceInfo: defaultInsuranceInfo,
+      marineWeatherLocations: [],
 
       setSocialLinked: (provider, linked) =>
         set((state) => ({
@@ -83,6 +98,7 @@ export const useSettingsFeatureStore = create<SettingsFeatureState>()(
             [provider]: {
               linked,
               linkedAt: linked ? new Date().toISOString() : '',
+              accountName: linked ? state.socialLinks[provider]?.accountName || '' : '',
             },
           },
         })),
@@ -96,6 +112,7 @@ export const useSettingsFeatureStore = create<SettingsFeatureState>()(
             next[provider] = {
               linked: true,
               linkedAt: String(item.linkedAt || new Date().toISOString()),
+              accountName: String(item.accountName || '').trim(),
             };
           });
           return { socialLinks: next };
@@ -143,6 +160,15 @@ export const useSettingsFeatureStore = create<SettingsFeatureState>()(
             validUntil: String(info.validUntil || '').trim(),
           },
         }),
+
+      addMarineWeatherLocation: (location) =>
+        set((state) => {
+          if (state.marineWeatherLocations.some((item) => item.id === location.id)) return state;
+          return { marineWeatherLocations: [...state.marineWeatherLocations, location].slice(0, 30) };
+        }),
+
+      removeMarineWeatherLocation: (id) =>
+        set((state) => ({ marineWeatherLocations: state.marineWeatherLocations.filter((item) => item.id !== id) })),
     }),
     {
       name: 'settings-feature-storage',

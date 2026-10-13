@@ -1,0 +1,49 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map placeholder">
+  <defs>
+    <linearGradient id="mapBg" x1="120" y1="88" x2="1080" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0D1731"/>
+      <stop offset="1" stop-color="#08101F"/>
+    </linearGradient>
+    <linearGradient id="route" x1="140" y1="560" x2="1020" y2="194" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00D4FF"/>
+      <stop offset="1" stop-color="#0068FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="1176" height="736" rx="42" fill="url(#mapBg)"/>
+  <g opacity="0.34">
+    <path d="M120 92H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 164H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 236H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 308H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 380H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 452H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 524H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 596H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M120 668H1080" stroke="white" stroke-opacity="0.12"/>
+    <path d="M192 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M312 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M432 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M552 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M672 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M792 72V688" stroke="white" stroke-opacity="0.12"/>
+    <path d="M912 72V688" stroke="white" stroke-opacity="0.12"/>
+  </g>
+  <path d="M210 548C280 518 314 472 372 438C430 404 478 426 540 370C602 314 664 258 732 276C802 294 836 352 910 338C968 328 1004 286 1052 236" stroke="url(#route)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M210 548C280 518 314 472 372 438C430 404 478 426 540 370C602 314 664 258 732 276C802 294 836 352 910 338C968 328 1004 286 1052 236" stroke="white" stroke-opacity="0.1" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <g>
+    <circle cx="372" cy="438" r="16" fill="#00D4FF"/>
+    <circle cx="540" cy="370" r="18" fill="#0068FF"/>
+    <circle cx="732" cy="276" r="16" fill="#00D4FF"/>
+    <circle cx="910" cy="338" r="16" fill="#0068FF"/>
+  </g>
+  <g>
+    <rect x="80" y="62" width="214" height="72" rx="22" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.08"/>
+    <rect x="80" y="162" width="264" height="72" rx="22" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.08"/>
+    <rect x="850" y="610" width="270" height="92" rx="22" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.08"/>
+    <text x="110" y="104" fill="white" fill-opacity="0.9" font-size="24" font-family="Arial, sans-serif">Map placeholder</text>
+    <text x="110" y="198" fill="white" fill-opacity="0.68" font-size="18" font-family="Arial, sans-serif">Google Map 영역</text>
+    <text x="110" y="224" fill="white" fill-opacity="0.48" font-size="14" font-family="Arial, sans-serif">실제 지도 연결 시 이 영역을 교체</text>
+    <text x="880" y="651" fill="white" fill-opacity="0.9" font-size="18" font-family="Arial, sans-serif">Seoul HQ / Global remote friendly</text>
+    <text x="880" y="678" fill="white" fill-opacity="0.48" font-size="14" font-family="Arial, sans-serif">Open for partnerships and enterprise demos</text>
+  </g>
+</svg>

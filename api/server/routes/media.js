@@ -222,6 +222,11 @@ export function registerMediaRoutes(app, { getAuthUserId, authRateLimit }) {
       return res.status(400).json({ error: "public_id_required" });
     }
 
+    const segments = publicId.split('/');
+    if (segments.length !== 3 || segments[1] !== sanitizeSegment(userId, 'user') || segments.some(part => !part || part === '.' || part === '..')) {
+      return res.status(403).json({ error: 'media_owner_required' });
+    }
+
     try {
       const timestamp = Math.floor(Date.now() / 1000);
       const invalidate = req.body?.invalidate === false ? "false" : "true";

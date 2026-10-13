@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, CreditCard, ImagePlus } from 'lucide-react-native';
+import { Camera, CreditCard, ImagePlus, Mail, Phone } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
@@ -81,6 +81,17 @@ export default function ProfileEditScreen() {
   const { showToast } = useToast();
 
   const [email, setEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [savedEmail, setSavedEmail] = useState('');
+  const [savedPhone, setSavedPhone] = useState('');
+  const [emailEditing, setEmailEditing] = useState(false);
+  const [phoneEditing, setPhoneEditing] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+  const [phoneCode, setPhoneCode] = useState('');
+  const [emailCodeRequested, setEmailCodeRequested] = useState(false);
+  const [phoneCodeRequested, setPhoneCodeRequested] = useState(false);
+  const [verificationBusy, setVerificationBusy] = useState<'email-request' | 'email-confirm' | 'phone-request' | 'phone-confirm' | ''>('');
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -100,9 +111,17 @@ export default function ProfileEditScreen() {
   const [licenseModalOpen, setLicenseModalOpen] = useState(false);
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect -- 프로필 로드 결과를 편집 폼의 초기값으로 동기화 */
     const currentEmail = String(user?.email || '').trim();
-    setEmail(isPlaceholderOAuthEmail(currentEmail) ? '' : currentEmail);
+    const visibleEmail = isPlaceholderOAuthEmail(currentEmail) ? '' : currentEmail;
+    const currentPhone = String(profile?.contact_phone || '').trim();
+    if (!emailEditing) {
+      setEmail(visibleEmail);
+      setSavedEmail(visibleEmail);
+    }
+    if (!phoneEditing) {
+      setContactPhone(currentPhone);
+      setSavedPhone(currentPhone);
+    }
     setUsername(String(profile?.username || '').trim());
     setName(String(profile?.full_name || user?.name || '').trim());
     setBio(String(profile?.bio || '').trim());
@@ -123,10 +142,10 @@ export default function ProfileEditScreen() {
     setLicenseAgency(String(profile?.license_agency || '').trim());
     setLicenseNumber(String(profile?.license_number || '').trim());
     setLicenseIssuedAt(String(profile?.license_issued_at || '').trim());
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [
     profile?.avatar_url,
     profile?.bio,
+    profile?.contact_phone,
     profile?.diving_level,
     profile?.freediving_level,
     profile?.full_name,
@@ -136,10 +155,118 @@ export default function ProfileEditScreen() {
     profile?.license_number,
     profile?.scuba_level,
     profile?.username,
+    emailEditing,
+    phoneEditing,
     user?.email,
     user?.avatar,
     user?.name,
   ]);
+
+  useEffect(() => {
+    let active = true;
+    void apiClient.getSession().then((session: any) => {
+      if (!active) return;
+      setEmailVerified(Boolean(session?.user?.emailVerified));
+      if (session?.user?.phonePending) setContactPhone(String(session.user.phonePending));
+      const verifiedPhone = String(session?.profile?.contact_phone || '').trim();
+      if (verifiedPhone) {
+        setContactPhone(verifiedPhone);
+        setSavedPhone(verifiedPhone);
+      }
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  const verificationErrorMessage = (error: any) => {
+    const code = String(error?.response?.data?.error || error?.message || '');
+    const messages: Record<string, string> = {
+      sms_provider_not_configured: t('pages.profileEdit.verification.smsNotConfigured', { defaultValue: 'SMS 발송 서비스 연결이 필요합니다.' }),
+      invalid_contact_phone: t('pages.profileEdit.verification.invalidPhone', { defaultValue: '국가번호를 포함한 올바른 연락처를 입력해주세요.' }),
+      invalid_code: t('pages.profileEdit.verification.invalidCode', { defaultValue: '인증번호가 올바르지 않습니다.' }),
+      code_expired: t('pages.profileEdit.verification.expiredCode', { defaultValue: '인증번호가 만료되었습니다. 다시 요청해주세요.' }),
+    };
+    return messages[code] || t('pages.profileEdit.verification.failed', { defaultValue: '인증 처리 중 오류가 발생했습니다.' });
+  };
+
+  const requestEmailCode = async () => {
+    if (verificationBusy) return;
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || normalized === savedEmail.trim().toLowerCase()) {
+      showToast({ type: 'info', title: t('pages.profileEdit.verification.newEmailRequired', { defaultValue: '현재 이메일과 다른 새 이메일을 입력해주세요.' }) });
+      return;
+    }
+    setVerificationBusy('email-request');
+    try {
+      await apiClient.updateAccountEmail(normalized);
+      setEmailVerified(false);
+      setEmailCodeRequested(true);
+      showToast({ type: 'success', title: t('pages.profileEdit.verification.emailSent', { defaultValue: '이메일로 인증번호를 보냈습니다.' }) });
+    } catch (error) {
+      showToast({ type: 'error', title: verificationErrorMessage(error) });
+    } finally {
+      setVerificationBusy('');
+    }
+  };
+
+  const confirmEmailCode = async () => {
+    if (verificationBusy || !/^\d{6}$/.test(emailCode)) return;
+    setVerificationBusy('email-confirm');
+    try {
+      await apiClient.confirmEmailVerification(emailCode);
+      setEmailVerified(true);
+      const verifiedEmail = email.trim().toLowerCase();
+      setSavedEmail(verifiedEmail);
+      setEmail(verifiedEmail);
+      setEmailEditing(false);
+      syncCurrentUserProfile({ email: verifiedEmail });
+      setEmailCodeRequested(false);
+      setEmailCode('');
+      showToast({ type: 'success', title: t('pages.profileEdit.verification.emailDone', { defaultValue: '이메일 인증이 완료되었습니다.' }) });
+    } catch (error) {
+      showToast({ type: 'error', title: verificationErrorMessage(error) });
+    } finally {
+      setVerificationBusy('');
+    }
+  };
+
+  const requestPhoneCode = async () => {
+    if (verificationBusy) return;
+    const normalized = contactPhone.replace(/[^+\d]/g, '');
+    if (!normalized || normalized === savedPhone.replace(/[^+\d]/g, '')) {
+      showToast({ type: 'info', title: t('pages.profileEdit.verification.newPhoneRequired', { defaultValue: '현재 연락처와 다른 새 연락처를 입력해주세요.' }) });
+      return;
+    }
+    setVerificationBusy('phone-request');
+    try {
+      await apiClient.requestPhoneVerification(contactPhone);
+      setPhoneCodeRequested(true);
+      showToast({ type: 'success', title: t('pages.profileEdit.verification.smsSent', { defaultValue: 'SMS로 인증번호를 보냈습니다.' }) });
+    } catch (error) {
+      showToast({ type: 'error', title: verificationErrorMessage(error) });
+    } finally {
+      setVerificationBusy('');
+    }
+  };
+
+  const confirmPhoneCode = async () => {
+    if (verificationBusy || !/^\d{6}$/.test(phoneCode)) return;
+    setVerificationBusy('phone-confirm');
+    try {
+      const result: any = await apiClient.confirmPhoneVerification(phoneCode);
+      const verifiedPhone = String(result?.phone || contactPhone);
+      setContactPhone(verifiedPhone);
+      setSavedPhone(verifiedPhone);
+      setPhoneEditing(false);
+      setPhoneCodeRequested(false);
+      setPhoneCode('');
+      queryClient.setQueryData(['profile', user?.id], (prev: any) => ({ ...(prev || {}), contact_phone: verifiedPhone }));
+      showToast({ type: 'success', title: t('pages.profileEdit.verification.phoneDone', { defaultValue: '연락처 인증이 완료되었습니다.' }) });
+    } catch (error) {
+      showToast({ type: 'error', title: verificationErrorMessage(error) });
+    } finally {
+      setVerificationBusy('');
+    }
+  };
 
   const scubaLevels = useMemo(
     () => [
@@ -335,7 +462,7 @@ export default function ProfileEditScreen() {
     const trimmedName = name.trim();
     const trimmedUsername = username.trim().replace(/^@+/, '');
     const trimmedEmail = email.trim().toLowerCase();
-    const currentEmail = String(user?.email || '').trim().toLowerCase();
+    const currentEmail = String(savedEmail || user?.email || '').trim().toLowerCase();
     const emailWasPlaceholder = isPlaceholderOAuthEmail(currentEmail);
     if (!trimmedName) {
       showToast({
@@ -365,18 +492,16 @@ export default function ProfileEditScreen() {
       });
       return;
     }
+    if (trimmedEmail !== currentEmail && !emailVerified) {
+      showToast({
+        type: 'info',
+        title: t('pages.profileEdit.verification.emailRequired', { defaultValue: '변경할 이메일 인증을 먼저 완료해주세요.' }),
+      });
+      return;
+    }
 
     setSaving(true);
     try {
-      if (trimmedEmail && trimmedEmail !== currentEmail) {
-        const emailResult: any = await apiClient.updateAccountEmail(trimmedEmail);
-        if (emailResult?.emailVerificationRequested) {
-          showToast({
-            type: 'info',
-            title: t('pages.profileEdit.emailVerifyRequested', { defaultValue: '이메일 인증 메일을 보냈습니다.' }),
-          });
-        }
-      }
       if (trimmedUsername !== String(profile?.username || '').trim()) {
         await apiClient.updateAccountUsername(trimmedUsername);
       }
@@ -395,16 +520,24 @@ export default function ProfileEditScreen() {
       };
 
       await apiClient.updateProfile(user.id, nextProfilePatch);
+      const session: any = await apiClient.getSession();
+      const confirmedPhone = String(session?.profile?.contact_phone || savedPhone || '').trim();
+      const confirmedEmail = String(session?.user?.email || trimmedEmail || '').trim().toLowerCase();
+      setContactPhone(confirmedPhone);
+      setSavedPhone(confirmedPhone);
+      setEmail(confirmedEmail);
+      setSavedEmail(confirmedEmail);
       queryClient.setQueryData(['profile', user.id], (prev: any) => ({
         ...(prev || {}),
         ...nextProfilePatch,
         username: trimmedUsername,
+        contact_phone: confirmedPhone,
       }));
       syncCurrentUserProfile({
         full_name: nextProfilePatch.full_name,
         username: trimmedUsername,
         avatar_url: nextProfilePatch.avatar_url,
-        email: trimmedEmail || undefined,
+        email: confirmedEmail || undefined,
       });
 
       await Promise.all([
@@ -487,15 +620,140 @@ export default function ProfileEditScreen() {
           <Text className="mb-2 text-sm font-semibold text-gray-700">
             {t('pages.profileEdit.email', { defaultValue: '이메일' })}
           </Text>
-          <TextInput
-            className="mb-4 rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-3 text-gray-950 dark:text-surface-50"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoCorrect={false}
-            maxLength={120}
-          />
+          <View className="mb-4 rounded-2xl border border-gray-200 bg-white p-2 dark:border-surface-700 dark:bg-surface-900">
+            <View className="flex-row items-center">
+              <Mail size={17} color="#64748b" />
+              {emailEditing ? (
+                <TextInput
+                  className="ml-2 h-11 flex-1 px-2 text-gray-950 dark:text-surface-50"
+                  value={email}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    setEmailVerified(false);
+                    setEmailCodeRequested(false);
+                  }}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  maxLength={120}
+                />
+              ) : (
+                <Text className="ml-2 flex-1 text-sm text-gray-900 dark:text-surface-50" numberOfLines={1}>
+                  {savedEmail || t('pages.profileEdit.verification.notRegistered', { defaultValue: '등록되지 않음' })}
+                </Text>
+              )}
+              <TouchableOpacity
+                className="h-10 items-center justify-center rounded-xl bg-brand-600 px-3"
+                onPress={() => {
+                  if (!emailEditing) {
+                    setEmailEditing(true);
+                    setEmail('');
+                    setEmailCode('');
+                    setEmailCodeRequested(false);
+                    setEmailVerified(false);
+                    return;
+                  }
+                  void requestEmailCode();
+                }}
+                disabled={Boolean(verificationBusy)}
+              >
+                {verificationBusy === 'email-request' ? <ActivityIndicator size="small" color="#ffffff" /> : (
+                  <Text className="text-xs font-semibold text-white">
+                    {emailEditing
+                      ? t('pages.profileEdit.verification.sendCode', { defaultValue: '인증번호 받기' })
+                      : t('common.change', { defaultValue: '변경' })}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {emailCodeRequested ? (
+              <View className="mt-2 flex-row gap-2 border-t border-gray-100 pt-2 dark:border-surface-700">
+                <TextInput
+                  className="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-gray-950 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50"
+                  value={emailCode}
+                  onChangeText={(value) => setEmailCode(value.replace(/\D/g, '').slice(0, 6))}
+                  keyboardType="number-pad"
+                  placeholder={t('pages.profileEdit.verification.codePlaceholder', { defaultValue: '6자리 인증번호' })}
+                  maxLength={6}
+                />
+                <TouchableOpacity
+                  className="h-11 items-center justify-center rounded-xl bg-brand-600 px-4"
+                  onPress={() => void confirmEmailCode()}
+                  disabled={Boolean(verificationBusy) || emailCode.length !== 6}
+                >
+                  {verificationBusy === 'email-confirm' ? <ActivityIndicator size="small" color="#ffffff" /> : <Text className="text-xs font-semibold text-white">{t('pages.profileEdit.verification.complete', { defaultValue: '인증 완료' })}</Text>}
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+
+          <Text className="mb-2 text-sm font-semibold text-gray-700 dark:text-surface-200">
+            {t('pages.profileEdit.verification.phone', { defaultValue: '연락처' })}
+          </Text>
+          <View className="mb-4 rounded-2xl border border-gray-200 bg-white p-2 dark:border-surface-700 dark:bg-surface-900">
+            <View className="flex-row items-center">
+            <Phone size={16} color="#64748b" />
+              {phoneEditing ? (
+                <TextInput
+                  className="ml-2 h-11 flex-1 px-2 text-gray-950 dark:text-surface-50"
+                  value={contactPhone}
+                  onChangeText={(value) => {
+                    setContactPhone(value.replace(/[^+\d -]/g, ''));
+                    setPhoneCodeRequested(false);
+                  }}
+                  keyboardType="phone-pad"
+                  autoComplete="tel"
+                  placeholder={t('pages.profileEdit.verification.phonePlaceholder', { defaultValue: '+82 10 1234 5678' })}
+                  maxLength={24}
+                />
+              ) : (
+                <Text className="ml-2 flex-1 text-sm text-gray-900 dark:text-surface-50" numberOfLines={1}>
+                  {savedPhone || t('pages.profileEdit.verification.notRegistered', { defaultValue: '등록되지 않음' })}
+                </Text>
+              )}
+              <TouchableOpacity
+                className="h-10 items-center justify-center rounded-xl bg-brand-600 px-3"
+                onPress={() => {
+                  if (!phoneEditing) {
+                    setPhoneEditing(true);
+                    setContactPhone('');
+                    setPhoneCode('');
+                    setPhoneCodeRequested(false);
+                    return;
+                  }
+                  void requestPhoneCode();
+                }}
+                disabled={Boolean(verificationBusy)}
+              >
+                {verificationBusy === 'phone-request' ? <ActivityIndicator size="small" color="#ffffff" /> : (
+                  <Text className="text-xs font-semibold text-white">
+                    {phoneEditing
+                      ? t('pages.profileEdit.verification.sendCode', { defaultValue: '인증번호 받기' })
+                      : t('common.change', { defaultValue: '변경' })}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {phoneCodeRequested ? (
+              <View className="mt-2 flex-row gap-2 border-t border-gray-100 pt-2 dark:border-surface-700">
+                <TextInput
+                  className="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-gray-950 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-50"
+                  value={phoneCode}
+                  onChangeText={(value) => setPhoneCode(value.replace(/\D/g, '').slice(0, 6))}
+                  keyboardType="number-pad"
+                  placeholder={t('pages.profileEdit.verification.codePlaceholder', { defaultValue: '6자리 인증번호' })}
+                  maxLength={6}
+                />
+                <TouchableOpacity
+                  className="h-11 items-center justify-center rounded-xl bg-brand-600 px-4"
+                  onPress={() => void confirmPhoneCode()}
+                  disabled={Boolean(verificationBusy) || phoneCode.length !== 6}
+                >
+                  {verificationBusy === 'phone-confirm' ? <ActivityIndicator size="small" color="#ffffff" /> : <Text className="text-xs font-semibold text-white">{t('pages.profileEdit.verification.complete', { defaultValue: '인증 완료' })}</Text>}
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
 
           <Text className="mb-2 text-sm font-semibold text-gray-700">{t('pages.profileEdit.name')}</Text>
           <TextInput

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { decryptSensitiveJson, encryptSensitiveJson, redactIntegrationTokens } from './dataEncryption.js';
+import { decryptSensitiveJson, decryptSensitiveText, encryptSensitiveJson, encryptSensitiveText, redactIntegrationTokens } from './dataEncryption.js';
 
 test('AES-GCM sensitive JSON round trip', () => {
   process.env.DATA_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString('base64');
@@ -9,6 +9,15 @@ test('AES-GCM sensitive JSON round trip', () => {
   assert.match(encrypted, /^enc:v1:/);
   assert.deepEqual(decryptSensitiveJson(encrypted), input);
   assert.ok(!encrypted.includes(input.phone));
+});
+
+test('AES-GCM sensitive text round trip', () => {
+  process.env.DATA_ENCRYPTION_KEY = Buffer.alloc(32, 8).toString('hex');
+  const phone = '+821012345678';
+  const encrypted = encryptSensitiveText(phone);
+  assert.match(encrypted, /^enc:v1:/);
+  assert.equal(decryptSensitiveText(encrypted), phone);
+  assert.ok(!encrypted.includes(phone));
 });
 
 test('integration tokens are omitted from API payloads', () => {

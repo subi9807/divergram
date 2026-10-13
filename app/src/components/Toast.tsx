@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { View, Text, Animated, TouchableOpacity } from 'react-native';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react-native';
+import { isLayoutPreviewEnabled } from '../lib/layoutPreview';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -30,6 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
+    if (isLayoutPreviewEnabled()) return;
     const id = Math.random().toString(36).substring(7);
     const newToast = { ...toast, id };
     

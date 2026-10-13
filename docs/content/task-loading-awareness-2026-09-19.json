@@ -1,0 +1,31 @@
+[
+  {
+    "category": "safety",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 130,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/eda126c2-ac29-451c-a1e0-1ddf5df99792.png",
+    "translations": {
+      "ko": {
+        "title": "수중 과업 과부하 · 한 번에 하나씩 보는 안전 습관",
+        "summary": "카메라, 컴퓨터, 부력, 버디까지 동시에 신경 쓰다 보면 중요한 신호를 놓칠 수 있습니다. 우선순위를 단순하게 유지하는 방법을 알아봅니다.",
+        "body": "할 일이 많아지면 시야가 좁아집니다\n수중에서는 평소 익숙한 일도 더 많은 주의를 요구합니다. 카메라 조작, 길 찾기, 장비 확인처럼 여러 과업이 겹치면 한 가지에 몰입해 수심, 기체, 버디 또는 환경 변화를 늦게 알아차릴 수 있습니다. 과업 과부하는 실력 부족의 낙인이 아니라 누구에게나 생길 수 있는 주의력의 한계입니다.\n\n안전의 중심을 먼저 정합니다\n부력과 호흡, 기체와 다이브 컴퓨터, 버디와 주변 환경처럼 다이빙을 유지하는 기본 확인이 촬영이나 기록보다 먼저입니다. 새 과업 때문에 이 기본 확인이 흐트러진다면 부가 활동을 멈추고 교육받은 절차와 현장 계획으로 돌아갑니다. 멋진 장면은 다시 만날 수 있지만 놓친 안전 신호는 되돌리기 어렵습니다.\n\n새 장비는 쉬운 환경에서 익힙니다\n처음 사용하는 카메라, 라이트 또는 컴퓨터 기능을 어려운 조건에서 한꺼번에 시험하지 않습니다. 제조사 설명서와 교육을 확인하고, 통제된 환경에서 한 가지씩 익힌 뒤 복잡성을 천천히 늘리세요. 장비가 많아졌다는 사실 자체보다 그 장비를 보지 않고도 기본 다이빙을 안정적으로 유지할 수 있는지가 중요합니다.\n\n버디에게 부담을 숨기지 않습니다\n집중이 흐트러지거나 계획을 따라가기 어렵다면 버디에게 알리고 과업을 줄이거나 다이빙을 종료합니다. 입수 전에는 촬영이나 조사 같은 추가 목적, 사용할 신호, 중단 기준을 함께 확인하세요. 버디는 대신 모든 것을 감시하는 사람이 아니라 서로의 빈틈을 일찍 알아차리는 팀입니다.\n\n다이빙 뒤에는 놓친 신호를 돌아봅니다\n사진을 얻었는지뿐 아니라 기체 확인 간격, 버디 위치, 수심 변화와 불편했던 순간을 로그에 적어 보세요. 다음 다이빙에서는 무엇을 빼거나 미리 연습할지 정할 수 있습니다. 반복되는 부담이나 불안이 있다면 자격을 갖춘 강사와 통제된 환경에서 기본 기술을 다시 점검합니다.\n\n이 글은 일반적인 안전 인식 안내이며 공인 교육, 현장 브리핑, 장비별 지침 또는 비상 절차 실습을 대신하지 않습니다. 표지는 과업을 잠시 내려놓고 버디와 핵심 정보를 다시 확인하는 장면을 표현한 새 AI 개념 일러스트이며 실제 장비 구성이나 수중 절차의 기준이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Underwater task loading · Keep safety priorities simple",
+        "summary": "A camera, computer, buoyancy and buddy can compete for attention. Learn to reduce the extra task before an important signal disappears from view.",
+        "body": "More tasks can narrow attention\nEven familiar actions demand more attention underwater. When camera controls, navigation and equipment checks overlap, one task can absorb enough focus that a change in depth, gas, buddy position or the environment is noticed late. Task loading is not a label for poor ability; it is a limit of attention that can affect any diver.\n\nName the safety priorities first\nThe essentials that sustain the dive come before photography or recording: stable buoyancy and breathing, gas and computer awareness, your buddy and the surroundings. If an added task disrupts those checks, pause the optional activity and return to your training and the site plan. Another image may be possible later; a missed safety cue cannot always be recovered.\n\nLearn new equipment in an easier setting\nDo not combine an unfamiliar camera, light or computer feature with demanding conditions for the first time. Review the manufacturer guidance and relevant training, then become familiar with one addition at a time in a controlled setting before increasing complexity. The important question is not how much equipment you carry, but whether the basics remain stable while using it.\n\nTell your buddy when the load is too high\nIf concentration is slipping or the plan feels difficult to follow, communicate with your buddy and reduce the task or end the dive. Before entry, discuss any secondary goal such as photography or a survey, the signals you will use and the conditions for stopping. A buddy is not there to monitor everything for you; the team helps each other notice gaps early.\n\nReview the missed cues after the dive\nRecord more than whether you got the image. Note gas-check awareness, buddy position, unexpected depth changes and moments of discomfort. This can show what to remove or practise before the next dive. If overload or anxiety keeps returning, review the fundamentals with a qualified instructor in a controlled environment.\n\nThis article provides general safety awareness and does not replace certified training, the site briefing, equipment instructions or hands-on emergency practice. The cover is a newly created AI concept illustration showing a diver setting aside an extra task to reconnect with a buddy and essential information; it is not a reference for real equipment configuration or underwater procedure.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "水中のタスク負荷 · 安全の優先順位をシンプルに",
+        "summary": "カメラ、コンピューター、浮力、バディを同時に意識すると、大切な変化を見落とすことがあります。余分な作業を減らす考え方を学びます。",
+        "body": "作業が増えると注意の範囲が狭くなります\n水中では、普段なら簡単な動作にも多くの注意が必要です。カメラ操作、ナビゲーション、器材確認が重なると、一つの作業に集中しすぎて、深度、残圧、バディの位置、環境の変化に気づくのが遅れることがあります。タスク負荷は能力不足の印ではなく、どのダイバーにも起こり得る注意力の限界です。\n\n安全の中心を先に決めます\n浮力と呼吸、残圧とダイブコンピューター、バディと周囲の環境など、潜水を維持する基本確認は撮影や記録より優先されます。追加の作業で基本確認が乱れたら、任意の活動を止め、講習で学んだ手順と現地の計画に戻ります。写真の機会は再び訪れても、見逃した安全上の変化は取り戻せないことがあります。\n\n新しい器材は易しい環境で慣れます\n初めて使うカメラ、ライト、コンピューター機能を、難しい条件で同時に試さないでください。メーカーの説明と必要な講習を確認し、管理された環境で一つずつ慣れてから複雑さを増やします。器材の数よりも、それを使いながら基本のダイビングを安定して維持できるかが重要です。\n\n負荷が高いことをバディに伝えます\n集中が途切れたり計画を追うのが難しくなったりしたら、バディに伝え、作業を減らすかダイビングを終了します。入水前に、撮影や調査などの追加目的、使う合図、中止する条件を共有してください。バディはすべてを代わりに監視する人ではなく、互いの見落としを早く見つけるチームです。\n\n潜水後に見逃した変化を振り返ります\n写真が撮れたかだけでなく、残圧確認への意識、バディの位置、予想外の深度変化、不快に感じた瞬間もログに残します。次回は何を減らし、何を先に練習するべきか判断できます。負荷や不安が繰り返される場合は、資格を持つインストラクターと管理された環境で基本を見直してください。\n\n本記事は一般的な安全意識の案内であり、認定講習、現地ブリーフィング、器材別の説明、緊急手順の実技練習を代替しません。表紙は追加の作業をいったん止め、バディと重要情報を再確認する場面を表した新しいAI概念イラストで、実際の器材構成や水中手順の基準ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "水下任务负荷 · 让安全优先级保持简单",
+        "summary": "相机、潜水电脑、浮力和潜伴会同时争夺注意力。学会先减少额外任务，避免错过重要变化。",
+        "body": "任务越多，注意范围可能越窄\n在水下，即使熟悉的动作也需要更多注意力。当相机操作、导航和装备检查重叠时，人可能过度专注于其中一项，因而较晚发现深度、气量、潜伴位置或环境的变化。任务负荷并不代表能力不足，而是任何潜水员都可能遇到的注意力限制。\n\n先明确安全核心\n维持潜水的基本事项应优先于拍摄或记录，包括稳定的浮力与呼吸、气量与潜水电脑、潜伴以及周围环境。如果额外任务打乱了这些检查，应暂停可选活动，回到培训所学和现场计划。精彩画面以后可能再次出现，但错过的安全信号未必能够挽回。\n\n在简单环境中熟悉新装备\n不要第一次就在困难条件下同时尝试陌生的相机、灯具或潜水电脑功能。先阅读制造商说明并接受相关培训，在可控环境中一次熟悉一项，再逐步增加复杂度。重点不在携带了多少装备，而在使用它们时能否稳定维持基本潜水能力。\n\n负荷过高时告诉潜伴\n如果注意力开始分散，或难以按照计划行动，应向潜伴示意，并减少任务或结束潜水。入水前应共同确认拍摄、调查等附加目标，约定使用的信号和停止条件。潜伴不是替你监控一切的人，而是彼此尽早发现疏漏的队友。\n\n潜水后回顾被忽略的信号\n记录的不应只有是否拍到照片，还可以写下对气量检查的关注、潜伴位置、意外的深度变化以及感到不适的时刻。这样可以决定下次应减少什么，或先练习什么。如果负荷或焦虑反复出现，应在可控环境中与合格教练重新检查基础技能。\n\n本文仅提供一般性的安全意识，不能替代认证培训、现场简报、装备说明或紧急程序的实操练习。封面是新制作的AI概念插画，表现潜水员暂时放下额外任务，重新关注潜伴和关键信息；它不作为真实装备配置或水下程序的参考。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

@@ -9,6 +9,10 @@ import { apiClient } from '../lib/api';
 
 const DIVING_LICENSE_STORAGE_KEY = 'divergram_diving_licenses_v1';
 
+function buildVerificationUrl(licenseNumber: string) {
+  return `https://api.divergram.com/api/diving-licenses/verify/${encodeURIComponent(String(licenseNumber || '').trim())}`;
+}
+
 function readStoredLicenses(): DivingLicense[] {
   const raw = storage.getString(DIVING_LICENSE_STORAGE_KEY);
   if (!raw) return [];
@@ -38,6 +42,7 @@ function normalizeLicenseRow(row: any): DivingLicense | null {
   return {
     id,
     licenseNumber,
+    memberNumber: String(row.memberNumber || row.member_number || '').trim() || undefined,
     userId: String(row.userId || row.user_id || 'me').trim() || 'me',
     holderName,
     profileImageUrl: String(row.profileImageUrl || row.profile_image_url || '').trim() || undefined,
@@ -91,7 +96,7 @@ export async function listDivingLicenses(userId = 'me'): Promise<DivingLicense[]
     writeStoredLicenses(normalized);
     return sortByCreatedAtDesc(normalized);
   }
-  return mockDivingLicenses.map((item) => ({ ...item, userId: uid }));
+  return __DEV__ ? mockDivingLicenses.map((item) => ({ ...item, userId: uid })) : [];
 }
 
 export async function getDivingLicenseById(licenseId: string): Promise<DivingLicense | null> {
@@ -106,6 +111,7 @@ export async function createDivingLicense(input: DivingLicenseInput): Promise<Di
   const next: DivingLicense = {
     id: `dl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     licenseNumber: String(input.licenseNumber || '').trim(),
+    memberNumber: String(input.memberNumber || '').trim() || undefined,
     userId: String(input.userId || 'me').trim() || 'me',
     holderName: String(input.holderName || '').trim(),
     profileImageUrl: String(input.profileImageUrl || '').trim() || undefined,
@@ -122,8 +128,7 @@ export async function createDivingLicense(input: DivingLicenseInput): Promise<Di
     instructorName: String(input.instructorName || '').trim() || undefined,
     instructorNumber: String(input.instructorNumber || '').trim() || undefined,
     emergencyContact: String(input.emergencyContact || '').trim() || undefined,
-    verificationUrl:
-      String(input.verificationUrl || '').trim() || `https://divergram.com/license/${encodeURIComponent(String(input.licenseNumber || '').trim())}`,
+    verificationUrl: buildVerificationUrl(input.licenseNumber),
     walletPassUrl: String(input.walletPassUrl || '').trim() || undefined,
     status: normalizeDivingLicenseStatus(input.status),
     notes: String(input.notes || '').trim() || undefined,
@@ -174,9 +179,9 @@ export async function updateDivingLicense(licenseId: string, patch: Partial<Divi
       emergencyContact:
         patch.emergencyContact !== undefined ? String(patch.emergencyContact || '').trim() || undefined : item.emergencyContact,
       verificationUrl:
-        patch.verificationUrl !== undefined
-          ? String(patch.verificationUrl || '').trim() || `https://divergram.com/license/${encodeURIComponent(String(item.licenseNumber || '').trim())}`
-          : item.verificationUrl,
+        patch.licenseNumber !== undefined
+          ? buildVerificationUrl(patch.licenseNumber || item.licenseNumber)
+          : buildVerificationUrl(item.licenseNumber),
       walletPassUrl:
         patch.walletPassUrl !== undefined ? String(patch.walletPassUrl || '').trim() || undefined : item.walletPassUrl,
       status: patch.status !== undefined ? normalizeDivingLicenseStatus(patch.status) : item.status,

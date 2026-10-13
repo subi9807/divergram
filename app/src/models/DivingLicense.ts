@@ -57,6 +57,7 @@ export function getDivingLicenseStatusTone(status: DivingLicenseStatus) {
 export interface DivingLicense {
   id: string;
   licenseNumber: string;
+  memberNumber?: string;
   userId: string;
   holderName: string;
   profileImageUrl?: string;

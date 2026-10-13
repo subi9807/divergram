@@ -27,6 +27,7 @@ dist-ssr
 .env.backups/
 expo-env.d.ts
 .expo/
+.codex-artifacts/
 
 .firebase/
 .secrets/
@@ -35,14 +36,22 @@ expo-env.d.ts
 build/
 android/build/
 android/app/build/
+android/app/.cxx/
+android/.gradle/
 ios/build/
+ios/build-*/
 ios/Pods/
 ios/App/
+.release/
+*.aab
+*.apk
+*.ipa
 .git/
 .gitignore
 
 # Local derived / device / log outputs
 .derived*/
+.build/
 .logs_*
 .tmp/
 tmp/

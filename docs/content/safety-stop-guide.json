@@ -1,0 +1,31 @@
+[
+  {
+    "category": "safety",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 60,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/e6a66b57-48be-4ca5-8996-afb4cba516ec.jpg",
+    "translations": {
+      "ko": {
+        "title": "3분 안전정지 · 수면으로 올라가기 전의 여유",
+        "summary": "약 5m에서 3분 이상, 왜 멈출까요? 안전정지의 의미와 감압정지의 차이, 주의할 상황을 알아보세요.",
+        "body": "스쿠버 · 수면으로 올라가기 전 3분 안전정지\n무감압 범위의 레크리에이션 스쿠버에서는 보통 수심 약 5m에서 3분 이상 머무르는 안전정지를 배웁니다. 상승 중 얕은 수심에서 여유를 두어 불활성 기체 배출을 돕는 추가 예방 조치이며, 3분만 채우면 감압병 위험이 사라진다는 뜻은 아닙니다.\n정지 중에는 정상적으로 호흡하면서 수심·시간·잔압과 버디를 확인하고, 끝난 뒤에도 교육받은 속도로 천천히 상승하세요. 실제 정지 수심과 시간은 교육 기준, 다이브 컴퓨터 지침과 계획에 따릅니다.\n안전정지는 무감압 한계를 넘었을 때 필요한 감압정지와 다릅니다. 컴퓨터가 요구하는 감압정지를 임의로 3분으로 줄이거나 안전정지로 대신하면 안 됩니다. 가스 부족이나 의료 응급상황 등 즉각적인 위험이 있으면 3분을 채우려고 수중에 무리하게 머무르지 말고, 버디에게 알린 뒤 교육받은 비상 절차를 따르세요. 수면에 나온 뒤 빠뜨린 정지를 채우려고 임의로 다시 잠수하지 마세요. 이 안내는 스쿠버용이며 프리다이빙에 적용하지 않습니다.\n\n이 글은 기본 개념 안내이며 실제 교육이나 개인별 감압 계획을 대신하지 않습니다. 이미지는 개념 일러스트입니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "The three-minute safety stop · A pause before surfacing",
+        "summary": "Why pause at about 5m for at least three minutes? Understand safety stops, required decompression and situations that need caution.",
+        "body": "Scuba: the three-minute safety stop\nFor recreational no-decompression scuba, a common practice is to pause at about 5m/15ft for at least three minutes. This shallow pause supports inert-gas elimination as an additional precaution; completing three minutes does not eliminate decompression sickness risk.\nBreathe normally, monitor depth, time, gas and your buddy, and continue ascending slowly as trained after the stop. Follow your training, computer instructions and dive plan for the actual depth and duration.\nA safety stop is not a required decompression stop after exceeding no-decompression limits. Never replace required decompression with a three-minute safety stop. If low gas, a medical emergency or another immediate hazard makes staying underwater unsafe, do not remain merely to finish the timer. Signal your buddy and follow trained emergency procedures. Do not independently dive back down after surfacing to make up a missed stop. This guidance is for scuba, not freediving.\n\nThis introduction does not replace practical training or an individual decompression plan. The image is a conceptual illustration.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "3分間の安全停止 · 浮上前のひととき",
+        "summary": "約5mで3分以上、なぜ止まるのでしょうか。安全停止の意味、減圧停止との違い、注意すべき状況を紹介します。",
+        "body": "スクーバ · 浮上前の3分間の安全停止\n無減圧範囲のレクリエーションスクーバでは、一般に約5mで3分以上の安全停止を行います。浅い水深で時間をとり不活性ガスの排出を助ける追加の予防措置であり、3分終えれば減圧症のリスクがなくなるわけではありません。\n通常どおり呼吸し、水深・時間・残圧とバディを確認します。停止後も習った速度でゆっくり浮上しましょう。実際の水深と時間は講習、コンピューターの指示、潜水計画に従います。\n安全停止は無減圧限界を超えた場合に必要な減圧停止とは異なります。必要な減圧を勝手に3分へ短縮したり、安全停止で代用したりしてはいけません。ガス不足や医療上の緊急事態など差し迫った危険がある場合、タイマーのために無理に水中に留まらず、バディに知らせて訓練した緊急手順に従ってください。浮上後、抜けた停止を補うために自己判断で潜り直さないでください。これはスクーバの案内で、フリーダイビングには適用しません。\n\n本記事は基本概念の紹介であり、実技講習や個別の減圧計画を代替しません。画像は概念イラストです。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "3分钟安全停留 · 浮出水面前的片刻",
+        "summary": "为什么要在约5米处停留至少3分钟？认识安全停留的意义、与减压停留的区别及注意事项。",
+        "body": "水肺潜水 · 上水前的3分钟安全停留\n在免减压范围内的休闲水肺潜水中，常见做法是在约5米处停留至少3分钟。这是在浅水处留出时间、帮助排出惰性气体的额外预防措施，并不代表完成3分钟就没有减压病风险。\n停留时正常呼吸，查看深度、时间、气量和潜伴状态，结束后仍按培训要求缓慢上升。具体深度和时长应遵循培训、潜水电脑指引及潜水计划。\n安全停留不同于超过免减压极限后所需的减压停留。不能把必要的减压自行缩短为3分钟，或用安全停留代替。若气量不足、医疗急症等紧迫危险使继续留在水下不安全，不要仅为完成计时而勉强停留；应通知潜伴并遵循学过的应急程序。浮出水面后，不要自行再次下潜补做遗漏的停留。本说明适用于水肺潜水，不适用于自由潜水。\n\n本文介绍基本概念，不能代替实际培训或个人减压计划。配图为概念插画。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

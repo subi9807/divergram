@@ -4,6 +4,7 @@ import { buildMockExternalLogs, mapProviderLogs } from './externalDiveLogMapper'
 import {
   clearProviderTokenState,
   ensureProviderAccessToken,
+  getProviderCredentials,
   getProviderTokenState,
   updateProviderTokenFromAuthResult,
 } from './providerTokenService';
@@ -31,11 +32,12 @@ export async function connectShearwaterAccount(authCode?: string): Promise<{ con
 
 export async function disconnectShearwaterAccount(): Promise<void> {
   const tokenState = getProviderTokenState('shearwater');
+  const credentials = await getProviderCredentials('shearwater');
   try {
     await apiClient.disconnectExternalProvider('shearwater', {
       providerUserId: tokenState?.providerUserId,
-      accessToken: tokenState?.accessToken,
-      refreshToken: tokenState?.refreshToken,
+      accessToken: credentials.accessToken,
+      refreshToken: credentials.refreshToken,
     });
   } catch (error: any) {
     if (!isEndpointUnavailable(error)) throw error;

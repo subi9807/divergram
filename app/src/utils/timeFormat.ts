@@ -1,4 +1,4 @@
-export function getRelativeTime(date: string | Date): string {
+export function getRelativeTime(date: string | Date, locale?: string): string {
   const now = new Date();
   const postDate = new Date(date);
   const diffInMs = now.getTime() - postDate.getTime();
@@ -7,22 +7,10 @@ export function getRelativeTime(date: string | Date): string {
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
 
-  if (diffInSeconds < 60) {
-    return '방금 전';
-  } else if (diffInMinutes < 60) {
-    return `${diffInMinutes}분 전`;
-  } else if (diffInHours < 24) {
-    return `${diffInHours}시간 전`;
-  } else if (diffInDays === 1) {
-    return '1일 전';
-  } else if (diffInDays === 2) {
-    return '2일 전';
-  } else if (diffInDays === 3) {
-    return '3일 전';
-  } else {
-    const year = postDate.getFullYear();
-    const month = postDate.getMonth() + 1;
-    const day = postDate.getDate();
-    return `${year}년 ${month}월 ${day}일`;
-  }
+  const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  if (diffInSeconds < 60) return relative.format(0, 'second');
+  if (diffInMinutes < 60) return relative.format(-diffInMinutes, 'minute');
+  if (diffInHours < 24) return relative.format(-diffInHours, 'hour');
+  if (diffInDays <= 3) return relative.format(-diffInDays, 'day');
+  return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long', day: 'numeric' }).format(postDate);
 }

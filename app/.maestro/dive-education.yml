@@ -1,0 +1,26 @@
+appId: com.divergram.app.ios
+name: Dive education draft screen
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 12000
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- tapOn: "다이빙 교육"
+- waitForAnimationToEnd
+- assertVisible: "교육 로드맵"
+- tapOn: "스쿠버다이빙"
+- swipe:
+    start: "50%,35%"
+    end: "50%,85%"
+    duration: 900
+- swipe:
+    start: "50%,35%"
+    end: "50%,85%"
+    duration: 900
+- takeScreenshot: dive-education-overview
+- tapOn:
+    point: "50%,76%"
+- waitForAnimationToEnd
+- assertVisible: "신청 내용 확인"
+- takeScreenshot: dive-education-application

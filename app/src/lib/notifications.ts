@@ -25,8 +25,17 @@ interface NotificationData {
   data?: Record<string, any>;
 }
 
+export function isRemoteNotificationRuntimeEnabled() {
+  if (Platform.OS === 'web') return false;
+  if (Platform.OS !== 'ios') return true;
+  if (!Device.isDevice) return false;
+
+  return !__DEV__ || process.env.EXPO_PUBLIC_ENABLE_IOS_DEV_NOTIFICATIONS === 'true';
+}
+
 class NotificationManager {
   private pushToken: string | null = null;
+  private permissionPromptAttempted = false;
 
   async initialize() {
     try {
@@ -38,7 +47,7 @@ class NotificationManager {
         return debugToken;
       }
 
-      if (Platform.OS === 'ios' && !Device.isDevice) {
+      if (!isRemoteNotificationRuntimeEnabled()) {
         console.log('Must use physical device for push notifications');
         return null;
       }
@@ -47,7 +56,10 @@ class NotificationManager {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
-      if (existingStatus !== 'granted') {
+      // A denied prompt can move the app through inactive/active states. Only ask
+      // from the initial undetermined state so that activation does not loop.
+      if (existingStatus === 'undetermined' && !this.permissionPromptAttempted) {
+        this.permissionPromptAttempted = true;
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
@@ -102,13 +114,13 @@ class NotificationManager {
       await registerFcmToken(this.pushToken, Platform.OS);
       useIntegrationStore.getState().updateIntegration('fcm', {
         connected: true,
-        statusMessage: '활성',
+        statusMessage: 'i18n:active',
         lastSyncAt: new Date().toISOString(),
       });
     } catch (error) {
       useIntegrationStore.getState().updateIntegration('fcm', {
         connected: false,
-        statusMessage: '토큰 등록 실패',
+        statusMessage: 'i18n:tokenRegistrationFailed',
       });
       console.error('Failed to register push token:', error);
     }

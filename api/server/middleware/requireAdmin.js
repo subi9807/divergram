@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { verifySessionToken } from '../lib/sessionToken.js';
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
@@ -35,7 +36,7 @@ export function requireAdminFactory({ adminApiKey, jwtSecret, pool, adminEmails 
 
     let payload;
     try {
-      payload = jwt.verify(token, jwtSecret);
+      payload = verifySessionToken(jwt, token, jwtSecret);
     } catch {
       return res.status(401).json({ error: 'unauthorized' });
     }
@@ -43,10 +44,6 @@ export function requireAdminFactory({ adminApiKey, jwtSecret, pool, adminEmails 
     const userId = String(payload?.sub || '').trim();
     const email = normalizeEmail(payload?.email || '');
     if (!userId || !email) return res.status(401).json({ error: 'unauthorized' });
-    if (adminEmailSet.has(email)) {
-      req.adminAuth = { method: 'jwt', email, userId, role: 'admin' };
-      return next();
-    }
 
     try {
       const q = await pool.query('SELECT email, role, is_blocked FROM app_users WHERE id=$1 LIMIT 1', [userId]);

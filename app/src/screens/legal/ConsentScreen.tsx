@@ -1,13 +1,27 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../../components/Screen';
-import { getLatestPolicyVersionMap, getSignupConsentDefinition } from '../../services/policyService';
-import { clearPendingSignupDraft, getPendingSignupDraft } from '../../services/signupFlowService';
+import { getLatestPolicyVersionMap, getSignupConsentDefinition, refreshRemotePolicyDocuments } from '../../services/policyService';
+import {
+  clearPendingSignupDraft,
+  getPendingSignupDraft,
+  setPendingSignupConsents,
+} from '../../services/signupFlowService';
 import type { ConsentKey } from '../../models';
 import { useLegalStore } from '../../stores/legalStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+import { apiClient } from '../../lib/api';
+import { normalizePolicyLocale } from '../../legal/policyCatalog';
+
+const consentCopyKeys = [
+  'requiredAlertTitle', 'requiredAlertBody', 'loginTitle', 'loginBody', 'doneTitle', 'doneBody',
+  'missingTitle', 'missingBody', 'signupDone', 'signupDoneBody', 'saveFailed', 'signupFailed', 'unknown',
+  'reconsent', 'signup', 'reconsentSubtitle', 'signupSubtitle', 'all', 'required', 'optional', 'requiredTag',
+  'optionalTag', 'view', 'loading', 'processing', 'continue', 'enter', 'join',
+] as const;
 
 const routeByConsentKey: Partial<Record<ConsentKey, string>> = {
   terms_required: '/(auth)/terms',
@@ -19,18 +33,24 @@ const routeByConsentKey: Partial<Record<ConsentKey, string>> = {
 };
 
 export default function ConsentScreen() {
+  const { t, i18n } = useTranslation();
   const { isDark } = useResolvedTheme();
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string | string[]; returnTo?: string | string[] }>();
   const mode = Array.isArray(params.mode) ? String(params.mode[0] || '') : String(params.mode || '');
   const returnToRaw = Array.isArray(params.returnTo) ? String(params.returnTo[0] || '') : String(params.returnTo || '');
   const returnTo = returnToRaw.startsWith('/') ? returnToRaw : '';
-  const { signupWithEmail, user } = useAuth();
+  const { signupWithEmail, signupWithSocialAccount, user } = useAuth();
   const registerConsents = useLegalStore((state) => state.registerConsents);
   const draft = getPendingSignupDraft();
-  const isReconsentMode = mode === 'reconsent' || (!draft && Boolean(user?.id));
+  const isSignupIntroMode = mode === 'signup-intro';
+  const isReconsentMode = mode === 'reconsent' || (!isSignupIntroMode && !draft && Boolean(user?.id));
+  const locale = normalizePolicyLocale(i18n.resolvedLanguage || i18n.language);
 
-  const consentDef = useMemo(() => getSignupConsentDefinition('ko'), []);
+  const [policyRevision, setPolicyRevision] = useState(0);
+  const [policyLoading, setPolicyLoading] = useState(true);
+  void policyRevision;
+  const consentDef = getSignupConsentDefinition(locale);
   const [values, setValues] = useState<Record<ConsentKey, boolean>>({
     terms_required: false,
     privacy_required: false,
@@ -41,10 +61,23 @@ export default function ConsentScreen() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const requiredOk =
-    values.terms_required && values.privacy_required && values.location_required && values.age14_required;
+  useEffect(() => {
+    let active = true;
+    refreshRemotePolicyDocuments(locale)
+      .then(() => { if (active) setPolicyRevision((value) => value + 1); })
+      .catch(() => undefined)
+      .finally(() => { if (active) setPolicyLoading(false); });
+    return () => { active = false; };
+  }, [locale]);
 
-  const allChecked = Object.values(values).every(Boolean);
+  const copy = Object.fromEntries(
+    consentCopyKeys.map((key) => [key, t(`consentScreen.${key}`)])
+  ) as Record<(typeof consentCopyKeys)[number], string>;
+
+  const requiredOk = values.terms_required && values.privacy_required && values.age14_required;
+
+  const visibleConsentKeys = [...consentDef.required, ...consentDef.optional].map((item) => item.key);
+  const allChecked = visibleConsentKeys.every((key) => values[key]);
   const colors = {
     title: isDark ? '#F1F5F9' : '#0F172A',
     body: isDark ? '#A8B5C4' : '#64748B',
@@ -56,13 +89,10 @@ export default function ConsentScreen() {
   };
 
   const toggleAll = (next: boolean) => {
-    setValues({
-      terms_required: next,
-      privacy_required: next,
-      location_required: next,
-      age14_required: next,
-      marketing_optional: next,
-      push_optional: next,
+    setValues((previous) => {
+      const updated = { ...previous, location_required: false };
+      for (const key of visibleConsentKeys) updated[key] = next;
+      return updated;
     });
   };
 
@@ -77,48 +107,66 @@ export default function ConsentScreen() {
 
   const submit = async () => {
     if (!requiredOk) {
-      Alert.alert('필수 동의 필요', '필수 약관에 모두 동의해야 회원가입할 수 있습니다.');
+      Alert.alert(copy.requiredAlertTitle, copy.requiredAlertBody);
       return;
     }
     if (submitting) return;
 
     setSubmitting(true);
     try {
-      const versionMap = getLatestPolicyVersionMap('ko');
+      const versionMap = getLatestPolicyVersionMap(locale);
+      const receipts = [...consentDef.required, ...consentDef.optional].map(({ key, policy }) => ({
+        key,
+        policyType: policy.type,
+        version: policy.version,
+        agreed: values[key],
+      }));
+      if (isSignupIntroMode) {
+        setPendingSignupConsents(receipts);
+        router.replace('/(auth)/login?mode=signup&consent=ready');
+        return;
+      }
       if (isReconsentMode) {
         if (!user?.id) {
-          Alert.alert('로그인 필요', '다시 로그인 후 동의를 진행해주세요.');
+          Alert.alert(copy.loginTitle, copy.loginBody);
           router.replace('/(auth)/login');
           return;
         }
+        await apiClient.saveSignupConsents(receipts, locale);
         registerConsents({
           userId: user.id,
           values,
           versionMap,
         });
-        Alert.alert('동의 완료', '최신 약관 동의가 저장되었습니다.');
+        Alert.alert(copy.doneTitle, copy.doneBody);
         router.replace((returnTo || '/(tabs)/feed') as never);
         return;
       }
 
       if (!draft) {
-        Alert.alert('회원가입 정보 없음', '다시 회원가입을 진행해주세요.');
+        Alert.alert(copy.missingTitle, copy.missingBody);
         router.replace('/(auth)/login');
         return;
       }
 
-      const createdUser = await signupWithEmail(draft.email, draft.password, draft.name, draft.contact);
-      const targetUserId = createdUser?.id || user?.id || `signup:${draft.email}`;
+      let createdUser = null;
+      if (draft.kind === 'social') {
+        const outcome = await signupWithSocialAccount(draft, receipts);
+        createdUser = outcome.user || null;
+      } else {
+        createdUser = await signupWithEmail(draft.email, draft.password, draft.name, draft.contact, receipts);
+      }
+      const targetUserId = createdUser?.id || user?.id || `signup:${draft.kind === 'email' ? draft.email : draft.providerUserId || draft.provider}`;
       registerConsents({
         userId: targetUserId,
         values,
         versionMap,
       });
       clearPendingSignupDraft();
-      Alert.alert('회원가입 완료', '동의 이력이 저장되었습니다.');
-      router.replace('/(tabs)/feed');
+      Alert.alert(copy.signupDone, copy.signupDoneBody);
+      router.replace('/(tabs)/profile-edit');
     } catch (error: any) {
-      Alert.alert(isReconsentMode ? '동의 저장 실패' : '회원가입 실패', String(error?.message || '알 수 없는 오류'));
+      Alert.alert(isReconsentMode ? copy.saveFailed : copy.signupFailed, String(error?.message || copy.unknown));
     } finally {
       setSubmitting(false);
     }
@@ -127,43 +175,43 @@ export default function ConsentScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 44 }}>
-        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{isReconsentMode ? '정책 재동의' : '회원가입 동의'}</Text>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{isReconsentMode ? copy.reconsent : copy.signup}</Text>
         <Text style={{ marginTop: 8, color: colors.body }}>
-          {isReconsentMode ? '서비스 이용을 위해 최신 정책 동의가 필요합니다.' : '필수 약관 동의 후 회원가입을 진행할 수 있습니다.'}
+          {isReconsentMode ? copy.reconsentSubtitle : copy.signupSubtitle}
         </Text>
 
         <View style={{ marginTop: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: colors.rowTitle, fontWeight: '800' }}>전체 동의</Text>
+            <Text style={{ color: colors.rowTitle, fontWeight: '800' }}>{copy.all}</Text>
             <Switch value={allChecked} onValueChange={toggleAll} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
           </View>
         </View>
 
         <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>필수 동의</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{copy.required}</Text>
           {consentDef.required.map((item, idx) => (
             <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.required.length - 1 ? 0 : 1, borderBottomColor: colors.rowBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.rowTitle, flex: 1 }}>[필수] {item.policy.title}</Text>
+                <Text style={{ color: colors.rowTitle, flex: 1 }}>[{copy.requiredTag}] {item.policy.title}</Text>
                 <Switch value={values[item.key]} onValueChange={(next) => updateOne(item.key, next)} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
               </View>
               <TouchableOpacity onPress={() => openDoc(item.key)} style={{ marginTop: 6 }}>
-                <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>내용 보기</Text>
+                <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>{copy.view}</Text>
               </TouchableOpacity>
             </View>
           ))}
         </View>
 
         <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>선택 동의</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{copy.optional}</Text>
           {consentDef.optional.map((item, idx) => (
             <View key={item.key} style={{ paddingVertical: 10, borderBottomWidth: idx === consentDef.optional.length - 1 ? 0 : 1, borderBottomColor: colors.rowBorder }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text style={{ color: colors.rowTitle, flex: 1 }}>[선택] {item.policy.title}</Text>
+                <Text style={{ color: colors.rowTitle, flex: 1 }}>[{copy.optionalTag}] {item.policy.title}</Text>
                 <Switch value={values[item.key]} onValueChange={(next) => updateOne(item.key, next)} trackColor={{ false: '#CBD5E1', true: '#0D5FA8' }} thumbColor="#fff" />
               </View>
               <TouchableOpacity onPress={() => openDoc(item.key)} style={{ marginTop: 6 }}>
-                <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>내용 보기</Text>
+                <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>{copy.view}</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -171,11 +219,19 @@ export default function ConsentScreen() {
 
         <TouchableOpacity
           style={{ marginTop: 16, borderRadius: 12, backgroundColor: requiredOk && !submitting ? '#0D5FA8' : '#94A3B8', paddingVertical: 13, alignItems: 'center' }}
-          disabled={!requiredOk || submitting}
+          disabled={!requiredOk || submitting || policyLoading}
           onPress={submit}
         >
           <Text style={{ color: '#fff', fontWeight: '800' }}>
-            {submitting ? '처리중...' : isReconsentMode ? '동의하고 계속하기' : '동의하고 가입하기'}
+            {policyLoading
+              ? copy.loading
+              : submitting
+                ? copy.processing
+                : isReconsentMode
+                  ? copy.continue
+                  : isSignupIntroMode
+                    ? copy.enter
+                    : copy.join}
           </Text>
         </TouchableOpacity>
       </ScrollView>

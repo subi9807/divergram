@@ -2,11 +2,13 @@ allowBuilds:
   '@firebase/util': true
   '@sentry/cli': true
   dtrace-provider: true
+  esbuild: true
   protobufjs: true
   unrs-resolver: true
 onlyBuiltDependencies:
   - '@firebase/util'
   - '@sentry/cli'
   - dtrace-provider
+  - esbuild
   - protobufjs
   - unrs-resolver

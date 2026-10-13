@@ -1,3 +1,7 @@
+import { loadSignupConsentConfig, saveSignupConsents, validateSignupConsents } from '../legal-consents.js';
+import { allocateUniqueOAuthUsername } from '../lib/oauthProfileDefaults.js';
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/dataEncryption.js';
+
 export function registerAuthRoutes(app, deps) {
   const {
     pool,
@@ -73,6 +77,16 @@ export function registerAuthRoutes(app, deps) {
     return getCookieValue(req.headers.cookie, SESSION_COOKIE_NAME);
   };
 
+  const getAuthenticatedUserId = (req) => {
+    const token = getRequestToken(req);
+    if (!token) return '';
+    try {
+      return String(verifySessionToken(jwt, token, JWT_SECRET)?.sub || '');
+    } catch {
+      return '';
+    }
+  };
+
   const setSessionCookie = (res, token, sessionDays) => {
     const maxAge = sessionDays * 24 * 60 * 60;
     const cookie = [
@@ -99,6 +113,8 @@ export function registerAuthRoutes(app, deps) {
     ].join('; ');
     res.setHeader('Set-Cookie', cookie);
   };
+
+  const readSignupConsents = async (req) => validateSignupConsents(req.body?.consents, await loadSignupConsentConfig(pool));
 
   const PROFILE_SELECT_COLUMNS =
     'username,full_name,contact_phone,bio,avatar_url,resort_cover_url,resort_photo_urls,resort_amenities,website,account_type,diving_level,scuba_level,freediving_level,license_image_url,license_type,license_number,license_agency,license_issued_at';
@@ -130,7 +146,7 @@ export function registerAuthRoutes(app, deps) {
 
   const buildAuthResultFromUserId = async (userId, sessionDays) => {
     const q = await pool.query(
-      'SELECT id,email,username,is_blocked FROM app_users WHERE id=$1 LIMIT 1',
+      'SELECT id,email,username,is_blocked,contact_phone,profile_completion_required FROM app_users WHERE id=$1 LIMIT 1',
       [String(userId)]
     );
     if (!q.rows.length) throw new Error('user_not_found');
@@ -140,13 +156,13 @@ export function registerAuthRoutes(app, deps) {
 
     const user = { id: String(row.id), email: row.email };
     const pq = await pool.query(`SELECT ${PROFILE_SELECT_COLUMNS} FROM app_profiles WHERE id=$1`, [user.id]);
-    const profile = buildProfileFromRow(pq.rows[0], row.id, row.username);
+    const profile = buildProfileFromRow({ ...(pq.rows[0] || {}), contact_phone: decryptSensitiveText(row.contact_phone) }, row.id, row.username);
     const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
     return {
       user,
       profile,
       token,
-      profileCompletionRequired: String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
+      profileCompletionRequired: Boolean(row.profile_completion_required) || String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
     };
   };
 
@@ -158,11 +174,13 @@ export function registerAuthRoutes(app, deps) {
         provider TEXT NOT NULL,
         provider_sub TEXT NOT NULL,
         email_at_link TEXT,
+        display_name TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         UNIQUE(provider, provider_sub),
         UNIQUE(user_id, provider)
       );
     `);
+    await pool.query('ALTER TABLE app_user_oauth_identities ADD COLUMN IF NOT EXISTS display_name TEXT');
   };
 
   const buildPlaceholderOAuthEmail = (provider, providerSub) => {
@@ -171,51 +189,73 @@ export function registerAuthRoutes(app, deps) {
     return `${safeProvider}_${safeSub}@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`;
   };
 
-  const upsertOAuthUser = async ({ provider, providerSub, email, name, sessionDays }) => {
+  const upsertOAuthUser = async ({ provider, providerSub, email, name, avatar, sessionDays, accountScope = 'personal' }) => {
+    if (accountScope === 'resort') throw new Error('resort_social_login_disabled');
     await ensureOAuthIdentityTable();
     const normalizedEmail = normalizeEmail(email || '');
-    const usernameBase = String(name || normalizedEmail.split('@')[0] || 'diver').replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 24) || 'diver_user';
     const resolvedEmail = normalizedEmail || buildPlaceholderOAuthEmail(provider, providerSub);
     const emailVerified = Boolean(normalizedEmail);
 
     let userRow = null;
+    let createdUser = false;
     let q = await pool.query(
-      `SELECT u.id,u.email,u.username
+      `SELECT u.id,u.email,u.username,u.profile_completion_required,u.account_scope
          FROM app_user_oauth_identities i
          JOIN app_users u ON u.id=i.user_id
         WHERE i.provider=$1 AND i.provider_sub=$2
         LIMIT 1`,
       [provider, providerSub]
     );
-    if (q.rows.length) userRow = q.rows[0];
+    if (q.rows.length) {
+      if (String(q.rows[0].account_scope || '').toLowerCase() === 'resort') throw new Error('resort_social_login_disabled');
+      userRow = q.rows[0];
+    }
 
     if (!userRow) {
-      q = await pool.query('SELECT id,email,username FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [normalizedEmail]);
+      const resortAccount = normalizedEmail
+        ? await pool.query("SELECT id FROM app_users WHERE lower(email)=lower($1) AND account_scope='resort' LIMIT 1", [normalizedEmail])
+        : { rows: [] };
+      if (resortAccount.rows.length) throw new Error('resort_social_login_disabled');
+      q = await pool.query('SELECT id,email,username,profile_completion_required FROM app_users WHERE lower(email)=lower($1) AND account_scope=$2 LIMIT 1', [normalizedEmail, accountScope]);
       if (q.rows.length) userRow = q.rows[0];
     }
 
     if (!userRow) {
       const tempPassword = crypto.randomBytes(20).toString('hex') + '!Aa1';
       const hash = await bcrypt.hash(tempPassword, 12);
-      const uq = await pool.query(
-        `INSERT INTO app_users(email,password_hash,password_sha256,username,role,email_verified,oauth_provider,oauth_sub)
-         VALUES ($1,$2,NULL,$3,$4,$5,$6,$7)
-         RETURNING id,email,username`,
-        [
-          resolvedEmail,
-          hash,
-          usernameBase,
-          isAdminEmail(normalizedEmail) ? 'admin' : 'user',
-          emailVerified,
+      for (let attempt = 0; attempt < 5 && !userRow; attempt += 1) {
+        const username = await allocateUniqueOAuthUsername(pool, crypto, {
+          email: normalizedEmail,
           provider,
           providerSub,
-        ]
-      );
-      userRow = uq.rows[0];
+        });
+        try {
+          const uq = await pool.query(
+            `INSERT INTO app_users(email,password_hash,password_sha256,username,role,email_verified,oauth_provider,oauth_sub,profile_completion_required,account_scope)
+             VALUES ($1,$2,NULL,$3,$4,$5,$6,$7,true,$8)
+             RETURNING id,email,username,profile_completion_required`,
+            [
+              resolvedEmail,
+              hash,
+              username,
+              isAdminEmail(normalizedEmail) ? 'admin' : 'user',
+              emailVerified,
+              provider,
+              providerSub,
+              accountScope,
+            ]
+          );
+          userRow = uq.rows[0];
+          createdUser = true;
+        } catch (error) {
+          if (error?.code !== '23505' || !String(error?.constraint || '').includes('username')) throw error;
+        }
+      }
+      if (!userRow) throw new Error('oauth_username_allocation_failed');
     }
 
     if (isAdminEmail(normalizedEmail)) {
-      await pool.query('UPDATE app_users SET role=$1, email_verified=true WHERE id=$2', ['admin', userRow.id]);
+      await pool.query('UPDATE app_users SET role=$1, account_scope=$2, email_verified=true WHERE id=$3', ['admin', 'admin', userRow.id]);
     } else {
       await pool.query('UPDATE app_users SET email_verified=$1 WHERE id=$2', [emailVerified, userRow.id]);
     }
@@ -227,11 +267,14 @@ export function registerAuthRoutes(app, deps) {
       [userRow.id, provider, providerSub, normalizedEmail || resolvedEmail]
     );
 
+    const initialAvatar = createdUser ? String(avatar || '').trim() : '';
     await pool.query(
       `INSERT INTO app_profiles(id,username,full_name,bio,avatar_url,account_type)
-       VALUES ($1,$2,$3,'','', 'personal')
-       ON CONFLICT (id) DO NOTHING`,
-      [String(userRow.id), userRow.username, name || userRow.username]
+       VALUES ($1,$2,$3,'',$4, 'personal')
+       ON CONFLICT (id) DO UPDATE SET
+         full_name=COALESCE(NULLIF(app_profiles.full_name, ''), EXCLUDED.full_name),
+         avatar_url=COALESCE(NULLIF(app_profiles.avatar_url, ''), EXCLUDED.avatar_url)`,
+      [String(userRow.id), userRow.username, name || userRow.username, initialAvatar]
     );
 
     const pq = await pool.query(`SELECT ${PROFILE_SELECT_COLUMNS} FROM app_profiles WHERE id=$1`, [String(userRow.id)]);
@@ -242,7 +285,7 @@ export function registerAuthRoutes(app, deps) {
       user,
       profile,
       token,
-      profileCompletionRequired: String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
+      profileCompletionRequired: createdUser || Boolean(userRow.profile_completion_required) || String(user.email || '').toLowerCase().endsWith(`@${OAUTH_PLACEHOLDER_EMAIL_DOMAIN}`),
     };
   };
 
@@ -256,6 +299,7 @@ export function registerAuthRoutes(app, deps) {
       sub: String(info.sub || '').trim(),
       email: normalizeEmail(info.email || ''),
       name: String(info.name || info.given_name || '').trim(),
+      avatar: String(info.picture || '').trim(),
     };
   };
 
@@ -280,6 +324,7 @@ export function registerAuthRoutes(app, deps) {
             sub: String(info.sub || info.user_id || '').trim(),
             email: normalizeEmail(info.email || ''),
             name: String(info.name || info.given_name || '').trim(),
+            avatar: String(info.picture || '').trim(),
           };
         } catch (e) {
           lastError = e;
@@ -333,6 +378,7 @@ export function registerAuthRoutes(app, deps) {
       sub,
       email: normalizeEmail(decoded.email || (sub ? userInfo.email : '') || ''),
       name: String(userInfo.name || userInfo.fullName || '').trim(),
+      avatar: String(userInfo.avatar || userInfo.picture || userInfo.photoURL || '').trim(),
     };
   };
 
@@ -379,7 +425,7 @@ export function registerAuthRoutes(app, deps) {
 
   const fetchInstagramProfileByAccessToken = async (accessToken) => {
     const url = new URL('https://graph.instagram.com/me');
-    url.searchParams.set('fields', 'id,username');
+    url.searchParams.set('fields', 'id,username,profile_picture_url');
     url.searchParams.set('access_token', accessToken);
     const infoResp = await fetch(url);
     if (!infoResp.ok) throw new Error(`instagram_userinfo_failed_${infoResp.status}`);
@@ -389,15 +435,17 @@ export function registerAuthRoutes(app, deps) {
       sub,
       email: '',
       name: String(info.username || '').trim(),
+      avatar: String(info.profile_picture_url || '').trim(),
     };
   };
 
   const normalizeMobileUserInfo = (userInfo = {}, idToken = '') => {
     const providerSub = String(userInfo?.providerUserId || userInfo?.provider_user_id || userInfo?.sub || userInfo?.id || '').trim();
     const email = normalizeEmail(userInfo?.email || '');
-    const name = String(userInfo?.name || userInfo?.nickname || userInfo?.full_name || '').trim();
+    const name = String(userInfo?.name || userInfo?.nickname || userInfo?.full_name || userInfo?.username || '').trim();
+    const avatar = String(userInfo?.avatar || userInfo?.picture || userInfo?.photoURL || userInfo?.profile_image || '').trim();
     const normalizedIdToken = String(idToken || userInfo?.idToken || userInfo?.id_token || '').trim();
-    return { sub: providerSub, email, name, idToken: normalizedIdToken };
+    return { sub: providerSub, email, name, avatar, idToken: normalizedIdToken };
   };
 
   const fetchMobileOAuthProfile = async (provider, accessToken, userInfo = {}, idToken = '') => {
@@ -437,7 +485,7 @@ export function registerAuthRoutes(app, deps) {
     throw new Error('unsupported_provider_for_mobile');
   };
 
-  const linkOAuthIdentityToUser = async ({ userId, provider, providerSub, email, sessionDays, verifyEmail = false }) => {
+  const linkOAuthIdentityToUser = async ({ userId, provider, providerSub, email, displayName = '', sessionDays, verifyEmail = false }) => {
     await ensureOAuthIdentityTable();
     const conflict = await pool.query(
       'SELECT user_id FROM app_user_oauth_identities WHERE provider=$1 AND provider_sub=$2 LIMIT 1',
@@ -448,10 +496,10 @@ export function registerAuthRoutes(app, deps) {
     }
 
     await pool.query(
-      `INSERT INTO app_user_oauth_identities(user_id, provider, provider_sub, email_at_link)
-       VALUES ($1,$2,$3,$4)
-       ON CONFLICT (user_id, provider) DO UPDATE SET provider_sub=EXCLUDED.provider_sub, email_at_link=EXCLUDED.email_at_link`,
-      [String(userId), provider, providerSub, email]
+      `INSERT INTO app_user_oauth_identities(user_id, provider, provider_sub, email_at_link, display_name)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (user_id, provider) DO UPDATE SET provider_sub=EXCLUDED.provider_sub, email_at_link=EXCLUDED.email_at_link, display_name=EXCLUDED.display_name`,
+      [String(userId), provider, providerSub, email, String(displayName || '').trim() || null]
     );
 
     if (verifyEmail) {
@@ -466,6 +514,33 @@ export function registerAuthRoutes(app, deps) {
   };
 
   const sendEmailVerifyCode = async ({ userId, email, code, verifyLink }) => {
+    const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
+    const infobipEmailSender = String(process.env.INFOBIP_EMAIL_SENDER || '').trim();
+    if (infobipBaseUrl && infobipApiKey && infobipEmailSender) {
+      const response = await fetch(`https://${infobipBaseUrl}/email/4/messages`, {
+        method: 'POST',
+        headers: {
+          authorization: `App ${infobipApiKey}`,
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            destinations: [{ to: [{ destination: email }] }],
+            sender: infobipEmailSender,
+            content: {
+              subject: '[Divergram] 이메일 인증을 완료해 주세요',
+              text: `Divergram 이메일 인증\n\n인증코드: ${code}\n인증링크: ${verifyLink}\n\n인증코드는 10분 동안 유효합니다.`,
+              html: `<h2>Divergram 이메일 인증</h2><p>인증코드: <b>${code}</b></p><p><a href="${verifyLink}">이메일 인증 완료하기</a></p><p>인증코드는 10분 동안 유효합니다.</p>`,
+            },
+          }],
+        }),
+      });
+      if (!response.ok) throw new Error(`email_infobip_failed:${response.status}`);
+      return;
+    }
+
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = Number(process.env.SMTP_PORT || 587);
     const smtpUser = process.env.SMTP_USER;
@@ -504,6 +579,59 @@ export function registerAuthRoutes(app, deps) {
     if (!r.ok) throw new Error(`email_webhook_failed:${r.status}`);
   };
 
+  const normalizePhone = (value) => String(value || '').trim().replace(/[^+\d]/g, '');
+  const hashPhoneVerifyCode = (userId, phone, code) =>
+    crypto.createHmac('sha256', JWT_SECRET).update(`${userId}:${phone}:${code}`).digest('hex');
+  const safeHashEqual = (left, right) => {
+    const a = Buffer.from(String(left || ''), 'hex');
+    const b = Buffer.from(String(right || ''), 'hex');
+    return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+  };
+  const sendSmsVerifyCode = async ({ userId, phone, code }) => {
+    const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
+    const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || '').trim();
+    if (infobipBaseUrl && infobipApiKey && infobipSmsSender) {
+      const response = await fetch(`https://${infobipBaseUrl}/sms/3/messages`, {
+        method: 'POST',
+        headers: {
+          authorization: `App ${infobipApiKey}`,
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            destinations: [{ to: phone }],
+            sender: infobipSmsSender,
+            content: { text: `[Divergram] 인증번호는 ${code}입니다. 5분 안에 입력해 주세요.` },
+          }],
+        }),
+      });
+      if (!response.ok) throw new Error(`sms_infobip_failed:${response.status}`);
+      return;
+    }
+
+    const webhook = String(process.env.SMS_VERIFY_WEBHOOK_URL || '').trim();
+    if (!webhook) throw new Error('sms_provider_not_configured');
+    const response = await fetch(webhook, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(process.env.SMS_VERIFY_WEBHOOK_TOKEN
+          ? { authorization: `Bearer ${process.env.SMS_VERIFY_WEBHOOK_TOKEN}` }
+          : {}),
+      },
+      body: JSON.stringify({
+        type: 'phone_verify',
+        userId,
+        phone,
+        code,
+        message: `[Divergram] 인증번호는 ${code}입니다. 5분 안에 입력해 주세요.`,
+      }),
+    });
+    if (!response.ok) throw new Error(`sms_webhook_failed:${response.status}`);
+  };
+
   const parseSessionDays = (raw) => {
     const allowed = new Set([1, 7, 30, 90]);
     const n = Number(raw);
@@ -523,16 +651,18 @@ export function registerAuthRoutes(app, deps) {
     const googleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
     const appleEnabled = !!(process.env.APPLE_CLIENT_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_KEY_ID && process.env.APPLE_PRIVATE_KEY);
     const facebookEnabled = !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET);
+    const threadsEnabled = !!(process.env.THREADS_APP_ID && process.env.THREADS_APP_SECRET);
     return {
       google: { enabled: googleEnabled, redirectUri: `${OAUTH_CALLBACK_BASE}/api/auth/oauth/google/callback` },
       apple: { enabled: appleEnabled, redirectUri: `${OAUTH_CALLBACK_BASE}/api/auth/oauth/apple/callback` },
       facebook: { enabled: facebookEnabled, redirectUri: `${OAUTH_CALLBACK_BASE}/api/auth/oauth/facebook/callback` },
+      threads: { enabled: threadsEnabled, redirectUri: process.env.THREADS_REDIRECT_URI || `${OAUTH_CALLBACK_BASE}/api/auth/oauth/threads/callback` },
     };
   };
 
-  const createOAuthState = (provider, sessionDays, mode = 'login', userId = null, returnTo = '') => {
+  const createOAuthState = (provider, sessionDays, mode = 'login', userId = null, returnTo = '', consents = null, accountScope = 'personal') => {
     const state = crypto.randomBytes(24).toString('hex');
-    oauthStateStore.set(state, { provider, sessionDays, mode, userId, returnTo, expiresAt: Date.now() + oauthStateTtlMs });
+    oauthStateStore.set(state, { provider, sessionDays, mode, userId, returnTo, consents, accountScope, expiresAt: Date.now() + oauthStateTtlMs });
     return state;
   };
 
@@ -623,7 +753,7 @@ export function registerAuthRoutes(app, deps) {
       const ticket = crypto.randomBytes(32).toString('hex');
       instagramMobileTicketStore.set(ticket, {
         accessToken: String(tokenBody.access_token),
-        userInfo: { id: profile.sub, username: profile.name, email: profile.email },
+        userInfo: { id: profile.sub, username: profile.name, email: profile.email, avatar: profile.avatar },
         expiresAt: Date.now() + instagramMobileTicketTtlMs,
       });
       return res.redirect(appendQuery(pending.appReturnUri, { ticket }));
@@ -675,46 +805,20 @@ export function registerAuthRoutes(app, deps) {
       );
 
       if (linked.rows.length) {
+        const scope = await pool.query('SELECT account_scope FROM app_users WHERE id=$1 LIMIT 1', [linked.rows[0].id]);
+        if (String(scope.rows[0]?.account_scope || '').toLowerCase() === 'resort') {
+          return res.status(403).json({ error: 'resort_social_login_disabled' });
+        }
         const authResult = await buildAuthResultFromUserId(linked.rows[0].id, sessionDays);
         setSessionCookie(res, authResult.token, sessionDays);
         return res.json({ ...authResult, provider, linked: true });
       }
 
       const existingEmail = oauthProfile.email
-        ? await pool.query('SELECT id FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email])
+        ? await pool.query("SELECT id FROM app_users WHERE lower(email)=lower($1) AND account_scope='resort' LIMIT 1", [oauthProfile.email])
         : { rows: [] };
       if (existingEmail.rows.length) {
-        const linkToken = jwt.sign(
-          {
-            purpose: 'oauth_mobile_link',
-            provider,
-            providerSub: oauthProfile.sub,
-            email: oauthProfile.email,
-            sessionDays,
-          },
-          JWT_SECRET,
-          { expiresIn: '30m' }
-        );
-        return res.status(409).json({
-          error: 'sso_email_exists',
-          linkRequired: true,
-          provider,
-          providerUserId: oauthProfile.sub,
-          email: oauthProfile.email,
-          linkToken,
-        });
-      }
-
-      if (!oauthProfile.email) {
-        const authResult = await upsertOAuthUser({
-          provider,
-          providerSub: oauthProfile.sub,
-          email: '',
-          name: oauthProfile.name,
-          sessionDays,
-        });
-        setSessionCookie(res, authResult.token, sessionDays);
-        return res.json({ ...authResult, provider, linked: true, profileCompletionRequired: true });
+        return res.status(403).json({ error: 'resort_social_login_disabled' });
       }
 
       if (!shouldAutoCreate) {
@@ -728,12 +832,20 @@ export function registerAuthRoutes(app, deps) {
         });
       }
 
+      const consentResult = await readSignupConsents(req);
+      if (!consentResult.ok) return res.status(400).json({ error: consentResult.error });
+
       const authResult = await upsertOAuthUser({
         provider,
         providerSub: oauthProfile.sub,
         email: oauthProfile.email,
         name: oauthProfile.name,
+        avatar: oauthProfile.avatar || userInfo.avatar || userInfo.picture || userInfo.photoURL,
         sessionDays,
+      });
+      await saveSignupConsents(pool, authResult.user.id, consentResult.receipts, {
+        source: `oauth:${provider}`,
+        locale: req.body?.locale,
       });
       setSessionCookie(res, authResult.token, sessionDays);
       return res.json({ ...authResult, provider, linked: true });
@@ -769,7 +881,7 @@ export function registerAuthRoutes(app, deps) {
     let authPayload = null;
     let linkPayload = null;
     try {
-      authPayload = jwt.verify(authToken, JWT_SECRET);
+      authPayload = verifySessionToken(jwt, authToken, JWT_SECRET);
       linkPayload = jwt.verify(linkToken, JWT_SECRET);
     } catch {
       return res.status(400).json({ error: 'invalid_or_expired_link_token' });
@@ -817,14 +929,14 @@ export function registerAuthRoutes(app, deps) {
     const sessionDays = parseSessionDays(req.body?.sessionDays);
 
     if (!authToken) return res.status(401).json({ error: 'unauthorized' });
-    if (!['google', 'apple', 'instagram'].includes(provider)) {
+    if (!['google', 'apple', 'instagram', 'facebook'].includes(provider)) {
       return res.status(400).json({ error: 'unsupported_provider_for_mobile' });
     }
     if (!accessToken) return res.status(400).json({ error: 'access_token_required' });
 
     let authPayload = null;
     try {
-      authPayload = jwt.verify(authToken, JWT_SECRET);
+      authPayload = verifySessionToken(jwt, authToken, JWT_SECRET);
     } catch {
       return res.status(401).json({ error: 'unauthorized' });
     }
@@ -845,6 +957,7 @@ export function registerAuthRoutes(app, deps) {
         provider,
         providerSub: oauthProfile.sub,
         email,
+        displayName: oauthProfile.name,
         sessionDays,
       });
       setSessionCookie(res, authResult.token, sessionDays);
@@ -910,7 +1023,7 @@ export function registerAuthRoutes(app, deps) {
     const provider = String(req.params.provider || '').toLowerCase();
     const providers = getOAuthProviders();
 
-    if (!['google', 'apple', 'facebook'].includes(provider)) {
+    if (!['google', 'apple', 'facebook', 'threads'].includes(provider)) {
       return res.status(400).json({ error: 'unsupported_provider' });
     }
 
@@ -920,6 +1033,8 @@ export function registerAuthRoutes(app, deps) {
     }
 
     const sessionDays = parseSessionDays(req.query?.sessionDays);
+    const requestedScope = String(req.query?.accountScope || '').trim().toLowerCase();
+    const accountScope = requestedScope === 'admin' ? 'admin' : requestedScope === 'resort' ? 'resort' : 'personal';
     const mode = String(req.query?.mode || 'login').toLowerCase();
     const fallbackReturnTo = mode === 'link' ? `${WEB_APP_BASE_URL}/account` : WEB_APP_BASE_URL;
     const returnTo = resolveReturnTo(req.query?.returnTo, fallbackReturnTo);
@@ -928,7 +1043,7 @@ export function registerAuthRoutes(app, deps) {
       const token = getRequestToken(req);
       if (!token) return res.status(401).json({ error: 'unauthorized' });
       try {
-        const p = jwt.verify(token, JWT_SECRET);
+        const p = verifySessionToken(jwt, token, JWT_SECRET);
         stateUserId = String(p.sub || '');
       } catch {
         return res.status(401).json({ error: 'unauthorized' });
@@ -936,7 +1051,23 @@ export function registerAuthRoutes(app, deps) {
       if (!stateUserId) return res.status(401).json({ error: 'unauthorized' });
     }
 
-    const state = createOAuthState(provider, sessionDays, mode, stateUserId, returnTo);
+    let signupConsents = null;
+    if (mode === 'signup') {
+      const booleanParam = (name) => String(req.query?.[name] || '').toLowerCase() === 'true';
+      const version = String(req.query?.consentVersion || '');
+      signupConsents = [
+        { key: 'terms_required', policyType: 'terms', version: String(req.query?.termsVersion || version), agreed: booleanParam('terms') },
+        { key: 'privacy_required', policyType: 'privacy', version: String(req.query?.privacyVersion || version), agreed: booleanParam('privacy') },
+        { key: 'age14_required', policyType: 'age14_notice', version: String(req.query?.age14Version || version), agreed: booleanParam('age14') },
+        { key: 'marketing_optional', policyType: 'marketing_consent', version: String(req.query?.marketingVersion || version), agreed: booleanParam('marketing') },
+        { key: 'push_optional', policyType: 'push_consent', version: String(req.query?.pushVersion || version), agreed: booleanParam('push') },
+      ];
+      const consentResult = validateSignupConsents(signupConsents, await loadSignupConsentConfig(pool));
+      if (!consentResult.ok) return res.status(400).json({ error: consentResult.error });
+      signupConsents = consentResult.receipts;
+    }
+
+    const state = createOAuthState(provider, sessionDays, mode, stateUserId, returnTo, signupConsents, accountScope);
     let url = '';
 
     if (provider === 'google') {
@@ -961,6 +1092,17 @@ export function registerAuthRoutes(app, deps) {
         state,
       });
       url = `https://www.facebook.com/v19.0/dialog/oauth?${qp.toString()}`;
+    }
+
+    if (provider === 'threads') {
+      const qp = new URLSearchParams({
+        client_id: process.env.THREADS_APP_ID,
+        redirect_uri: target.redirectUri,
+        response_type: 'code',
+        scope: 'threads_basic,threads_content_publish',
+        state,
+      });
+      url = `https://threads.net/oauth/authorize?${qp.toString()}`;
     }
 
     if (provider === 'apple') {
@@ -989,11 +1131,13 @@ export function registerAuthRoutes(app, deps) {
 
     const validationError = validateSignupInput(email, password, username);
     if (validationError) return res.status(400).json({ error: validationError });
+    const consentResult = await readSignupConsents(req);
+    if (!consentResult.ok) return res.status(400).json({ error: consentResult.error });
 
     try {
       const hash = await bcrypt.hash(password, 12);
       const q = await pool.query(
-        'INSERT INTO app_users(email, password_hash, password_sha256, username, role) VALUES ($1,$2,NULL,$3,$4) RETURNING id,email,username',
+        'INSERT INTO app_users(email, password_hash, password_sha256, username, role, profile_completion_required) VALUES ($1,$2,NULL,$3,$4,true) RETURNING id,email,username',
         [email, hash, username, isAdminEmail(email) ? 'admin' : 'user']
       );
       const verifyCode = String(Math.floor(100000 + Math.random() * 900000));
@@ -1012,10 +1156,14 @@ export function registerAuthRoutes(app, deps) {
         [String(q.rows[0].id), q.rows[0].username, q.rows[0].username]
       );
       const user = { id: String(q.rows[0].id), email: q.rows[0].email };
+      await saveSignupConsents(pool, user.id, consentResult.receipts, {
+        source: 'email',
+        locale: req.body?.locale,
+      });
       const profile = buildProfileFromRow(null, q.rows[0].id, q.rows[0].username);
       const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
       setSessionCookie(res, token, sessionDays);
-      return res.json({ user, profile, token, emailVerificationRequired: true });
+      return res.json({ user, profile, token, emailVerificationRequired: true, profileCompletionRequired: true });
     } catch (e) {
       if (String(e.message).toLowerCase().includes('duplicate key')) {
         return res.status(409).json({ error: '이미 존재하는 이메일입니다.' });
@@ -1024,14 +1172,45 @@ export function registerAuthRoutes(app, deps) {
     }
   });
 
+  app.get('/api/auth/consents', async (req, res) => {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const q = await pool.query(
+      `SELECT DISTINCT ON (consent_key)
+         consent_key AS key, policy_type AS "policyType", policy_version AS version,
+         agreed, agreed_at AS "agreedAt", source, locale, created_at AS "createdAt"
+       FROM app_user_consents
+       WHERE user_id=$1
+       ORDER BY consent_key, created_at DESC`,
+      [userId]
+    );
+    return res.json({ consents: q.rows });
+  });
+
+  app.post('/api/auth/consents', authRateLimit(20, 60_000), async (req, res) => {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    const consentResult = await readSignupConsents(req);
+    if (!consentResult.ok) return res.status(400).json({ error: consentResult.error });
+    await saveSignupConsents(pool, userId, consentResult.receipts, {
+      source: 'reconsent',
+      locale: req.body?.locale,
+    });
+    return res.json({ ok: true });
+  });
+
   app.post('/api/auth/login', authRateLimit(), async (req, res) => {
     const email = normalizeEmail(req.body?.email);
     const password = String(req.body?.password || '');
+    const requestedScope = String(req.body?.accountScope || req.body?.account_scope || '').trim().toLowerCase();
+    const accountScope = requestedScope === 'admin' ? 'admin' : requestedScope === 'resort' ? 'resort' : requestedScope === 'personal' || requestedScope === 'general' ? 'personal' : '';
     const sessionDays = parseSessionDays(req.body?.sessionDays);
     if (!email || !password) return res.status(400).json({ error: 'email/password required' });
 
     try {
-      const q = await pool.query('SELECT id,email,username,role,password_hash,password_sha256,is_blocked,email_verified FROM app_users WHERE email ILIKE $1', [email]);
+      const q = accountScope
+        ? await pool.query('SELECT id,email,username,role,password_hash,password_sha256,is_blocked,email_verified,profile_completion_required,account_scope FROM app_users WHERE lower(email)=lower($1) AND account_scope=$2 LIMIT 1', [email, accountScope])
+        : await pool.query('SELECT id,email,username,role,password_hash,password_sha256,is_blocked,email_verified,profile_completion_required,account_scope FROM app_users WHERE lower(email)=lower($1) ORDER BY CASE WHEN role=\'admin\' THEN 0 ELSE 1 END, id LIMIT 1', [email]);
       if (!q.rows.length) return res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다.' });
 
       const row = q.rows[0];
@@ -1060,7 +1239,7 @@ export function registerAuthRoutes(app, deps) {
       const profile = buildProfileFromRow(pq.rows[0], row.id, row.username);
       const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: `${sessionDays}d` });
       setSessionCookie(res, token, sessionDays);
-      return res.json({ user, profile, token });
+      return res.json({ user, profile, token, profileCompletionRequired: Boolean(row.profile_completion_required) });
     } catch {
       return res.status(500).json({ error: 'login_failed' });
     }
@@ -1071,19 +1250,31 @@ export function registerAuthRoutes(app, deps) {
     if (!token) return res.json({ session: null });
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
       const userId = String(payload.sub || '');
       if (!userId) return res.json({ session: null });
 
-      const q = await pool.query('SELECT id,email,username,role FROM app_users WHERE id=$1', [userId]);
+      const q = await pool.query(
+        'SELECT id,email,username,role,email_verified,email_pending,contact_phone,phone_pending,phone_verified,profile_completion_required FROM app_users WHERE id=$1',
+        [userId]
+      );
       if (!q.rows.length) return res.json({ session: null });
 
       const row = q.rows[0];
       const pq = await pool.query(`SELECT ${PROFILE_SELECT_COLUMNS} FROM app_profiles WHERE id=$1`, [String(row.id)]);
       return res.json({
         session: {
-          user: { id: String(row.id), email: row.email, role: String(row.role || 'user') },
-          profile: buildProfileFromRow(pq.rows[0], row.id, row.username),
+          user: {
+            id: String(row.id),
+            email: row.email,
+            role: String(row.role || 'user'),
+            emailVerified: Boolean(row.email_verified),
+            emailPending: String(row.email_pending || ''),
+            phoneVerified: Boolean(row.phone_verified),
+            phonePending: decryptSensitiveText(row.phone_pending),
+          },
+          profile: buildProfileFromRow({ ...(pq.rows[0] || {}), contact_phone: decryptSensitiveText(row.contact_phone) }, row.id, row.username),
+          profileCompletionRequired: Boolean(row.profile_completion_required),
         },
       });
     } catch {
@@ -1095,13 +1286,14 @@ export function registerAuthRoutes(app, deps) {
     const token = getRequestToken(req);
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
       const userId = String(payload.sub || '');
+      await ensureOAuthIdentityTable();
       const q = await pool.query(
-        'SELECT provider, provider_sub, created_at FROM app_user_oauth_identities WHERE user_id=$1 ORDER BY created_at DESC',
+        'SELECT provider, provider_sub, display_name, created_at FROM app_user_oauth_identities WHERE user_id=$1 ORDER BY created_at DESC',
         [userId]
       );
-      return res.json({ links: q.rows.map((r) => ({ provider: r.provider, linkedAt: r.created_at })) });
+      return res.json({ links: q.rows.map((r) => ({ provider: r.provider, accountName: r.display_name || r.provider_sub, linkedAt: r.created_at })) });
     } catch {
       return res.status(401).json({ error: 'unauthorized' });
     }
@@ -1111,11 +1303,11 @@ export function registerAuthRoutes(app, deps) {
     const token = getRequestToken(req);
     if (!token) return res.status(401).json({ error: 'unauthorized' });
     const provider = String(req.params.provider || '').toLowerCase();
-    if (!['google', 'apple', 'instagram'].includes(provider)) {
+    if (!['google', 'apple', 'instagram', 'facebook', 'threads'].includes(provider)) {
       return res.status(400).json({ error: 'unsupported_provider' });
     }
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
       const userId = String(payload.sub || '');
       if (!userId) return res.status(401).json({ error: 'unauthorized' });
       const result = await pool.query(
@@ -1179,7 +1371,7 @@ export function registerAuthRoutes(app, deps) {
     if (!token) return res.status(401).json({ error: 'unauthorized' });
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
       const userId = String(payload.sub || '');
       if (!userId) return res.status(401).json({ error: 'unauthorized' });
 
@@ -1193,6 +1385,7 @@ export function registerAuthRoutes(app, deps) {
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'invalid_email' });
       if (username && (username.length < 4 || username.length > 32 || !/^[a-zA-Z0-9_]+$/.test(username))) return res.status(400).json({ error: 'invalid_username' });
       if (contactPhone !== undefined && String(contactPhone).trim() && String(contactPhone).trim().length < 6) return res.status(400).json({ error: 'invalid_contact_phone' });
+      if (contactPhone !== undefined) return res.status(400).json({ error: 'phone_verification_required' });
       if (password && !isStrongPassword(password)) return res.status(400).json({ error: 'invalid_password' });
 
       const needsPasswordCheck = password !== undefined;
@@ -1228,7 +1421,6 @@ export function registerAuthRoutes(app, deps) {
         fields.push(`username=$${vals.length}`);
       }
       if (fullName !== undefined) { vals.push(String(fullName).trim()); fields.push(`full_name=$${vals.length}`); }
-      if (contactPhone !== undefined) { vals.push(String(contactPhone).trim()); fields.push(`contact_phone=$${vals.length}`); }
       if (password !== undefined) {
         const hash = await bcrypt.hash(password, 12);
         vals.push(hash); fields.push(`password_hash=$${vals.length}`);
@@ -1243,7 +1435,7 @@ export function registerAuthRoutes(app, deps) {
         const code = String(Math.floor(100000 + Math.random() * 900000));
         const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
         await pool.query(
-          'UPDATE app_users SET email=$1, email_pending=$1, email_verify_code=$2, email_verify_expires=$3, email_verified=false WHERE id=$4',
+          'UPDATE app_users SET email_pending=$1, email_verify_code=$2, email_verify_expires=$3 WHERE id=$4',
           [email, code, expires, userId]
         );
         const verifyToken = jwt.sign({ purpose: 'email_verify', sub: String(userId), email }, JWT_SECRET, { expiresIn: '24h' });
@@ -1273,10 +1465,6 @@ export function registerAuthRoutes(app, deps) {
           profileValues.push(String(fullName).trim());
           profileUpdates.push(`full_name=$${profileValues.length}`);
         }
-        if (contactPhone !== undefined) {
-          profileValues.push(String(contactPhone).trim());
-          profileUpdates.push(`contact_phone=$${profileValues.length}`);
-        }
         if (profileUpdates.length) {
           profileValues.push(userId);
           await pool.query(`UPDATE app_profiles SET ${profileUpdates.join(', ')} WHERE id=$${profileValues.length}`, profileValues);
@@ -1303,7 +1491,7 @@ export function registerAuthRoutes(app, deps) {
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'invalid_code' });
 
     try {
-      const payload = jwt.verify(token, JWT_SECRET);
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
       const userId = String(payload.sub || '');
       const q = await pool.query('SELECT id,email_pending,email_verify_code,email_verify_expires FROM app_users WHERE id=$1', [userId]);
       if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
@@ -1321,6 +1509,107 @@ export function registerAuthRoutes(app, deps) {
       return res.json({ ok: true, email: normalizeEmail(row.email_pending) });
     } catch {
       return res.status(500).json({ error: 'email_verify_failed' });
+    }
+  });
+
+  app.post('/api/auth/email/verify/request', authRateLimit(5, 10 * 60_000), async (req, res) => {
+    const token = getRequestToken(req);
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    try {
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
+      const userId = String(payload.sub || '');
+      const q = await pool.query('SELECT email,email_pending,email_verified FROM app_users WHERE id=$1', [userId]);
+      if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
+      const targetEmail = normalizeEmail(q.rows[0].email_pending || q.rows[0].email || '');
+      if (!targetEmail) return res.status(400).json({ error: 'email_required' });
+      if (q.rows[0].email_verified && !q.rows[0].email_pending) return res.json({ ok: true, alreadyVerified: true });
+
+      const code = String(crypto.randomInt(100000, 1000000));
+      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      await pool.query(
+        'UPDATE app_users SET email_pending=$1,email_verify_code=$2,email_verify_expires=$3,email_verified=false WHERE id=$4',
+        [targetEmail, code, expires, userId]
+      );
+      const verifyToken = jwt.sign({ purpose: 'email_verify', sub: userId, email: targetEmail }, JWT_SECRET, { expiresIn: '24h' });
+      const verifyLink = `${API_PUBLIC_BASE_URL}/api/auth/email/verify?token=${encodeURIComponent(verifyToken)}`;
+      await sendEmailVerifyCode({ userId, email: targetEmail, code, verifyLink });
+      return res.json({ ok: true, expiresIn: 600 });
+    } catch (error) {
+      console.error('[EMAIL_VERIFY_REQUEST]', error);
+      return res.status(500).json({ error: 'email_verify_request_failed' });
+    }
+  });
+
+  app.post('/api/auth/phone/verify/request', authRateLimit(5, 10 * 60_000), async (req, res) => {
+    const token = getRequestToken(req);
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    const phone = normalizePhone(req.body?.phone);
+    if (!/^\+?\d{8,15}$/.test(phone)) return res.status(400).json({ error: 'invalid_contact_phone' });
+    try {
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
+      const userId = String(payload.sub || '');
+      const code = String(crypto.randomInt(100000, 1000000));
+      const codeHash = hashPhoneVerifyCode(userId, phone, code);
+      const expires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      await pool.query(
+        'UPDATE app_users SET phone_pending=$1,phone_verify_code_hash=$2,phone_verify_expires=$3 WHERE id=$4',
+        [encryptSensitiveText(phone), codeHash, expires, userId]
+      );
+      try {
+        await sendSmsVerifyCode({ userId, phone, code });
+      } catch (error) {
+        await pool.query(
+          'UPDATE app_users SET phone_pending=NULL,phone_verify_code_hash=NULL,phone_verify_expires=NULL WHERE id=$1 AND phone_verify_code_hash=$2',
+          [userId, codeHash]
+        );
+        throw error;
+      }
+      return res.json({ ok: true, expiresIn: 300 });
+    } catch (error) {
+      const message = String(error?.message || '');
+      console.error('[PHONE_VERIFY_REQUEST]', message);
+      if (message === 'sms_provider_not_configured') return res.status(503).json({ error: message });
+      return res.status(500).json({ error: 'phone_verify_request_failed' });
+    }
+  });
+
+  app.post('/api/auth/phone/verify/confirm', authRateLimit(20, 60_000), async (req, res) => {
+    const token = getRequestToken(req);
+    const code = String(req.body?.code || '').trim();
+    if (!token) return res.status(401).json({ error: 'unauthorized' });
+    if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'invalid_code' });
+    try {
+      const payload = verifySessionToken(jwt, token, JWT_SECRET);
+      const userId = String(payload.sub || '');
+      const q = await pool.query(
+        'SELECT phone_pending,phone_verify_code_hash,phone_verify_expires FROM app_users WHERE id=$1',
+        [userId]
+      );
+      if (!q.rows.length) return res.status(404).json({ error: 'user_not_found' });
+      const row = q.rows[0];
+      if (!row.phone_pending || !row.phone_verify_code_hash) return res.status(400).json({ error: 'no_pending_phone' });
+      if (!row.phone_verify_expires || new Date(row.phone_verify_expires).getTime() < Date.now()) {
+        return res.status(400).json({ error: 'code_expired' });
+      }
+      const pendingPhone = decryptSensitiveText(row.phone_pending);
+      const candidateHash = hashPhoneVerifyCode(userId, pendingPhone, code);
+      if (!safeHashEqual(row.phone_verify_code_hash, candidateHash)) return res.status(400).json({ error: 'invalid_code' });
+
+      await pool.query(
+        `WITH verified_user AS (
+           UPDATE app_users
+              SET contact_phone=$1,phone_verified=true,phone_verified_at=now(),phone_pending=NULL,
+                  phone_verify_code_hash=NULL,phone_verify_expires=NULL
+            WHERE id=$2
+            RETURNING id
+         )
+         UPDATE app_profiles SET contact_phone=NULL WHERE id IN (SELECT id::text FROM verified_user)`,
+        [encryptSensitiveText(pendingPhone), userId]
+      );
+      return res.json({ ok: true, phone: pendingPhone, phoneVerified: true });
+    } catch (error) {
+      console.error('[PHONE_VERIFY_CONFIRM]', error);
+      return res.status(500).json({ error: 'phone_verify_failed' });
     }
   });
 
@@ -1372,7 +1661,7 @@ export function registerAuthRoutes(app, deps) {
     })();
     const shouldExposeToken = ['localhost', '127.0.0.1', '::1'].includes(returnToHost);
 
-    if (!['google', 'apple', 'facebook'].includes(provider)) {
+    if (!['google', 'apple', 'facebook', 'threads'].includes(provider)) {
       return res.redirect(redirectTo({ oauth: 'failed', reason: 'unsupported_provider' }));
     }
 
@@ -1406,7 +1695,12 @@ export function registerAuthRoutes(app, deps) {
           headers: { Authorization: `Bearer ${tokenJson.access_token}` },
         });
         const info = await infoResp.json();
-        oauthProfile = { sub: String(info.sub || ''), email: normalizeEmail(info.email || ''), name: info.name || info.given_name || '' };
+        oauthProfile = {
+          sub: String(info.sub || ''),
+          email: normalizeEmail(info.email || ''),
+          name: info.name || info.given_name || '',
+          avatar: String(info.picture || '').trim(),
+        };
       }
 
       if (provider === 'facebook') {
@@ -1417,9 +1711,42 @@ export function registerAuthRoutes(app, deps) {
         tokenUrl.searchParams.set('code', code);
         const tokenResp = await fetch(tokenUrl.toString());
         const tokenJson = await tokenResp.json();
-        const infoResp = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${encodeURIComponent(tokenJson.access_token)}`);
+        const infoResp = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${encodeURIComponent(tokenJson.access_token)}`);
         const info = await infoResp.json();
-        oauthProfile = { sub: String(info.id || ''), email: normalizeEmail(info.email || ''), name: info.name || '' };
+        oauthProfile = {
+          sub: String(info.id || ''),
+          email: normalizeEmail(info.email || ''),
+          name: info.name || '',
+          avatar: String(info.picture?.data?.url || '').trim(),
+        };
+      }
+
+      if (provider === 'threads') {
+        const tokenResp = await fetch('https://graph.threads.net/oauth/access_token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.THREADS_APP_ID,
+            client_secret: process.env.THREADS_APP_SECRET,
+            grant_type: 'authorization_code',
+            redirect_uri: redirectUri,
+            code,
+          }),
+        });
+        const tokenJson = await tokenResp.json();
+        if (!tokenResp.ok || !tokenJson.access_token) throw new Error(`threads_token_failed_${tokenResp.status}`);
+        const infoUrl = new URL('https://graph.threads.net/v1.0/me');
+        infoUrl.searchParams.set('fields', 'id,username,threads_profile_picture_url');
+        infoUrl.searchParams.set('access_token', tokenJson.access_token);
+        const infoResp = await fetch(infoUrl);
+        const info = await infoResp.json();
+        if (!infoResp.ok) throw new Error(`threads_userinfo_failed_${infoResp.status}`);
+        oauthProfile = {
+          sub: String(info.id || ''),
+          email: '',
+          name: String(info.username || ''),
+          avatar: String(info.threads_profile_picture_url || ''),
+        };
       }
 
       if (provider === 'apple') {
@@ -1457,6 +1784,10 @@ export function registerAuthRoutes(app, deps) {
       }
 
       if (stateData.mode === 'link' && stateData.userId) {
+        const linkUser = await pool.query('SELECT account_scope FROM app_users WHERE id=$1 LIMIT 1', [stateData.userId]);
+        if (String(linkUser.rows[0]?.account_scope || '').toLowerCase() === 'resort') {
+          return res.redirect(redirectTo({ oauth_link: 'failed', reason: 'resort_social_login_disabled' }));
+        }
         await ensureOAuthIdentityTable();
         const conflict = await pool.query(
           'SELECT user_id FROM app_user_oauth_identities WHERE provider=$1 AND provider_sub=$2 LIMIT 1',
@@ -1466,17 +1797,17 @@ export function registerAuthRoutes(app, deps) {
           return res.redirect(redirectTo({ oauth_link: 'failed', reason: 'already_linked' }));
         }
         await pool.query(
-          `INSERT INTO app_user_oauth_identities(user_id, provider, provider_sub, email_at_link)
-           VALUES ($1,$2,$3,$4)
-           ON CONFLICT (provider, provider_sub) DO UPDATE SET user_id=EXCLUDED.user_id, email_at_link=EXCLUDED.email_at_link`,
-          [stateData.userId, provider, oauthProfile.sub, oauthProfile.email]
+          `INSERT INTO app_user_oauth_identities(user_id, provider, provider_sub, email_at_link, display_name)
+           VALUES ($1,$2,$3,$4,$5)
+           ON CONFLICT (provider, provider_sub) DO UPDATE SET user_id=EXCLUDED.user_id, email_at_link=EXCLUDED.email_at_link, display_name=EXCLUDED.display_name`,
+          [stateData.userId, provider, oauthProfile.sub, oauthProfile.email, String(oauthProfile.name || '').trim() || null]
         );
         return res.redirect(redirectTo({ oauth_link: 'success', provider }));
       }
 
       await ensureOAuthIdentityTable();
       const linked = await pool.query(
-        `SELECT u.id,u.email,u.username
+        `SELECT u.id,u.email,u.username,u.account_scope
            FROM app_user_oauth_identities i
            JOIN app_users u ON u.id=i.user_id
           WHERE i.provider=$1 AND i.provider_sub=$2
@@ -1484,9 +1815,19 @@ export function registerAuthRoutes(app, deps) {
         [provider, oauthProfile.sub]
       );
 
+      if (linked.rows.length && String(linked.rows[0].account_scope || '').toLowerCase() === 'resort') {
+        return res.redirect(redirectTo({ oauth: 'failed', reason: 'resort_social_login_disabled' }));
+      }
+
       if (!linked.rows.length) {
+        const resortEmail = oauthProfile.email
+          ? await pool.query("SELECT id FROM app_users WHERE lower(email)=lower($1) AND account_scope='resort' LIMIT 1", [oauthProfile.email])
+          : { rows: [] };
+        if (resortEmail.rows.length) {
+          return res.redirect(redirectTo({ oauth: 'failed', reason: 'resort_social_login_disabled' }));
+        }
         const existingEmail = oauthProfile.email
-          ? await pool.query('SELECT id,email,username FROM app_users WHERE lower(email)=lower($1) LIMIT 1', [oauthProfile.email])
+          ? await pool.query('SELECT id,email,username FROM app_users WHERE lower(email)=lower($1) AND account_scope=$2 LIMIT 1', [oauthProfile.email, stateData.accountScope || 'personal'])
           : { rows: [] };
         if (existingEmail.rows.length) {
           const existingUserId = String(existingEmail.rows[0].id);
@@ -1502,6 +1843,9 @@ export function registerAuthRoutes(app, deps) {
           });
           return res.redirect(redirectTo({ oauth_link: 'pending', token: pendingToken, provider, email: oauthProfile.email }));
         }
+        if (stateData.mode !== 'signup') {
+          return res.redirect(redirectTo({ oauth: 'signup_required', provider }));
+        }
       }
 
       const authResult = await upsertOAuthUser({
@@ -1509,8 +1853,18 @@ export function registerAuthRoutes(app, deps) {
         providerSub: oauthProfile.sub,
         email: oauthProfile.email,
         name: oauthProfile.name,
+        avatar: oauthProfile.avatar,
         sessionDays,
+        accountScope: stateData.accountScope || 'personal',
       });
+      if (!linked.rows.length) {
+        const consentResult = validateSignupConsents(stateData.consents, await loadSignupConsentConfig(pool));
+        if (!consentResult.ok) return res.redirect(redirectTo({ oauth: 'failed', reason: consentResult.error }));
+        await saveSignupConsents(pool, authResult.user.id, consentResult.receipts, {
+          source: `oauth-web:${provider}`,
+          locale: 'ko',
+        });
+      }
 
       setSessionCookie(res, authResult.token, sessionDays);
       return res.redirect(
@@ -1526,3 +1880,4 @@ export function registerAuthRoutes(app, deps) {
     }
   });
 }
+import { verifySessionToken } from '../lib/sessionToken.js';

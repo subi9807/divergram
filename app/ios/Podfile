@@ -95,7 +95,8 @@ target 'Divergram' do
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = podfile_properties['ios.deploymentTarget'] || '15.1'
         config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
         cxx_flags = config.build_settings['OTHER_CPLUSPLUSFLAGS']
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = append_flag.call(cxx_flags, '-UREACT_NATIVE_DEBUG')
+        cxx_flags = append_flag.call(cxx_flags, '-UREACT_NATIVE_DEBUG')
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = append_flag.call(cxx_flags, '-DREACT_NATIVE_PRODUCTION')
 
         libtool_flags = config.build_settings['OTHER_LIBTOOLFLAGS']
         config.build_settings['OTHER_LIBTOOLFLAGS'] = append_flag.call(libtool_flags, '-no_warning_for_no_symbols')

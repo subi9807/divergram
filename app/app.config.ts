@@ -1,7 +1,18 @@
 import type { ExpoConfig, ConfigContext } from 'expo/config';
 
+const GOOGLE_CLIENT_ID_IOS_FALLBACK =
+  '80553477111-8v6n2mc564oiqfuairrues6imrq1267j.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID_ANDROID_FALLBACK =
+  '80553477111-5nno7qm9m16alsdu0j9tkn143a14fes4.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID_WEB_FALLBACK =
+  '80553477111-6d0ev7ntgc6ki5t5a3qn0v8q75b13a4v.apps.googleusercontent.com';
+
 function getGoogleIosClientId(): string {
-  return process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '';
+  return process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || GOOGLE_CLIENT_ID_IOS_FALLBACK;
+}
+
+function getGoogleWebClientId(): string {
+  return process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || process.env.GOOGLE_CLIENT_ID_WEB || GOOGLE_CLIENT_ID_WEB_FALLBACK;
 }
 
 function getGoogleMapsApiKey(): string {
@@ -106,8 +117,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2.6',
-    orientation: 'portrait',
+    version: '1.2.12',
+    orientation: 'default',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
     scheme: 'divergram',
@@ -115,7 +126,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: '44',
+      buildNumber: config.ios?.buildNumber || '68',
       associatedDomains: ['applinks:divergram.com', 'applinks:www.divergram.com'],
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
@@ -123,10 +134,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'aps-environment': isProductionBuild ? 'production' : 'development'
       },
       infoPlist: {
+        GIDClientID: getGoogleIosClientId(),
+        GIDServerClientID: getGoogleWebClientId(),
         ITSAppUsesNonExemptEncryption: false,
         NSLocationWhenInUseUsageDescription: '위치 정보는 다이빙 로그 기록에 사용됩니다.',
         NSLocationAlwaysAndWhenInUseUsageDescription: '백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.',
         NSCameraUsageDescription: '프로필, 게시물, 다이빙 로그에 사용할 사진과 영상을 촬영하기 위해 카메라 권한이 필요합니다.',
+        NSMicrophoneUsageDescription: '다이빙 로그 음성 메모를 녹음하고 사용자가 요청한 경우 텍스트로 변환하기 위해 마이크 권한이 필요합니다.',
         NSMotionUsageDescription: '다이빙 활동 기록과 안전 기능에 필요한 움직임 정보를 확인하기 위해 모션 권한이 필요합니다.',
         NSPhotoLibraryUsageDescription: '사진 GPS 정보를 읽어 다이빙 포인트를 자동으로 설정합니다.',
         NSPhotoLibraryAddUsageDescription: '다이빙 로그 저장을 위해 사진 접근이 필요합니다.',
@@ -156,30 +170,31 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 40,
+      versionCode: 67,
       intentFilters: [
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [
-            { scheme: 'https', host: 'divergram.com', pathPrefix: '/post' },
-            { scheme: 'https', host: 'www.divergram.com', pathPrefix: '/post' },
-            { scheme: 'https', host: 'divergram.com', pathPrefix: '/notifications' },
-            { scheme: 'https', host: 'www.divergram.com', pathPrefix: '/notifications' }
-          ],
+          data: ['divergram.com', 'www.divergram.com'].flatMap((host) =>
+            ['/post', '/reel', '/profile', '/resort', '/guide', '/marine-life', '/notifications'].map((pathPrefix) => ({
+              scheme: 'https',
+              host,
+              pathPrefix,
+            }))
+          ),
           category: ['BROWSABLE', 'DEFAULT']
         }
       ],
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
-        'ACCESS_BACKGROUND_LOCATION',
         'BLUETOOTH',
         'BLUETOOTH_ADMIN',
         'BLUETOOTH_SCAN',
         'BLUETOOTH_CONNECT',
         'BLUETOOTH_ADVERTISE',
         'POST_NOTIFICATIONS',
+        'RECORD_AUDIO',
         'INTERNET',
         'ACCESS_NETWORK_STATE'
       ]
@@ -194,7 +209,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       themeColor: '#0EA5E9',
       backgroundColor: '#ffffff',
       display: 'standalone',
-      orientation: 'portrait',
       startUrl: '/',
       lang: 'ko'
     },
@@ -215,10 +229,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       'expo-router',
       'expo-font',
+      'expo-asset',
       'expo-image',
       'expo-image-picker',
+      'expo-localization',
+      'expo-status-bar',
+      'expo-web-browser',
+      ['expo-audio', { microphonePermission: '다이빙 로그 음성 메모를 녹음하고 텍스트로 변환하기 위해 마이크 권한이 필요합니다.' }],
       'expo-sqlite',
       'expo-secure-store',
+      'expo-iap',
       ...(sentryOrg && sentryProject
         ? [['@sentry/react-native/expo', { organization: sentryOrg, project: sentryProject }]]
         : []),
@@ -276,9 +296,18 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         hostedButtonId: paypalHostedButtonId
       },
       socialAuth: {
-        googleClientIdIos: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS || process.env.GOOGLE_CLIENT_ID_IOS || '',
-        googleClientIdAndroid: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID || process.env.GOOGLE_CLIENT_ID_ANDROID || '',
-        googleClientIdWeb: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB || process.env.GOOGLE_CLIENT_ID_WEB || '',
+        googleClientIdIos:
+          process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS ||
+          process.env.GOOGLE_CLIENT_ID_IOS ||
+          GOOGLE_CLIENT_ID_IOS_FALLBACK,
+        googleClientIdAndroid:
+          process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID ||
+          process.env.GOOGLE_CLIENT_ID_ANDROID ||
+          GOOGLE_CLIENT_ID_ANDROID_FALLBACK,
+        googleClientIdWeb:
+          process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB ||
+          process.env.GOOGLE_CLIENT_ID_WEB ||
+          GOOGLE_CLIENT_ID_WEB_FALLBACK,
         kakaoRestApiKey: process.env.KAKAO_REST_API_KEY || '',
         kakaoRedirectUri: process.env.KAKAO_REDIRECT_URI || 'divergram://auth/kakao',
         naverClientId: process.env.NAVER_CLIENT_ID || '',
@@ -295,6 +324,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.2.6'
+    runtimeVersion: '1.2.12-build68'
   } as ExpoConfig;
 };

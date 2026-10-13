@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import Pagination, { usePagination } from '../components/Pagination';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -11,6 +12,10 @@ function formatDate(value) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date);
+}
+
+function formatDateOnly(value) {
+  return formatDate(value).replace(/\s(오전|오후).+$/, '');
 }
 
 function formatAuthMethod(user) {
@@ -30,8 +35,11 @@ function getUserBadgeLabel(user) {
 }
 
 function getRoleGroup(user) {
-  const role = String(user?.account_type || user?.role || 'user').toLowerCase();
-  return role === 'resort' ? 'resort' : role === 'admin' ? 'admin' : 'general';
+  const role = String(user?.role || '').toLowerCase();
+  const accountType = String(user?.account_type || '').toLowerCase();
+  if (role === 'admin') return 'admin';
+  if (accountType === 'resort' || role === 'resort') return 'resort';
+  return 'general';
 }
 
 function getCardImage(user) {
@@ -42,18 +50,28 @@ function safeString(value) {
   return String(value ?? '').trim();
 }
 
-function UserCardActions({ user, onEdit, updateUser, deleteUser, deleteUserPosts }) {
+function UserListActions({ user, roleGroup, onEdit, updateUser, sendPasswordResetEmail, deleteUser, deleteUserPosts }) {
+  if (user?.is_default_admin) {
+    return (
+      <div className="users-card-actions" onClick={(e) => e.stopPropagation()}>
+        <span className="member-protected-label">기본 관리자 보호됨</span>
+        <button type="button" className="sm ghost" onClick={() => onEdit?.(user)}>
+          수정
+        </button>
+        <button type="button" className="sm" onClick={() => sendPasswordResetEmail?.(user)} title="등록 이메일로 비밀번호 재설정 링크 전송">
+          비번 재설정
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="users-card-actions" onClick={(e) => e.stopPropagation()}>
       <button type="button" className="sm ghost" onClick={() => onEdit?.(user)}>
         수정
       </button>
-      <button
-        type="button"
-        className="sm"
-        onClick={() => updateUser?.(user.id, { role: user.role === 'admin' ? 'user' : 'admin' })}
-      >
-        {user.role === 'admin' ? '관리자해제' : '관리자지정'}
+      <button type="button" className="sm" onClick={() => sendPasswordResetEmail?.(user)} title="등록 이메일로 비밀번호 재설정 링크 전송">
+        비번 재설정
       </button>
       <button
         type="button"
@@ -69,14 +87,117 @@ function UserCardActions({ user, onEdit, updateUser, deleteUser, deleteUserPosts
       >
         삭제
       </button>
-      <button
-        type="button"
-        className="sm"
-        onClick={() => deleteUserPosts?.(user.id)}
-        title="이 회원의 게시물만 모두 삭제"
-      >
-        게시물 삭제
-      </button>
+      {roleGroup === 'general' && (
+        <button
+          type="button"
+          className="sm"
+          onClick={() => deleteUserPosts?.(user.id)}
+          title="이 회원의 게시물만 모두 삭제"
+        >
+          게시물 관리
+        </button>
+      )}
+    </div>
+  );
+}
+
+function MemberCard({ user, roleGroup, onEdit, updateUser, sendPasswordResetEmail, deleteUser, deleteUserPosts }) {
+  const thumb = getCardImage(user);
+  const postCount = Number(user?.post_count || 0);
+  const roleLabel = roleGroup === 'resort' ? '리조트 운영 계정' : roleGroup === 'admin' ? '관리자 운영 계정' : '일반 다이버 계정';
+  const resortName = safeString(user?.resort_name || user?.resort?.name || user?.organization_name) || '연결된 리조트 없음';
+  const openEdit = () => onEdit?.(user);
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openEdit();
+    }
+  };
+
+  return (
+    <article className={`member-profile-card is-${roleGroup}`} tabIndex={0} onClick={openEdit} onKeyDown={handleKeyDown}>
+      <div className="member-profile-card-head">
+        <div className="member-profile-avatar">
+          {thumb ? <img src={thumb} alt={user.username || user.full_name || '회원'} /> : <span>{(user.username || user.full_name || '?')[0]?.toUpperCase()}</span>}
+        </div>
+        <div className="member-profile-identity">
+          <span className="member-profile-kicker">{roleLabel}</span>
+          <h3>{user.full_name || user.username || '-'}</h3>
+          <p>{user.email || '-'}</p>
+          <small>@{user.username || '-'} · ID {user.id}</small>
+        </div>
+        <div className="member-profile-badges">
+          <span className={`badge ${getUserStatus(user)}`}>{getUserBadgeLabel(user)}</span>
+          <span className={`badge ${user.email_verified ? 'active' : 'blocked'}`}>{user.email_verified ? '이메일 인증' : '미인증'}</span>
+        </div>
+      </div>
+
+      {roleGroup === 'general' && (
+        <div className="member-profile-summary">
+          <div><span>가입 방식</span><strong>{formatAuthMethod(user)}</strong></div>
+          <div><span>게시물</span><strong>{postCount}개</strong></div>
+          <div><span>가입일</span><strong>{formatDateOnly(user.created_at)}</strong></div>
+        </div>
+      )}
+      {roleGroup === 'resort' && (
+        <div className="member-profile-summary">
+          <div className="member-profile-summary-wide"><span>연결 리조트</span><strong>{resortName}</strong></div>
+          <div><span>로그인</span><strong>이메일</strong></div>
+          <div><span>가입일</span><strong>{formatDateOnly(user.created_at)}</strong></div>
+        </div>
+      )}
+      {roleGroup === 'admin' && (
+        <div className="member-profile-summary">
+          <div className="member-profile-summary-wide"><span>접근 범위</span><strong>{user.is_default_admin ? '기본 관리자 · 전체' : '관리자 콘솔 전체'}</strong></div>
+          <div><span>로그인</span><strong>{formatAuthMethod(user)}</strong></div>
+          <div><span>최근 가입</span><strong>{formatDateOnly(user.created_at)}</strong></div>
+        </div>
+      )}
+
+      <div className="member-profile-actions" onClick={(event) => event.stopPropagation()}>
+        <UserListActions user={user} roleGroup={roleGroup} onEdit={onEdit} updateUser={updateUser} sendPasswordResetEmail={sendPasswordResetEmail} deleteUser={deleteUser} deleteUserPosts={deleteUserPosts} />
+      </div>
+    </article>
+  );
+}
+
+function MemberListRow({ user, roleGroup, onEdit, updateUser, sendPasswordResetEmail, deleteUser, deleteUserPosts }) {
+  const thumb = getCardImage(user);
+  const postCount = Number(user?.post_count || 0);
+  const resortName = safeString(user?.resort_name || user?.resort?.name || user?.organization_name) || '연결된 리조트 없음';
+  const roleLabel = roleGroup === 'resort' ? '리조트 회원' : roleGroup === 'admin' ? '관리자 회원' : '일반 회원';
+  const openEdit = () => onEdit?.(user);
+
+  return (
+    <div className={`member-list member-list-row is-${roleGroup}`} role="button" tabIndex={0} onClick={openEdit} onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openEdit();
+      }
+    }}>
+      <div className="member-list-identity">
+        <div className="member-profile-avatar">
+          {thumb ? <img src={thumb} alt={user.username || user.full_name || '회원'} /> : <span>{(user.username || user.full_name || '?')[0]?.toUpperCase()}</span>}
+        </div>
+        <div>
+          <strong>{user.full_name || user.username || '-'}</strong>
+          <span>{user.email || '-'}</span>
+          <small>@{user.username || '-'} · ID {user.id}</small>
+        </div>
+      </div>
+      <div className="member-list-account">
+        <span className={`member-list-role role-${roleGroup}`}>{roleLabel}</span>
+        <small>{formatAuthMethod(user)}</small>
+      </div>
+      <div className="member-list-info">
+        <span>{roleGroup === 'resort' ? resortName : roleGroup === 'admin' ? (user.is_default_admin ? '기본 관리자 · 전체' : '관리자 콘솔 전체') : `${postCount}개 게시물`}</span>
+        <small>{formatDateOnly(user.created_at)}</small>
+      </div>
+      <div className="member-list-status">
+        <span className={`badge ${getUserStatus(user)}`}>{getUserBadgeLabel(user)}</span>
+        <span className={`badge ${user.email_verified ? 'active' : 'blocked'}`}>{user.email_verified ? '이메일 인증' : '미인증'}</span>
+      </div>
+      <UserListActions user={user} roleGroup={roleGroup} onEdit={onEdit} updateUser={updateUser} sendPasswordResetEmail={sendPasswordResetEmail} deleteUser={deleteUser} deleteUserPosts={deleteUserPosts} />
     </div>
   );
 }
@@ -111,6 +232,10 @@ function UserEditModal({ user, onClose, onSave, busy }) {
 
   if (!user || !draft) return null;
 
+  const protectedAdmin = !!user.is_default_admin;
+  const roleGroup = getRoleGroup(user);
+  const roleTitle = roleGroup === 'resort' ? '리조트 회원' : roleGroup === 'admin' ? '관리자 회원' : '일반 회원';
+
   const submit = async (event) => {
     event.preventDefault();
     try {
@@ -140,8 +265,9 @@ function UserEditModal({ user, onClose, onSave, busy }) {
       <div className="modal-panel users-edit-modal" role="dialog" aria-modal="true" aria-label="회원 수정" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <h3>회원 수정</h3>
-            <p>기본 정보와 상태를 바로 수정할 수 있어.</p>
+            <span className={`users-edit-role role-${roleGroup}`}>{roleTitle}</span>
+            <h3>{roleTitle} 수정</h3>
+            <p>회원 정보와 계정 상태를 한 화면에서 관리합니다.</p>
           </div>
           <button type="button" className="ghost" onClick={onClose}>닫기</button>
         </div>
@@ -162,69 +288,105 @@ function UserEditModal({ user, onClose, onSave, busy }) {
         </div>
 
         <form className="users-edit-form" onSubmit={submit}>
-          <div className="users-edit-grid">
-            <label>
-              <span>이메일</span>
-              <input value={draft.email} onChange={(e) => setDraft((prev) => ({ ...prev, email: e.target.value }))} />
-            </label>
-            <label>
-              <span>사용자명</span>
-              <input value={draft.username} onChange={(e) => setDraft((prev) => ({ ...prev, username: e.target.value }))} />
-            </label>
-            <label>
-              <span>이름</span>
-              <input value={draft.full_name} onChange={(e) => setDraft((prev) => ({ ...prev, full_name: e.target.value }))} />
-            </label>
-            <label>
-              <span>연락처</span>
-              <input type="tel" value={draft.contact_phone} onChange={(e) => setDraft((prev) => ({ ...prev, contact_phone: e.target.value }))} placeholder="010-0000-0000" />
-            </label>
-            <label>
-              <span>웹사이트</span>
-              <input value={draft.website} onChange={(e) => setDraft((prev) => ({ ...prev, website: e.target.value }))} placeholder="https://..." />
-            </label>
-            <label>
-              <span>프로필 이미지</span>
-              <input value={draft.avatar_url} onChange={(e) => setDraft((prev) => ({ ...prev, avatar_url: e.target.value }))} placeholder="https://..." />
-            </label>
-            <label>
-              <span>계정 형태</span>
-              <select value={draft.account_type} onChange={(e) => setDraft((prev) => ({ ...prev, account_type: e.target.value }))}>
-                <option value="personal">일반</option>
-                <option value="resort">리조트</option>
-              </select>
-            </label>
-            <label>
-              <span>권한</span>
-              <select value={draft.role} onChange={(e) => setDraft((prev) => ({ ...prev, role: e.target.value }))}>
-                <option value="user">사용자</option>
-                <option value="admin">관리자</option>
-              </select>
-            </label>
-            <label className="users-edit-grid-wide">
-              <span>소개</span>
-              <textarea value={draft.bio} onChange={(e) => setDraft((prev) => ({ ...prev, bio: e.target.value }))} placeholder="자기소개" />
-            </label>
-            <label>
-              <span>스쿠버 레벨</span>
-              <input value={draft.scuba_level} onChange={(e) => setDraft((prev) => ({ ...prev, scuba_level: e.target.value }))} />
-            </label>
-            <label>
-              <span>프리다이빙 레벨</span>
-              <input value={draft.freediving_level} onChange={(e) => setDraft((prev) => ({ ...prev, freediving_level: e.target.value }))} />
-            </label>
-          </div>
+          <section className="users-edit-section">
+            <div className="users-edit-section-head">
+              <strong>기본 정보</strong>
+              <span>로그인과 회원 식별에 사용하는 정보입니다.</span>
+            </div>
+            <div className="users-edit-grid">
+              <label>
+                <span>이름</span>
+                <input value={draft.full_name} onChange={(e) => setDraft((prev) => ({ ...prev, full_name: e.target.value }))} />
+              </label>
+              <label>
+                <span>사용자명</span>
+                <input value={draft.username} onChange={(e) => setDraft((prev) => ({ ...prev, username: e.target.value }))} />
+              </label>
+              <label>
+                <span>이메일</span>
+                <input type="email" value={draft.email} disabled={protectedAdmin} onChange={(e) => setDraft((prev) => ({ ...prev, email: e.target.value }))} />
+              </label>
+              <label>
+                <span>연락처</span>
+                <input type="tel" value={draft.contact_phone} onChange={(e) => setDraft((prev) => ({ ...prev, contact_phone: e.target.value }))} placeholder="010-0000-0000" />
+              </label>
+            </div>
+          </section>
 
-          <div className="users-edit-toggles">
-          <label className="detail-box detail-box--toggle">
-            <input type="checkbox" checked={draft.email_verified} onChange={(e) => setDraft((prev) => ({ ...prev, email_verified: e.target.checked }))} />
-            <span>이메일 인증</span>
-          </label>
-          <label className="detail-box detail-box--toggle">
-              <input type="checkbox" checked={draft.is_blocked} onChange={(e) => setDraft((prev) => ({ ...prev, is_blocked: e.target.checked }))} />
-              <span>차단 상태</span>
-          </label>
-          </div>
+          <section className="users-edit-section">
+            <div className="users-edit-section-head">
+              <strong>계정 및 상태</strong>
+              <span>회원 구분과 서비스 접근 상태를 설정합니다.</span>
+            </div>
+            <div className="users-edit-grid">
+              <label>
+                <span>계정 형태</span>
+                <select value={draft.account_type} disabled={protectedAdmin} onChange={(e) => setDraft((prev) => ({ ...prev, account_type: e.target.value }))}>
+                  <option value="personal">일반</option>
+                  <option value="resort">리조트</option>
+                </select>
+              </label>
+              <label>
+                <span>권한</span>
+                <select value={draft.role} disabled={protectedAdmin} onChange={(e) => setDraft((prev) => ({ ...prev, role: e.target.value }))}>
+                  <option value="user">사용자</option>
+                  <option value="admin">관리자</option>
+                </select>
+              </label>
+            </div>
+            <div className="users-edit-toggles">
+              <label className="users-edit-toggle">
+                <input type="checkbox" checked={draft.email_verified} onChange={(e) => setDraft((prev) => ({ ...prev, email_verified: e.target.checked }))} />
+                <span><strong>이메일 인증</strong><small>인증 완료 상태로 표시합니다.</small></span>
+              </label>
+              <label className="users-edit-toggle">
+                <input type="checkbox" checked={draft.is_blocked} disabled={protectedAdmin} onChange={(e) => setDraft((prev) => ({ ...prev, is_blocked: e.target.checked }))} />
+                <span><strong>계정 차단</strong><small>로그인과 서비스 이용을 제한합니다.</small></span>
+              </label>
+            </div>
+          </section>
+
+          <section className="users-edit-section">
+            <div className="users-edit-section-head">
+              <strong>프로필 정보</strong>
+              <span>서비스에 표시되는 공개 프로필 정보입니다.</span>
+            </div>
+            <div className="users-edit-grid">
+              <label>
+                <span>웹사이트</span>
+                <input value={draft.website} onChange={(e) => setDraft((prev) => ({ ...prev, website: e.target.value }))} placeholder="https://..." />
+              </label>
+              <label>
+                <span>프로필 이미지 주소</span>
+                <input value={draft.avatar_url} onChange={(e) => setDraft((prev) => ({ ...prev, avatar_url: e.target.value }))} placeholder="https://..." />
+              </label>
+              <label className="users-edit-grid-wide">
+                <span>소개</span>
+                <textarea value={draft.bio} onChange={(e) => setDraft((prev) => ({ ...prev, bio: e.target.value }))} placeholder="회원 소개를 입력하세요." />
+              </label>
+            </div>
+          </section>
+
+          {roleGroup === 'general' && (
+            <section className="users-edit-section">
+              <div className="users-edit-section-head">
+                <strong>다이빙 정보</strong>
+                <span>회원이 등록한 다이빙 자격 수준입니다.</span>
+              </div>
+              <div className="users-edit-grid">
+                <label>
+                  <span>스쿠버 레벨</span>
+                  <input value={draft.scuba_level} onChange={(e) => setDraft((prev) => ({ ...prev, scuba_level: e.target.value }))} />
+                </label>
+                <label>
+                  <span>프리다이빙 레벨</span>
+                  <input value={draft.freediving_level} onChange={(e) => setDraft((prev) => ({ ...prev, freediving_level: e.target.value }))} />
+                </label>
+              </div>
+            </section>
+          )}
+
+          {protectedAdmin && <p className="users-edit-protected">기본 관리자 계정은 이메일·권한·계정 형태를 변경하거나 차단할 수 없습니다.</p>}
 
           <div className="modal-footer modal-footer--start">
             <button type="submit" disabled={busy}>{busy ? '저장 중...' : '회원 정보 저장'}</button>
@@ -244,10 +406,13 @@ export default function UsersSection({
   setQuery,
   refresh,
   updateUser,
+  sendPasswordResetEmail,
   deleteUserPosts,
   deleteUser,
   roleFilter,
   setRoleFilter,
+  fixedRole = false,
+  title = '사용자 관리',
 }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [authFilter, setAuthFilter] = useState('all');
@@ -284,6 +449,7 @@ export default function UsersSection({
       return (!search || text.includes(search)) && roleOk && statusOk && authOk;
     });
   }, [authFilter, query, roleFilter, statusFilter, users]);
+  const pagination = usePagination(visibleUsers, 12, `${query}:${roleFilter}:${statusFilter}:${authFilter}`);
 
   const openEdit = (user) => setEditingUser(user || null);
   const closeEdit = () => setEditingUser(null);
@@ -301,7 +467,8 @@ export default function UsersSection({
   return (
     <div className="card users-card-wrap">
       <div className="users-heading">
-        <h2>사용자 관리</h2>
+        <h2>{title}</h2>
+        <span className="operation-result-count">검색 결과 <strong>{visibleUsers.length}</strong>명</span>
       </div>
 
       <div className="users-toolbar users-toolbar--card">
@@ -313,23 +480,25 @@ export default function UsersSection({
           />
         </div>
         <div className="users-select-row">
-          <label className="users-select-field users-select-field--compact">
-            <span className="sr-only">역할</span>
-            <select
-              aria-label="역할"
-              value={roleFilter}
-              onChange={(e) => {
-                const next = e.target.value;
-                setRoleFilter?.(next);
-                refresh?.({ memberRole: next });
-              }}
-            >
-              <option value="all">전체</option>
-              <option value="general">일반</option>
-              <option value="resort">리조트</option>
-              <option value="admin">관리자</option>
-            </select>
-          </label>
+          {!fixedRole && (
+            <label className="users-select-field users-select-field--compact">
+              <span className="sr-only">역할</span>
+              <select
+                aria-label="역할"
+                value={roleFilter}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setRoleFilter?.(next);
+                  refresh?.({ memberRole: next });
+                }}
+              >
+                <option value="all">전체</option>
+                <option value="general">일반</option>
+                <option value="resort">리조트</option>
+                <option value="admin">관리자</option>
+              </select>
+            </label>
+          )}
           <label className="users-select-field users-select-field--compact">
             <span className="sr-only">상태</span>
             <select aria-label="상태" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -357,75 +526,30 @@ export default function UsersSection({
       {visibleUsers.length === 0 ? (
         <p className="users-empty">표시할 회원이 없습니다.</p>
       ) : (
-        <div className="users-cards-grid">
-          {visibleUsers.map((user) => {
-            const roleGroup = getRoleGroup(user);
-            const thumb = getCardImage(user);
-            const photoCount = Number(user?.post_count || 0);
-            return (
-              <article
-                key={user.id}
-                className="users-card"
-                tabIndex={0}
-                role="button"
-                onClick={() => openEdit(user)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openEdit(user);
-                  }
-                }}
-              >
-                <div className="users-card-media">
-                  {thumb ? (
-                    <img src={thumb} alt={user.username || user.full_name || 'user'} />
-                  ) : (
-                    <div className="users-card-empty">{(user.username || user.full_name || '?')[0]?.toUpperCase()}</div>
-                  )}
-                  <div className="users-card-overlay">
-                    <div className="users-card-overlay-top">
-                      <div>
-                        <h3>{user.full_name || user.username || '-'}</h3>
-                        <p>{user.email || '-'}</p>
-                      </div>
-                      <span className={`badge ${roleGroup === 'admin' ? 'admin' : 'user'}`}>{roleGroup}</span>
-                    </div>
-
-                    <div className="users-card-meta">
-                      <span>ID <strong>{user.id}</strong></span>
-                      <span>가입일 <strong>{formatDate(user.created_at)}</strong></span>
-                      <span>게시물 <strong>{photoCount}</strong></span>
-                    </div>
-
-                    <div className="users-card-body">
-                      <div>
-                        <span>닉네임</span>
-                        <p>{user.username || '-'}</p>
-                      </div>
-                      <div>
-                        <span>이메일</span>
-                        <p>{user.email || '-'}</p>
-                      </div>
-                    </div>
-
-                    <div className="users-card-actions" onClick={(e) => e.stopPropagation()}>
-                      <button type="button" className="sm ghost" onClick={() => openEdit(user)}>수정</button>
-                      <button type="button" className="sm" onClick={() => updateUser?.(user.id, { role: user.role === 'admin' ? 'user' : 'admin' })}>
-                        {user.role === 'admin' ? '관리자해제' : '관리자지정'}
-                      </button>
-                      <button type="button" className="sm" onClick={() => updateUser?.(user.id, { is_blocked: !user.is_blocked })}>
-                        {user.is_blocked ? '차단해제' : '차단'}
-                      </button>
-                      <button type="button" className="sm danger" onClick={() => deleteUser?.(user.id)}>삭제</button>
-                      <button type="button" className="sm" onClick={() => deleteUserPosts?.(user.id)}>게시물 삭제</button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <div className="member-list-wrap">
+          <div className="member-list member-list-head" aria-hidden="true">
+            <span>회원</span>
+            <span>계정</span>
+            <span>가입 정보</span>
+            <span>상태</span>
+            <span>관리</span>
+          </div>
+          {pagination.pageItems.map((user) => (
+            <MemberListRow
+              key={user.id}
+              user={user}
+              roleGroup={fixedRole ? roleFilter : getRoleGroup(user)}
+              onEdit={openEdit}
+              updateUser={updateUser}
+              sendPasswordResetEmail={sendPasswordResetEmail}
+              deleteUser={deleteUser}
+              deleteUserPosts={deleteUserPosts}
+            />
+          ))}
         </div>
       )}
+
+      <Pagination {...pagination} label="회원" />
 
       <UserEditModal user={editingUser} onClose={closeEdit} onSave={saveEdit} busy={editBusy} />
     </div>

@@ -48,13 +48,21 @@ export async function api(path, { adminKey, method = 'GET', body } = {}) {
   const authToken = getAdminAuthToken();
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
-  const r = await fetch(API_BASE + path, {
-    method,
-    credentials: 'include',
-    headers,
-    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
-  });
-  const j = await readJsonSafely(r);
-  if (!r.ok) throw new Error(j.error || 'request_failed');
-  return j;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const r = await fetch(API_BASE + path, {
+      method, credentials: 'include', headers, signal: controller.signal,
+      body: isFormData ? body : body ? JSON.stringify(body) : undefined,
+    });
+    const j = await readJsonSafely(r);
+    if (!r.ok) {
+      const detail = String(j.detail || '').trim();
+      throw new Error([j.error || 'request_failed', detail].filter(Boolean).join(': '));
+    }
+    return j;
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('응답 시간이 초과되었습니다. 연결을 확인한 뒤 다시 시도해 주세요.');
+    throw error;
+  } finally { clearTimeout(timer); }
 }

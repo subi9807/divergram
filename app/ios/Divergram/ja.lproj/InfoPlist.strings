@@ -1,0 +1,11 @@
+"CFBundleDisplayName" = "Divergram - ダイバーグラム";
+"NSLocationWhenInUseUsageDescription" = "ダイビングポイント、リゾートまでの距離、ログの記録に位置情報を使用します。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "ユーザーがダイビング追跡を開始している間、ルートを記録するために位置情報を使用します。";
+"NSCameraUsageDescription" = "プロフィール、投稿、ダイブログ、リゾートのチェックイン用の写真や動画を撮影します。";
+"NSMicrophoneUsageDescription" = "ダイブログの音声メモを録音し、ユーザーの要求に応じてテキストに変換します。";
+"NSMotionUsageDescription" = "ダイビング活動の記録と安全機能のためにモーション情報を使用します。";
+"NSPhotoLibraryUsageDescription" = "プロフィール、認定証、投稿、ダイブログに使用する写真や動画と撮影情報を選択します。";
+"NSPhotoLibraryAddUsageDescription" = "ユーザーが選択したダイビング記録画像を写真ライブラリに保存します。";
+"NSBluetoothAlwaysUsageDescription" = "対応するダイビング機器の検索と接続にBluetoothを使用します。";
+"NSBluetoothPeripheralUsageDescription" = "対応するダイビング機器とのデータ交換にBluetoothを使用します。";
+"NSUserTrackingUsageDescription" = "同意した場合、パーソナライズ広告と広告効果測定のために広告識別子を使用します。";

@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Animated,
-  Easing,
+  ActivityIndicator,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -20,21 +20,15 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image as ExpoImage } from 'expo-image';
 import {
   BadgeCheck,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
-  CreditCard,
   Eye,
   EyeOff,
-  FileText,
   Filter,
   Fish,
   ImagePlus,
-  MoreVertical,
   Pencil,
-  Phone,
-  QrCode,
   Share2,
   ShieldCheck,
   Sparkles,
@@ -42,6 +36,7 @@ import {
   User,
   Wallet,
   Waves,
+  X,
 } from 'lucide-react-native';
 import { Screen } from '../../components/Screen';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
@@ -51,16 +46,16 @@ import { createDivingLicense, deleteDivingLicense, listDivingLicenses, updateDiv
 import {
   DIVING_DISCIPLINE_OPTIONS,
   DIVING_LICENSE_STATUS_OPTIONS,
-  getDivingDisciplineLabel,
-  getDivingLicenseStatusLabel,
-  getDivingLicenseStatusTone,
   normalizeDivingDiscipline,
   normalizeDivingLicenseStatus,
   type DivingDiscipline,
   type DivingLicense,
   type DivingLicenseStatus,
 } from '../../models/DivingLicense';
-import { requestAppleWalletPass } from '../../services/licenseWalletService';
+import { getAppleWalletPassStatus, requestAppleWalletPass, requestGoogleWalletPass } from '../../services/licenseWalletService';
+import { apiClient } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
+import QRCode from 'react-native-qrcode-svg';
 
 type DisciplineFilter = DivingDiscipline | 'all';
 type LicenseSide = 'front' | 'back';
@@ -116,6 +111,25 @@ const statusStyleMap: Record<DivingLicenseStatus, { bg: string; fg: string; bord
   draft: { bg: '#EFF6FF', fg: '#0D5FA8', border: '#BFDBFE' },
 };
 
+const DEV_PREVIEW_LICENSE: DivingLicense = {
+  id: 'dev-preview',
+  licenseNumber: 'DG-SC-2026-A7F2',
+  memberNumber: 'DG-2026-0309',
+  userId: 'dev-preview',
+  holderName: 'SAMPLE USER',
+  discipline: 'scuba',
+  certificationLevel: 'ADVANCED OPEN WATER DIVER',
+  issueDate: '2026-08-28',
+  hasExpiration: false,
+  maxDepth: 30,
+  trainingAgency: 'DIVERGRAM EDUCATION',
+  instructorName: 'DIVERGRAM INSTRUCTOR',
+  verificationUrl: 'https://divergram.com/license/DG-SC-2026-A7F2',
+  status: 'draft',
+  createdAt: '2026-08-28T00:00:00.000Z',
+  updatedAt: '2026-08-28T00:00:00.000Z',
+};
+
 function formatDateValue(value: string) {
   const normalized = String(value || '').trim();
   if (!normalized) return '-';
@@ -124,8 +138,8 @@ function formatDateValue(value: string) {
 
 function buildVerificationUrl(licenseNumber: string) {
   const trimmed = String(licenseNumber || '').trim();
-  if (!trimmed) return 'https://divergram.com/license';
-  return `https://divergram.com/license/${encodeURIComponent(trimmed)}`;
+  if (!trimmed) return 'https://api.divergram.com/api/diving-licenses/verify';
+  return `https://api.divergram.com/api/diving-licenses/verify/${encodeURIComponent(trimmed)}`;
 }
 
 function initialsFromName(name: string) {
@@ -141,55 +155,19 @@ function initialsFromName(name: string) {
     .slice(0, 2);
 }
 
-function generateQrMatrix(seed: string) {
-  const size = 21;
-  const matrix = Array.from({ length: size }, () => Array.from({ length: size }, () => false));
-  const corners = [
-    [0, 0],
-    [0, size - 7],
-    [size - 7, 0],
-  ];
-  for (const [startRow, startCol] of corners) {
-    for (let row = 0; row < 7; row += 1) {
-      for (let col = 0; col < 7; col += 1) {
-        const isBorder = row === 0 || row === 6 || col === 0 || col === 6;
-        const isInner = row >= 2 && row <= 4 && col >= 2 && col <= 4;
-        matrix[startRow + row][startCol + col] = isBorder || isInner;
-      }
-    }
-  }
-
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-
-  for (let row = 0; row < size; row += 1) {
-    for (let col = 0; col < size; col += 1) {
-      const inFinder =
-        (row < 7 && col < 7) ||
-        (row < 7 && col >= size - 7) ||
-        (row >= size - 7 && col < 7);
-      if (inFinder) continue;
-      const mix = (hash + row * 17 + col * 23 + row * col * 7) % 11;
-      matrix[row][col] = mix === 0 || mix === 3 || mix === 7;
-    }
-  }
-
-  return matrix;
-}
-
 function StatusChip({ status }: { status: DivingLicenseStatus }) {
+  const { t } = useTranslation();
   const tone = statusStyleMap[status];
   return (
     <View style={[styles.statusChip, { backgroundColor: tone.bg, borderColor: tone.border }]}>
-      <Text style={[styles.statusChipText, { color: tone.fg }]}>{getDivingLicenseStatusLabel(status)}</Text>
+      <Text style={[styles.statusChipText, { color: tone.fg }]}>{t(`licenseManagement.statuses.${status}`)}</Text>
     </View>
   );
 }
 
 function DisciplineChip({ discipline }: { discipline: DivingDiscipline }) {
-  const label = getDivingDisciplineLabel(discipline);
+  const { t } = useTranslation();
+  const label = t(`licenseManagement.disciplines.${discipline}`);
   const tone = cardAccentMap[discipline];
   return (
     <View style={[styles.disciplineChip, { backgroundColor: `${tone}18`, borderColor: `${tone}33` }]}>
@@ -284,30 +262,6 @@ function ActionButton({
   );
 }
 
-function QrMock({ value }: { value: string }) {
-  const matrix = useMemo(() => generateQrMatrix(value), [value]);
-  return (
-    <View style={styles.qrCard}>
-      <View style={styles.qrFrame}>
-        {matrix.map((row, rowIndex) => (
-          <View key={`r-${rowIndex}`} style={styles.qrRow}>
-            {row.map((cell, colIndex) => (
-              <View
-                key={`c-${rowIndex}-${colIndex}`}
-                style={[styles.qrCell, cell ? styles.qrCellDark : styles.qrCellLight]}
-              />
-            ))}
-          </View>
-        ))}
-      </View>
-      <Text style={styles.qrHint}>Scan to Verify</Text>
-      <Text style={styles.qrValue} numberOfLines={2}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 function LicenseCard({
   license,
   side,
@@ -317,10 +271,11 @@ function LicenseCard({
   side: LicenseSide;
   onToggleSide: () => void;
 }) {
+  const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
   const accent = cardAccentMap[license.discipline];
   const displayName = license.holderName || 'DIVERGRAM USER';
-  const verificationUrl = license.verificationUrl || buildVerificationUrl(license.licenseNumber);
+  const verificationUrl = buildVerificationUrl(license.licenseNumber);
   const initials = initialsFromName(displayName);
   const nameParts = displayName.split(' ');
   const firstName = nameParts[0] || displayName;
@@ -328,7 +283,7 @@ function LicenseCard({
 
   if (side === 'back') {
     return (
-      <Pressable onPress={onToggleSide} style={[styles.backCard, { borderColor: `${accent}26`, backgroundColor: isDark ? '#0D1724' : '#FFFFFF' }]}>
+      <Pressable onPress={onToggleSide} style={[styles.backCard, { borderColor: `${accent}26`, backgroundColor: isDark ? '#F4F8FC' : '#FFFFFF' }]}>
         <View style={styles.cardTopRow}>
           <View style={styles.brandRow}>
             <View style={[styles.brandLogo, { borderColor: `${accent}33`, backgroundColor: `${accent}12` }]}>
@@ -342,36 +297,35 @@ function LicenseCard({
           <StatusChip status={license.status} />
         </View>
 
-        <View style={[styles.backSection, { borderColor: `${accent}22`, backgroundColor: isDark ? 'rgba(8, 184, 199, 0.06)' : 'rgba(8, 184, 199, 0.05)' }]}>
-          <Text style={styles.backSectionTitle}>License Details</Text>
-          <Text style={styles.backSectionValue}>{license.certificationLevel}</Text>
-          <Text style={styles.backSectionMeta}>
-            {getDivingDisciplineLabel(license.discipline)} · Max Depth {license.maxDepth ? `${license.maxDepth} m` : '-'}
-          </Text>
+        <View style={styles.backBody}>
+          <View style={styles.backInformation}>
+            <Text style={styles.backSectionTitle}>LICENSE DETAILS</Text>
+            <Text style={styles.backSectionValue} numberOfLines={1}>{license.certificationLevel}</Text>
+            <Text style={styles.backSectionMeta} numberOfLines={1}>
+              {t(`licenseManagement.disciplines.${license.discipline}`)} · {license.maxDepth ? `${license.maxDepth} m` : 'DIVER'}
+            </Text>
+            <View style={styles.compactGrid}>
+              <View style={styles.compactGridItem}><CompactField label="AGENCY" value={license.trainingAgency || '-'} /></View>
+              <View style={styles.compactGridItem}><CompactField label="INSTRUCTOR" value={license.instructorName || '-'} /></View>
+              <View style={styles.compactGridItem}><CompactField label="ISSUED" value={formatDateValue(license.issueDate)} /></View>
+              <View style={styles.compactGridItem}><CompactField label="EXPIRES" value={license.hasExpiration ? formatDateValue(license.expirationDate || '-') : 'NONE'} /></View>
+            </View>
+          </View>
+          <View style={styles.compactQrWrap}>
+            <View style={styles.compactQrFrame}>
+              <QRCode value={verificationUrl} size={68} color="#0F172A" backgroundColor="#FFFFFF" ecl="M" />
+            </View>
+            <Text style={[styles.compactQrLabel, { color: accent }]}>SCAN TO VERIFY</Text>
+          </View>
         </View>
 
-        <View style={styles.detailGrid}>
-          <DetailLine icon={<CalendarDays size={14} color={accent} />} label="Issued" value={formatDateValue(license.issueDate)} />
-          <DetailLine
-            icon={<CalendarDays size={14} color={accent} />}
-            label="Expires"
-            value={license.hasExpiration ? formatDateValue(license.expirationDate || '-') : 'NO EXPIRATION'}
-          />
-          <DetailLine icon={<FileText size={14} color={accent} />} label="Training Agency" value={license.trainingAgency || '-'} />
-          <DetailLine icon={<User size={14} color={accent} />} label="Instructor" value={license.instructorName || '-'} />
-          <DetailLine icon={<CreditCard size={14} color={accent} />} label="License No" value={license.licenseNumber} />
-          <DetailLine icon={<Phone size={14} color={accent} />} label="Emergency Contact" value={license.emergencyContact || '-'} />
-        </View>
-
-        <View style={styles.qrRowWrap}>
-          <QrMock value={verificationUrl} />
-        </View>
+        <Text style={styles.cardSerial} numberOfLines={1}>{license.licenseNumber} · {license.memberNumber || '-'}</Text>
       </Pressable>
     );
   }
 
   return (
-    <Pressable onPress={onToggleSide} style={[styles.frontCard, { borderColor: `${accent}26`, backgroundColor: isDark ? '#0D1724' : '#FFFFFF' }]}>
+    <Pressable onPress={onToggleSide} style={[styles.frontCard, { borderColor: `${accent}26`, backgroundColor: isDark ? '#F4F8FC' : '#FFFFFF' }]}>
       <View style={styles.frontTop}>
         <View style={styles.brandRow}>
           <View style={[styles.brandLogo, { borderColor: `${accent}33`, backgroundColor: `${accent}12` }]}>
@@ -397,8 +351,9 @@ function LicenseCard({
           </View>
         )}
         <View style={{ flex: 1 }}>
-          <Text style={styles.holderName}>{firstName}</Text>
-          {restName ? <Text style={styles.holderSubName}>{restName}</Text> : null}
+          <Text style={styles.holderName} numberOfLines={1}>{firstName}</Text>
+          {restName ? <Text style={styles.holderSubName} numberOfLines={1}>{restName}</Text> : null}
+          <Text style={styles.certificationName} numberOfLines={1}>{license.certificationLevel}</Text>
           <View style={styles.inlineBadges}>
             <DisciplineChip discipline={license.discipline} />
             <StatusChip status={license.status} />
@@ -406,66 +361,26 @@ function LicenseCard({
         </View>
       </View>
 
-      <View style={styles.infoGrid}>
-        <MiniInfo icon={<CreditCard size={14} color={accent} />} label="License No" value={license.licenseNumber} />
-        <MiniInfo icon={<BadgeCheck size={14} color={accent} />} label="Level" value={license.certificationLevel} />
-        <MiniInfo icon={<CalendarDays size={14} color={accent} />} label="Issued" value={formatDateValue(license.issueDate)} />
-        <MiniInfo
-          icon={<Eye size={14} color={accent} />}
-          label="Expires"
-          value={license.hasExpiration ? formatDateValue(license.expirationDate || '-') : 'NO EXPIRATION'}
-        />
-      </View>
-
-      <View style={styles.frontFooter}>
-        <View>
-          <Text style={styles.footerLabel}>Tap card to flip</Text>
-          <Text style={styles.footerValue}>Verify via QR or link</Text>
-        </View>
-        <View style={[styles.footerIconWrap, { borderColor: `${accent}22`, backgroundColor: `${accent}10` }]}>
-          <QrCode size={20} color={accent} />
-        </View>
+      <View style={[styles.frontDataRow, { borderTopColor: `${accent}22` }]}>
+        <CompactField label="LICENSE NO." value={license.licenseNumber} />
+        <CompactField label="MEMBER NO." value={license.memberNumber || '-'} />
+        <CompactField label="ISSUED" value={formatDateValue(license.issueDate)} />
       </View>
     </Pressable>
   );
 }
 
-function DetailLine({
-  icon,
+function CompactField({
   label,
   value,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
 }) {
   return (
-    <View style={styles.detailLine}>
-      <View style={styles.detailLineIcon}>{icon}</View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.detailLineLabel}>{label}</Text>
-        <Text style={styles.detailLineValue} numberOfLines={2}>
-          {value}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-function MiniInfo({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.miniInfo}>
-      <View style={styles.miniInfoIcon}>{icon}</View>
-      <Text style={styles.miniInfoLabel}>{label}</Text>
-      <Text style={styles.miniInfoValue} numberOfLines={2}>
+    <View style={styles.compactField}>
+      <Text style={styles.compactFieldLabel}>{label}</Text>
+      <Text style={styles.compactFieldValue} numberOfLines={1}>
         {value}
       </Text>
     </View>
@@ -473,6 +388,7 @@ function MiniInfo({
 }
 
 export default function LicenseManagementScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { isDark } = useResolvedTheme();
   const userId = String(user?.id || 'me').trim() || 'me';
@@ -484,7 +400,7 @@ export default function LicenseManagementScreen() {
     queryFn: () => listDivingLicenses(userId),
   });
 
-  const licenses = query.data || [];
+  const licenses = useMemo(() => query.data || [], [query.data]);
   const [filter, setFilter] = useState<DisciplineFilter>('all');
   const [selectedLicense, setSelectedLicense] = useState<DivingLicense | null>(null);
   const [selectedSide, setSelectedSide] = useState<LicenseSide>('front');
@@ -492,12 +408,21 @@ export default function LicenseManagementScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [walletLoadingId, setWalletLoadingId] = useState<string | null>(null);
+  const [ocrNotice, setOcrNotice] = useState('');
   const [draft, setDraft] = useState<LicenseDraft>(() => ({
     ...EMPTY_DRAFT,
     holderName: userName,
     profileImageUrl: userAvatar,
   }));
-  const fade = useRef(new Animated.Value(1)).current;
+  const detailsScrollRef = useRef<ScrollView>(null);
+
+  const appleWalletStatus = useQuery({
+    queryKey: ['apple-wallet-status', userId],
+    queryFn: getAppleWalletPassStatus,
+    enabled: Platform.OS === 'ios',
+    staleTime: 60_000,
+  });
 
   const filteredLicenses = useMemo(
     () => (filter === 'all' ? licenses : licenses.filter((item) => item.discipline === filter)),
@@ -518,14 +443,8 @@ export default function LicenseManagementScreen() {
 
   useEffect(() => {
     if (!selectedLicense) return;
-    fade.setValue(0);
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 180,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start();
-  }, [selectedLicense, selectedSide, fade]);
+    requestAnimationFrame(() => detailsScrollRef.current?.scrollTo({ y: 0, animated: false }));
+  }, [selectedLicense]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -535,6 +454,7 @@ export default function LicenseManagementScreen() {
       profileImageUrl: userAvatar,
       issueDate: new Date().toISOString().slice(0, 10),
     });
+    setOcrNotice('');
     setEditorOpen(true);
   };
 
@@ -558,6 +478,7 @@ export default function LicenseManagementScreen() {
       status: license.status,
       notes: license.notes || '',
     });
+    setOcrNotice('');
     setEditorOpen(true);
   };
 
@@ -581,27 +502,76 @@ export default function LicenseManagementScreen() {
     if (uploadingImage || saving) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('권한 필요', '사진 접근 권한을 허용해주세요.');
+      Alert.alert(t('licenseManagement.alerts.permissionTitle'), t('licenseManagement.alerts.permissionBody'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: false,
-      base64: false,
-      quality: 0.9,
+      base64: true,
+      quality: 0.45,
       selectionLimit: 1,
+      shouldDownloadFromNetwork: true,
+      preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
     });
     if (result.canceled || !result.assets?.length) return;
 
-    const picked = String(result.assets[0]?.uri || '').trim();
-    if (!picked) return;
+    const asset = result.assets[0];
+    const picked = String(asset?.uri || '').trim();
+    if (!picked || !asset?.base64) {
+      Alert.alert(t('licenseManagement.alerts.unreadableTitle'), t('licenseManagement.alerts.unreadableBody'));
+      return;
+    }
+    if (Number(asset.fileSize || 0) > 8 * 1024 * 1024 || asset.base64.length > 8_000_000) {
+      Alert.alert(t('licenseManagement.alerts.fileTooLargeTitle'), t('licenseManagement.alerts.fileTooLargeBody'));
+      return;
+    }
     setUploadingImage(true);
+    setOcrNotice(t('licenseManagement.alerts.ocrReading'));
     try {
-      const uploaded = await uploadImage(picked);
-      setDraft((prev) => ({ ...prev, profileImageUrl: uploaded.url }));
-      Alert.alert('업로드 완료', uploaded.source === 'cloudinary' ? '프로필 이미지가 업로드되었습니다.' : '임시 업로드 URL로 저장됩니다.');
+      const mimeType = String(asset.mimeType || 'image/jpeg').toLowerCase();
+      const safeMimeType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(mimeType) ? mimeType : 'image/jpeg';
+      const [payload, uploaded] = await Promise.all([
+        apiClient.uploadLicenseImageWithOcr(`data:${safeMimeType};base64,${asset.base64}`),
+        uploadImage(picked),
+      ]);
+      const ocr = (payload as any)?.ocr || {};
+      const imageUrl = String(uploaded?.url || (payload as any)?.image_url || (payload as any)?.license_image_url || '').trim();
+      const disciplineText = String(ocr.discipline || ocr.type || '').toLowerCase();
+      const expiresAt = String(ocr.expires_at || '').trim();
+      const maxDepth = String(ocr.max_depth || '').replace(/[^0-9.]/g, '');
+
+      setDraft((prev) => ({
+        ...prev,
+        holderName: String(ocr.holder_name || '').trim() || prev.holderName,
+        licenseNumber: String(ocr.number || '').trim() || prev.licenseNumber,
+        discipline: disciplineText.includes('free') ? 'freediving' : disciplineText ? 'scuba' : prev.discipline,
+        certificationLevel: String(ocr.type || '').trim() || prev.certificationLevel,
+        issueDate: String(ocr.issued_at || '').trim() || prev.issueDate,
+        expirationDate: expiresAt || prev.expirationDate,
+        hasExpiration: Boolean(expiresAt) || prev.hasExpiration,
+        maxDepth: maxDepth || prev.maxDepth,
+        trainingAgency: String(ocr.agency || '').trim() || prev.trainingAgency,
+        instructorName: String(ocr.instructor_name || '').trim() || prev.instructorName,
+        instructorNumber: String(ocr.instructor_number || '').trim() || prev.instructorNumber,
+        verificationUrl: String(ocr.verification_url || '').trim() || prev.verificationUrl,
+        profileImageUrl: imageUrl || picked,
+      }));
+
+      if (!(payload as any)?.ocr_configured) {
+        setOcrNotice(t('licenseManagement.alerts.ocrNotConfiguredNotice'));
+        Alert.alert(t('licenseManagement.alerts.photoSavedTitle'), t('licenseManagement.alerts.ocrNotConfiguredBody'));
+      } else if ((payload as any)?.ocr_error) {
+        setOcrNotice(t('licenseManagement.alerts.ocrPartialNotice'));
+        Alert.alert(t('licenseManagement.alerts.ocrFailedTitle'), t('licenseManagement.alerts.ocrPartialBody'));
+      } else {
+        setOcrNotice(t('licenseManagement.alerts.ocrAppliedNotice'));
+        Alert.alert(t('licenseManagement.alerts.ocrAppliedTitle'), t('licenseManagement.alerts.ocrAppliedBody'));
+      }
     } catch (error: any) {
-      Alert.alert('업로드 실패', String(error?.message || error));
+      setOcrNotice(t('licenseManagement.alerts.ocrFailedNotice'));
+      Alert.alert(t('licenseManagement.alerts.uploadFailedTitle'), String(error?.message || error));
     } finally {
       setUploadingImage(false);
     }
@@ -610,23 +580,23 @@ export default function LicenseManagementScreen() {
   const handleSave = async () => {
     if (saving || uploadingImage) return;
     if (!draft.holderName.trim()) {
-      Alert.alert('입력 필요', '라이선스 보유자 이름을 입력해주세요.');
+      Alert.alert(t('licenseManagement.alerts.inputRequired'), t('licenseManagement.alerts.holderRequired'));
       return;
     }
     if (!draft.licenseNumber.trim()) {
-      Alert.alert('입력 필요', '라이선스 번호를 입력해주세요.');
+      Alert.alert(t('licenseManagement.alerts.inputRequired'), t('licenseManagement.alerts.numberRequired'));
       return;
     }
     if (!draft.certificationLevel.trim()) {
-      Alert.alert('입력 필요', '라이선스 등급을 입력해주세요.');
+      Alert.alert(t('licenseManagement.alerts.inputRequired'), t('licenseManagement.alerts.levelRequired'));
       return;
     }
     if (!draft.issueDate.trim()) {
-      Alert.alert('입력 필요', '발급일을 입력해주세요.');
+      Alert.alert(t('licenseManagement.alerts.inputRequired'), t('licenseManagement.alerts.issueDateRequired'));
       return;
     }
     if (draft.hasExpiration && !draft.expirationDate.trim()) {
-      Alert.alert('입력 필요', '만료일을 입력해주세요.');
+      Alert.alert(t('licenseManagement.alerts.inputRequired'), t('licenseManagement.alerts.expirationDateRequired'));
       return;
     }
 
@@ -659,19 +629,19 @@ export default function LicenseManagementScreen() {
       await query.refetch();
       setEditorOpen(false);
       setEditingId(null);
-      Alert.alert('저장 완료', editingId ? '라이선스 정보가 수정되었습니다.' : '라이선스가 등록되었습니다.');
+      Alert.alert(t('licenseManagement.alerts.saveComplete'), t(editingId ? 'licenseManagement.alerts.updated' : 'licenseManagement.alerts.created'));
     } catch (error: any) {
-      Alert.alert(editingId ? '수정 실패' : '등록 실패', String(error?.message || error));
+      Alert.alert(t(editingId ? 'licenseManagement.alerts.updateFailed' : 'licenseManagement.alerts.createFailed'), String(error?.message || error));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (license: DivingLicense) => {
-    Alert.alert('라이선스 삭제', '이 라이선스를 삭제할까요?', [
-      { text: '취소', style: 'cancel' },
+    Alert.alert(t('licenseManagement.alerts.deleteTitle'), t('licenseManagement.alerts.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '삭제',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -683,7 +653,7 @@ export default function LicenseManagementScreen() {
             }
             await query.refetch();
           } catch (error: any) {
-            Alert.alert('삭제 실패', String(error?.message || error));
+            Alert.alert(t('licenseManagement.alerts.deleteFailed'), String(error?.message || error));
           }
         },
       },
@@ -698,7 +668,7 @@ export default function LicenseManagementScreen() {
         title: `${license.holderName} - Divergram License`,
       });
     } catch {
-      Alert.alert('공유 실패', '공유 기능을 실행할 수 없습니다.');
+      Alert.alert(t('licenseManagement.alerts.shareFailedTitle'), t('licenseManagement.alerts.shareFailedBody'));
     }
   };
 
@@ -706,22 +676,39 @@ export default function LicenseManagementScreen() {
     const url = license.verificationUrl || buildVerificationUrl(license.licenseNumber);
     const supported = await Linking.canOpenURL(url).catch(() => false);
     if (!supported) {
-      Alert.alert('검증 링크', url);
+      Alert.alert(t('licenseManagement.alerts.verificationLink'), url);
       return;
     }
     await Linking.openURL(url);
   };
 
   const handleWallet = async (license: DivingLicense) => {
-    const result = await requestAppleWalletPass({ licenseId: license.id, userId });
-    if (result.ready && result.passUrl) {
-      const supported = await Linking.canOpenURL(result.passUrl).catch(() => false);
-      if (supported) {
-        await Linking.openURL(result.passUrl);
-        return;
-      }
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      Alert.alert('Wallet', 'Wallet passes are available on iPhone and Android.');
+      return;
     }
-    Alert.alert('Apple Wallet', result.message || 'Apple Wallet 연동 준비 중입니다.');
+    const isApple = Platform.OS === 'ios';
+    const walletName = isApple ? 'Apple Wallet' : 'Google Wallet';
+    if (isApple && appleWalletStatus.data?.ready === false) {
+      Alert.alert(walletName, t('licenseManagement.walletCertificateRequired'));
+      return;
+    }
+    setWalletLoadingId(license.id);
+    try {
+      const result = isApple
+        ? await requestAppleWalletPass({ licenseId: license.id })
+        : await requestGoogleWalletPass({ licenseId: license.id });
+      if (result.ready && result.passUrl) {
+        const supported = await Linking.canOpenURL(result.passUrl).catch(() => false);
+        if (supported) {
+          await Linking.openURL(result.passUrl);
+          return;
+        }
+      }
+      Alert.alert(walletName, result.message || t('licenseManagement.walletUnavailable'));
+    } finally {
+      setWalletLoadingId(null);
+    }
   };
 
   const colors = isDark
@@ -758,24 +745,24 @@ export default function LicenseManagementScreen() {
                 <ExpoImage source={require('../../../assets/images/divergram-logo-blue.png')} style={styles.heroLogo} contentFit="contain" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.heroEyebrow, { color: colors.subText }]}>Digital Diving License</Text>
-                <Text style={[styles.heroTitle, { color: colors.title }]}>My Licenses</Text>
+                <Text style={[styles.heroEyebrow, { color: colors.subText }]}>DIVERGRAM LICENSE</Text>
+                <Text style={[styles.heroTitle, { color: colors.title }]}>{t('licenseManagement.title')}</Text>
                 <Text style={[styles.heroSubtitle, { color: colors.subtitle }]}>
-                  라이선스 조회, 등록, 수정, 삭제를 한 화면에서 관리합니다.
+                  {t('licenseManagement.subtitle')}
                 </Text>
               </View>
             </View>
             <TouchableOpacity activeOpacity={0.85} onPress={openCreate} style={styles.heroCreateButton}>
               <CirclePlus size={18} color="#fff" />
-              <Text style={styles.heroCreateButtonText}>등록</Text>
+              <Text style={styles.heroCreateButtonText}>{t('licenseManagement.register')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.heroStats}>
-            <StatCard label="TOTAL" value={String(stats.total)} tone="#0D5FA8" />
-            <StatCard label="ACTIVE" value={String(stats.active)} tone="#0F7A47" />
-            <StatCard label="SCUBA" value={String(stats.scuba)} tone="#0D5FA8" />
-            <StatCard label="FREE" value={String(stats.freediving)} tone="#08B7C7" />
+            <StatCard label={t('licenseManagement.all')} value={String(stats.total)} tone="#0D5FA8" />
+            <StatCard label={t('licenseManagement.active')} value={String(stats.active)} tone="#0F7A47" />
+            <StatCard label={t('licenseManagement.scuba')} value={String(stats.scuba)} tone="#0D5FA8" />
+            <StatCard label={t('licenseManagement.freediving')} value={String(stats.freediving)} tone="#08B7C7" />
           </View>
         </View>
 
@@ -783,17 +770,17 @@ export default function LicenseManagementScreen() {
           <View style={styles.sectionHead}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Filter size={17} color="#0D5FA8" />
-              <Text style={[styles.sectionTitle, { color: colors.title }]}>필터</Text>
+              <Text style={[styles.sectionTitle, { color: colors.title }]}>{t('licenseManagement.filter')}</Text>
             </View>
-            <Text style={{ color: colors.subtitle, fontSize: 12 }}>{filteredLicenses.length}개 표시</Text>
+            <Text style={{ color: colors.subtitle, fontSize: 12 }}>{t('licenseManagement.shownCount', { count: filteredLicenses.length })}</Text>
           </View>
 
           <View style={styles.chipRow}>
-            <ChipButton label="ALL" active={filter === 'all'} onPress={() => setFilter('all')} />
+            <ChipButton label={t('licenseManagement.all')} active={filter === 'all'} onPress={() => setFilter('all')} />
             {DIVING_DISCIPLINE_OPTIONS.map((item) => (
               <ChipButton
                 key={item}
-                label={getDivingDisciplineLabel(item)}
+                label={t(`licenseManagement.disciplines.${item}`)}
                 active={filter === item}
                 onPress={() => setFilter(item)}
                 icon={item === 'freediving' ? <Fish size={12} color={filter === item ? '#fff' : '#08B7C7'} /> : <Waves size={12} color={filter === item ? '#fff' : '#0D5FA8'} />}
@@ -844,7 +831,7 @@ export default function LicenseManagementScreen() {
                   <View style={styles.listCardBadgeRow}>
                     <View style={[styles.listCardDisciplineBadgeWrap, { backgroundColor: cardAccentMap[license.discipline] }]}>
                       {license.discipline === 'freediving' ? <Fish size={14} color="#fff" /> : <Waves size={14} color="#fff" />}
-                      <Text style={styles.listCardDisciplineBadgeText}>{getDivingDisciplineLabel(license.discipline)}</Text>
+                      <Text style={styles.listCardDisciplineBadgeText}>{t(`licenseManagement.disciplines.${license.discipline}`)}</Text>
                     </View>
                     <StatusChip status={license.status} />
                   </View>
@@ -863,6 +850,12 @@ export default function LicenseManagementScreen() {
                       </Text>
                     </View>
                     <View style={styles.listCardMetaBlock}>
+                      <Text style={[styles.listCardMetaLabel, { color: colors.subText }]}>MEMBER NO.</Text>
+                      <Text style={[styles.listCardMetaValue, { color: colors.title }]} numberOfLines={1}>
+                        {license.memberNumber || '-'}
+                      </Text>
+                    </View>
+                    <View style={styles.listCardMetaBlock}>
                       <Text style={[styles.listCardMetaLabel, { color: colors.subText }]}>EXPIRES</Text>
                       <Text style={[styles.listCardMetaValue, { color: colors.title }]} numberOfLines={1}>
                         {license.hasExpiration ? formatDateValue(license.expirationDate || '') : 'NO EXPIRATION'}
@@ -872,14 +865,14 @@ export default function LicenseManagementScreen() {
                 </View>
 
                 <View style={styles.listCardFooter}>
-                  <Text style={[styles.listCardFooterText, { color: colors.subText }]}>탭하여 상세 화면 보기</Text>
+                  <Text style={[styles.listCardFooterText, { color: colors.subText }]}>{t('licenseManagement.tapForDetails')}</Text>
                   <ChevronRight size={18} color={colors.subText} />
                 </View>
 
                 <View style={styles.listCardActions}>
                   <MiniAction
                     icon={<Eye size={14} color="#0D5FA8" />}
-                    label="조회"
+                    label={t('licenseManagement.view')}
                     onPress={(event) => {
                       event.stopPropagation();
                       openDetails(license);
@@ -887,7 +880,7 @@ export default function LicenseManagementScreen() {
                   />
                   <MiniAction
                     icon={<Pencil size={14} color="#0D5FA8" />}
-                    label="수정"
+                    label={t('licenseManagement.edit')}
                     onPress={(event) => {
                       event.stopPropagation();
                       openEdit(license);
@@ -895,7 +888,7 @@ export default function LicenseManagementScreen() {
                   />
                   <MiniAction
                     icon={<Trash2 size={14} color="#B91C1C" />}
-                    label="삭제"
+                    label={t('licenseManagement.delete')}
                     danger
                     onPress={(event) => {
                       event.stopPropagation();
@@ -908,17 +901,41 @@ export default function LicenseManagementScreen() {
           </View>
         ) : (
           <View style={[styles.emptyCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
-            <View style={[styles.emptyIconWrap, { backgroundColor: colors.mutedBg, borderColor: colors.mutedBorder }]}>
-              <BadgeCheck size={28} color="#0D5FA8" />
-            </View>
-            <Text style={[styles.emptyTitle, { color: colors.title }]}>등록된 라이선스가 없습니다</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.subtitle }]}>새 라이선스를 등록하면 여기에서 조회, 수정, 삭제할 수 있습니다.</Text>
+            {__DEV__ ? (
+              <>
+                <View style={styles.previewHeading}>
+                  <View>
+                    <Text style={[styles.emptyTitle, { color: colors.title, marginTop: 0 }]}>{t('licenseManagement.previewTitle')}</Text>
+                    <Text style={[styles.emptySubtitle, { color: colors.subtitle }]}>{t('licenseManagement.previewHint')}</Text>
+                  </View>
+                  <Text style={styles.previewSideLabel}>{selectedSide.toUpperCase()}</Text>
+                </View>
+                <LicenseCard
+                  license={DEV_PREVIEW_LICENSE}
+                  side={selectedSide}
+                  onToggleSide={() => setSelectedSide((value) => (value === 'front' ? 'back' : 'front'))}
+                />
+              </>
+            ) : (
+              <>
+                <View style={[styles.emptyIconWrap, { backgroundColor: colors.mutedBg, borderColor: colors.mutedBorder }]}>
+                  <BadgeCheck size={28} color="#0D5FA8" />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.title }]}>{t('licenseManagement.emptyTitle')}</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.subtitle }]}>{t('licenseManagement.emptySubtitle')}</Text>
+              </>
+            )}
             <TouchableOpacity onPress={openCreate} activeOpacity={0.86} style={styles.emptyButton}>
-              <Text style={styles.emptyButtonText}>첫 라이선스 등록</Text>
+              <Text style={styles.emptyButtonText}>{t('licenseManagement.emptyAction')}</Text>
             </TouchableOpacity>
           </View>
         )}
       </ScrollView>
+
+      <TouchableOpacity onPress={openCreate} activeOpacity={0.88} accessibilityRole="button" accessibilityLabel={t('licenseManagement.register')} style={styles.floatingCreateButton}>
+        <CirclePlus size={22} color="#fff" />
+        <Text style={styles.floatingCreateButtonText}>{t('licenseManagement.register')}</Text>
+      </TouchableOpacity>
 
       <Modal visible={editorOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeEditor}>
         <Screen tone="plain">
@@ -928,46 +945,46 @@ export default function LicenseManagementScreen() {
                 <ChevronLeft size={20} color="#0F172A" />
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
-                <Text style={styles.modalTitle}>{editingId ? '라이선스 수정' : '라이선스 등록'}</Text>
-                <Text style={styles.modalSubtitle}>내 라이선스 정보를 입력하고 저장하세요.</Text>
+                <Text style={styles.modalTitle}>{t(editingId ? 'licenseManagement.editTitle' : 'licenseManagement.createTitle')}</Text>
+                <Text style={styles.modalSubtitle}>{t('licenseManagement.formSubtitle')}</Text>
               </View>
               <TouchableOpacity onPress={handleSave} activeOpacity={0.86} style={styles.saveButton}>
-                <Text style={styles.saveButtonText}>{saving ? '저장중...' : '저장'}</Text>
+                <Text style={styles.saveButtonText}>{t(saving ? 'licenseManagement.saving' : 'common.save')}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.formSection}>
               <View style={styles.formSectionTitleRow}>
-                <Text style={styles.formSectionTitle}>기본 정보</Text>
-                <Text style={styles.formSectionHint}>필수 항목: 이름, 번호, 등급, 발급일</Text>
+                <Text style={styles.formSectionTitle}>{t('licenseManagement.basicInfo')}</Text>
+                <Text style={styles.formSectionHint}>{t('licenseManagement.basicHint')}</Text>
               </View>
 
-              <Field label="보유자 이름" value={draft.holderName} onChangeText={(value) => setDraft((prev) => ({ ...prev, holderName: value }))} placeholder="예: KIM SEOKGEUN" />
-              <Field label="라이선스 번호" value={draft.licenseNumber} onChangeText={(value) => setDraft((prev) => ({ ...prev, licenseNumber: value }))} placeholder="예: DG-2026-0001" />
+              <Field label={t('licenseManagement.holderName')} value={draft.holderName} onChangeText={(value) => setDraft((prev) => ({ ...prev, holderName: value }))} placeholder={t('licenseManagement.holderPlaceholder')} />
+              <Field label={t('licenseManagement.licenseNumber')} value={draft.licenseNumber} onChangeText={(value) => setDraft((prev) => ({ ...prev, licenseNumber: value }))} placeholder={t('licenseManagement.numberPlaceholder')} />
 
-              <Text style={styles.fieldLabel}>종목</Text>
+              <Text style={styles.fieldLabel}>{t('licenseManagement.discipline')}</Text>
               <View style={styles.segmentRow}>
                 <ChipButton
-                  label="SCUBA DIVING"
+                  label={t('licenseManagement.disciplines.scuba')}
                   active={draft.discipline === 'scuba'}
                   onPress={() => setDraft((prev) => ({ ...prev, discipline: 'scuba' }))}
                   icon={<Waves size={12} color={draft.discipline === 'scuba' ? '#fff' : '#0D5FA8'} />}
                 />
                 <ChipButton
-                  label="FREEDIVING"
+                  label={t('licenseManagement.disciplines.freediving')}
                   active={draft.discipline === 'freediving'}
                   onPress={() => setDraft((prev) => ({ ...prev, discipline: 'freediving' }))}
                   icon={<Fish size={12} color={draft.discipline === 'freediving' ? '#fff' : '#08B7C7'} />}
                 />
               </View>
 
-              <Field label="라이선스 등급" value={draft.certificationLevel} onChangeText={(value) => setDraft((prev) => ({ ...prev, certificationLevel: value }))} placeholder="예: ADVANCED OPEN WATER DIVER" />
-              <Field label="발급일" value={draft.issueDate} onChangeText={(value) => setDraft((prev) => ({ ...prev, issueDate: value }))} placeholder="YYYY-MM-DD" />
+              <Field label={t('licenseManagement.certificationLevel')} value={draft.certificationLevel} onChangeText={(value) => setDraft((prev) => ({ ...prev, certificationLevel: value }))} placeholder={t('licenseManagement.levelPlaceholder')} />
+              <Field label={t('licenseManagement.issueDate')} value={draft.issueDate} onChangeText={(value) => setDraft((prev) => ({ ...prev, issueDate: value }))} placeholder="YYYY-MM-DD" />
 
               <View style={styles.inlineToggleRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>만료 여부</Text>
-                  <Text style={styles.fieldHint}>만료일이 없으면 NO EXPIRATION으로 표시합니다.</Text>
+                  <Text style={styles.fieldLabel}>{t('licenseManagement.hasExpiration')}</Text>
+                  <Text style={styles.fieldHint}>{t('licenseManagement.expirationHint')}</Text>
                 </View>
                 <Switch
                   value={draft.hasExpiration}
@@ -978,7 +995,7 @@ export default function LicenseManagementScreen() {
               </View>
               {draft.hasExpiration ? (
                 <Field
-                  label="만료일"
+                  label={t('licenseManagement.expirationDate')}
                   value={draft.expirationDate}
                   onChangeText={(value) => setDraft((prev) => ({ ...prev, expirationDate: value }))}
                   placeholder="YYYY-MM-DD"
@@ -986,29 +1003,29 @@ export default function LicenseManagementScreen() {
               ) : null}
 
               <Field
-                label="최대 수심"
+                label={t('licenseManagement.maxDepth')}
                 value={draft.maxDepth}
                 onChangeText={(value) => setDraft((prev) => ({ ...prev, maxDepth: value }))}
-                placeholder="예: 30"
+                placeholder={t('licenseManagement.maxDepthPlaceholder')}
                 keyboardType="numeric"
                 rightSlot={<Text style={{ color: '#64748B', fontWeight: '800' }}>m</Text>}
               />
             </View>
 
             <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>발급/검증 정보</Text>
-              <Field label="교육 기관" value={draft.trainingAgency} onChangeText={(value) => setDraft((prev) => ({ ...prev, trainingAgency: value }))} placeholder="예: DIVERGRAM EDUCATION" />
-              <Field label="강사명" value={draft.instructorName} onChangeText={(value) => setDraft((prev) => ({ ...prev, instructorName: value }))} placeholder="예: KIM SEOKGEUN" />
-              <Field label="강사 번호" value={draft.instructorNumber} onChangeText={(value) => setDraft((prev) => ({ ...prev, instructorNumber: value }))} placeholder="예: INST-2026-001" />
-              <Field label="응급 연락처" value={draft.emergencyContact} onChangeText={(value) => setDraft((prev) => ({ ...prev, emergencyContact: value }))} placeholder="+82 10-1234-5678" />
-              <Field label="검증 URL" value={draft.verificationUrl} onChangeText={(value) => setDraft((prev) => ({ ...prev, verificationUrl: value }))} placeholder="https://divergram.com/license/..." />
+              <Text style={styles.formSectionTitle}>{t('licenseManagement.verificationInfo')}</Text>
+              <Field label={t('licenseManagement.trainingAgency')} value={draft.trainingAgency} onChangeText={(value) => setDraft((prev) => ({ ...prev, trainingAgency: value }))} placeholder={t('licenseManagement.agencyPlaceholder')} />
+              <Field label={t('licenseManagement.instructorName')} value={draft.instructorName} onChangeText={(value) => setDraft((prev) => ({ ...prev, instructorName: value }))} placeholder={t('licenseManagement.instructorNamePlaceholder')} />
+              <Field label={t('licenseManagement.instructorNumber')} value={draft.instructorNumber} onChangeText={(value) => setDraft((prev) => ({ ...prev, instructorNumber: value }))} placeholder={t('licenseManagement.instructorNumberPlaceholder')} />
+              <Field label={t('licenseManagement.emergencyContact')} value={draft.emergencyContact} onChangeText={(value) => setDraft((prev) => ({ ...prev, emergencyContact: value }))} placeholder="+82 10-1234-5678" />
+              <Field label={t('licenseManagement.verificationUrl')} value={draft.verificationUrl} onChangeText={(value) => setDraft((prev) => ({ ...prev, verificationUrl: value }))} placeholder="https://divergram.com/license/..." />
 
-              <Text style={styles.fieldLabel}>상태</Text>
+              <Text style={styles.fieldLabel}>{t('licenseManagement.status')}</Text>
               <View style={styles.segmentRow}>
                 {DIVING_LICENSE_STATUS_OPTIONS.map((item) => (
                   <ChipButton
                     key={item}
-                    label={getDivingLicenseStatusLabel(normalizeDivingLicenseStatus(item))}
+                    label={t(`licenseManagement.statuses.${normalizeDivingLicenseStatus(item)}`)}
                     active={draft.status === item}
                     onPress={() => setDraft((prev) => ({ ...prev, status: normalizeDivingLicenseStatus(item) }))}
                   />
@@ -1016,20 +1033,21 @@ export default function LicenseManagementScreen() {
               </View>
 
               <Field
-                label="메모"
+                label={t('licenseManagement.notes')}
                 value={draft.notes}
                 onChangeText={(value) => setDraft((prev) => ({ ...prev, notes: value }))}
-                placeholder="예: Apple Wallet 준비 완료"
+                placeholder={t('licenseManagement.notesPlaceholder')}
                 multiline
               />
             </View>
 
             <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>사진</Text>
+              <Text style={styles.formSectionTitle}>{t('licenseManagement.photoSection')}</Text>
               <TouchableOpacity activeOpacity={0.86} onPress={handlePickImage} style={styles.imageUploadButton}>
-                <ImagePlus size={17} color="#0D5FA8" />
-                <Text style={styles.imageUploadText}>{draft.profileImageUrl ? '이미지 다시 선택' : '이미지 업로드'}</Text>
+                {uploadingImage ? <ActivityIndicator size="small" color="#0D5FA8" /> : <ImagePlus size={17} color="#0D5FA8" />}
+                <Text style={styles.imageUploadText}>{t(uploadingImage ? 'licenseManagement.analyzingPhoto' : draft.profileImageUrl ? 'licenseManagement.reselectPhoto' : 'licenseManagement.selectPhoto')}</Text>
               </TouchableOpacity>
+              {ocrNotice ? <Text style={styles.fieldHint}>{ocrNotice}</Text> : null}
               {draft.profileImageUrl ? (
                 <View style={styles.profilePreviewWrap}>
                   <ExpoImage source={{ uri: draft.profileImageUrl }} style={styles.profilePreview} contentFit="cover" />
@@ -1037,13 +1055,13 @@ export default function LicenseManagementScreen() {
               ) : (
                 <View style={styles.profilePreviewEmpty}>
                   <User size={20} color="#0D5FA8" />
-                  <Text style={{ color: '#0F172A', fontWeight: '700' }}>프리뷰 없음</Text>
+                  <Text style={{ color: '#0F172A', fontWeight: '700' }}>{t('licenseManagement.noPreview')}</Text>
                 </View>
               )}
             </View>
 
             <TouchableOpacity activeOpacity={0.88} onPress={handleSave} style={[styles.primarySaveButton, { opacity: saving || uploadingImage ? 0.7 : 1 }]}>
-              <Text style={styles.primarySaveButtonText}>{saving ? '저장중...' : editingId ? '수정 저장' : '라이선스 등록'}</Text>
+              <Text style={styles.primarySaveButtonText}>{t(saving ? 'licenseManagement.saving' : editingId ? 'licenseManagement.saveEdit' : 'licenseManagement.register')}</Text>
             </TouchableOpacity>
           </ScrollView>
         </Screen>
@@ -1053,31 +1071,18 @@ export default function LicenseManagementScreen() {
         <View style={styles.detailsOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeDetails} />
           {selectedLicense ? (
-            <Animated.View
-              style={[
-                styles.detailsSheet,
-                {
-                  opacity: fade,
-                  transform: [
-                    {
-                      translateY: fade.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [16, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
+            <View style={styles.detailsSheet}>
               <View style={styles.detailsHeader}>
                 <View>
                   <Text style={styles.detailsTitle}>My Diving License</Text>
-                  <Text style={styles.detailsSubtitle}>조회 · 공유 · 검증 · 저장</Text>
+                  <Text style={styles.detailsSubtitle}>{t('licenseManagement.detailSubtitle')}</Text>
                 </View>
                 <TouchableOpacity onPress={closeDetails} activeOpacity={0.84} style={styles.closeButton}>
-                  <MoreVertical size={18} color="#0F172A" />
+                  <X size={19} color="#0F172A" />
                 </TouchableOpacity>
               </View>
+
+              <ScrollView ref={detailsScrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailsContent}>
 
               <View style={styles.sideSwitcher}>
                 <ChipButton label="FRONT" active={selectedSide === 'front'} onPress={() => setSelectedSide('front')} />
@@ -1089,27 +1094,52 @@ export default function LicenseManagementScreen() {
               </TouchableOpacity>
 
               <View style={styles.detailActionGrid}>
-                <TouchableOpacity onPress={() => handleWallet(selectedLicense)} activeOpacity={0.88} style={styles.walletButton}>
-                  <Wallet size={17} color="#fff" />
-                  <Text style={styles.walletButtonText}>Add to Apple Wallet</Text>
-                </TouchableOpacity>
+                {Platform.OS === 'ios' || Platform.OS === 'android' ? (
+                  <View style={styles.walletSection}>
+                    {Platform.OS === 'ios' ? (
+                      <View style={[styles.walletStatus, appleWalletStatus.data?.ready ? styles.walletStatusReady : styles.walletStatusPending]}>
+                        <View style={[styles.walletStatusDot, { backgroundColor: appleWalletStatus.data?.ready ? '#16A34A' : '#D97706' }]} />
+                        <Text style={styles.walletStatusText}>
+                          {appleWalletStatus.isLoading
+                            ? t('licenseManagement.walletChecking')
+                            : appleWalletStatus.data?.ready
+                              ? t('licenseManagement.walletReady')
+                              : t('licenseManagement.walletCertificateRequired')}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() => handleWallet(selectedLicense)}
+                      activeOpacity={0.88}
+                      disabled={walletLoadingId === selectedLicense.id || (Platform.OS === 'ios' && appleWalletStatus.data?.ready === false)}
+                      style={[styles.walletButton, (walletLoadingId === selectedLicense.id || (Platform.OS === 'ios' && appleWalletStatus.data?.ready === false)) && styles.walletButtonDisabled]}
+                    >
+                      {walletLoadingId === selectedLicense.id ? <ActivityIndicator size="small" color="#fff" /> : <Wallet size={17} color="#fff" />}
+                      <Text style={styles.walletButtonText}>
+                        {walletLoadingId === selectedLicense.id
+                          ? t('licenseManagement.walletPreparing')
+                          : t(Platform.OS === 'ios' ? 'licenseManagement.addAppleWallet' : 'licenseManagement.addGoogleWallet')}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
                 <ActionButton
-                  label="Share License"
+                  label={t('licenseManagement.shareLicense')}
                   onPress={() => handleShare(selectedLicense)}
                   icon={<Share2 size={16} color="#0D5FA8" />}
                 />
                 <ActionButton
-                  label="Verify License"
+                  label={t('licenseManagement.verifyLicense')}
                   onPress={() => handleVerify(selectedLicense)}
                   icon={<ShieldCheck size={16} color="#0D5FA8" />}
                 />
                 <ActionButton
-                  label="View Certificate Details"
+                  label={t('licenseManagement.viewCertificate')}
                   onPress={() => setSelectedSide((prev) => (prev === 'front' ? 'back' : 'front'))}
                   icon={selectedSide === 'front' ? <Eye size={16} color="#0D5FA8" /> : <EyeOff size={16} color="#0D5FA8" />}
                 />
                 <ActionButton
-                  label="Edit License"
+                  label={t('licenseManagement.editLicense')}
                   onPress={() => {
                     const found = licenses.find((item) => item.id === selectedLicense.id);
                     if (found) {
@@ -1120,13 +1150,14 @@ export default function LicenseManagementScreen() {
                   icon={<Pencil size={16} color="#0D5FA8" />}
                 />
                 <ActionButton
-                  label="Delete License"
+                  label={t('licenseManagement.deleteLicense')}
                   onPress={() => handleDelete(selectedLicense)}
                   icon={<Trash2 size={16} color="#B91C1C" />}
                   danger
                 />
               </View>
-            </Animated.View>
+              </ScrollView>
+            </View>
           ) : null}
         </View>
       </Modal>
@@ -1164,11 +1195,11 @@ function MiniAction({
 
 const styles = StyleSheet.create({
   hero: {
-    borderRadius: 28,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: '#D7E4F1',
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 16,
     shadowColor: '#0D5FA8',
     shadowOpacity: 0.05,
     shadowRadius: 16,
@@ -1188,9 +1219,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heroLogoWrap: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: '#F5FAFF',
     borderWidth: 1,
     borderColor: '#DCEBFA',
@@ -1198,102 +1229,104 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroLogo: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
   },
   heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.4,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
   },
   heroTitle: {
-    marginTop: 2,
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: -0.4,
+    marginTop: 3,
+    fontSize: 24,
+    lineHeight: 31,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   heroSubtitle: {
-    marginTop: 6,
-    fontSize: 13,
-    lineHeight: 19,
-    fontWeight: '500',
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '400',
   },
   heroCreateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 7,
-    borderRadius: 18,
+    borderRadius: 14,
     backgroundColor: '#0D5FA8',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
   },
   heroCreateButtonText: {
     color: '#fff',
-    fontWeight: '800',
+    fontSize: 13,
+    fontWeight: '700',
   },
   heroStats: {
-    marginTop: 14,
+    marginTop: 12,
     flexDirection: 'row',
     gap: 10,
   },
   statCard: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#D7E4F1',
     backgroundColor: '#F8FBFF',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
   },
   statLabel: {
     color: '#64748B',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.7,
+    fontSize: 10,
+    fontWeight: '700',
   },
   statValue: {
-    marginTop: 8,
-    fontSize: 22,
-    fontWeight: '900',
+    marginTop: 4,
+    fontSize: 19,
+    lineHeight: 24,
+    fontWeight: '800',
   },
   filterCard: {
-    marginTop: 14,
-    borderRadius: 24,
+    marginTop: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 14,
+    padding: 13,
   },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
   },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   chipText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   listCard: {
-    borderRadius: 28,
+    borderRadius: 24,
     borderWidth: 1,
-    padding: 14,
+    padding: 12,
     shadowColor: '#0D5FA8',
     shadowOpacity: 0.06,
     shadowRadius: 14,
@@ -1301,13 +1334,13 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   listCardPreviewWrap: {
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E1EBF4',
     padding: 14,
-    minHeight: 220,
+    minHeight: 208,
   },
   listCardWatermarkWrap: {
     position: 'absolute',
@@ -1351,41 +1384,42 @@ const styles = StyleSheet.create({
     height: 30,
   },
   listCardBrandTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   listCardBrandSubtitle: {
     marginTop: 2,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   listCardTag: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.1,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   listCardMetaGroup: {
     marginBottom: 14,
   },
   listCardMetaLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.7,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   listCardName: {
-    marginTop: 6,
-    fontSize: 20,
-    fontWeight: '900',
+    marginTop: 5,
+    fontSize: 18,
+    lineHeight: 23,
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
   listCardLevel: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: '800',
-    lineHeight: 19,
+    marginTop: 5,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   listCardBadgeRow: {
     flexDirection: 'row',
@@ -1405,24 +1439,25 @@ const styles = StyleSheet.create({
   },
   listCardDisciplineBadgeText: {
     color: '#fff',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   listCardMetaGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: 10,
   },
   listCardMetaBlock: {
-    flex: 1,
+    width: '47%',
     minWidth: 0,
   },
   listCardMetaValue: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: '800',
+    marginTop: 5,
+    fontSize: 11,
+    fontWeight: '700',
   },
   listCardFooter: {
     marginTop: 10,
@@ -1469,6 +1504,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 20,
     alignItems: 'center',
+  },
+  previewHeading: {
+    width: '100%',
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  previewSideLabel: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: '#EAF3FB',
+    color: '#0D5FA8',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.7,
   },
   emptyIconWrap: {
     width: 68,
@@ -1517,13 +1571,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '900',
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: '800',
     color: '#0F172A',
   },
   modalSubtitle: {
     marginTop: 4,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 17,
     color: '#64748B',
   },
   saveButton: {
@@ -1549,8 +1605,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   formSectionTitle: {
-    fontSize: 17,
-    fontWeight: '900',
+    fontSize: 16,
+    fontWeight: '800',
     color: '#0F172A',
   },
   formSectionHint: {
@@ -1559,7 +1615,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: '#334155',
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: 13,
   },
   fieldHint: {
@@ -1582,7 +1638,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
     color: '#10213A',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   inputMultiline: {
     minHeight: 92,
@@ -1653,12 +1709,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(2, 6, 23, 0.42)',
     justifyContent: 'flex-end',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingTop: 58,
+    paddingBottom: 22,
   },
   detailsSheet: {
+    height: '100%',
     borderRadius: 28,
     backgroundColor: '#F5F8FC',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#D7E4F1',
+  },
+  detailsContent: {
     padding: 16,
+    paddingTop: 12,
+    paddingBottom: 28,
     gap: 14,
   },
   detailsHeader: {
@@ -1666,11 +1732,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D7E4F1',
+    backgroundColor: '#FFFFFF',
   },
   detailsTitle: {
     color: '#0F172A',
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '800',
   },
   detailsSubtitle: {
     marginTop: 4,
@@ -1692,21 +1765,30 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   frontCard: {
-    borderRadius: 28,
+    width: '100%',
+    aspectRatio: 1.586,
+    borderRadius: 22,
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
-    padding: 18,
-    gap: 16,
+    padding: 14,
+    gap: 10,
+    overflow: 'hidden',
   },
   backCard: {
-    borderRadius: 28,
+    width: '100%',
+    aspectRatio: 1.586,
+    borderRadius: 22,
     borderWidth: 1,
     backgroundColor: '#FFFFFF',
-    padding: 18,
-    gap: 16,
+    padding: 14,
+    gap: 9,
+    overflow: 'hidden',
   },
   frontTop: {
-    gap: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -1717,30 +1799,30 @@ const styles = StyleSheet.create({
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     flex: 1,
   },
   brandLogo: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   brandLogoImage: {
-    width: 30,
-    height: 30,
+    width: 24,
+    height: 24,
   },
   brandTitle: {
     color: '#0F172A',
-    fontSize: 18,
-    fontWeight: '900',
+    fontSize: 15,
+    fontWeight: '800',
   },
   brandSub: {
     marginTop: 2,
     color: '#64748B',
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '600',
   },
   digitalTag: {
@@ -1749,55 +1831,63 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
   },
   digitalTagText: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 1.1,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 10,
+    flex: 1,
   },
   profileAvatar: {
-    width: 76,
-    height: 76,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 17,
     borderWidth: 1,
     backgroundColor: '#E2E8F0',
   },
   profileAvatarFallback: {
-    width: 76,
-    height: 76,
-    borderRadius: 24,
+    width: 54,
+    height: 54,
+    borderRadius: 17,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileAvatarFallbackText: {
-    fontSize: 24,
+    fontSize: 19,
     fontWeight: '900',
   },
   holderName: {
     color: '#10213A',
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: 16,
+    lineHeight: 19,
+    fontWeight: '800',
     letterSpacing: -0.2,
   },
   holderSubName: {
     marginTop: 2,
     color: '#64748B',
-    fontSize: 13,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  certificationName: {
+    marginTop: 2,
+    color: '#334155',
+    fontSize: 10,
     fontWeight: '700',
   },
   inlineBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
+    gap: 5,
+    marginTop: 5,
   },
   disciplineChip: {
     flexDirection: 'row',
@@ -1805,198 +1895,146 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   disciplineChipText: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.7,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
   statusChip: {
     borderRadius: 999,
     borderWidth: 1,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   statusChipText: {
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.7,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
-  infoGrid: {
+  frontDataRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    gap: 8,
+    borderTopWidth: 1,
+    paddingTop: 9,
+  },
+  compactField: {
+    flex: 1,
+    minWidth: 0,
+  },
+  compactFieldLabel: {
+    color: '#7C8BA1',
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  compactFieldValue: {
+    marginTop: 2,
+    color: '#10213A',
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  backBody: {
+    flex: 1,
+    flexDirection: 'row',
     gap: 10,
   },
-  miniInfo: {
-    width: '48.6%',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#D7E4F1',
-    backgroundColor: '#F8FBFF',
-    padding: 12,
-    gap: 6,
-  },
-  miniInfoIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  miniInfoLabel: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  miniInfoValue: {
-    color: '#10213A',
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 18,
-  },
-  frontFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  footerLabel: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-  },
-  footerValue: {
-    marginTop: 3,
-    color: '#10213A',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  footerIconWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backSection: {
-    borderRadius: 20,
-    borderWidth: 1,
-    padding: 14,
-    gap: 4,
+  backInformation: {
+    flex: 1,
+    minWidth: 0,
   },
   backSectionTitle: {
     color: '#64748B',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.9,
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   backSectionValue: {
     color: '#10213A',
-    fontSize: 18,
-    fontWeight: '900',
+    marginTop: 3,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '800',
   },
   backSectionMeta: {
     color: '#64748B',
-    fontSize: 13,
+    marginTop: 1,
+    fontSize: 9,
     fontWeight: '700',
   },
-  detailGrid: {
-    gap: 12,
-  },
-  detailLine: {
+  compactGrid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#D7E4F1',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
+    flexWrap: 'wrap',
+    gap: 7,
+    marginTop: 10,
   },
-  detailLineIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 10,
-    backgroundColor: '#F5FAFF',
+  compactGridItem: {
+    width: '47%',
+  },
+  compactQrWrap: {
+    width: 86,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
   },
-  detailLineLabel: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  detailLineValue: {
-    marginTop: 4,
-    color: '#10213A',
-    fontSize: 14,
-    fontWeight: '800',
-    lineHeight: 19,
-  },
-  qrRowWrap: {
-    alignItems: 'center',
-  },
-  qrCard: {
-    width: '100%',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#D7E4F1',
+  compactQrFrame: {
+    width: 78,
+    height: 78,
+    padding: 5,
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    alignItems: 'center',
-  },
-  qrFrame: {
-    width: 208,
-    height: 208,
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#D7E4F1',
   },
-  qrRow: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-  qrCell: {
-    width: 8.8,
-    height: 8.8,
-    margin: 0.7,
-    borderRadius: 2,
-  },
-  qrCellDark: {
-    backgroundColor: '#0F172A',
-  },
-  qrCellLight: {
-    backgroundColor: '#FFFFFF',
-  },
-  qrHint: {
-    marginTop: 12,
-    color: '#0D5FA8',
-    fontSize: 12,
+  compactQrLabel: {
+    marginTop: 5,
+    fontSize: 7,
     fontWeight: '900',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  qrValue: {
-    marginTop: 8,
+  cardSerial: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: 8,
     fontWeight: '700',
-    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   detailActionGrid: {
     gap: 10,
+  },
+  walletSection: {
+    gap: 8,
+  },
+  walletStatus: {
+    minHeight: 38,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 13,
+    borderWidth: 1,
+  },
+  walletStatusReady: {
+    borderColor: '#BBE5C6',
+    backgroundColor: '#F0FDF4',
+  },
+  walletStatusPending: {
+    borderColor: '#F4D39B',
+    backgroundColor: '#FFFBEB',
+  },
+  walletStatusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+  walletStatusText: {
+    flex: 1,
+    color: '#475569',
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '700',
   },
   walletButton: {
     flexDirection: 'row',
@@ -2011,6 +2049,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '900',
   },
+  walletButtonDisabled: {
+    opacity: 0.5,
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2021,6 +2062,30 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   actionButtonText: {
+    fontWeight: '900',
+  },
+  floatingCreateButton: {
+    position: 'absolute',
+    right: 18,
+    bottom: 18,
+    minWidth: 104,
+    height: 52,
+    paddingHorizontal: 17,
+    borderRadius: 18,
+    backgroundColor: '#0D5FA8',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#06345F',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  floatingCreateButtonText: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '900',
   },
 });

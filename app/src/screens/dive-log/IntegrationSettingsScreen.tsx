@@ -14,6 +14,7 @@ import { isInstagramShareAvailable } from '../../services/instagramShareService'
 import { flushPendingMediaDeletes, getCloudinaryConfig, getPendingDeleteCount } from '../../services/cloudinaryService';
 import { checkAiHealth } from '../../services/aiService';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+import { useTranslation } from 'react-i18next';
 
 const integrationDisplayNameMap: Record<string, string> = {
   google_maps: 'Google Maps',
@@ -40,19 +41,19 @@ function hasAny(status: string, keywords: string[]) {
 
 function isFailureStatus(statusMessage?: string) {
   const status = String(statusMessage || '').toLowerCase();
-  return hasAny(status, ['실패', 'error', 'fail']);
+  return hasAny(status, ['\uC2E4\uD328', 'error', 'fail']);
 }
 
 function requiresAttention(item: UserIntegration) {
   const status = String(item.statusMessage || '').toLowerCase();
   if (!item.connected && managedConnectionTypes.has(item.type)) return true;
-  return hasAny(status, ['실패', 'error', 'fail', '필요', '대기', '미지원']);
+  return hasAny(status, ['\uC2E4\uD328', 'error', 'fail', '\uD544\uC694', '\uB300\uAE30', '\uBBF8\uC9C0\uC6D0']);
 }
 
 function priorityScore(item: UserIntegration) {
   const status = String(item.statusMessage || '').toLowerCase();
-  const isFailure = hasAny(status, ['실패', 'error', 'fail']);
-  const isSyncing = hasAny(status, ['동기화중', '처리중', '요청']);
+  const isFailure = hasAny(status, ['\uC2E4\uD328', 'error', 'fail']);
+  const isSyncing = hasAny(status, ['\uB3D9\uAE30\uD654\uC911', '\uCC98\uB9AC\uC911', '\uC694\uCCAD']);
   const needsAction = requiresAttention(item);
   const orderMap: Record<string, number> = {
     garmin: 0,
@@ -75,6 +76,7 @@ function priorityScore(item: UserIntegration) {
 }
 
 export default function IntegrationSettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { isDark } = useResolvedTheme();
   const integrations = useIntegrationStore((state) => state.integrations);
@@ -144,8 +146,8 @@ export default function IntegrationSettingsScreen() {
   const summary = useMemo(() => {
     const connected = items.filter((item) => item.connected).length;
     const needsAction = items.filter((item) => requiresAttention(item)).length;
-    const syncing = items.filter((item) => hasAny(String(item.statusMessage || '').toLowerCase(), ['동기화중', '처리중', '요청'])).length;
-    const failed = items.filter((item) => hasAny(String(item.statusMessage || '').toLowerCase(), ['실패', 'error', 'fail'])).length;
+    const syncing = items.filter((item) => hasAny(String(item.statusMessage || '').toLowerCase(), ['\uB3D9\uAE30\uD654\uC911', '\uCC98\uB9AC\uC911', '\uC694\uCCAD', 'sync', 'processing', 'request'])).length;
+    const failed = items.filter((item) => hasAny(String(item.statusMessage || '').toLowerCase(), ['\uC2E4\uD328', 'error', 'fail'])).length;
     const disconnectedManaged = items.filter((item) => managedConnectionTypes.has(item.type) && !item.connected).length;
       const stale = items.filter((item) => {
         if (!item.connected) return false;
@@ -189,7 +191,7 @@ export default function IntegrationSettingsScreen() {
       const nowMs = Date.now();
       if (!silent && lastDiagnosticRunMs && nowMs - lastDiagnosticRunMs < DIAGNOSTIC_COOLDOWN_MS) {
         const remainSec = Math.max(1, Math.ceil((DIAGNOSTIC_COOLDOWN_MS - (nowMs - lastDiagnosticRunMs)) / 1000));
-        Alert.alert('잠시 후 다시 시도', `연동 상태 점검은 ${remainSec}초 후 다시 실행할 수 있습니다.`);
+        Alert.alert(t('integrationSettings.waitTitle'), t('integrationSettings.waitBody', { seconds: remainSec }));
         return;
       }
       setDiagnosing(true);
@@ -199,7 +201,7 @@ export default function IntegrationSettingsScreen() {
       try {
         updateIntegration('google_maps', {
           connected: hasGoogleMapsKey,
-          statusMessage: hasGoogleMapsKey ? 'API Key 확인됨' : 'API Key 필요',
+          statusMessage: `i18nKey:${hasGoogleMapsKey ? 'integrationSettings.apiKeyReady' : 'integrationSettings.apiKeyRequired'}`,
           lastSyncAt: now,
         });
         if (hasGoogleMapsKey) successCount += 1;
@@ -207,7 +209,7 @@ export default function IntegrationSettingsScreen() {
 
         updateIntegration('stormglass', {
           connected: hasStormglassKey,
-          statusMessage: hasStormglassKey ? 'API Key 확인됨' : 'API Key 필요',
+          statusMessage: `i18nKey:${hasStormglassKey ? 'integrationSettings.apiKeyReady' : 'integrationSettings.apiKeyRequired'}`,
           lastSyncAt: now,
         });
         if (hasStormglassKey) successCount += 1;
@@ -217,7 +219,7 @@ export default function IntegrationSettingsScreen() {
           await apiClient.getNotificationSetting();
           updateIntegration('fcm', {
             connected: true,
-            statusMessage: '설정 확인됨',
+            statusMessage: 'i18nKey:integrationSettings.settingsReady',
             lastSyncAt: now,
           });
           successCount += 1;
@@ -225,7 +227,7 @@ export default function IntegrationSettingsScreen() {
           const status = Number(error?.response?.status || 0);
           updateIntegration('fcm', {
             connected: false,
-            statusMessage: status === 401 ? '로그인 필요' : '설정 점검 필요',
+            statusMessage: `i18nKey:${status === 401 ? 'integrationSettings.loginRequired' : 'integrationSettings.settingsReviewRequired'}`,
             lastSyncAt: now,
           });
           errors.push(`FCM:${status || 'error'}`);
@@ -239,7 +241,7 @@ export default function IntegrationSettingsScreen() {
           });
           updateIntegration('cloudinary', {
             connected: true,
-            statusMessage: '서명 API 정상',
+            statusMessage: 'i18nKey:integrationSettings.signedApiReady',
             lastSyncAt: now,
           });
           successCount += 1;
@@ -252,7 +254,7 @@ export default function IntegrationSettingsScreen() {
           if (cloudinaryConfig.canUnsignedUpload) {
             updateIntegration('cloudinary', {
               connected: true,
-              statusMessage: '무서명 업로드 가능',
+              statusMessage: 'i18nKey:integrationSettings.unsignedUploadReady',
               lastSyncAt: now,
             });
             successCount += 1;
@@ -261,12 +263,12 @@ export default function IntegrationSettingsScreen() {
               connected: false,
               statusMessage:
                 status === 401
-                  ? '로그인 필요'
+                  ? t('integrationSettings.loginRequired')
                   : code.includes('cloudinary_not_configured')
                     ? required
-                      ? `설정 필요(${required})`
-                      : '설정 필요(CLOUDINARY 키)'
-                    : '서명 API 점검 필요',
+                      ? t('integrationSettings.configurationRequiredDetail', { required })
+                      : t('integrationSettings.cloudinaryKeyRequired')
+                    : t('integrationSettings.signedApiReviewRequired'),
               lastSyncAt: now,
             });
             errors.push(`Cloudinary:${status || code || 'error'}`);
@@ -285,7 +287,7 @@ export default function IntegrationSettingsScreen() {
         } catch {
           updateIntegration('openai', {
             connected: false,
-            statusMessage: '응답 점검 실패',
+          statusMessage: 'i18nKey:integrationSettings.responseCheckFailed',
             lastSyncAt: now,
           });
           errors.push('OpenAI:error');
@@ -295,7 +297,7 @@ export default function IntegrationSettingsScreen() {
           const installed = await isInstagramShareAvailable();
           updateIntegration('instagram_share', {
             connected: installed,
-            statusMessage: installed ? '공유 사용 가능' : '앱 미설치(공유시트 fallback)',
+            statusMessage: `i18nKey:${installed ? 'integrationSettings.shareReady' : 'integrationSettings.shareFallback'}`,
             lastSyncAt: now,
           });
           if (installed) successCount += 1;
@@ -303,18 +305,18 @@ export default function IntegrationSettingsScreen() {
         } catch {
           updateIntegration('instagram_share', {
             connected: false,
-            statusMessage: '공유 상태 점검 실패',
+            statusMessage: 'i18nKey:integrationSettings.shareCheckFailed',
             lastSyncAt: now,
           });
           errors.push('Instagram:error');
         }
 
-        setDiagnosticSummary(errors.length ? errors.join(' | ') : `정상 ${successCount}개`);
+        setDiagnosticSummary(errors.length ? errors.join(' | ') : t('integrationSettings.healthyCount', { count: successCount }));
         if (!silent) {
           const summary = errors.length
-            ? `정상 ${successCount}개 · 점검 필요 ${errors.length}개`
-            : 'Maps, Stormglass, Cloudinary, OpenAI, FCM, Instagram 상태가 정상입니다.';
-          Alert.alert('상태 점검 완료', summary);
+            ? t('integrationSettings.diagnosticCounts', { success: successCount, errors: errors.length })
+            : t('integrationSettings.allHealthy');
+          Alert.alert(t('integrationSettings.diagnosticComplete'), summary);
         }
       } finally {
         const doneMs = Date.now();
@@ -323,7 +325,7 @@ export default function IntegrationSettingsScreen() {
         setDiagnosing(false);
       }
     },
-    [diagnosing, lastDiagnosticRunMs, updateIntegration]
+    [diagnosing, lastDiagnosticRunMs, t, updateIntegration]
   );
 
   useEffect(() => {
@@ -351,27 +353,27 @@ export default function IntegrationSettingsScreen() {
 
   const retryFailedManagedItems = () => {
     if (!failedManagedItems.length) {
-      Alert.alert('재시도 대상 없음', '현재 실패 상태의 연동 항목이 없습니다.');
+      Alert.alert(t('integrationSettings.noRetryTitle'), t('integrationSettings.noRetryBody'));
       return;
     }
     const now = new Date().toISOString();
     failedManagedItems.forEach((item) => {
       updateIntegration(item.type, {
         connected: true,
-        statusMessage: '동기화 재요청됨',
+        statusMessage: 'i18nKey:integrationSettings.syncRequestedAgain',
         lastSyncAt: now,
       });
     });
-    Alert.alert('재요청 완료', `실패 항목 ${failedManagedItems.length}개를 동기화 재요청 상태로 전환했습니다.`);
+    Alert.alert(t('integrationSettings.retryComplete'), t('integrationSettings.retryCompleteBody', { count: failedManagedItems.length }));
   };
 
   const clearPendingMediaDeletes = async () => {
     try {
       const result = await flushPendingMediaDeletes(30);
       setPendingMediaDeleteCount(result.remaining);
-      Alert.alert('정리 실행 완료', `삭제 대기 ${result.attempted}건 점검, ${result.removed}건 정리, ${result.remaining}건 대기`);
+      Alert.alert(t('integrationSettings.cleanupComplete'), t('integrationSettings.cleanupSummary', result));
     } catch (error: any) {
-      Alert.alert('정리 실패', String(error?.message || error));
+      Alert.alert(t('integrationSettings.cleanupFailed'), String(error?.message || error));
     }
   };
 
@@ -392,7 +394,7 @@ export default function IntegrationSettingsScreen() {
       router.push(appRouteMap.location.path as never);
       return;
     }
-    Alert.alert('안내', `${type}는 현재 앱 설정 기반으로 동작합니다.`);
+    Alert.alert(t('integrationSettings.notice'), t('integrationSettings.appSettingsInfo', { type }));
   };
 
   const connectProvider = async (type: string) => {
@@ -420,31 +422,31 @@ export default function IntegrationSettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>외부 서비스 연동</Text>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>{t('integrationSettings.title')}</Text>
         <Text style={{ marginTop: 8, color: colors.subtitle }}>
-          지도, 날씨, 로그 연동, AI/미디어/푸시 연동 상태를 관리할 수 있습니다.
+          {t('integrationSettings.subtitle')}
         </Text>
         <View style={{ marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 12 }}>
-          <Text style={{ color: colors.cardTitle, fontWeight: '800' }}>연동 요약</Text>
+          <Text style={{ color: colors.cardTitle, fontWeight: '800' }}>{t('integrationSettings.summaryTitle')}</Text>
           <Text style={{ marginTop: 6, color: colors.cardText }}>
-            연결 {summary.connected}/{summary.total} · 조치 필요 {summary.needsAction} · 처리중 {summary.syncing}
+            {t('integrationSettings.summary', summary)}
           </Text>
           <Text style={{ marginTop: 2, color: summary.failed > 0 ? '#B91C1C' : colors.muted, fontSize: 12, fontWeight: '700' }}>
-            우선 점검: 실패 {summary.failed} · 장기 미동기화 {summary.stale} · 계정연결 필요 {summary.disconnectedManaged}
+            {t('integrationSettings.prioritySummary', summary)}
           </Text>
           {lastDiagnosticAt ? (
             <Text style={{ marginTop: 2, color: colors.muted, fontSize: 12 }}>
-              연동 진단 최신 시각: {lastDiagnosticAt}
+              {t('integrationSettings.lastDiagnostic')}: {lastDiagnosticAt}
             </Text>
           ) : null}
           {diagnosticSummary ? (
-            <Text style={{ marginTop: 2, color: diagnosticSummary.includes('정상') && !diagnosticSummary.includes('|') ? '#0F766E' : '#B45309', fontSize: 12, fontWeight: '700' }}>
-              진단 요약: {diagnosticSummary}
+            <Text style={{ marginTop: 2, color: diagnosticSummary.includes(':') || diagnosticSummary.includes('|') ? '#B45309' : '#0F766E', fontSize: 12, fontWeight: '700' }}>
+              {t('integrationSettings.diagnosticSummary')}: {diagnosticSummary}
             </Text>
           ) : null}
           {pendingMediaDeleteCount > 0 ? (
             <Text style={{ marginTop: 2, color: '#B45309', fontSize: 12, fontWeight: '700' }}>
-              미디어 삭제 대기 {pendingMediaDeleteCount}건
+              {t('integrationSettings.pendingDeletes', { count: pendingMediaDeleteCount })}
             </Text>
           ) : null}
           <TouchableOpacity
@@ -461,7 +463,7 @@ export default function IntegrationSettingsScreen() {
             }}
           >
             <Text style={{ color: showNeedsOnly ? '#0D5FA8' : colors.cardText, fontWeight: '700' }}>
-              {showNeedsOnly ? '전체 보기' : '조치 필요만 보기'}
+              {t(showNeedsOnly ? 'integrationSettings.showAll' : 'integrationSettings.showNeedsOnly')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -478,7 +480,7 @@ export default function IntegrationSettingsScreen() {
             }}
           >
             <Text style={{ color: showStaleOnly ? '#B45309' : colors.cardText, fontWeight: '700' }}>
-              {showStaleOnly ? '장기 미동기화 전체 보기' : '장기 미동기화만 보기(24h+)'}
+              {t(showStaleOnly ? 'integrationSettings.showAllStale' : 'integrationSettings.showStaleOnly')}
             </Text>
           </TouchableOpacity>
           <View style={{ marginTop: 10, flexDirection: 'row', gap: 8 }}>
@@ -495,7 +497,7 @@ export default function IntegrationSettingsScreen() {
                 }}
               >
                 <Text style={{ color: diagnosing || diagnosticCooldownSec > 0 ? colors.neutralBtnText : '#1D4ED8', fontWeight: '700', fontSize: 12 }}>
-                  {diagnosing ? '점검중...' : diagnosticCooldownSec > 0 ? `연동 상태 점검 (${diagnosticCooldownSec}s)` : '연동 상태 점검'}
+                  {diagnosing ? t('integrationSettings.diagnosing') : diagnosticCooldownSec > 0 ? t('integrationSettings.diagnoseCountdown', { seconds: diagnosticCooldownSec }) : t('integrationSettings.diagnose')}
                 </Text>
               </TouchableOpacity>
             <TouchableOpacity
@@ -510,7 +512,7 @@ export default function IntegrationSettingsScreen() {
               }}
             >
               <Text style={{ color: failedManagedItems.length ? '#B91C1C' : colors.neutralBtnText, fontWeight: '700', fontSize: 12 }}>
-                실패 항목 재요청 ({failedManagedItems.length})
+                {t('integrationSettings.retryFailed', { count: failedManagedItems.length })}
               </Text>
             </TouchableOpacity>
             {pendingMediaDeleteCount > 0 ? (
@@ -525,7 +527,7 @@ export default function IntegrationSettingsScreen() {
                   paddingVertical: 7,
                 }}
               >
-                <Text style={{ color: '#B45309', fontWeight: '700', fontSize: 12 }}>삭제 대기 정리</Text>
+                <Text style={{ color: '#B45309', fontWeight: '700', fontSize: 12 }}>{t('integrationSettings.cleanupDeletes')}</Text>
               </TouchableOpacity>
             ) : null}
             <TouchableOpacity
@@ -539,7 +541,7 @@ export default function IntegrationSettingsScreen() {
                 paddingVertical: 7,
               }}
             >
-              <Text style={{ color: '#1D4ED8', fontWeight: '700', fontSize: 12 }}>다이빙 컴퓨터 관리</Text>
+              <Text style={{ color: '#1D4ED8', fontWeight: '700', fontSize: 12 }}>{t('integrationSettings.manageComputers')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push(appRouteMap.dive_log_management.path as never)}
@@ -552,7 +554,7 @@ export default function IntegrationSettingsScreen() {
                 paddingVertical: 7,
               }}
             >
-              <Text style={{ color: '#0F766E', fontWeight: '700', fontSize: 12 }}>DiveLog 관리</Text>
+              <Text style={{ color: '#0F766E', fontWeight: '700', fontSize: 12 }}>{t('integrationSettings.manageDiveLogs')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -560,9 +562,9 @@ export default function IntegrationSettingsScreen() {
           {syncFailures.length ? (
             <View style={{ marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: colors.failureWrapBorder, backgroundColor: colors.failureWrapBg, padding: 12 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={{ color: colors.failureTitle, fontWeight: '800' }}>최근 동기화 실패</Text>
+                <Text style={{ color: colors.failureTitle, fontWeight: '800' }}>{t('integrationSettings.recentFailures')}</Text>
                 <TouchableOpacity onPress={clearSyncFailures}>
-                  <Text style={{ color: '#B91C1C', fontSize: 12, fontWeight: '700' }}>기록 비우기</Text>
+                  <Text style={{ color: '#B91C1C', fontSize: 12, fontWeight: '700' }}>{t('integrationSettings.clearHistory')}</Text>
                 </TouchableOpacity>
               </View>
               {syncFailures.slice(0, 3).map((row) => (
@@ -579,40 +581,40 @@ export default function IntegrationSettingsScreen() {
               item={item}
               showActions={managedConnectionTypes.has(item.type)}
               onOpenDetail={() => openIntegrationDetail(item.type)}
-              openLabel="연동 상세 보기"
+              openLabel={t('integrationSettings.openDetails')}
               syncDisabled={syncingType === item.type || togglingType === item.type}
               actionDisabled={syncingType === item.type || togglingType === item.type}
-              syncLabel={syncingType === item.type ? '동기화중...' : undefined}
-              actionLabel={togglingType === item.type ? '처리중...' : undefined}
+              syncLabel={syncingType === item.type ? t('integrationSettings.syncing') : undefined}
+              actionLabel={togglingType === item.type ? t('integrationSettings.processing') : undefined}
               onSync={async () => {
                 setSyncingType(item.type);
                 try {
                   const displayName = integrationDisplayNameMap[item.type] || item.type;
                   if (!managedConnectionTypes.has(item.type)) {
                     updateIntegration(item.type, {
-                      statusMessage: '상태 점검 완료',
+                      statusMessage: 'i18nKey:integrationSettings.statusChecked',
                       lastSyncAt: new Date().toISOString(),
                     });
                     openIntegrationDetail(item.type);
                     return;
                   }
                   if (!item.connected) {
-                    Alert.alert('연동 필요', `${displayName} 계정을 먼저 연결해주세요.`);
+                    Alert.alert(t('integrationSettings.integrationRequired'), t('integrationSettings.connectFirst', { name: displayName }));
                     return;
                   }
                   updateIntegration(item.type, {
                     connected: item.connected,
-                    statusMessage: isTestModeAccount(item.accountLabel) ? '동기화 요청됨 (테스트 모드)' : '동기화 요청됨',
+                    statusMessage: `i18nKey:${isTestModeAccount(item.accountLabel) ? 'integrationSettings.syncRequestedTest' : 'integrationSettings.syncRequested'}`,
                     lastSyncAt: new Date().toISOString(),
                   });
                   Alert.alert(
-                    '동기화',
+                    t('integrationSettings.sync'),
                     isTestModeAccount(item.accountLabel)
-                      ? `${displayName} 테스트 동기화를 요청했습니다. 운영 키 연동 후 실데이터 동기화가 활성화됩니다.`
-                      : `${displayName} 동기화를 요청했습니다.`
+                      ? t('integrationSettings.testSyncRequestedBody', { name: displayName })
+                      : t('integrationSettings.syncRequestedBody', { name: displayName })
                   );
                 } catch (error: any) {
-                  Alert.alert('동기화 실패', String(error?.message || error));
+                  Alert.alert(t('integrationSettings.syncFailed'), String(error?.message || error));
                 } finally {
                   setSyncingType(null);
                 }
@@ -632,13 +634,13 @@ export default function IntegrationSettingsScreen() {
                     updateIntegration(item.type, {
                       connected: connected.connected,
                       accountLabel: normalizeAccountLabel(connected.accountLabel) || connected.accountLabel,
-                      statusMessage: testMode ? '테스트 모드 연결됨 (운영 키 필요)' : '연결됨',
+                      statusMessage: `i18nKey:${testMode ? 'integrationSettings.testModeConnected' : 'integrationSettings.connected'}`,
                     });
                     Alert.alert(
-                      '연결됨',
+                      t('integrationSettings.connected'),
                       testMode
-                        ? `${displayName} 테스트 연결이 완료되었습니다. 운영 키 연동 전까지는 샘플 데이터로 동작합니다.`
-                        : `${displayName} 연결이 완료되었습니다.`
+                        ? t('integrationSettings.testConnectedBody', { name: displayName })
+                        : t('integrationSettings.connectedBody', { name: displayName })
                     );
                     return;
                   }
@@ -646,11 +648,11 @@ export default function IntegrationSettingsScreen() {
                   updateIntegration(item.type, {
                     connected: false,
                     accountLabel: undefined,
-                    statusMessage: '연결 해제됨',
+                    statusMessage: 'i18nKey:integrationSettings.disconnected',
                   });
-                  Alert.alert('연결 해제', `${displayName} 연결을 해제했습니다.`);
+                  Alert.alert(t('integrationSettings.disconnected'), t('integrationSettings.disconnectedBody', { name: displayName }));
                 } catch (error: any) {
-                  Alert.alert('처리 실패', String(error?.message || error));
+                  Alert.alert(t('integrationSettings.actionFailed'), String(error?.message || error));
                 } finally {
                   setTogglingType(null);
                 }
@@ -659,7 +661,7 @@ export default function IntegrationSettingsScreen() {
           ))}
           {displayItems.length === 0 ? (
             <View style={{ borderRadius: 14, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
-              <Text style={{ color: colors.emptyText }}>현재 조치가 필요한 연동 항목이 없습니다.</Text>
+              <Text style={{ color: colors.emptyText }}>{t('integrationSettings.noItems')}</Text>
             </View>
           ) : null}
         </View>

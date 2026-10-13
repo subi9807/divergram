@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Send, ArrowLeft, MessageCircle, Search, Plus } from 'lucide-react';
-import { db, Room, Message, Profile } from '../lib/internal-db';
+import { db, Room, Message, Profile, chatRequest } from '../lib/internal-db';
 import { useAuth } from '../contexts/AuthContext';
 import { getRelativeTime } from '../utils/timeFormat';
 
@@ -172,10 +172,7 @@ export default function Messages() {
   };
 
   const markAsRead = async (messageId: string) => {
-    await db
-      .from('messages')
-      .update({ read_at: new Date().toISOString() })
-      .eq('id', messageId);
+    await chatRequest(`messages/${encodeURIComponent(messageId)}/read`);
   };
 
   const startConversation = async (profile: Profile) => {
@@ -189,16 +186,8 @@ export default function Messages() {
     setStartingRoom(true);
     setError('');
     try {
-      const { data: roomData, error: roomError } = await db.from('rooms').insert({ type: 'direct' });
-      if (roomError) throw roomError;
-      const room = Array.isArray(roomData) ? roomData[0] : null;
+      const { room } = await chatRequest('direct', { targetUserId: profile.id });
       if (!room?.id) throw new Error('room_create_failed');
-
-      const { error: participantError } = await db.from('participants').insert([
-        { room_id: room.id, user_id: user.id },
-        { room_id: room.id, user_id: profile.id },
-      ]);
-      if (participantError) throw participantError;
 
       const nextRoom: RoomWithDetails = { ...room, otherUser: profile };
       setRooms((prev) => [nextRoom, ...prev]);

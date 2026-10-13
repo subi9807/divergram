@@ -118,16 +118,16 @@ export async function getGoogleMapsIssue(context: string) {
 
 export function describeGoogleMapsIssue(codeOrError: unknown, context = 'google_maps') {
   const code = String(codeOrError || '').toLowerCase();
-  if (code.includes('over_query_limit')) return 'Google 지도 사용량 초과';
-  if (code.includes('over_daily_limit')) return 'Google 지도 일 사용량 초과';
-  if (code.includes('request_denied')) return 'Google 지도 요청이 거부되었습니다';
-  if (code.includes('http')) return 'Google 지도 네트워크 오류';
-  if (code.includes('timeout')) return 'Google 지도 응답 지연';
-  if (context === 'static_map') return '지도 미리보기 로드 실패';
-  if (context === 'reverse_geocode') return '좌표 주소 변환 실패';
-  if (context === 'geocode') return '장소 검색 실패';
-  if (context === 'map_js') return '인터랙티브 지도 로드 실패';
-  return 'Google 지도 관련 오류';
+  if (code.includes('over_query_limit')) return i18n.t('googleMapsIssues.queryLimit');
+  if (code.includes('over_daily_limit')) return i18n.t('googleMapsIssues.dailyLimit');
+  if (code.includes('request_denied')) return i18n.t('googleMapsIssues.requestDenied');
+  if (code.includes('http')) return i18n.t('googleMapsIssues.network');
+  if (code.includes('timeout')) return i18n.t('googleMapsIssues.timeout');
+  if (context === 'static_map') return i18n.t('googleMapsIssues.staticMap');
+  if (context === 'reverse_geocode') return i18n.t('googleMapsIssues.reverseGeocode');
+  if (context === 'geocode') return i18n.t('googleMapsIssues.geocode');
+  if (context === 'map_js') return i18n.t('googleMapsIssues.interactiveMap');
+  return i18n.t('googleMapsIssues.generic');
 }
 
 export function isGoogleMapsApiConfigured() {

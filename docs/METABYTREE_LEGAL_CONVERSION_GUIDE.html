@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>METAbyTREE 법인전환 준비 가이드</title>
+  <style>
+    :root {
+      --ink: #142033;
+      --muted: #5f6f84;
+      --line: #dbe4ee;
+      --soft: #f5f8fb;
+      --blue: #1769e0;
+      --blue-soft: #eaf3ff;
+      --green: #157a5a;
+      --green-soft: #eaf8f2;
+      --orange: #a45b08;
+      --orange-soft: #fff5e6;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #edf2f7;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      line-height: 1.65;
+    }
+    .page { max-width: 1120px; margin: 0 auto; padding: 42px 22px 72px; }
+    .hero {
+      padding: 38px;
+      color: white;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #12335f, #1769e0 62%, #34a7d8);
+      box-shadow: 0 18px 45px rgba(20, 50, 95, .2);
+    }
+    .eyebrow { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: .12em; opacity: .78; }
+    h1, h2, h3 { margin: 0; line-height: 1.25; }
+    h1 { font-size: clamp(28px, 4vw, 44px); }
+    h2 { font-size: 24px; margin-bottom: 16px; }
+    h3 { font-size: 17px; margin-bottom: 8px; }
+    .hero p { max-width: 760px; margin: 16px 0 0; color: #e3efff; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .summary-item { padding: 16px; border: 1px solid rgba(255,255,255,.22); border-radius: 14px; background: rgba(255,255,255,.1); }
+    .summary-item strong { display: block; font-size: 14px; }
+    .summary-item span { display: block; margin-top: 4px; color: #d8e8ff; font-size: 14px; }
+    .section { margin-top: 22px; padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: white; box-shadow: 0 8px 25px rgba(20, 32, 51, .05); }
+    .section-lead { margin: -4px 0 20px; color: var(--muted); }
+    .notice { padding: 16px 18px; border-left: 4px solid var(--blue); border-radius: 10px; background: var(--blue-soft); }
+    .notice strong { display: block; margin-bottom: 4px; }
+    .timeline { display: grid; gap: 12px; }
+    .step { display: grid; grid-template-columns: 74px 1fr; gap: 18px; align-items: start; padding: 20px 0; border-top: 1px solid var(--line); }
+    .step:first-child { border-top: 0; padding-top: 0; }
+    .step-number { display: grid; place-items: center; width: 52px; height: 52px; color: white; border-radius: 16px; background: var(--blue); font-weight: 800; }
+    .step small { color: var(--muted); }
+    .step ul, .checklist { margin: 10px 0 0; padding-left: 20px; }
+    li { margin: 4px 0; }
+    .two-col { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .panel { padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--soft); }
+    .panel.green { background: var(--green-soft); border-color: #c5ead9; }
+    .panel.orange { background: var(--orange-soft); border-color: #f1d3a7; }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; font-size: 14px; }
+    th, td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    th { background: var(--soft); font-weight: 800; }
+    tr:last-child td { border-bottom: 0; }
+    .tag { display: inline-block; margin: 3px 4px 3px 0; padding: 3px 9px; border-radius: 999px; color: #24476e; background: #eef4fb; font-size: 12px; font-weight: 700; }
+    .checklist { list-style: none; padding-left: 0; }
+    .checklist li { position: relative; padding-left: 28px; }
+    .checklist li::before { content: "□"; position: absolute; left: 0; color: var(--blue); font-size: 19px; line-height: 1.4; }
+    .todo-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .todo-progress { color: var(--muted); font-size: 14px; font-weight: 700; }
+    .todo-reset { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: white; cursor: pointer; }
+    .todo-group { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--soft); }
+    .todo-group:first-of-type { margin-top: 0; }
+    .todo-group h3 { display: flex; align-items: center; gap: 8px; }
+    .todo-group h3 span { color: var(--muted); font-size: 12px; font-weight: 500; }
+    .todo-list { display: grid; gap: 9px; margin: 12px 0 0; padding: 0; list-style: none; }
+    .todo-list label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+    .todo-list input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--blue); flex: 0 0 auto; }
+    .todo-list input:checked + span { color: var(--muted); text-decoration: line-through; }
+    .sources a { color: var(--blue); }
+    .footer { margin-top: 22px; color: var(--muted); font-size: 13px; }
+    code { padding: 2px 6px; border-radius: 5px; background: #eef2f7; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+    @media (max-width: 720px) {
+      .page { padding: 20px 12px 44px; }
+      .hero, .section { padding: 22px; border-radius: 16px; }
+      .summary, .two-col { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 58px 1fr; gap: 12px; }
+      .step-number { width: 46px; height: 46px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">METAbyTREE · 2027 법인전환 준비</p>
+      <h1>개인사업자에서 법인으로 전환하는 순서</h1>
+      <p>개인사업자는 2027년 사업 이전 시점까지 유지하고, METAbyTREE 법인을 먼저 설립한 뒤 기존 사업을 법인으로 이전하는 계획입니다. Divergram은 법인이 운영하는 브랜드명으로 정리합니다.</p>
+      <div class="summary">
+        <div class="summary-item"><strong>법인명</strong><span>주식회사 METAbyTREE</span></div>
+        <div class="summary-item"><strong>브랜드</strong><span>Divergram / 다이버그램</span></div>
+        <div class="summary-item"><strong>현재 원칙</strong><span>개인사업자 유지 후 2027년 이전</span></div>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>핵심 구조</h2>
+      <div class="notice">
+        <strong>개인사업자를 지금 폐업하지 않습니다.</strong>
+        <span>현재 개인사업자는 계속 운영하고, 법인 설립과 사업 이전을 준비합니다. 사업 이전이 끝난 뒤 개인사업자를 폐업합니다.</span>
+      </div>
+      <p style="margin:18px 0 0; font-weight:800;">개인사업자 유지 → METAbyTREE 법인 설립 → 사업·권리·의무 이전 → 개인사업자 폐업</p>
+    </section>
+
+    <section class="section">
+      <h2>전체 진행 순서</h2>
+      <p class="section-lead">각 단계가 완료된 뒤 다음 단계로 넘어가는 방식입니다.</p>
+      <div class="timeline">
+        <article class="step">
+          <div class="step-number">01</div>
+          <div><h3>현재 사업자료 정리</h3><small>지금부터 법인 설립 전까지</small><ul><li>현재 사업자등록증과 업태·종목 확인</li><li>매출·비용·자산·부채·계약·직원 자료 정리</li><li>개인사업자와 법인으로 넘길 사업 범위 구분</li></ul></div>
+        </article>
+        <article class="step">
+          <div class="step-number">02</div>
+          <div><h3>법인 기본사항 결정</h3><small>METAbyTREE 설립 설계</small><ul><li>정식 법인명과 본점 주소 결정</li><li>정관에 넣을 사업목적 작성</li><li>주주·대표이사·임원 구성</li><li>자본금 및 주식 배분 결정</li></ul></div>
+        </article>
+        <article class="step">
+          <div class="step-number">03</div>
+          <div><h3>법인 설립등기</h3><small>법인격을 먼저 생성</small><ul><li>정관 작성 및 공고·인감 관련 준비</li><li>자본금 납입</li><li>설립등기 신청</li><li>법인등기사항전부증명서와 법인인감 준비</li></ul></div>
+        </article>
+        <article class="step">
+          <div class="step-number">04</div>
+          <div><h3>법인 사업자등록</h3><small>법인 명의로 사업 시작 준비</small><ul><li>법인설립신고 및 사업자등록신청</li><li>법인명의 임대차계약서 제출</li><li>주주 또는 출자자명세서 제출</li><li>법인에서 실제 운영할 업태·종목 등록</li></ul></div>
+        </article>
+        <article class="step">
+          <div class="step-number">05</div>
+          <div><h3>개인사업자 사업 이전</h3><small>2027년 목표 시점에 진행</small><ul><li>사업양도·양수계약서 작성</li><li>자산·부채·재고·미수금·미지급금 이전</li><li>계약·도메인·상표·웹사이트·앱 권리 이전</li><li>은행·결제·임대차·직원 명의 변경</li></ul></div>
+        </article>
+        <article class="step">
+          <div class="step-number">06</div>
+          <div><h3>개인사업자 폐업 및 세무정리</h3><small>사업 이전 완료 후</small><ul><li>개인사업자 폐업신고</li><li>폐업일까지 부가가치세 신고</li><li>종합소득세 신고 및 장부 마감</li><li>개인사업용 통장·카드·계약 정리</li></ul></div>
+        </article>
+    </div>
+    </section>
+
+    <section class="section" id="todo">
+      <h2>실행 Todo List</h2>
+      <p class="section-lead">완료한 항목을 체크하세요. 체크 상태는 이 브라우저에 자동 저장됩니다.</p>
+      <div class="todo-toolbar">
+        <div class="todo-progress" id="todo-progress">완료 0 / 31</div>
+        <button class="todo-reset" id="todo-reset" type="button">체크 초기화</button>
+      </div>
+
+      <div class="todo-group">
+        <h3>1. 현재 사업자료 확인 <span>법인 설립 전</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>현재 개인사업자 사업자등록증과 업태·종목 확인</span></label>
+          <label><input type="checkbox" data-todo><span>개인사업자 매출·비용 자료 정리</span></label>
+          <label><input type="checkbox" data-todo><span>사업용 자산·부채·재고가 거의 없는지 확인</span></label>
+          <label><input type="checkbox" data-todo><span>Divergram 도메인·앱·소스코드·콘텐츠 권리 목록 작성</span></label>
+          <label><input type="checkbox" data-todo><span>개인사업자에 남겨둘 업무와 법인으로 옮길 업무 구분</span></label>
+        </div>
+      </div>
+
+      <div class="todo-group">
+        <h3>2. 동탄 공유오피스 확인 <span>법인 본점</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>법인명의 임대차계약서 발급 가능 여부 확인</span></label>
+          <label><input type="checkbox" data-todo><span>법인 본점 및 사업자등록 가능 여부 확인</span></label>
+          <label><input type="checkbox" data-todo><span>전대차계약 및 임대인 동의서 필요 여부 확인</span></label>
+          <label><input type="checkbox" data-todo><span>우편물·등기우편 수령과 세무서 확인 대응 여부 확인</span></label>
+        </div>
+      </div>
+
+      <div class="todo-group">
+        <h3>3. METAbyTREE 법인 설계 <span>설립 준비</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>정식 법인명 표기 확정: 주식회사 메타바이트리 또는 주식회사 METAbyTREE</span></label>
+          <label><input type="checkbox" data-todo><span>법인 본점 주소 확정</span></label>
+          <label><input type="checkbox" data-todo><span>자본금과 주주 지분 결정</span></label>
+          <label><input type="checkbox" data-todo><span>대표이사·임원 구성 결정</span></label>
+          <label><input type="checkbox" data-todo><span>정관 사업목적 초안 확정</span></label>
+        </div>
+      </div>
+
+      <div class="todo-group">
+        <h3>4. 법인 설립 및 사업자등록 <span>법인 시작</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>정관·주식인수·임원 취임 관련 서류 작성</span></label>
+          <label><input type="checkbox" data-todo><span>자본금 납입</span></label>
+          <label><input type="checkbox" data-todo><span>법인 설립등기 신청</span></label>
+          <label><input type="checkbox" data-todo><span>법인인감과 법인등기사항전부증명서 준비</span></label>
+          <label><input type="checkbox" data-todo><span>법인명의 임대차계약 체결</span></label>
+          <label><input type="checkbox" data-todo><span>METAbyTREE 법인 사업자등록 신청</span></label>
+        </div>
+      </div>
+
+      <div class="todo-group">
+        <h3>5. Divergram 운영주체 변경 <span>전환일 기준</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>개인사업자와 법인 간 사업권리 이전계약 작성</span></label>
+          <label><input type="checkbox" data-todo><span>Divergram 서비스 운영주체 변경일 확정</span></label>
+          <label><input type="checkbox" data-todo><span>도메인·웹사이트·앱·소스코드 권리 이전</span></label>
+          <label><input type="checkbox" data-todo><span>이용약관·개인정보처리방침·사업자정보 변경</span></label>
+          <label><input type="checkbox" data-todo><span>결제대행사·앱스토어·호스팅·광고계정 명의 변경</span></label>
+          <label><input type="checkbox" data-todo><span>전환일 전후 매출·비용·세금계산서 귀속 분리</span></label>
+        </div>
+      </div>
+
+      <div class="todo-group">
+        <h3>6. 개인사업자 정리 <span>사업 이전 완료 후</span></h3>
+        <div class="todo-list">
+          <label><input type="checkbox" data-todo><span>개인사업자에 남은 업무와 계약이 없는지 확인</span></label>
+          <label><input type="checkbox" data-todo><span>필요한 경우 통신판매업 등 관련 변경신고 확인</span></label>
+          <label><input type="checkbox" data-todo><span>개인사업자 폐업신고</span></label>
+          <label><input type="checkbox" data-todo><span>폐업일까지 부가가치세 신고</span></label>
+          <label><input type="checkbox" data-todo><span>종합소득세 및 장부 마감</span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>현재 사업자등록증의 업종 반영</h2>
+      <p class="section-lead">2027년에 현재 사업을 모두 법인으로 이전한다면 아래 업태·종목을 법인 정관과 사업자등록 검토 대상에 포함합니다.</p>
+      <table>
+        <thead><tr><th>업태</th><th>현재 등록된 종목</th><th>법인 반영 방향</th></tr></thead>
+        <tbody>
+          <tr><td>정보통신업</td><td>응용 소프트웨어 개발 및 공급업<br>포털 및 기타 인터넷 정보 매개 서비스업<br>컴퓨터 시스템 통합 자문 및 구축 서비스업<br>컴퓨터 프로그래밍 서비스업<br>기타 정보 기술 및 컴퓨터 운영 관련 서비스업</td><td>현재 플랫폼·서비스 운영을 법인으로 넘길 계획이면 반영</td></tr>
+          <tr><td>정보통신업</td><td>영상물 제공 서비스업, 오디오물 제공 서비스업, 데이터베이스 및 온라인 정보 제공업</td><td>Divergram 서비스와 콘텐츠·데이터 운영에 해당하면 반영</td></tr>
+          <tr><td>도매 및 소매업</td><td>전자상거래 소매업<br>전자상거래 소매 중개업</td><td>온라인 판매 또는 중개를 법인에서 계속할 때 반영</td></tr>
+          <tr><td>교육서비스업</td><td>기타 스포츠 교육기관</td><td>교육 서비스를 법인에서 계속할 때 반영</td></tr>
+          <tr><td>예술·스포츠 및 여가 관련 서비스업</td><td>기타 수상오락 서비스업</td><td>실제 해당 사업을 법인에서 운영할 때 반영</td></tr>
+        </tbody>
+      </table>
+      <div class="notice" style="margin-top:16px; border-left-color:var(--orange); background:var(--orange-soft);">
+        <strong>중요</strong>
+        <span>정관의 사업목적은 향후 확장 가능성을 고려해 작성할 수 있지만, 사업자등록의 업태·종목은 법인이 실제로 운영할 사업을 기준으로 최종 결정합니다. 인허가가 필요한 사업은 업종 등록과 별도로 허가·신고 여부를 확인해야 합니다.</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>단계별 준비서류</h2>
+      <div class="two-col">
+        <div class="panel"><h3>법인 설립등기</h3><ul class="checklist"><li>법인명·본점 주소·사업목적</li><li>정관</li><li>주주·발기인·임원 인적사항</li><li>주식인수 관련 서류</li><li>자본금 납입 증빙</li><li>취임승낙서·의사록·조사보고서</li><li>법인인감 및 등록면허세 관련 자료</li></ul></div>
+        <div class="panel"><h3>법인 사업자등록</h3><ul class="checklist"><li>법인설립신고 및 사업자등록신청서</li><li>법인등기사항전부증명서</li><li>법인명의 임대차계약서</li><li>주주 또는 출자자명세서</li><li>사업 허가·등록·신고필증</li><li>현물출자 명세서 해당 시</li><li>대표자 신분증 및 법인인감 관련 서류</li></ul></div>
+        <div class="panel green"><h3>사업 이전</h3><ul class="checklist"><li>사업양도·양수계약서</li><li>자산·부채·재고 목록</li><li>계약 및 거래처 승계 목록</li><li>도메인·상표·앱·웹사이트 권리 이전서류</li><li>대출·보증·임대차 승계자료</li><li>직원 고용승계 자료</li></ul></div>
+        <div class="panel orange"><h3>개인사업자 폐업</h3><ul class="checklist"><li>폐업신고</li><li>폐업일까지 부가가치세 신고</li><li>종합소득세 신고자료</li><li>재고·자산 정리자료</li><li>기존 통장·카드·계약 정리</li></ul></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>지금 할 일</h2>
+      <p class="section-lead">아직 법인 설립 신청을 넣기 전에 아래 자료부터 정리합니다.</p>
+      <ul class="checklist">
+        <li>현재 개인사업자의 업태·종목을 기준으로 법인 이전 대상 확정</li>
+        <li>사업용 자산·부채·계약·권리 목록 작성</li>
+        <li>법인 본점 주소와 임대차계약 가능 여부 확인</li>
+        <li>자본금과 주주 지분 결정</li>
+        <li>정관용 사업목적 초안 작성</li>
+        <li>세무사에게 포괄양수도 및 세금 영향 검토 요청</li>
+      </ul>
+    </section>
+
+    <section class="section sources">
+      <h2>공식 참고자료</h2>
+      <ul>
+        <li><a href="https://www.startbiz.go.kr/index.do" target="_blank" rel="noopener">온라인 법인설립시스템</a> - 법인설립 유형별 절차와 표준서류</li>
+        <li><a href="https://d.nts.go.kr/nts/ad/cntnts/cntntsView.do?mi=2445" target="_blank" rel="noopener">국세청 사업자등록 제출서류</a> - 영리법인 본점 사업자등록 서류</li>
+        <li><a href="https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&amp;lsId=004920&amp;lsJoLnkSeq=1001021511&amp;print=print" target="_blank" rel="noopener">조세특례제한법 시행령 제29조</a> - 사업양수도 방식 법인전환 요건</li>
+        <li><a href="https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1027240377" target="_blank" rel="noopener">조세특례제한법 제32조</a> - 법인전환 관련 양도소득세 이월과세</li>
+      </ul>
+      <p class="footer">이 문서는 첨부된 개인사업자 사업자등록증과 현재 계획을 기준으로 작성한 준비 가이드입니다. 실제 신청 전에는 관할 등기소·세무서 및 세무사에게 최신 요건과 인허가 여부를 확인하세요.</p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const key = 'metabytree-legal-conversion-todos-v1';
+      const boxes = Array.from(document.querySelectorAll('[data-todo]'));
+      const progress = document.querySelector('#todo-progress');
+      const reset = document.querySelector('#todo-reset');
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) { saved = {}; }
+
+      const update = () => {
+        const completed = boxes.filter((box) => box.checked).length;
+        progress.textContent = `완료 ${completed} / ${boxes.length}`;
+        localStorage.setItem(key, JSON.stringify(boxes.map((box, index) => ({ index, checked: box.checked }))));
+      };
+
+      if (Array.isArray(saved)) saved.forEach((item) => { if (boxes[item.index]) boxes[item.index].checked = item.checked; });
+      boxes.forEach((box) => box.addEventListener('change', update));
+      reset.addEventListener('click', () => {
+        boxes.forEach((box) => { box.checked = false; });
+        update();
+      });
+      update();
+    })();
+  </script>
+</body>
+</html>

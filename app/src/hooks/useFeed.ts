@@ -14,7 +14,7 @@ export function useFeed() {
     refetch,
     isLoading
   } = useInfiniteQuery({
-    queryKey: ['feed'],
+    queryKey: ['feed', 'dive-records-v2'],
     queryFn: ({ pageParam }) => apiClient.getFeed(pageParam as string | null),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null as string | null,
@@ -22,8 +22,11 @@ export function useFeed() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await refetch();
-    setIsRefreshing(false);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return {

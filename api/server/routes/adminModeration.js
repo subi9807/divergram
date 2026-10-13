@@ -1,3 +1,5 @@
+import { decryptSensitiveText, encryptSensitiveText } from '../lib/dataEncryption.js';
+
 function normalizeLimit(value, fallback = 50, max = 200) {
   const n = Number(value || fallback);
   if (!Number.isFinite(n) || n <= 0) return fallback;
@@ -131,7 +133,11 @@ async function purgePostCascade(client, postIds = []) {
   };
 }
 
-export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
+export function registerAdminModerationRoutes(app, { pool, requireAdmin, adminEmails = [] }) {
+  const protectedAdminEmails = new Set((adminEmails || []).map((email) => String(email || '').trim().toLowerCase()).filter(Boolean));
+  const isProtectedAdmin = (user) => String(user?.role || '').toLowerCase() === 'admin'
+    && protectedAdminEmails.has(String(user?.email || '').trim().toLowerCase());
+
   app.get('/api/admin/users', requireAdmin, async (req, res) => {
     const limit = normalizeLimit(req.query.limit, 20, 100);
     const search = String(req.query.search || req.query.q || '').trim();
@@ -146,7 +152,10 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
       }
       if (['general', 'member', 'resort', 'admin'].includes(roleFilter)) {
         if (roleFilter === 'general' || roleFilter === 'member') {
-          clauses.push(`lower(COALESCE(u.role, 'user')) NOT IN ('admin', 'resort')`);
+          clauses.push(`lower(COALESCE(u.role, 'user')) <> 'admin'`);
+          clauses.push(`lower(COALESCE(p.account_type, 'personal')) <> 'resort'`);
+        } else if (roleFilter === 'resort') {
+          clauses.push(`lower(COALESCE(p.account_type, 'personal')) = 'resort'`);
         } else {
           params.push(roleFilter);
           const p = params.length;
@@ -162,6 +171,8 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
                 u.role,
                 u.is_blocked,
                 u.email_verified,
+                u.contact_phone,
+                u.phone_verified,
                 u.created_at,
                 p.account_type,
                 COALESCE(p.full_name, '') AS full_name,
@@ -188,7 +199,14 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
          LIMIT $${params.length}`,
         params
       );
-      res.json({ ok: true, users: q.rows || [] });
+      res.json({
+        ok: true,
+        users: (q.rows || []).map((row) => ({
+          ...row,
+          is_default_admin: isProtectedAdmin(row),
+          contact_phone: decryptSensitiveText(row.contact_phone),
+        })),
+      });
     } catch (error) {
       res.status(500).json({ ok: false, error: 'admin_users_failed', detail: String(error?.message || error) });
     }
@@ -202,7 +220,8 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
       const body = req.body || {};
       const hasField = (key) => Object.prototype.hasOwnProperty.call(body, key);
       const currentQ = await pool.query(
-        `SELECT u.id::text AS id, u.email, u.username, u.role, u.is_blocked, u.email_verified, u.created_at,
+        `SELECT u.id::text AS id, u.email, u.username, u.role, u.is_blocked, u.email_verified,
+                u.contact_phone, u.phone_verified, u.created_at,
                 p.username AS profile_username, p.full_name, p.bio, p.avatar_url, p.website, p.account_type, p.scuba_level, p.freediving_level
          FROM app_users u
          LEFT JOIN app_profiles p ON p.id::text = u.id::text
@@ -212,6 +231,16 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
       );
       if (!currentQ.rows.length) return res.status(404).json({ ok: false, error: 'user_not_found' });
       const current = currentQ.rows[0];
+      current.contact_phone = decryptSensitiveText(current.contact_phone);
+      const protectedAdmin = isProtectedAdmin(current);
+      if (protectedAdmin) {
+        const requestedEmail = req.body?.email === undefined ? current.email : String(req.body.email || '').trim().toLowerCase();
+        const requestedRole = req.body?.role === undefined ? current.role : String(req.body.role || '').trim().toLowerCase();
+        const requestedBlocked = req.body?.isBlocked ?? req.body?.blocked ?? req.body?.is_blocked;
+        if (requestedEmail !== String(current.email || '').trim().toLowerCase() || requestedRole !== 'admin' || requestedBlocked === true) {
+          return res.status(403).json({ ok: false, error: 'default_admin_protected' });
+        }
+      }
 
       const updates = [];
       const values = [];
@@ -239,12 +268,30 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
       }
 
       if (req.body?.email !== undefined) {
-        const email = normalizeEditableText(req.body.email, false);
+        const email = normalizeEditableText(req.body.email, false)?.toLowerCase();
         if (!email) return res.status(400).json({ ok: false, error: 'email_required' });
+        const nextRole = String(req.body?.role || current.role || 'user').toLowerCase();
+        const nextAccountType = normalizeAccountType(req.body?.account_type ?? req.body?.accountType ?? current.account_type) || 'personal';
+        const nextScope = nextRole === 'admin' ? 'admin' : nextAccountType === 'resort' ? 'resort' : 'personal';
+        const duplicate = await pool.query('SELECT id FROM app_users WHERE lower(email)=lower($1) AND account_scope=$2 AND id::text<>$3 LIMIT 1', [email, nextScope, userId]);
+        if (duplicate.rows.length) return res.status(409).json({ ok: false, error: 'email_already_exists' });
         pushUser('email', email);
         if (req.body?.emailVerified === undefined && req.body?.email_verified === undefined) {
           pushUser('email_verified', false);
         }
+      }
+
+      if (hasField('contact_phone') || hasField('contactPhone')) {
+        const phone = String(body.contact_phone ?? body.contactPhone ?? '').replace(/[^+\d]/g, '');
+        if (phone && !/^\+?\d{8,15}$/.test(phone)) {
+          return res.status(400).json({ ok: false, error: 'invalid_contact_phone' });
+        }
+        pushUser('contact_phone', phone ? encryptSensitiveText(phone) : null);
+        pushUser('phone_verified', Boolean(phone));
+        updates.push(`phone_verified_at=${phone ? 'now()' : 'NULL'}`);
+        updates.push('phone_pending=NULL');
+        updates.push('phone_verify_code_hash=NULL');
+        updates.push('phone_verify_expires=NULL');
       }
 
       const role = normalizeUserRole(req.body?.role);
@@ -277,11 +324,12 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
         values.push(userId);
         const q = await pool.query(
           `UPDATE app_users SET ${updates.join(', ')} WHERE id=$${values.length}
-           RETURNING id::text AS id, email, username, role, is_blocked, email_verified, created_at`,
+           RETURNING id::text AS id, email, username, role, is_blocked, email_verified, contact_phone, phone_verified, created_at`,
           values
         );
         if (!q.rows.length) return res.status(404).json({ ok: false, error: 'user_not_found' });
         userRow = q.rows[0];
+        userRow.contact_phone = decryptSensitiveText(userRow.contact_phone);
       }
 
       const profileQ = await pool.query(
@@ -310,6 +358,11 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
         ]
       );
 
+      const accountScope = String(userRow.role || 'user').toLowerCase() === 'admin'
+        ? 'admin'
+        : String(profileQ.rows[0]?.account_type || 'personal').toLowerCase() === 'resort' ? 'resort' : 'personal';
+      await pool.query('UPDATE app_users SET account_scope=$1 WHERE id=$2', [accountScope, userId]);
+
       res.json({ ok: true, user: userRow, profile: profileQ.rows[0] || null });
     } catch (error) {
       res.status(500).json({ ok: false, error: 'admin_user_update_failed', detail: String(error?.message || error) });
@@ -327,6 +380,10 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
       if (!userQ.rows.length) {
         await client.query('ROLLBACK');
         return res.status(404).json({ ok: false, error: 'user_not_found' });
+      }
+      if (isProtectedAdmin(userQ.rows[0])) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ ok: false, error: 'default_admin_protected' });
       }
 
       const postIdsQ = await client.query(`SELECT id::text AS id FROM app_posts WHERE user_id=$1 ORDER BY created_at DESC`, [userId]);
@@ -545,6 +602,9 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
     const blocked = Boolean(req.body?.blocked ?? req.body?.isBlocked ?? true);
     if (!userId) return res.status(400).json({ ok: false, error: 'user_id_required' });
     try {
+      const current = await pool.query('SELECT id::text AS id, email, role FROM app_users WHERE id=$1 LIMIT 1', [userId]);
+      if (!current.rows.length) return res.status(404).json({ ok: false, error: 'user_not_found' });
+      if (isProtectedAdmin(current.rows[0])) return res.status(403).json({ ok: false, error: 'default_admin_protected' });
       const q = await pool.query(
         `UPDATE app_users SET is_blocked=$1 WHERE id=$2 RETURNING id::text AS id, email, username, role, is_blocked, email_verified, created_at`,
         [blocked, userId]
@@ -567,7 +627,7 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
     }
     try {
       const q = await pool.query(
-        `SELECT id, user_id, agency, certification_number, level, issued_at, expires_at, image_url, status, created_at, updated_at
+        `SELECT id, user_id, discipline, agency, certification_number, level, issued_at, expires_at, image_url, status, created_at, updated_at
          FROM app_certifications
          ${where}
          ORDER BY updated_at DESC, created_at DESC
@@ -586,7 +646,7 @@ export function registerAdminModerationRoutes(app, { pool, requireAdmin }) {
     if (!certificationId) return res.status(400).json({ ok: false, error: 'certification_id_required' });
     try {
       const q = await pool.query(
-        `UPDATE app_certifications SET status=$1, updated_at=now() WHERE id=$2 RETURNING id, user_id, agency, certification_number, level, issued_at, expires_at, image_url, status, created_at, updated_at`,
+        `UPDATE app_certifications SET status=$1, updated_at=now() WHERE id=$2 RETURNING id, user_id, discipline, agency, certification_number, level, issued_at, expires_at, image_url, status, created_at, updated_at`,
         [status, certificationId]
       );
       if (!q.rows.length) return res.status(404).json({ ok: false, error: 'certification_not_found' });

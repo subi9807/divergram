@@ -20,7 +20,7 @@ export function Card({ children, className, elevated = true }: CardProps) {
         isDark ? styles.dark : undefined,
       ]}
       className={cn(
-        'rounded-3xl',
+        'rounded-2xl',
         className
       )}
     >
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   baseLight: {
-    borderColor: '#dce8f4',
+    borderColor: '#e5eaf1',
     backgroundColor: '#ffffff',
   },
   baseDark: {
@@ -43,9 +43,9 @@ const styles = StyleSheet.create({
   },
   elevated: {
     shadowColor: '#0d5fa8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.07,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.035,
+    shadowRadius: 8,
     elevation: Platform.select({ android: 2, default: 0 }),
   },
   dark: {

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { notificationText } from './notificationText.js';
 import { sendPushToToken } from './pushDelivery.js';
 
 const DEFAULT_PUSH_ITEMS = {
@@ -39,7 +40,11 @@ export async function deliverUserEventNotification(pool, input) {
 
   const actor = await actorLabel(pool, actorUserId);
   const title = String(input?.title || 'Divergram').trim();
-  const body = String(input?.body || `${actor}님의 새로운 활동이 있습니다.`).trim();
+  const preference = await pool.query(
+    "SELECT data->>'language' AS language FROM app_records WHERE table_name='user_preferences' AND record_id=$1 LIMIT 1",
+    [userId]
+  );
+  const body = String(input?.body || notificationText(type, preference.rows[0]?.language, actor)).trim();
   const deepLink = String(input?.deepLink || 'divergram://notifications').trim();
   const data = { ...(input?.data || {}), type, deepLink, eventKey };
   const notificationId = crypto.randomUUID();

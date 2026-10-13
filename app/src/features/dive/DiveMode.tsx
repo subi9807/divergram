@@ -42,15 +42,15 @@ export function DiveMode() {
     try {
       setLoading(true);
       
-      // Request background location permission
-      const { status } = await Location.requestBackgroundPermissionsAsync();
+      // Tracking only runs while this screen is active, so foreground access is sufficient.
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
           t('permissions.location.title'),
           t('diveMode.bgPermissionDescription'),
           [
             { text: t('common.cancel'), style: 'cancel' },
-            { text: t('permissions.openSettings'), onPress: () => Location.requestBackgroundPermissionsAsync() }
+            { text: t('permissions.openSettings'), onPress: () => Location.requestForegroundPermissionsAsync() }
           ]
         );
         return;

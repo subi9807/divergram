@@ -1,17 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, CalendarDays, ChevronLeft, CircleAlert, CircleCheck, Link2, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, CircleAlert, CircleCheck, Link2, RotateCcw, ShieldCheck, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useToast } from '../../src/components/Toast';
 import { useSettingsFeatureStore, type SocialProvider } from '../../src/stores/settingsFeatureStore';
-import { bottomTabCandidates, bottomTabDefault, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
+import { bottomTabDefault, normalizeBottomTabItems, type BottomTabRoute, useSettingsStore } from '../../src/stores/settingsStore';
 import { appRouteMap } from '../../src/config/sitemap';
+import { reorderItems } from '../../src/utils/reorderItems';
 import { apiClient } from '../../src/lib/api';
 import { instagramAuth } from '../../src/lib/auth/instagram';
+import { linkFacebookAccount } from '../../src/lib/auth/facebook';
+import { linkThreadsAccount } from '../../src/lib/auth/threads';
+import { BottomMenuEditor } from '../../src/components/BottomMenuEditor';
 
 function pickParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return String(value[0] || '').trim();
@@ -22,6 +26,8 @@ type DetailMode =
   | 'link-google'
   | 'link-apple'
   | 'link-instagram'
+  | 'link-facebook'
+  | 'link-threads'
   | 'account-delete'
   | 'blocked-users'
   | 'customer-center'
@@ -36,6 +42,8 @@ function asMode(value: string): DetailMode {
     'link-google',
     'link-apple',
     'link-instagram',
+    'link-facebook',
+    'link-threads',
     'account-delete',
     'blocked-users',
     'customer-center',
@@ -65,8 +73,9 @@ export default function SettingsDetailScreen() {
   const { t, i18n } = useTranslation();
   const { isDark } = useResolvedTheme();
   const { showToast } = useToast();
-  const params = useLocalSearchParams<{ mode?: string | string[] }>();
+  const params = useLocalSearchParams<{ mode?: string | string[]; enableCrossPost?: string | string[] }>();
   const mode = asMode(pickParam(params.mode));
+  const enableCrossPost = pickParam(params.enableCrossPost);
   const { loginWithGoogle, loginWithApple, linkSocialAccount, logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
   const hasInstagramLogin = true;
@@ -87,6 +96,7 @@ export default function SettingsDetailScreen() {
   const gasPressureUnit = useSettingsStore((state) => state.gasPressureUnit);
   const bottomTabItems = useSettingsStore((state) => state.bottomTabItems);
   const updateSafetySetting = useSettingsStore((state) => state.updateSafetySetting);
+  const updateSocialPublishingSetting = useSettingsStore((state) => state.updateSocialPublishingSetting);
   const updateDepthUnit = useSettingsStore((state) => state.updateDepthUnit);
   const updateTemperatureUnit = useSettingsStore((state) => state.updateTemperatureUnit);
   const updateGasPressureUnit = useSettingsStore((state) => state.updateGasPressureUnit);
@@ -119,7 +129,8 @@ export default function SettingsDetailScreen() {
   const [insurancePolicyNumber, setInsurancePolicyNumber] = useState('');
   const [insuranceEmergencyPhone, setInsuranceEmergencyPhone] = useState('');
   const [insuranceValidUntil, setInsuranceValidUntil] = useState('');
-  const [menuDraft, setMenuDraft] = useState<BottomTabRoute[]>(bottomTabItems);
+  const [menuDraft, setMenuDraft] = useState<BottomTabRoute[]>(() => normalizeBottomTabItems(bottomTabItems));
+  const [bottomMenuDragging, setBottomMenuDragging] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -142,7 +153,7 @@ export default function SettingsDetailScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setMenuDraft(bottomTabItems);
+      setMenuDraft(normalizeBottomTabItems(bottomTabItems));
     }, 0);
     return () => clearTimeout(timer);
   }, [bottomTabItems]);
@@ -151,6 +162,8 @@ export default function SettingsDetailScreen() {
     if (mode === 'link-google') return t('settingsPage.account.googleLink', { defaultValue: 'Google 로그인 연동' });
     if (mode === 'link-apple') return t('settingsPage.account.appleLink', { defaultValue: 'Apple 로그인 연동' });
     if (mode === 'link-instagram') return t('settingsPage.account.instagramLink', { defaultValue: 'Instagram 로그인 연동' });
+    if (mode === 'link-facebook') return t('settingsPage.account.facebookLink', { defaultValue: 'Facebook 계정 연동' });
+    if (mode === 'link-threads') return t('settingsPage.account.threadsLink', { defaultValue: 'Threads 계정 연동' });
     if (mode === 'account-delete') return t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
     if (mode === 'customer-center') return t('settingsPage.app.customerCenter', { defaultValue: '고객센터' });
@@ -165,7 +178,7 @@ export default function SettingsDetailScreen() {
     if (mode.startsWith('link-')) return t('settingsPage.account.socialSubtitle', { defaultValue: '소셜 계정을 연결해 로그인 편의성과 계정 보안을 강화하세요.' });
     if (mode === 'account-delete') return t('settingsPage.account.deleteSubtitle', { defaultValue: '탈퇴 요청 후 30일 동안 계정을 복구할 수 있습니다.' });
     if (mode === 'blocked-users') return t('settingsPage.privacy.blockedUsers', { defaultValue: '차단 사용자 관리' });
-    if (mode === 'customer-center') return t('pages.report.subtitle', { defaultValue: '서비스 문제를 남겨주세요' });
+    if (mode === 'customer-center') return t('settingsPage.app.menuDescriptions.customerCenter');
     if (mode === 'unit-settings') return t('settingsPage.diving.unitSettingsSubtitle', { defaultValue: '수심/수온/기체 단위를 한 곳에서 설정하세요.' });
     if (mode === 'bottom-menu') return t('settingsPage.app.bottomMenuManagerSubtitle', { defaultValue: '하단 탭 구성과 순서를 변경합니다.' });
     if (mode === 'emergency-contact') return t('settingsPage.safety.emergencyShare', { defaultValue: '긴급 상황 공유 설정' });
@@ -177,6 +190,8 @@ export default function SettingsDetailScreen() {
     if (mode === 'link-google') return 'google';
     if (mode === 'link-apple') return 'apple';
     if (mode === 'link-instagram') return 'instagram';
+    if (mode === 'link-facebook') return 'facebook';
+    if (mode === 'link-threads') return 'threads';
     return null;
   }, [mode]);
 
@@ -184,11 +199,14 @@ export default function SettingsDetailScreen() {
     if (socialProvider === 'google') return 'Google';
     if (socialProvider === 'apple') return 'Apple';
     if (socialProvider === 'instagram') return 'Instagram';
+    if (socialProvider === 'facebook') return 'Facebook';
+    if (socialProvider === 'threads') return 'Threads';
     return '';
   }, [socialProvider]);
 
   const socialLinked = socialProvider ? socialLinks[socialProvider]?.linked : false;
   const socialLinkedAt = socialProvider ? socialLinks[socialProvider]?.linkedAt : '';
+  const socialAccountName = socialProvider ? String(socialLinks[socialProvider]?.accountName || '').trim() : '';
 
   const refreshSocialLinks = async () => {
     const result = await apiClient.getOAuthLinks();
@@ -214,7 +232,7 @@ export default function SettingsDetailScreen() {
       showToast({
         type: 'error',
         title: t('auth.error', { defaultValue: '오류' }),
-        message: 'Apple 로그인은 iOS에서만 사용할 수 있습니다.',
+        message: t('auth.appleRequiresIos'),
       });
       return;
     }
@@ -222,7 +240,7 @@ export default function SettingsDetailScreen() {
       showToast({
         type: 'error',
         title: t('auth.error', { defaultValue: '오류' }),
-        message: 'Instagram 로그인 설정이 아직 완료되지 않았습니다.',
+        message: t('settingsPage.account.instagramNotConfigured'),
       });
       return;
     }
@@ -238,12 +256,24 @@ export default function SettingsDetailScreen() {
           name: userInfo.username,
         });
       }
+      if (socialProvider === 'facebook') await linkFacebookAccount();
+      if (socialProvider === 'threads') await linkThreadsAccount();
       await refreshSocialLinks();
+      if (enableCrossPost === 'instagram' && socialProvider === 'instagram') {
+        updateSocialPublishingSetting('shareToInstagramAfterPost', true);
+      }
+      if (enableCrossPost === 'facebook' && socialProvider === 'facebook') {
+        updateSocialPublishingSetting('shareToFacebookAfterPost', true);
+      }
+      if (enableCrossPost === 'threads' && socialProvider === 'threads') {
+        updateSocialPublishingSetting('shareToThreadsAfterPost', true);
+      }
       showToast({
         type: 'success',
         title: t('common.success', { defaultValue: '완료' }),
         message: t('settingsPage.account.linkAction', { defaultValue: '연동하기' }),
       });
+      if (enableCrossPost) router.back();
     } catch (error: any) {
       const socialLink = error?.socialLink;
       const code = String(error?.code || error?.message || error?.response?.data?.error || '').trim();
@@ -254,7 +284,7 @@ export default function SettingsDetailScreen() {
           showToast({
             type: 'success',
             title: t('common.success', { defaultValue: '완료' }),
-            message: `${socialLabel} ${t('settingsPage.account.linkAction', { defaultValue: '연동하기' })} ${t('common.done', { defaultValue: '완료' })}`,
+            message: `${socialLabel} ${t('settingsPage.account.linkAction')} ${t('common.done')}`,
           });
           return;
         } catch (linkError: any) {
@@ -273,7 +303,9 @@ export default function SettingsDetailScreen() {
       showToast({
         type: 'error',
         title: t('auth.error', { defaultValue: '오류' }),
-        message: message || t('auth.loginFailed', { defaultValue: '로그인 처리에 실패했습니다.' }),
+        message: message.includes('provider_not_configured') && socialProvider === 'threads'
+          ? t('settingsPage.account.threadsNotConfigured', { defaultValue: 'Threads 연동 설정이 아직 완료되지 않았습니다.' })
+          : message || t('auth.loginFailed', { defaultValue: '로그인 처리에 실패했습니다.' }),
       });
     } finally {
       setBusy(false);
@@ -295,17 +327,23 @@ export default function SettingsDetailScreen() {
             try {
               await apiClient.unlinkOAuthLink(socialProvider);
               await refreshSocialLinks();
+              if (socialProvider === 'instagram') updateSocialPublishingSetting('shareToInstagramAfterPost', false);
+              if (socialProvider === 'facebook') updateSocialPublishingSetting('shareToFacebookAfterPost', false);
+              if (socialProvider === 'threads') updateSocialPublishingSetting('shareToThreadsAfterPost', false);
               showToast({
                 type: 'info',
                 title: t('common.done', { defaultValue: '완료' }),
-                message: `${socialLabel} ${t('settingsPage.account.unlinkAction', { defaultValue: '연동끊기' })}`,
+                message: `${socialLabel} ${t('settingsPage.account.unlinkAction')}`,
               });
             } catch {
               setSocialLinked(socialProvider, false);
+              if (socialProvider === 'instagram') updateSocialPublishingSetting('shareToInstagramAfterPost', false);
+              if (socialProvider === 'facebook') updateSocialPublishingSetting('shareToFacebookAfterPost', false);
+              if (socialProvider === 'threads') updateSocialPublishingSetting('shareToThreadsAfterPost', false);
               showToast({
                 type: 'info',
                 title: t('common.done', { defaultValue: '완료' }),
-                message: `${socialLabel} ${t('settingsPage.account.unlinkAction', { defaultValue: '연동끊기' })}`,
+                message: `${socialLabel} ${t('settingsPage.account.unlinkAction')}`,
               });
             } finally {
               setBusy(false);
@@ -320,7 +358,7 @@ export default function SettingsDetailScreen() {
     if (!canDelete || busy) return;
     Alert.alert(
       t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' }),
-      t('settingsPage.account.deleteConfirm', { defaultValue: '탈퇴를 요청하면 계정이 즉시 비활성화되고 30일 후 영구 삭제됩니다. 계속할까요?' }),
+      t('settingsPage.account.deleteConfirm', { defaultValue: '탈퇴를 요청하면 계정이 비활성화되지만, 탈퇴 후 30일 이내에 다시 로그인하여 계정을 복구할 수 있습니다. 계속할까요?' }),
       [
         { text: t('common.cancel', { defaultValue: '취소' }), style: 'cancel' },
         {
@@ -352,7 +390,7 @@ export default function SettingsDetailScreen() {
               router.replace('/(auth)/login');
               const scheduleHint =
                 result.effectiveAt && !result.deletedImmediately
-                  ? `\n${new Date(result.effectiveAt).toLocaleString()}`
+                  ? `\n${new Date(result.effectiveAt).toLocaleString(i18n.language)}`
                   : '';
               showToast({
                 type: result.deletedImmediately ? 'success' : 'info',
@@ -360,8 +398,8 @@ export default function SettingsDetailScreen() {
                 message: result.deletedImmediately
                   ? t('settingsPage.account.deleteAccount', { defaultValue: '계정 삭제' })
                   : result.gracePeriodDays
-                    ? `삭제 요청이 접수되었습니다. ${result.gracePeriodDays}일 후 삭제됩니다.${scheduleHint}`
-                    : `삭제 요청이 접수되었습니다.${scheduleHint}`,
+                    ? t('settingsPage.account.deletionScheduled', { days: result.gracePeriodDays, schedule: scheduleHint })
+                    : t('settingsPage.account.deletionRequested', { schedule: scheduleHint }),
               });
             } catch (error: any) {
               const message = String(error?.response?.data?.error || error?.message || '').trim();
@@ -398,12 +436,12 @@ export default function SettingsDetailScreen() {
   };
 
   const handleOpenMail = async () => {
-    const url = 'mailto:support@divergram.com?subject=Divergram%20Support';
+    const url = 'mailto:support@metabytree.com?subject=Divergram%20Support';
     const can = await Linking.canOpenURL(url);
     if (can) {
       await Linking.openURL(url);
     } else {
-      showToast({ type: 'info', title: 'support@divergram.com' });
+      showToast({ type: 'info', title: 'support@metabytree.com' });
     }
   };
 
@@ -432,16 +470,20 @@ export default function SettingsDetailScreen() {
 
   const faqItems = [
     {
-      q: t('settingsPage.app.customerCenter', { defaultValue: '고객센터' }),
-      a: t('settingsPage.app.contact', { defaultValue: '문의하기' }),
+      q: t('settingsPage.app.supportFaq.accountQuestion'),
+      a: t('settingsPage.app.supportFaq.accountAnswer'),
     },
     {
-      q: t('settingsPage.app.terms', { defaultValue: '이용약관' }),
-      a: t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' }),
+      q: t('settingsPage.app.supportFaq.subscriptionQuestion'),
+      a: t('settingsPage.app.supportFaq.subscriptionAnswer'),
     },
     {
-      q: t('settingsPage.notifications.pushAll', { defaultValue: '푸시 알림 전체 ON/OFF' }),
-      a: t('settingsPage.notifications.pushAllSubtitle', { defaultValue: '모든 앱 알림을 한 번에 켜고 끕니다.' }),
+      q: t('settingsPage.app.supportFaq.bookingQuestion'),
+      a: t('settingsPage.app.supportFaq.bookingAnswer'),
+    },
+    {
+      q: t('settingsPage.app.supportFaq.aiQuestion'),
+      a: t('settingsPage.app.supportFaq.aiAnswer'),
     },
   ];
 
@@ -469,6 +511,19 @@ export default function SettingsDetailScreen() {
     messages: appRouteMap.messages.titleKey,
     notifications: appRouteMap.notifications.titleKey,
     resorts: appRouteMap.resorts.titleKey,
+    reels: appRouteMap.reels.titleKey,
+    saved: appRouteMap.saved.titleKey,
+    stamps: appRouteMap.stamps.titleKey,
+    'license-management': appRouteMap.license_management.titleKey,
+    activity: appRouteMap.activity.titleKey,
+    settings: appRouteMap.settings.titleKey,
+    donate: appRouteMap.donate.titleKey,
+    'booking-history': appRouteMap.booking_history.titleKey,
+    'dive-education': appRouteMap.dive_education.titleKey,
+    'dive-guide': appRouteMap.dive_guide.titleKey,
+    'dive-discovery': appRouteMap.dive_discovery.titleKey,
+    'app-info': appRouteMap.app_info.titleKey,
+    'membership': appRouteMap.membership.titleKey,
   };
 
   const toggleBottomTab = (routeName: BottomTabRoute) => {
@@ -478,31 +533,23 @@ export default function SettingsDetailScreen() {
         showToast({ type: 'info', title: t('settingsPage.app.bottomMenuRequired', { defaultValue: '홈 메뉴는 필수입니다.' }) });
         return;
       }
-      if (menuDraft.length <= 3) {
-        showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMin', { defaultValue: '하단메뉴는 최소 3개가 필요합니다.' }) });
+      if (menuDraft.length <= 4) {
+        showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMin', { defaultValue: '하단메뉴는 최소 4개가 필요합니다.' }) });
         return;
       }
       setMenuDraft(menuDraft.filter((item) => item !== routeName));
       return;
     }
-    if (menuDraft.length >= 5) {
-      showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMax', { defaultValue: '하단메뉴는 최대 5개까지 선택할 수 있습니다.' }) });
+    if (menuDraft.length >= 6) {
+      showToast({ type: 'info', title: t('settingsPage.app.bottomMenuMax', { defaultValue: '하단메뉴는 최대 6개까지 선택할 수 있습니다.' }) });
       return;
     }
     setMenuDraft([...menuDraft, routeName]);
   };
 
-  const moveBottomTab = (routeName: BottomTabRoute, direction: 'up' | 'down') => {
-    const currentIndex = menuDraft.indexOf(routeName);
-    if (currentIndex < 0) return;
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= menuDraft.length) return;
-    const next = [...menuDraft];
-    const temp = next[targetIndex];
-    next[targetIndex] = next[currentIndex];
-    next[currentIndex] = temp;
-    setMenuDraft(next);
-  };
+  const reorderBottomTab = useCallback((currentIndex: number, targetIndex: number) => {
+    setMenuDraft((current) => reorderItems(current, currentIndex, targetIndex));
+  }, []);
 
   const saveBottomMenu = () => {
     updateBottomTabItems(menuDraft);
@@ -520,7 +567,12 @@ export default function SettingsDetailScreen() {
 
   return (
     <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 36 }}
+        disableScrollViewPanResponder={mode === 'bottom-menu'}
+        scrollEnabled={!bottomMenuDragging}
+      >
         <View className="border-b border-surface-100 dark:border-surface-800 px-5 py-4">
           <TouchableOpacity
             activeOpacity={0.86}
@@ -540,12 +592,22 @@ export default function SettingsDetailScreen() {
                 {socialLinked ? <CircleCheck size={18} color="#0d5fa8" /> : <CircleAlert size={18} color="#f59e0b" />}
                 <Text className="ml-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
                   {socialLinked
-                    ? `${socialLabel} ${t('settingsPage.account.linkAction', { defaultValue: '연동하기' })} ${t('common.done', { defaultValue: '완료' })}`
-                    : `${socialLabel} ${t('settingsPage.account.linkAction', { defaultValue: '연동하기' })}`}
+                    ? `${socialLabel} ${t('settingsPage.account.linkAction')} ${t('common.done')}`
+                    : `${socialLabel} ${t('settingsPage.account.linkAction')}`}
                 </Text>
               </View>
               {socialLinkedAt ? (
                 <Text className="mb-3 text-xs text-surface-500 dark:text-surface-400">Linked at: {new Date(socialLinkedAt).toLocaleString()}</Text>
+              ) : null}
+              {socialLinked && socialAccountName ? (
+                <Text className="mb-3 text-sm font-semibold text-surface-700 dark:text-surface-200">
+                  {t('settingsPage.account.linkedAccount', {
+                    defaultValue: '{{account}} 연동 중',
+                    account: (socialProvider === 'instagram' || socialProvider === 'threads') && !socialAccountName.startsWith('@')
+                      ? `@${/^\d+$/.test(socialAccountName) && socialAccountName.length > 4 ? `••••${socialAccountName.slice(-4)}` : socialAccountName}`
+                      : socialAccountName,
+                  })}
+                </Text>
               ) : null}
               <View className="flex-row">
                 <TouchableOpacity
@@ -700,7 +762,7 @@ export default function SettingsDetailScreen() {
               <View className="mt-3 rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
                 <TouchableOpacity
                   activeOpacity={0.86}
-                  onPress={() => router.push(appRouteMap.report.path as never)}
+                  onPress={handleOpenMail}
                   className="rounded-xl bg-brand-600 px-3 py-3"
                 >
                   <Text className="text-center text-sm font-semibold text-white">{t('settingsPage.app.contact', { defaultValue: '문의하기' })}</Text>
@@ -710,19 +772,19 @@ export default function SettingsDetailScreen() {
                   onPress={handleOpenMail}
                   className="mt-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-3"
                 >
-                  <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">support@divergram.com</Text>
+                  <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">support@metabytree.com</Text>
                 </TouchableOpacity>
                 <View className="mt-2 flex-row">
                   <TouchableOpacity
                     activeOpacity={0.86}
-                    onPress={() => router.push(appRouteMap.auth_terms.path as never)}
+                    onPress={() => router.push(appRouteMap.terms_policy.path as never)}
                     className="mr-2 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
                   >
                     <Text className="text-center text-xs font-semibold text-surface-700 dark:text-surface-200">{t('settingsPage.app.terms', { defaultValue: '이용약관' })}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     activeOpacity={0.86}
-                    onPress={() => router.push(appRouteMap.auth_privacy.path as never)}
+                    onPress={() => router.push(appRouteMap.privacy_policy.path as never)}
                     className="flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
                   >
                     <Text className="text-center text-xs font-semibold text-surface-700 dark:text-surface-200">{t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' })}</Text>
@@ -733,90 +795,7 @@ export default function SettingsDetailScreen() {
           ) : null}
 
           {mode === 'bottom-menu' ? (
-            <View>
-              <View className="rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
-                <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{t('settingsPage.app.bottomMenuGuide', { defaultValue: '최소 3개, 최대 5개까지 선택할 수 있습니다.' })}</Text>
-                <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">
-                  {t('settingsPage.app.bottomMenuSelected', {
-                    defaultValue: '선택됨 {{count}}/5',
-                    count: menuDraft.length,
-                  })}
-                </Text>
-              </View>
-
-              <View className="mt-3 rounded-3xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-2">
-                {bottomTabCandidates.map((routeName, idx) => {
-                  const active = menuDraft.includes(routeName);
-                  const position = menuDraft.indexOf(routeName);
-                  const movable = active && routeName !== 'index';
-                  return (
-                    <View
-                      key={routeName}
-                      className={`flex-row items-center px-2 py-2.5 ${idx > 0 ? 'border-t border-surface-100 dark:border-surface-800' : ''}`}
-                    >
-                      <View className="flex-1 pr-2">
-                        <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">
-                          {t(bottomTabTitleKeyMap[routeName], { defaultValue: routeName })}
-                        </Text>
-                        <Text className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
-                          {active
-                            ? t('settingsPage.app.bottomMenuOrder', { defaultValue: '하단 {{order}}번째', order: position + 1 })
-                            : t('settingsPage.app.bottomMenuNotUsed', { defaultValue: '현재 하단 메뉴에서 숨김' })}
-                        </Text>
-                      </View>
-
-                      {active ? (
-                        <View className="mr-2 rounded-full bg-brand-50 px-2 py-1">
-                          <Text className="text-xs font-semibold text-brand-700">ON</Text>
-                        </View>
-                      ) : null}
-
-                      <TouchableOpacity
-                        activeOpacity={0.86}
-                        onPress={() => toggleBottomTab(routeName)}
-                        className={`mr-2 rounded-lg border px-2.5 py-1.5 ${active ? 'border-red-200 bg-red-50' : 'border-brand-200 bg-brand-50'}`}
-                      >
-                        <Text className={`text-xs font-semibold ${active ? 'text-red-600' : 'text-brand-700'}`}>
-                          {active ? t('common.delete', { defaultValue: '삭제' }) : t('common.add', { defaultValue: '추가' })}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <View className="flex-row">
-                        <TouchableOpacity
-                          activeOpacity={0.86}
-                          disabled={!movable || position <= 0}
-                          onPress={() => moveBottomTab(routeName, 'up')}
-                          className={`mr-1 rounded-lg border px-2 py-1.5 ${movable && position > 0 ? 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900' : 'border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800'}`}
-                        >
-                          <ArrowUp size={13} color={movable && position > 0 ? '#334155' : '#94a3b8'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          activeOpacity={0.86}
-                          disabled={!movable || position >= menuDraft.length - 1}
-                          onPress={() => moveBottomTab(routeName, 'down')}
-                          className={`rounded-lg border px-2 py-1.5 ${movable && position < menuDraft.length - 1 ? 'border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900' : 'border-surface-200 dark:border-surface-700 bg-surface-100 dark:bg-surface-800'}`}
-                        >
-                          <ArrowDown size={13} color={movable && position < menuDraft.length - 1 ? '#334155' : '#94a3b8'} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-
-              <View className="mt-3 flex-row">
-                <TouchableOpacity
-                  activeOpacity={0.86}
-                  onPress={resetBottomMenu}
-                  className="mr-2 flex-1 rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-3 py-3"
-                >
-                  <Text className="text-center text-sm font-semibold text-surface-700 dark:text-surface-200">{t('common.reset', { defaultValue: '초기화' })}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.86} onPress={saveBottomMenu} className="flex-1 rounded-xl bg-brand-600 px-3 py-3">
-                  <Text className="text-center text-sm font-semibold text-white">{t('pages.profileEdit.save', { defaultValue: '변경사항 저장' })}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <BottomMenuEditor items={menuDraft} titleKeys={bottomTabTitleKeyMap} onToggle={toggleBottomTab} onReorder={reorderBottomTab} onDragActiveChange={setBottomMenuDragging} onReset={resetBottomMenu} onSave={saveBottomMenu} />
           ) : null}
 
           {mode === 'unit-settings' ? (

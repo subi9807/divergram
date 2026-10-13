@@ -1,0 +1,31 @@
+[
+  {
+    "category": "environment",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 70,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/c43a188f-c5a6-4602-949e-6cddb3b7d9d2.png",
+    "translations": {
+      "ko": {
+        "title": "산호초를 배려하는 수중사진 · 가까이보다 조심스럽게",
+        "summary": "멋진 한 장보다 중요한 것은 촬영 후에도 그대로 남아 있는 바다입니다. 생물과 거리를 두고 기록하는 습관을 알아보세요.",
+        "body": "사진에 담지 않을 것도 정하세요\n입수 전 오늘의 목표를 작은 생물 한 마리로 제한하기보다 빛, 색, 풍경처럼 넓게 잡아보세요. 원하는 장면이 없더라도 다른 발견을 기록할 수 있습니다. 가이드에게 생물을 옮기거나 만져서 보여달라고 요청하지 않습니다.\n\n셔터보다 먼저 내 위치\n카메라를 쓰기 전에 부력과 자세에 익숙해져야 합니다. 촬영하면서 산호나 바닥에 기대지 말고 핀과 장비가 닿지 않는지 살피세요. 안정적으로 머물기 어렵다면 촬영을 포기하고 교육받은 방식으로 다이빙에 집중합니다.\n\n생물에게 연출을 부탁하지 않기\n만지거나 쫓거나 먹이로 유인하지 않습니다. 길을 막지 않고 충분한 공간을 남기세요. 현지의 촬영 거리와 조명 제한을 먼저 확인하고 더 엄격한 규칙을 따릅니다.\n\n사진 밖의 버디도 확인\n화면에 몰입해 버디와 계획을 놓치지 마세요. 수심, 잔압, 시간 확인을 계속하며 사진 때문에 다이빙을 연장하지 않습니다. 잠수 후에는 사진 옆에 관찰한 색과 행동을 짧게 적어보세요. 이름이 확실하지 않으면 추정이라고 남기는 것도 좋은 기록입니다.\n\n오늘의 작은 목표\n바다를 바꾸지 않고 한 장 남기기. 좋은 사진을 못 얻은 날에도 배려하는 다이빙은 완성할 수 있습니다.\n\n이 글은 관찰 예절 안내이며 실기 교육을 대신하지 않습니다. 표지는 새로 제작한 AI 개념 일러스트로 실제 생물 식별이나 장비 배치의 기준이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Reef-friendly photography · Care before close-ups",
+        "summary": "A worthwhile photograph leaves its subject undisturbed. Build a habit of observing without rearranging the ocean.",
+        "body": "Leave room for surprises\nChoose a theme such as color or light rather than insisting on one creature. Never ask a guide to move wildlife for your picture.\n\nPosition before composition\nBecome comfortable with buoyancy before adding a camera. Do not brace against coral or the seabed; keep fins and equipment clear. If you cannot hold a safe position, abandon the shot and focus on your trained diving procedures.\n\nNo underwater stage direction\nDo not touch, pursue or bait animals. Leave their route open and give them space. Check local distance and lighting restrictions before diving and follow stricter site rules.\n\nKeep your buddy in the picture\nContinue checking your buddy, depth, gas and time. A photograph is not a reason to extend the dive. Afterwards, add a short note about the colors or behavior you observed; label uncertain identifications as tentative.\n\nToday's goal\nBring back a picture without changing the scene. Even without a photograph, a considerate dive is worth recording.\n\nThis etiquette guide does not replace practical instruction. The newly created AI cover is a conceptual illustration, not a species-identification or equipment-configuration reference.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "サンゴ礁にやさしい水中写真 · 近さより思いやり",
+        "summary": "撮影した後も生き物がそのまま過ごせること。海を変えずに記録する習慣を考えましょう。",
+        "body": "出会いに余白を残す\n特定の生き物だけを探すのではなく、色や光、風景を今日のテーマにしてみましょう。撮影のために生き物を動かすようガイドに頼まないでください。\n\n構図より先に自分の位置\nカメラを使う前に浮力と姿勢に慣れましょう。サンゴや海底を支えにせず、フィンや器材が触れないよう注意します。安定した位置を保てなければ撮影をやめ、講習で学んだ潜水手順に集中してください。\n\n生き物を演出しない\n触る、追う、餌で誘う行為は避け、進路をふさがず十分な空間を残します。現地の撮影距離や照明の制限を事前に確認し、より厳しいルールに従いましょう。\n\n画面の外にも目を向ける\nバディ、水深、残圧、時間の確認を続け、写真のために潜水を延ばしません。帰ったら写真に色や行動の短いメモを添えてみましょう。名前に自信がなければ、推定と記すことも大切です。\n\n今日の目標\n海の場面を変えずに一枚残すこと。撮れなくても、思いやりのある潜水は良い記録になります。\n\n本記事は観察マナーの案内であり、実技講習を代替しません。表紙は新たに制作したAI概念イラストで、生物の同定や器材配置の基準ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "善待珊瑚礁的水下摄影 · 比靠近更重要的是尊重",
+        "summary": "好的照片不会改变生物原本的生活。给海洋留出空间，也给自己的观察留下余地。",
+        "body": "为意外的发现留白\n不必执着于某一种生物，可以把颜色、光线或风景作为今天的主题。不要要求向导为了照片移动生物。\n\n先稳住位置，再考虑构图\n使用相机前先熟悉浮力与姿态控制。不要靠在珊瑚或海床上，留意脚蹼与装备不要碰到周围环境。如果无法保持安全位置，就放弃拍摄，专注于培训所学的潜水程序。\n\n不替生物安排动作\n不触摸、不追赶、不用食物引诱，也不要挡住它们的去路。保持足够空间，入水前了解当地的拍摄距离和灯光限制，遵守更严格的现场规定。\n\n记得画面之外的潜伴\n持续检查潜伴、深度、气量和时间，不因拍照延长潜水。上岸后，为照片记下观察到的颜色或行为；不能确定名称时，注明暂定识别即可。\n\n今天的小目标\n留下一张照片，而不是改变一个场景。即使没有拍到满意的作品，一次尊重海洋的潜水也值得记录。\n\n本文是观察礼仪指南，不能代替实际培训。封面为新制作的AI概念插画，不作为物种鉴定或装备配置的依据。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

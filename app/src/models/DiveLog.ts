@@ -1,6 +1,7 @@
 import type { MediaFile } from './MediaFile';
 import type { MarineWeather } from './MarineWeather';
 import type { ExternalSourceType } from './ExternalDiveLog';
+import type { DiveFieldSource } from '../utils/diveProvenance';
 
 export type DiveLogSourceType = 'manual' | ExternalSourceType;
 export type DiveLogVisibilityType = 'public' | 'followers' | 'private';
@@ -10,6 +11,9 @@ export interface DiveLog {
   id: string;
   userId: string;
   sourceType: DiveLogSourceType;
+  originalSource?: { kind: 'UNVERIFIED_IMPORT'; payload: Record<string, unknown> };
+  fieldSources?: Record<string, DiveFieldSource>;
+  revision?: number;
   externalLogId?: string;
   deviceId?: string;
   deviceName?: string;
@@ -38,6 +42,7 @@ export interface DiveLog {
   tags: string[];
   aiSummary?: string;
   aiCaption?: string;
+  copilotIgnoredSuggestionIds?: string[];
   isPublic: boolean;
   visibilityType: DiveLogVisibilityType;
   syncStatus: DiveLogSyncStatus;

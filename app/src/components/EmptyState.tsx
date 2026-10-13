@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Button } from './Button';
 import { cn } from '../lib/utils';
+import { useResolvedTheme } from '../hooks/useResolvedTheme';
 
 interface EmptyStateProps {
   title: string;
@@ -20,6 +21,7 @@ export function EmptyState({
   onAction, 
   className 
 }: EmptyStateProps) {
+  const { isDark } = useResolvedTheme();
   return (
     <View className={cn('flex-1 items-center justify-center px-8 py-12', className)}>
       {icon && (
@@ -28,12 +30,12 @@ export function EmptyState({
         </View>
       )}
 
-      <Text className="mb-2 text-center text-xl font-semibold text-surface-800">
+      <Text accessibilityRole="header" style={{ color: isDark ? '#e2e8f0' : '#21364d' }} className="mb-2 text-center text-xl font-semibold">
         {title}
       </Text>
 
       {subtitle && (
-        <Text className="mb-8 text-center leading-6 text-surface-600">
+        <Text style={{ color: isDark ? '#a5b5c8' : '#657b92', fontSize: 15, lineHeight: 24 }} className="mb-8 text-center">
           {subtitle}
         </Text>
       )}

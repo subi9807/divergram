@@ -1,6 +1,8 @@
+import { apiClient } from '../lib/api';
+import i18n from '../lib/i18n';
+
 export type AppleWalletPassRequest = {
   licenseId: string;
-  userId: string;
 };
 
 export type AppleWalletPassResponse = {
@@ -9,41 +11,48 @@ export type AppleWalletPassResponse = {
   passUrl?: string;
 };
 
-export async function requestAppleWalletPass(_: AppleWalletPassRequest): Promise<AppleWalletPassResponse> {
-  const baseUrl = String(process.env.EXPO_PUBLIC_API_BASE_URL || '').trim();
-  if (!baseUrl) {
+export type LicenseWalletPassResponse = AppleWalletPassResponse;
+
+export async function getAppleWalletPassStatus(): Promise<Pick<AppleWalletPassResponse, 'ready' | 'message'>> {
+  try {
+    const payload = await apiClient.getAppleWalletPassStatus();
+    return { ready: payload.ready, message: String(payload?.message || '') };
+  } catch (error: any) {
     return {
       ready: false,
-      message: 'Apple Wallet 연동 준비 중입니다.',
+      message: String(error?.response?.data?.message || i18n.t('licenseManagement.walletStatusFailed')),
     };
   }
+}
 
+export async function requestAppleWalletPass(request: AppleWalletPassRequest): Promise<AppleWalletPassResponse> {
   try {
-    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/wallet/apple-pass`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(_),
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      return {
-        ready: false,
-        message: String(payload?.message || 'Apple Wallet 연동 준비 중입니다.'),
-      };
-    }
-
+    const payload = await apiClient.createAppleWalletPass(request.licenseId);
     return {
-      ready: true,
-      message: String(payload?.message || 'Apple Wallet 패스가 준비되었습니다.'),
-      passUrl: String(payload?.passUrl || payload?.url || '').trim() || undefined,
+      ready: payload.ready,
+      message: String(payload?.message || i18n.t('licenseManagement.walletReady')),
+      passUrl: String(payload?.passUrl || '').trim() || undefined,
     };
-  } catch {
+  } catch (error: any) {
     return {
       ready: false,
-      message: 'Apple Wallet 연동 준비 중입니다.',
+      message: String(error?.response?.data?.message || i18n.t('licenseManagement.walletUnavailable')),
+    };
+  }
+}
+
+export async function requestGoogleWalletPass(request: AppleWalletPassRequest): Promise<LicenseWalletPassResponse> {
+  try {
+    const payload = await apiClient.createGoogleWalletPass(request.licenseId);
+    return {
+      ready: payload.ready,
+      message: String(payload?.message || i18n.t('licenseManagement.walletReady')),
+      passUrl: String(payload?.passUrl || '').trim() || undefined,
+    };
+  } catch (error: any) {
+    return {
+      ready: false,
+      message: String(error?.response?.data?.message || i18n.t('licenseManagement.walletUnavailable')),
     };
   }
 }

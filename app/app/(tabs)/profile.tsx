@@ -1,5 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Image, NativeScrollEvent, NativeSyntheticEvent, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -8,17 +22,18 @@ import { Card } from '../../src/components/Card';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useProfile } from '../../src/hooks/useProfile';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
-import { ProfileStats } from '../../src/features/profile/ProfileStats';
 import { ProfileAvatar } from '../../src/features/profile/ProfileAvatar';
-import { Edit3, Film, HelpCircle, MapPin, Settings, ShieldCheck, Star, Waves } from 'lucide-react-native';
+import { Building2, CalendarDays, ChevronRight, Clock3, Edit3, Film, GraduationCap, HelpCircle, MapPin, Settings, ShieldCheck, Star, UserPlus, Users, Waves, X } from 'lucide-react-native';
 import { appRouteMap } from '../../src/config/sitemap';
 import { apiClient } from '../../src/lib/api';
+import { isLayoutPreviewEnabled } from '../../src/lib/layoutPreview';
 
-type QuickTab = 'favorites' | 'feed' | 'reels';
+type QuickTab = 'favorites' | 'feed' | 'reels' | 'resorts';
 
 type GalleryItem = {
   id: string;
   postId: string;
+  resortId?: string;
   title: string;
   subtitle: string;
   imageUrl: string;
@@ -72,24 +87,45 @@ function feedRowsToGallery(rows: any[], prefix: string, fallbackLabel: string): 
   });
 }
 
+function formatEducationDate(value: string): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(date);
+}
+
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const { isDark } = useResolvedTheme();
-  const { data: profile, isLoading } = useProfile();
-  const [quickTab, setQuickTab] = useState<QuickTab>('favorites');
+  const { data: profile } = useProfile();
+  const [quickTab, setQuickTab] = useState<QuickTab>('feed');
   const [visibleByTab, setVisibleByTab] = useState<Record<QuickTab, number>>({
     favorites: PAGE_SIZE,
     feed: PAGE_SIZE,
     reels: PAGE_SIZE,
+    resorts: PAGE_SIZE,
   });
   const [pagingLock, setPagingLock] = useState(false);
+  const [connectionType, setConnectionType] = useState<'followers' | 'following' | null>(null);
+  const [diveListOpen, setDiveListOpen] = useState(false);
 
   const { data: savedFeedRaw = [] } = useQuery({
     queryKey: ['profile-grid-saved', user?.id],
     enabled: Boolean(user?.id),
     queryFn: () => apiClient.getSavedFeed(String(user?.id || '')),
+  });
+  const { data: savedResortsRaw = [] } = useQuery({
+    queryKey: ['profile-grid-saved-resorts', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => apiClient.getSavedResorts(String(user?.id || '')),
+  });
+  const educationApplicationsQuery = useQuery({
+    queryKey: ['education-applications', user?.id],
+    enabled: Boolean(user?.id),
+    queryFn: () => apiClient.getMyEducationApplications(),
   });
 
   const { data: ownFeedRaw = [] } = useQuery({
@@ -121,11 +157,16 @@ export default function ProfileScreen() {
       return rows.filter((row: any) => String(row?.user?.id || '') === uid);
     },
   });
+  const connectionsQuery = useQuery({
+    queryKey: ['profile-connections', user?.id, connectionType],
+    enabled: Boolean(user?.id && connectionType),
+    queryFn: () => apiClient.getProfileConnections(String(user?.id || ''), connectionType || 'followers'),
+  });
 
   const displayName = profile?.full_name || profile?.username || user?.name || t('profile.unnamed');
   const displayAvatar = profile?.avatar_url || user?.avatar;
   const displayHandle = profile?.username ? `@${profile.username}` : '';
-  const displayBio = profile?.bio || t('profile.noBio');
+  const displayBio = isLayoutPreviewEnabled() ? t('profile.previewBio') : (profile?.bio || t('profile.noBio'));
   const displayLocation = profile?.location;
 
   const scubaLevelKey = String(profile?.scuba_level || '').trim();
@@ -150,11 +191,11 @@ export default function ProfileScreen() {
   const completionColor = completion >= 80 ? '#0ea5a4' : completion >= 50 ? '#0d5fa8' : '#f59e0b';
   const completionChecks = useMemo(
     () => [
-      { key: 'avatar', label: t('profile.completion.checks.avatar', { defaultValue: '프로필 사진 등록' }), done: Boolean(displayAvatar) },
-      { key: 'bio', label: t('profile.completion.checks.bio', { defaultValue: '자기소개 입력' }), done: Boolean(profile?.bio) },
-      { key: 'location', label: t('profile.completion.checks.location', { defaultValue: '활동 지역 설정' }), done: Boolean(profile?.location) },
-      { key: 'dives', label: t('profile.completion.checks.dives', { defaultValue: '다이빙 로그 1개 이상' }), done: Number(profile?.totalDives || 0) > 0 },
-      { key: 'level', label: t('profile.completion.checks.level', { defaultValue: '다이빙 레벨/자격 설정' }), done: Boolean(scubaLevelLabel || freedivingLevelLabel || diveLevelLabel) },
+      { key: 'avatar', label: t('profile.completion.checks.avatar'), done: Boolean(displayAvatar) },
+      { key: 'bio', label: t('profile.completion.checks.bio'), done: Boolean(profile?.bio) },
+      { key: 'location', label: t('profile.completion.checks.location'), done: Boolean(profile?.location) },
+      { key: 'dives', label: t('profile.completion.checks.dives'), done: Number(profile?.totalDives || 0) > 0 },
+      { key: 'level', label: t('profile.completion.checks.level'), done: Boolean(scubaLevelLabel || freedivingLevelLabel || diveLevelLabel) },
     ],
     [diveLevelLabel, displayAvatar, freedivingLevelLabel, profile?.bio, profile?.location, profile?.totalDives, scubaLevelLabel, t]
   );
@@ -162,18 +203,18 @@ export default function ProfileScreen() {
   const showCompletionTooltip = () => {
     const lines = completionChecks.map((item) => `${item.done ? '✓' : '○'} ${item.label}`).join('\n');
     Alert.alert(
-      t('profile.completion.helpTitle', { defaultValue: '완성도 체크 항목' }),
-      `${t('profile.completion.helpSubtitle', { defaultValue: '아래 항목을 채우면 완성도가 올라갑니다.' })}\n\n${lines}`
+      t('profile.completion.helpTitle'),
+      `${t('profile.completion.helpSubtitle')}\n\n${lines}`
     );
   };
 
   const favoritesCatalog = useMemo(() => {
-    return feedRowsToGallery(savedFeedRaw, 'fav', t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }));
+    return feedRowsToGallery(savedFeedRaw, 'fav', t('profile.quick.tabs.favorites'));
   }, [savedFeedRaw, t]);
 
   const feedCatalog = useMemo(() => {
     const feedRows = ownFeedRaw.filter((row: any) => row?.publishToFeed !== false);
-    return feedRowsToGallery(feedRows, 'feed', t('tabs.feed', { defaultValue: '피드' }));
+    return feedRowsToGallery(feedRows, 'feed', t('tabs.feed'));
   }, [ownFeedRaw, t]);
 
   const reelsCatalog = useMemo(() => {
@@ -185,19 +226,33 @@ export default function ProfileScreen() {
       seen.add(id);
       return true;
     });
-    return feedRowsToGallery(reelRows, 'reel', t('tabs.reels', { defaultValue: '릴스' }));
+    return feedRowsToGallery(reelRows, 'reel', t('tabs.reels'));
   }, [ownFeedRaw, ownReelsRaw, t]);
+
+  const resortsCatalog = useMemo<GalleryItem[]>(() => {
+    return savedResortsRaw.map((resort: any, index: number) => ({
+      id: `resort-${String(resort.id || index)}`,
+      postId: '',
+      resortId: String(resort.id || ''),
+      title: String(resort.name || 'Diving Resort'),
+      subtitle: String(resort.area || resort.country || t('profileQuick.savedResort')),
+      imageUrl: String(resort.coverUrl || IMAGE_POOL[index % IMAGE_POOL.length]),
+      accent: '#0EA5A4',
+    }));
+  }, [savedResortsRaw, t]);
 
   const tabCatalogMap: Record<QuickTab, GalleryItem[]> = {
     favorites: favoritesCatalog,
     feed: feedCatalog,
     reels: reelsCatalog,
+    resorts: resortsCatalog,
   };
 
   const quickTabMeta = [
-    { key: 'favorites' as const, label: t('profile.quick.tabs.favorites', { defaultValue: '즐겨찾기' }), icon: Star },
-    { key: 'feed' as const, label: t('profile.quick.tabs.feed', { defaultValue: '피드' }), icon: Waves },
-    { key: 'reels' as const, label: t('profile.quick.tabs.reels', { defaultValue: '릴스' }), icon: Film },
+    { key: 'feed' as const, label: t('profile.quick.tabs.feed'), icon: Waves },
+    { key: 'reels' as const, label: t('profile.quick.tabs.reels'), icon: Film },
+    { key: 'resorts' as const, label: t('tabs.resorts'), icon: Building2 },
+    { key: 'favorites' as const, label: t('profile.quick.tabs.favorites'), icon: Star },
   ];
 
   const activeCatalog = tabCatalogMap[quickTab];
@@ -257,8 +312,8 @@ export default function ProfileScreen() {
       >
         <View style={styles.pageHeader}>
           <View>
-            <Text style={[styles.pageTitle, { color: palette.title }]}>{t('tabs.profile', { defaultValue: '프로필' })}</Text>
-            <Text style={[styles.pageSubtitle, { color: palette.textMuted }]}>{t('profile.summary', { defaultValue: '다이빙 활동과 계정 정보를 관리하세요.' })}</Text>
+            <Text style={[styles.pageTitle, { color: palette.title }]}>{t('tabs.profile')}</Text>
+            <Text style={[styles.pageSubtitle, { color: palette.textMuted }]}>{t('profile.summary')}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.86}
@@ -336,7 +391,42 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <ProfileStats profile={profile} loading={isLoading} />
+        <Card className="mb-5 p-0">
+          <View style={styles.compactStatsRow}>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => setDiveListOpen(true)}
+              style={[styles.compactStatItem, { borderRightColor: palette.border }]}
+            >
+              <Waves size={15} color="#0d5fa8" />
+              <Text style={[styles.compactStatValue, { color: palette.title }]}>{Number(profile?.totalDives || 0)}</Text>
+              <Text style={[styles.compactStatLabel, { color: palette.textMuted }]}>{t('profile.stats.totalDives')}</Text>
+            </TouchableOpacity>
+            <View style={[styles.compactStatItem, { borderRightColor: palette.border }]}>
+              <Clock3 size={15} color="#0d5fa8" />
+              <Text style={[styles.compactStatValue, { color: palette.title }]}>{Number(profile?.totalTime || 0)}h</Text>
+              <Text style={[styles.compactStatLabel, { color: palette.textMuted }]}>{t('profile.stats.totalTime')}</Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => setConnectionType('following')}
+              style={[styles.compactStatItem, { borderRightColor: palette.border }]}
+            >
+              <UserPlus size={15} color="#0d5fa8" />
+              <Text style={[styles.compactStatValue, { color: palette.title }]}>{Number(profile?.followingCount || 0)}</Text>
+              <Text style={[styles.compactStatLabel, { color: palette.textMuted }]}>{t('profile.connections.following')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              onPress={() => setConnectionType('followers')}
+              style={[styles.compactStatItem, styles.compactStatItemLast]}
+            >
+              <Users size={15} color="#0d5fa8" />
+              <Text style={[styles.compactStatValue, { color: palette.title }]}>{Number(profile?.followerCount || 0)}</Text>
+              <Text style={[styles.compactStatLabel, { color: palette.textMuted }]}>{t('profile.connections.followers')}</Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
 
         <Card className="mb-4 p-5">
           <View style={styles.completionHeadRow}>
@@ -360,8 +450,79 @@ export default function ProfileScreen() {
           <Text style={[styles.completionText, { color: palette.textMuted }]}>{t('profile.completion.subtitle', { percent: completion })}</Text>
         </Card>
 
+        <View style={[styles.educationCard, { borderColor: palette.border, backgroundColor: palette.cardBg }]}>
+          <TouchableOpacity
+            activeOpacity={0.84}
+            onPress={() => router.push(appRouteMap.dive_education.path as never)}
+            style={styles.educationHeader}
+          >
+            <View style={styles.educationTitleRow}>
+              <View style={[styles.educationIcon, { backgroundColor: isDark ? '#123650' : '#e7f6ff' }]}>
+                <GraduationCap size={20} color="#0d75bd" />
+              </View>
+              <View>
+                <Text style={[styles.educationTitle, { color: palette.title }]}>{t('profile.education.title')}</Text>
+                <Text style={[styles.educationSubtitle, { color: palette.textMuted }]}>{t('profile.education.subtitle')}</Text>
+              </View>
+            </View>
+            <View style={styles.educationHeaderAction}>
+              <Text style={styles.educationHeaderActionText}>{t('profile.education.viewAll')}</Text>
+              <ChevronRight size={16} color="#0d75bd" />
+            </View>
+          </TouchableOpacity>
+
+          {educationApplicationsQuery.isLoading ? (
+            <View style={styles.educationLoading}>
+              <ActivityIndicator color="#0d75bd" />
+            </View>
+          ) : educationApplicationsQuery.data?.length ? (
+            <View style={styles.educationList}>
+              {educationApplicationsQuery.data.slice(0, 3).map((application) => {
+                const statusLabel = t(`diveEducation.status.${application.status}` as any, { defaultValue: application.status });
+                const preferredDate = String(application.preferredDate || application.preferredSchedule || '').trim();
+                return (
+                  <TouchableOpacity
+                    key={application.id}
+                    activeOpacity={0.84}
+                    onPress={() => router.push(appRouteMap.dive_education.path as never)}
+                    style={[styles.educationRow, { borderColor: palette.border, backgroundColor: palette.softBg }]}
+                  >
+                    <View style={styles.educationRowBody}>
+                      <View style={styles.educationCourseLine}>
+                        <Text numberOfLines={1} style={[styles.educationCourseTitle, { color: palette.title }]}>{application.courseTitle}</Text>
+                        <View style={[styles.educationStatus, application.status === 'cancelled' ? styles.educationStatusCancelled : undefined]}>
+                          <Text style={[styles.educationStatusText, application.status === 'cancelled' ? styles.educationStatusTextCancelled : undefined]}>{statusLabel}</Text>
+                        </View>
+                      </View>
+                      <Text numberOfLines={1} style={[styles.educationAssignment, { color: palette.textMuted }]}>
+                        {application.assignedResortName || application.assignedInstructorName || t('diveEducation.assignmentPending')}
+                      </Text>
+                      {preferredDate ? (
+                        <View style={styles.educationDateRow}>
+                          <CalendarDays size={13} color={palette.icon} />
+                          <Text style={[styles.educationDateText, { color: palette.textMuted }]}>{formatEducationDate(preferredDate)}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <ChevronRight size={18} color={palette.icon} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.84}
+              onPress={() => router.push(appRouteMap.dive_education.path as never)}
+              style={[styles.educationEmpty, { borderColor: palette.border, backgroundColor: palette.softBg }]}
+            >
+              <Text style={[styles.educationEmptyText, { color: palette.textMuted }]}>{t('profileExtra.educationEmpty')}</Text>
+              <Text style={styles.educationEmptyAction}>{t('profileExtra.educationBrowse')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <View style={styles.quickSectionWrap}>
-          <Text style={[styles.quickSectionTitle, { color: palette.textMuted }]}>{t('tabs.activity', { defaultValue: '내 활동' })}</Text>
+          <Text style={[styles.quickSectionTitle, { color: palette.textMuted }]}>{t('tabs.activity')}</Text>
           <View style={styles.quickTabsRow}>
             {quickTabMeta.map((tab, index) => {
               const Icon = tab.icon;
@@ -391,6 +552,10 @@ export default function ProfileScreen() {
                 key={item.id}
                 activeOpacity={0.9}
                 onPress={() => {
+                  if (item.resortId) {
+                    router.push(`${appRouteMap.resort_detail.path}?resortId=${encodeURIComponent(item.resortId)}` as never);
+                    return;
+                  }
                   if (!item.postId) return;
                   router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(item.postId)}` as never);
                 }}
@@ -411,25 +576,150 @@ export default function ProfileScreen() {
             <View style={[styles.emptyGridCard, { borderColor: palette.border, backgroundColor: palette.softBg }]}>
               <Text style={[styles.emptyGridTitle, { color: palette.title }]}>
                 {quickTab === 'favorites'
-                  ? t('profile.quick.empty.favorites', { defaultValue: '즐겨찾기한 게시물이 없습니다.' })
+                  ? t('profile.quick.empty.favorites')
+                  : quickTab === 'resorts'
+                    ? t('resorts.savedEmpty')
                   : quickTab === 'reels'
-                    ? t('profile.quick.empty.reels', { defaultValue: '등록한 릴스가 없습니다.' })
-                    : t('profile.quick.empty.feed', { defaultValue: '등록한 피드가 없습니다.' })}
+                    ? t('profile.quick.empty.reels')
+                    : t('profile.quick.empty.feed')}
               </Text>
             </View>
           ) : null}
 
           {hasMore ? (
             <View style={styles.pagingHintWrap}>
-              <Text style={[styles.pagingHintText, { color: palette.textMuted }]}>아래로 스크롤하면 다음 15개가 자동으로 로드됩니다.</Text>
+              <Text style={[styles.pagingHintText, { color: palette.textMuted }]}>{t('profileExtra.pagingMore')}</Text>
             </View>
           ) : visibleItems.length ? (
             <View style={styles.pagingHintWrap}>
-              <Text style={[styles.pagingDoneText, { color: isDark ? '#7f93aa' : '#94a3b8' }]}>모든 항목을 표시했습니다.</Text>
+              <Text style={[styles.pagingDoneText, { color: isDark ? '#7f93aa' : '#94a3b8' }]}>{t('profileExtra.pagingDone')}</Text>
             </View>
           ) : null}
         </View>
       </ScrollView>
+
+      <Modal transparent visible={diveListOpen} animationType="slide" onRequestClose={() => setDiveListOpen(false)}>
+        <Pressable style={styles.connectionModalBackdrop} onPress={() => setDiveListOpen(false)}>
+          <Pressable style={[styles.connectionSheet, { backgroundColor: palette.cardBg }]} onPress={() => undefined}>
+            <View style={[styles.connectionSheetHeader, { borderBottomColor: palette.border }]}>
+              <Text style={[styles.connectionSheetTitle, { color: palette.title }]}>{t('profileExtra.dives')}</Text>
+              <TouchableOpacity onPress={() => setDiveListOpen(false)} style={styles.connectionCloseButton}>
+                <X size={22} color={palette.title} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={ownFeedRaw}
+              keyExtractor={(item: any, index) => String(item?.id || `dive-${index}`)}
+              contentContainerStyle={styles.connectionList}
+              ListEmptyComponent={
+                <View style={styles.connectionEmpty}>
+                  <Waves size={36} color={palette.textMuted} />
+                  <Text style={[styles.connectionEmptyTitle, { color: palette.title }]}>{t('profileExtra.emptyDives')}</Text>
+                </View>
+              }
+              renderItem={({ item, index }: { item: any; index: number }) => {
+                const gallery = feedRowsToGallery([item], `dive-${index}`, t('publicProfile.diveRecord'))[0];
+                const detail = [
+                  item?.max_depth ? t('publicProfile.maxDepth', { depth: item.max_depth }) : '',
+                  item?.dive_duration ? t('publicProfile.durationMinutes', { minutes: item.dive_duration }) : '',
+                  item?.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '',
+                ].filter(Boolean).join(' · ');
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    onPress={() => {
+                      setDiveListOpen(false);
+                      router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(String(item.id))}` as never);
+                    }}
+                    style={[styles.diveListRow, { borderBottomColor: palette.border }]}
+                  >
+                    {gallery?.imageUrl ? (
+                      <Image source={{ uri: gallery.imageUrl }} style={styles.diveListImage} />
+                    ) : (
+                      <View style={[styles.diveListImageFallback, { backgroundColor: palette.softBg }]}>
+                        <Waves size={24} color="#0d5fa8" />
+                      </View>
+                    )}
+                    <View style={styles.diveListBody}>
+                      <Text numberOfLines={1} style={[styles.diveListTitle, { color: palette.title }]}>
+                        {String(item?.dive_site || item?.location || gallery?.title || t('publicProfile.diveRecord'))}
+                      </Text>
+                      <Text numberOfLines={1} style={[styles.diveListDetail, { color: palette.textMuted }]}>
+                        {detail || t('publicProfile.diveRecord')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={Boolean(connectionType)}
+        animationType="slide"
+        onRequestClose={() => setConnectionType(null)}
+      >
+        <Pressable style={styles.connectionModalBackdrop} onPress={() => setConnectionType(null)}>
+          <Pressable style={[styles.connectionSheet, { backgroundColor: palette.cardBg }]} onPress={() => undefined}>
+            <View style={[styles.connectionSheetHeader, { borderBottomColor: palette.border }]}>
+              <Text style={[styles.connectionSheetTitle, { color: palette.title }]}>
+                {connectionType === 'following' ? t('profile.connections.following') : t('profile.connections.followers')}
+              </Text>
+              <TouchableOpacity onPress={() => setConnectionType(null)} style={styles.connectionCloseButton}>
+                <X size={22} color={palette.title} />
+              </TouchableOpacity>
+            </View>
+
+            {connectionsQuery.isLoading ? (
+              <View style={styles.connectionLoading}>
+                <ActivityIndicator color="#0d5fa8" />
+              </View>
+            ) : (
+              <FlatList
+                data={connectionsQuery.data || []}
+                keyExtractor={(item: any) => String(item.id)}
+                contentContainerStyle={styles.connectionList}
+                ListEmptyComponent={
+                  <View style={styles.connectionEmpty}>
+                    <Users size={34} color={palette.textMuted} />
+                    <Text style={[styles.connectionEmptyTitle, { color: palette.title }]}>
+                      {connectionType === 'following' ? t('profileExtra.emptyFollowing') : t('profileExtra.emptyFollowers')}
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }: { item: any }) => {
+                  const name = String(item.full_name || item.username || 'Diver');
+                  return (
+                    <TouchableOpacity
+                      activeOpacity={0.82}
+                      onPress={() => {
+                        setConnectionType(null);
+                        router.push(`${appRouteMap.account.path}?userId=${encodeURIComponent(String(item.id))}` as never);
+                      }}
+                      style={[styles.connectionRow, { borderBottomColor: palette.border }]}
+                    >
+                      {item.avatar_url ? (
+                        <Image source={{ uri: String(item.avatar_url) }} style={styles.connectionAvatar} />
+                      ) : (
+                        <View style={styles.connectionAvatarFallback}>
+                          <Text style={styles.connectionAvatarText}>{name.slice(0, 1).toUpperCase()}</Text>
+                        </View>
+                      )}
+                      <View style={styles.connectionBody}>
+                        <Text numberOfLines={1} style={[styles.connectionName, { color: palette.title }]}>{name}</Text>
+                        <Text numberOfLines={1} style={[styles.connectionHandle, { color: palette.textMuted }]}>@{item.username || 'diver'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -446,6 +736,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  educationCard: {
+    marginBottom: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 22,
+  },
+  educationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  educationTitleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  educationIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  educationTitle: { fontSize: 16, fontWeight: '900' },
+  educationSubtitle: { marginTop: 3, fontSize: 11, lineHeight: 15 },
+  educationHeaderAction: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  educationHeaderActionText: { color: '#0d75bd', fontSize: 11, fontWeight: '800' },
+  educationLoading: { minHeight: 86, alignItems: 'center', justifyContent: 'center' },
+  educationList: { marginTop: 14, gap: 8 },
+  educationRow: { borderWidth: 1, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  educationRowBody: { flex: 1 },
+  educationCourseLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  educationCourseTitle: { flex: 1, fontSize: 13, fontWeight: '900' },
+  educationStatus: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#dff4ff' },
+  educationStatusCancelled: { backgroundColor: '#feecec' },
+  educationStatusText: { color: '#0874b5', fontSize: 10, fontWeight: '900' },
+  educationStatusTextCancelled: { color: '#c24141' },
+  educationAssignment: { marginTop: 5, fontSize: 11 },
+  educationDateRow: { marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  educationDateText: { fontSize: 10, fontWeight: '700' },
+  educationEmpty: { marginTop: 14, minHeight: 76, borderWidth: 1, borderStyle: 'dashed', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  educationEmptyText: { fontSize: 12 },
+  educationEmptyAction: { marginTop: 6, color: '#0d75bd', fontSize: 12, fontWeight: '900' },
   pageTitle: {
     fontSize: 30,
     lineHeight: 34,
@@ -743,6 +1062,148 @@ const styles = StyleSheet.create({
   pagingDoneText: {
     fontSize: 11,
     color: '#94a3b8',
+  },
+  compactStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  compactStatItem: {
+    flex: 1,
+    height: 68,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: StyleSheet.hairlineWidth,
+  },
+  compactStatItemLast: {
+    borderRightWidth: 0,
+  },
+  compactStatValue: {
+    marginTop: 2,
+    fontSize: 17,
+    fontWeight: '800',
+  },
+  compactStatLabel: {
+    marginTop: 1,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  connectionModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(3, 12, 24, 0.52)',
+  },
+  connectionSheet: {
+    minHeight: '60%',
+    maxHeight: '88%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  connectionSheetHeader: {
+    height: 64,
+    paddingLeft: 22,
+    paddingRight: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  connectionSheetTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  connectionCloseButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connectionLoading: {
+    minHeight: 280,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connectionList: {
+    paddingHorizontal: 18,
+    paddingBottom: 30,
+  },
+  connectionRow: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  connectionAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  connectionAvatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e0f2fe',
+  },
+  connectionAvatarText: {
+    color: '#0d5fa8',
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  connectionBody: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  connectionName: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  connectionHandle: {
+    marginTop: 3,
+    fontSize: 11,
+  },
+  connectionEmpty: {
+    minHeight: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  connectionEmptyTitle: {
+    marginTop: 12,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  diveListRow: {
+    minHeight: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  diveListImage: {
+    width: 62,
+    height: 62,
+    borderRadius: 10,
+  },
+  diveListImageFallback: {
+    width: 62,
+    height: 62,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  diveListBody: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  diveListTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  diveListDetail: {
+    marginTop: 5,
+    fontSize: 11,
   },
   emptyGridCard: {
     borderRadius: 18,

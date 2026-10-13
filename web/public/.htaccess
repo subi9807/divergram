@@ -8,6 +8,9 @@ Options -MultiViews
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
+  # Verified app links fall back here when the native app is not installed.
+  RewriteRule ^(post|posts|reel|reels|profile|profiles|resort|resorts|guide|guides|marine-life)(/.*)?$ open-app.html [L]
+
   # Fall back to the SPA shell for client-side routes.
   RewriteRule ^ index.html [L]
 </IfModule>

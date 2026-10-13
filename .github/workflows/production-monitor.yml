@@ -1,0 +1,27 @@
+name: Monitor Divergram production
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate monitor contracts
+        run: node --test tools/monitor-production.test.mjs
+      - name: Check public production paths
+        env:
+          MONITOR_ALERT_WEBHOOK_URL: ${{ secrets.MONITOR_ALERT_WEBHOOK_URL }}
+          DIVERGRAM_MONITOR_EMAIL: ${{ secrets.DIVERGRAM_MONITOR_EMAIL }}
+          DIVERGRAM_MONITOR_PASSWORD: ${{ secrets.DIVERGRAM_MONITOR_PASSWORD }}
+        run: node tools/monitor-production.mjs

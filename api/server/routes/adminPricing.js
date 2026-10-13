@@ -88,7 +88,7 @@ export function registerAdminPricingRoutes(app, { pool, requireAdmin }) {
            id, resort_id, price_type, title, image_url, description, duration_text, unit_label,
            currency, amount, included_items, sort_order, is_active, created_at, updated_at
          )
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12, now(), now())
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13,now(),now())
          ON CONFLICT (id) DO UPDATE SET
            resort_id=EXCLUDED.resort_id,
            price_type=EXCLUDED.price_type,

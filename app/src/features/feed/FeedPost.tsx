@@ -20,15 +20,20 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Image as ExpoImage } from 'expo-image';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as VideoThumbnails from 'expo-video-thumbnails';
 import { SvgUri } from 'react-native-svg';
-import { Bookmark, Building2, Gauge, Heart, MapPin, MessageCircle, MoreHorizontal, PlayCircle, Send, Thermometer, Waves, X } from 'lucide-react-native';
+import { Bookmark, Building2, Heart, MapPin, MessageCircle, MoreHorizontal, PlayCircle, Send, Thermometer, Waves, X } from 'lucide-react-native';
 import { formatDate } from '../../lib/utils';
 import { appRouteMap } from '../../config/sitemap';
 import { useAuth } from '../../hooks/useAuth';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 import { useToast } from '../../components/Toast';
-import { apiClient, type FeedCommentItem, type FeedMediaItem } from '../../lib/api';
+import { buildShareUrl } from '../../lib/shareLinks';
+import { apiClient, type FeedCommentItem, type FeedMediaItem, type PostLikeUser } from '../../lib/api';
 import { shareToInstagramFeed } from '../../services/instagramShareService';
+import { feedCardStyle } from './feedCardStyle';
+import { FeedDiveTable } from './FeedDiveTable';
 
 interface FeedPostProps {
   post: {
@@ -51,20 +56,47 @@ interface FeedPostProps {
     gasPercent?: number;
     resort?: string;
     maxDepth?: number;
+    diveDuration?: number;
+    buddyName?: string;
     waterTemperature?: number;
     visibility?: number;
+    visibilityType?: 'inherit' | 'public' | 'followers' | 'private';
+    effectiveVisibility?: 'inherit' | 'public' | 'followers' | 'private';
     tags?: string[];
   };
 }
 
+function isMeaningfulLocation(value: unknown) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  const numericParts = text.match(/[-+]?\d+(?:\.\d+)?/g);
+  if (!numericParts?.length) return true;
+  const remaining = text.replace(/[-+]?\d+(?:\.\d+)?/g, '').replace(/[\s,;/()\[\]-]/g, '');
+  return remaining.length > 0 || numericParts.some((part) => Math.abs(Number(part)) > 0.000001);
+}
+
+type TranslationLanguage = 'ko' | 'en' | 'ja' | 'zh';
+
+function detectContentLanguage(value: string): TranslationLanguage | null {
+  const text = String(value || '').replace(/https?:\/\/\S+|#[\p{L}\p{N}_-]+/gu, '').trim();
+  if (!text) return null;
+  if (/[가-힣]/u.test(text)) return 'ko';
+  if (/[ぁ-ゟ゠-ヿ]/u.test(text)) return 'ja';
+  if (/\p{Script=Han}/u.test(text)) return 'zh';
+  if (/[A-Za-z]/.test(text)) return 'en';
+  return null;
+}
+
 export function FeedPost({ post }: FeedPostProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { isDark } = useResolvedTheme();
   const { showToast } = useToast();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
+  const [cardWidth, setCardWidth] = React.useState<number | null>(null);
+  const screenWidth = cardWidth ?? windowWidth - 34;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -73,6 +105,11 @@ export function FeedPost({ post }: FeedPostProps) {
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   const [postContent, setPostContent] = useState(post.content);
+  const [translatedPostContent, setTranslatedPostContent] = useState('');
+  const [postTranslationVisible, setPostTranslationVisible] = useState(false);
+  const [postTranslationLoading, setPostTranslationLoading] = useState(false);
+  const [translatedComments, setTranslatedComments] = useState<Record<string, string>>({});
+  const [commentTranslationLoading, setCommentTranslationLoading] = useState<Record<string, boolean>>({});
   const [postLocation, setPostLocation] = useState(post.location || '');
   const [likeCount, setLikeCount] = useState(post.likes);
   const [commentCount, setCommentCount] = useState(post.comments);
@@ -81,6 +118,10 @@ export function FeedPost({ post }: FeedPostProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const [likePending, setLikePending] = useState(false);
+  const [likesOpen, setLikesOpen] = useState(false);
+  const [likesLoading, setLikesLoading] = useState(false);
+  const [likeUsers, setLikeUsers] = useState<PostLikeUser[]>([]);
+  const [showAllLikeUsers, setShowAllLikeUsers] = useState(false);
   const [savePending, setSavePending] = useState(false);
   const [followPending, setFollowPending] = useState(false);
   const [deletePending, setDeletePending] = useState(false);
@@ -94,10 +135,16 @@ export function FeedPost({ post }: FeedPostProps) {
   const [editCaption, setEditCaption] = useState(post.content);
   const [editLocation, setEditLocation] = useState(post.location || '');
   const [editSaving, setEditSaving] = useState(false);
+  const [contentVisibility, setContentVisibility] = useState(post.visibilityType || 'inherit');
   const [InlineWebView, setInlineWebView] = useState<any>(null);
+  const [videoPosters, setVideoPosters] = useState<Record<string, string>>({});
+  const [videoPosterFailures, setVideoPosterFailures] = useState<Record<string, boolean>>({});
   const doubleTapRef = useRef<{ mediaId: string; at: number } | null>(null);
 
-  const hasRenderableImage = typeof post.image === 'string' && /^https?:\/\//.test(post.image);
+  const hasRenderableImage =
+    typeof post.image === 'string' &&
+    /^https?:\/\//.test(post.image) &&
+    !isVideoAssetUrl(post.image);
   const postImageUri = hasRenderableImage ? (post.image as string) : '';
   const mediaItems = useMemo(
     () =>
@@ -113,6 +160,8 @@ export function FeedPost({ post }: FeedPostProps) {
     () => (Array.isArray(post.tags) ? post.tags.map((tag) => String(tag || '').replace(/^#/, '').trim()).filter(Boolean) : []),
     [post.tags]
   );
+  const visiblePostLocation = isMeaningfulLocation(postLocation) ? postLocation.trim() : '';
+  const visibleDiveSite = isMeaningfulLocation(post.diveSite) ? String(post.diveSite).trim() : '';
   const diveTypeLabel = post.diveType ? t(`logsForm.diveTypes.${post.diveType}` as any, { defaultValue: post.diveType }) : '';
   const gasTypeLabel = post.gasType ? t(`logsForm.gasTypes.${post.gasType}` as any, { defaultValue: post.gasType }) : '';
   const isOwnPost = Boolean(user?.id && post.user?.id && String(user.id) === String(post.user.id));
@@ -131,7 +180,6 @@ export function FeedPost({ post }: FeedPostProps) {
     [isDark]
   );
 
-  /* eslint-disable react-hooks/set-state-in-effect -- post가 바뀔 때 로컬 표시 상태를 새 게시물 기준으로 동기화해야 함 */
   useEffect(() => {
     setPostContent(post.content);
     setPostLocation(post.location || '');
@@ -139,10 +187,63 @@ export function FeedPost({ post }: FeedPostProps) {
     setCommentCount(post.comments);
     setEditCaption(post.content);
     setEditLocation(post.location || '');
+    setContentVisibility(post.visibilityType || 'inherit');
     setMediaIndex(0);
     setPlayingVideoId(null);
-  }, [post.id, post.content, post.location, post.likes, post.comments]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+    setTranslatedPostContent('');
+    setPostTranslationVisible(false);
+    setTranslatedComments({});
+  }, [post.id, post.content, post.location, post.likes, post.comments, post.visibilityType]);
+
+  const targetLanguage = String(i18n.resolvedLanguage || i18n.language || 'en').split(/[-_]/)[0] as TranslationLanguage;
+
+  const togglePostTranslation = async () => {
+    if (postTranslationVisible) {
+      setPostTranslationVisible(false);
+      return;
+    }
+    if (translatedPostContent) {
+      setPostTranslationVisible(true);
+      return;
+    }
+    if (!postContent.trim() || postTranslationLoading) return;
+    if (detectContentLanguage(postContent) === targetLanguage) {
+      showToast({ title: t('feed.translation.sameLanguage'), type: 'info' });
+      return;
+    }
+    setPostTranslationLoading(true);
+    try {
+      const translated = await apiClient.translateText(postContent, targetLanguage);
+      setTranslatedPostContent(translated);
+      setPostTranslationVisible(true);
+    } catch {
+      showToast({ title: t('feed.translation.failed'), type: 'error' });
+    } finally {
+      setPostTranslationLoading(false);
+    }
+  };
+
+  const toggleCommentTranslation = async (item: FeedCommentItem) => {
+    const id = String(item.id);
+    if (translatedComments[id]) {
+      setTranslatedComments((current) => ({ ...current, [id]: '' }));
+      return;
+    }
+    if (commentTranslationLoading[id]) return;
+    if (detectContentLanguage(item.content) === targetLanguage) {
+      showToast({ title: t('feed.translation.sameLanguage'), type: 'info' });
+      return;
+    }
+    setCommentTranslationLoading((current) => ({ ...current, [id]: true }));
+    try {
+      const translated = await apiClient.translateText(item.content, targetLanguage);
+      setTranslatedComments((current) => ({ ...current, [id]: translated }));
+    } catch {
+      showToast({ title: t('feed.translation.failed'), type: 'error' });
+    } finally {
+      setCommentTranslationLoading((current) => ({ ...current, [id]: false }));
+    }
+  };
 
   const openTagSearch = (tag: string) => {
     const raw = String(tag || '').replace(/^#/, '').trim();
@@ -185,8 +286,8 @@ export function FeedPost({ post }: FeedPostProps) {
 
   useEffect(() => {
     let canceled = false;
-    const selectedVideo = mediaItems.find((item) => item.type === 'video' && item.id === playingVideoId) || null;
-    if (!selectedVideo) {
+    const hasVideo = mediaItems.some((item) => item.type === 'video');
+    if (!hasVideo) {
       return undefined;
     }
     if (InlineWebView) return undefined;
@@ -205,7 +306,63 @@ export function FeedPost({ post }: FeedPostProps) {
     return () => {
       canceled = true;
     };
-  }, [InlineWebView, mediaItems, playingVideoId]);
+  }, [InlineWebView, mediaItems]);
+
+  useEffect(() => {
+    let canceled = false;
+    const videosWithoutPoster = mediaItems.filter(
+      (item) =>
+        item.type === 'video' &&
+        !videoPosters[item.id] &&
+        !videoPosterFailures[item.id]
+    );
+
+    if (!videosWithoutPoster.length) return undefined;
+
+    void Promise.all(
+      videosWithoutPoster.map(async (media) => {
+        let cachedVideoUri = '';
+        try {
+          const hostedPoster = getHostedVideoPosterUrl(media.url);
+          if (hostedPoster) {
+            if (!canceled) {
+              setVideoPosters((current) => ({ ...current, [media.id]: hostedPoster }));
+            }
+            return;
+          }
+
+          let result;
+          try {
+            result = await VideoThumbnails.getThumbnailAsync(media.url, { time: 100 });
+          } catch {
+            if (!FileSystem.cacheDirectory) throw new Error('Video cache is unavailable');
+            const extension = media.url.match(/\.([a-z0-9]{2,5})(?:[?#]|$)/i)?.[1] || 'mp4';
+            cachedVideoUri = `${FileSystem.cacheDirectory}feed-poster-${encodeURIComponent(media.id)}.${extension}`;
+            const download = await FileSystem.downloadAsync(media.url, cachedVideoUri);
+            if (download.status < 200 || download.status >= 300) {
+              throw new Error(`Video download failed: ${download.status}`);
+            }
+            result = await VideoThumbnails.getThumbnailAsync(download.uri, { time: 100 });
+          }
+          if (!canceled) {
+            setVideoPosters((current) => ({ ...current, [media.id]: result.uri }));
+          }
+        } catch {
+          if (!canceled) {
+            setVideoPosterFailures((current) => ({ ...current, [media.id]: true }));
+          }
+        } finally {
+          if (cachedVideoUri) {
+            void FileSystem.deleteAsync(cachedVideoUri, { idempotent: true }).catch(() => undefined);
+          }
+        }
+      })
+    );
+
+    return () => {
+      canceled = true;
+    };
+  }, [mediaItems, postImageUri, videoPosterFailures, videoPosters]);
 
   useEffect(() => {
     let canceled = false;
@@ -283,10 +440,15 @@ export function FeedPost({ post }: FeedPostProps) {
 
   const sharePost = async () => {
     setMenuOpen(false);
+    const effective = contentVisibility === 'inherit' ? post.effectiveVisibility : contentVisibility;
+    if (effective !== 'public') {
+      Alert.alert(t('feed.menu.shareRestrictedTitle'), t('feed.menu.shareRestrictedBody'));
+      return;
+    }
     try {
       const result = await shareToInstagramFeed(
         `Divergram • ${post.user.name}`,
-        `https://divergram.com/post?post=${encodeURIComponent(post.id)}`
+        buildShareUrl('post', post.id)
       );
       if (!result.installed) {
         showToast({
@@ -300,6 +462,32 @@ export function FeedPost({ post }: FeedPostProps) {
         title: t('feed.menu.shareFailed', { defaultValue: '공유에 실패했습니다.' }),
       });
     }
+  };
+
+  const pickContentVisibility = () => {
+    setMenuOpen(false);
+    const values = ['inherit', 'public', 'followers', 'private'] as const;
+    Alert.alert(
+      t('feed.menu.visibilityTitle'),
+      t('feed.menu.visibilityBody'),
+      [
+        ...values.map((visibility) => ({
+          text: `${contentVisibility === visibility ? '✓ ' : ''}${t(`feed.menu.visibility.${visibility}`)}`,
+          onPress: async () => {
+            try {
+              await apiClient.updatePostContentVisibility(post.id, visibility);
+              setContentVisibility(visibility);
+              await queryClient.invalidateQueries({ queryKey: ['feed'] });
+              await queryClient.invalidateQueries({ queryKey: ['reels'] });
+              await queryClient.invalidateQueries({ queryKey: ['post-detail', post.id] });
+            } catch {
+              showToast({ type: 'error', title: t('feed.menu.visibilitySaveFailed') });
+            }
+          },
+        })),
+        { text: t('common.cancel'), style: 'cancel' },
+      ]
+    );
   };
 
   const handleLikePress = async () => {
@@ -411,9 +599,31 @@ export function FeedPost({ post }: FeedPostProps) {
   };
 
   const openLocationMap = () => {
-    const location = postLocation.trim();
+    const location = visiblePostLocation || visibleDiveSite;
     if (!location) return;
     router.push(`${appRouteMap.location.path}?location=${encodeURIComponent(location)}` as never);
+  };
+
+  const openLikesPreview = async () => {
+    setLikesOpen(true);
+    setShowAllLikeUsers(false);
+    setLikesLoading(true);
+    try {
+      setLikeUsers(await apiClient.getPostLikeUsers(post.id));
+    } catch {
+      setLikeUsers([]);
+      showToast({
+        type: 'error',
+        title: t('feed.likes.loadFailed', { defaultValue: '좋아요 목록을 불러오지 못했습니다.' }),
+      });
+    } finally {
+      setLikesLoading(false);
+    }
+  };
+
+  const openLikeUserProfile = (userId: string) => {
+    setLikesOpen(false);
+    router.push(`${appRouteMap.account.path}?userId=${encodeURIComponent(userId)}` as never);
   };
 
   const openEdit = () => {
@@ -532,6 +742,7 @@ export function FeedPost({ post }: FeedPostProps) {
   const menuItems = isOwnPost
     ? [
         { key: 'edit', label: t('feed.menu.edit', { defaultValue: '수정' }), onPress: openEdit },
+        { key: 'visibility', label: t('feed.menu.visibilityTitle'), onPress: pickContentVisibility },
         { key: 'delete', label: t('feed.menu.delete', { defaultValue: '삭제' }), onPress: confirmDeletePost, tone: 'danger' as const },
         { key: 'share', label: t('feed.menu.share', { defaultValue: '공유' }), onPress: sharePost },
         { key: 'account', label: t('feed.menu.accountInfo', { defaultValue: '계정정보' }), onPress: openAccountInfo },
@@ -565,7 +776,7 @@ export function FeedPost({ post }: FeedPostProps) {
 
   return (
     <>
-      <View className="relative mb-5 overflow-hidden border-y border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
+      <View style={feedCardStyle} onLayout={({ nativeEvent }) => setCardWidth(nativeEvent.layout.width - 2)} className="relative border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
         {menuOpen ? (
           <TouchableOpacity
             className="absolute inset-0 z-20"
@@ -589,15 +800,15 @@ export function FeedPost({ post }: FeedPostProps) {
             </TouchableOpacity>
             <TouchableOpacity className="flex-1" activeOpacity={0.86} onPress={openAuthorProfile}>
               <Text className="font-semibold text-surface-900 dark:text-surface-50">{post.user.name}</Text>
-              <Text className="mt-0.5 text-sm text-surface-500 dark:text-surface-400">{formatDate(post.createdAt)}</Text>
-              {postLocation ? (
+              <Text className="mt-0.5 text-sm text-surface-500 dark:text-surface-400">{formatDate(post.createdAt, i18n.resolvedLanguage || i18n.language)}</Text>
+              {visiblePostLocation ? (
                 <TouchableOpacity activeOpacity={0.72} onPress={openLocationMap}>
-                  <Text className="mt-1 text-xs font-medium text-brand-700">{postLocation}</Text>
+                  <Text className="mt-1 text-xs font-medium text-brand-700">{visiblePostLocation}</Text>
                 </TouchableOpacity>
               ) : null}
             </TouchableOpacity>
             <TouchableOpacity
-              className="h-9 w-9 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900"
+              className="h-11 w-11 items-center justify-center rounded-full border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900"
               onPress={() => setMenuOpen((prev) => !prev)}
               accessibilityRole="button"
               accessibilityLabel={t('menu.more')}
@@ -606,7 +817,18 @@ export function FeedPost({ post }: FeedPostProps) {
             </TouchableOpacity>
           </View>
 
-          {renderContent(postContent)}
+          {renderContent(postTranslationVisible ? translatedPostContent : postContent)}
+          {postContent.trim() ? (
+            <TouchableOpacity onPress={() => void togglePostTranslation()} disabled={postTranslationLoading} className="self-start pb-1">
+              <Text className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                {postTranslationLoading
+                  ? t('feed.translation.loading')
+                  : postTranslationVisible
+                    ? t('feed.translation.showOriginal')
+                    : t('feed.translation.showTranslation')}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {menuOpen ? (
@@ -669,18 +891,23 @@ export function FeedPost({ post }: FeedPostProps) {
                           style={{ height: imageHeight, width: screenWidth }}
                           className="items-center justify-center bg-surface-900"
                         >
-                          {postImageUri ? (
+                          {videoPosters[media.id] ? (
+                            <ExpoImage
+                              source={{ uri: videoPosters[media.id] }}
+                              style={StyleSheet.absoluteFill}
+                              contentFit="cover"
+                            />
+                          ) : postImageUri ? (
                             <ExpoImage
                               source={{ uri: postImageUri }}
                               style={StyleSheet.absoluteFill}
                               contentFit="cover"
                             />
-                          ) : null}
-                          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2, 6, 23, 0.45)' }]} />
+                          ) : (
+                            <ActivityIndicator color="#ffffff" />
+                          )}
+                          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(2, 6, 23, 0.18)' }]} />
                           <PlayCircle size={52} color="#ffffff" />
-                          <Text className="mt-3 text-sm font-semibold text-white">
-                            {t('feed.media.videoPreview', { defaultValue: '동영상 샘플' })}
-                          </Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -757,8 +984,10 @@ export function FeedPost({ post }: FeedPostProps) {
           ) : null}
 
           <View className="mb-3 flex-row flex-wrap">
-            {postLocation ? <MetaChip icon={MapPin} text={postLocation} /> : null}
-            {post.diveSite && post.diveSite !== postLocation ? <MetaChip icon={MapPin} text={post.diveSite} /> : null}
+            {visiblePostLocation ? <MetaChip icon={MapPin} text={visiblePostLocation} onPress={openLocationMap} /> : null}
+            {visibleDiveSite && visibleDiveSite !== visiblePostLocation ? (
+              <MetaChip icon={MapPin} text={visibleDiveSite} onPress={() => router.push(`${appRouteMap.explore.path}?q=${encodeURIComponent(visibleDiveSite)}` as never)} />
+            ) : null}
             {post.diveType ? <MetaChip icon={Waves} text={diveTypeLabel} /> : null}
             {post.gasType ? (
               <MetaChip
@@ -771,17 +1000,21 @@ export function FeedPost({ post }: FeedPostProps) {
               />
             ) : null}
             {post.resort ? <MetaChip icon={Building2} text={t('feed.meta.resort', { name: post.resort })} /> : null}
-            {post.maxDepth ? <MetaChip icon={Gauge} text={`${post.maxDepth}m`} /> : null}
-            {post.waterTemperature ? <MetaChip icon={Thermometer} text={`${post.waterTemperature}°C`} /> : null}
-            {post.visibility ? <MetaChip icon={Waves} text={t('feed.meta.visibility', { value: post.visibility })} /> : null}
           </View>
+
+          <FeedDiveTable post={post} />
 
           <View className="flex-row items-center justify-between border-t border-surface-100 dark:border-surface-800 pt-3">
             <View className="flex-row items-center">
               <TouchableOpacity
                 className={`mr-2 h-10 flex-row items-center rounded-full px-3 ${isLiked ? 'bg-red-50' : 'bg-surface-50 dark:bg-surface-800'}`}
                 onPress={handleLikePress}
+                onLongPress={() => void openLikesPreview()}
+                delayLongPress={350}
                 disabled={likePending || interactionLoading}
+                accessibilityRole="button"
+                accessibilityLabel={t('feed.likes.buttonLabel', { defaultValue: `좋아요 ${likeCount}개` })}
+                accessibilityHint={t('feed.likes.buttonHint', { defaultValue: '길게 누르면 좋아요를 누른 사람을 확인합니다.' })}
               >
                 <Heart size={19} color={isLiked ? '#dc2626' : iconColor} fill={isLiked ? '#dc2626' : 'transparent'} />
                 <Text className={`ml-2 font-semibold ${isLiked ? 'text-red-600' : 'text-surface-700 dark:text-surface-200'}`}>{likeCount}</Text>
@@ -837,7 +1070,23 @@ export function FeedPost({ post }: FeedPostProps) {
                       <View key={item.id} className="mb-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-3">
                         <Text className="text-sm font-semibold text-surface-900 dark:text-surface-50">{item.user.name}</Text>
                         <Text className="mt-1 text-sm text-surface-700 dark:text-surface-200">{item.content}</Text>
-                        <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{formatDate(item.createdAt)}</Text>
+                        {translatedComments[String(item.id)] ? (
+                          <Text className="mt-2 border-l-2 border-brand-300 pl-2 text-sm text-surface-700 dark:text-surface-200">
+                            {translatedComments[String(item.id)]}
+                          </Text>
+                        ) : null}
+                        {item.content.trim() ? (
+                          <TouchableOpacity className="mt-2 self-start" onPress={() => void toggleCommentTranslation(item)} disabled={commentTranslationLoading[String(item.id)]}>
+                            <Text className="text-xs font-semibold text-brand-700 dark:text-brand-300">
+                              {commentTranslationLoading[String(item.id)]
+                                ? t('feed.translation.loading')
+                                : translatedComments[String(item.id)]
+                                  ? t('feed.translation.hideTranslation')
+                                  : t('feed.translation.showTranslation')}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null}
+                        <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{formatDate(item.createdAt, i18n.resolvedLanguage || i18n.language)}</Text>
                       </View>
                     ))
                   ) : (
@@ -881,6 +1130,64 @@ export function FeedPost({ post }: FeedPostProps) {
         </View>
       </Modal>
 
+      <Modal transparent visible={likesOpen} animationType="fade" onRequestClose={() => setLikesOpen(false)}>
+        <View style={styles.likesModalRoot}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setLikesOpen(false)} />
+          <View style={[styles.likesTooltip, isDark ? styles.likesTooltipDark : null]}>
+            <View className="mb-3 flex-row items-center justify-between">
+              <View className="flex-row items-center">
+                <Heart size={18} color="#dc2626" fill="#dc2626" />
+                <Text className="ml-2 text-base font-bold text-surface-900 dark:text-white">
+                  {t('feed.likes.title', { defaultValue: '좋아요를 누른 사람' })}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setLikesOpen(false)} className="h-8 w-8 items-center justify-center">
+                <X size={17} color={iconColor} />
+              </TouchableOpacity>
+            </View>
+
+            {likesLoading ? (
+              <View className="items-center py-6"><ActivityIndicator color="#0D7CD6" /></View>
+            ) : likeUsers.length ? (
+              <ScrollView style={{ maxHeight: showAllLikeUsers ? 360 : 280 }} showsVerticalScrollIndicator={showAllLikeUsers}>
+                {(showAllLikeUsers ? likeUsers : likeUsers.slice(0, 5)).map((likeUser) => (
+                  <TouchableOpacity
+                    key={likeUser.id}
+                    className="mb-2 flex-row items-center rounded-xl bg-surface-50 dark:bg-surface-800 px-3 py-2.5"
+                    activeOpacity={0.82}
+                    onPress={() => openLikeUserProfile(likeUser.id)}
+                  >
+                    {likeUser.avatar ? (
+                      <Image source={{ uri: likeUser.avatar }} className="h-10 w-10 rounded-full" resizeMode="cover" />
+                    ) : (
+                      <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900">
+                        <Text className="font-bold text-brand-700 dark:text-brand-100">{likeUser.name.slice(0, 1).toUpperCase()}</Text>
+                      </View>
+                    )}
+                    <View className="ml-3 flex-1">
+                      <Text numberOfLines={1} className="font-semibold text-surface-900 dark:text-white">{likeUser.name}</Text>
+                      <Text numberOfLines={1} className="text-xs text-surface-500 dark:text-surface-400">@{likeUser.username}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <Text className="py-5 text-center text-sm text-surface-500 dark:text-surface-400">
+                {t('feed.likes.empty', { defaultValue: '아직 좋아요가 없습니다.' })}
+              </Text>
+            )}
+
+            {!likesLoading && likeUsers.length > 5 && !showAllLikeUsers ? (
+              <TouchableOpacity className="mt-2 items-center rounded-xl bg-brand-600 py-3" onPress={() => setShowAllLikeUsers(true)}>
+                <Text className="font-bold text-white">
+                  {t('feed.likes.more', { defaultValue: '더보기' })} ({likeUsers.length - 5})
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
       <Modal transparent visible={editOpen} animationType="fade" onRequestClose={() => setEditOpen(false)}>
         <View style={styles.modalRoot}>
           <Pressable style={styles.modalBackdrop} onPress={() => setEditOpen(false)} />
@@ -919,20 +1226,52 @@ export function FeedPost({ post }: FeedPostProps) {
   );
 }
 
-function MetaChip({ icon: Icon, text }: { icon: typeof MapPin; text: string }) {
+function MetaChip({ icon: Icon, text, onPress }: { icon: typeof MapPin; text: string; onPress?: () => void }) {
   const { isDark } = useResolvedTheme();
   const iconColor = isDark ? '#9fb3c8' : '#4d5d6b';
-  return (
-    <View className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2">
+  const content = (
+    <>
       <Icon size={14} color={iconColor} />
       <Text className="ml-1 text-xs font-medium text-surface-700 dark:text-surface-200">{text}</Text>
-    </View>
+    </>
   );
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2"
+        activeOpacity={0.78}
+        onPress={onPress}
+      >
+        {content}
+      </TouchableOpacity>
+    );
+  }
+  return <View className="mb-2 mr-2 flex-row items-center rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-3 py-2">{content}</View>;
 }
 
 function buildInlineVideoHtml(url: string) {
   const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" /><style>html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}video{width:100%;height:100%;object-fit:cover;background:#000}</style></head><body><video id="dg_video" controls autoplay playsinline webkit-playsinline preload="metadata"><source src="${safeUrl}" type="video/mp4" /></video><script>const v=document.getElementById('dg_video'); if(v){const p=v.play(); if(p&&p.catch){p.catch(()=>{});}}</script></body></html>`;
+}
+
+function getHostedVideoPosterUrl(url: string) {
+  const youtubeMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/
+  );
+  if (youtubeMatch?.[1]) return `https://i.ytimg.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
+
+  if (/res\.cloudinary\.com\//i.test(url) && /\/video\/upload\//i.test(url)) {
+    return url
+      .replace('/video/upload/', '/video/upload/so_1,f_jpg,q_auto/')
+      .replace(/\.(mp4|mov|m4v|webm)(\?.*)?$/i, '.jpg$2');
+  }
+
+  return '';
+}
+
+function isVideoAssetUrl(url: string) {
+  const value = String(url || '').trim();
+  return /\/video\/upload\//i.test(value) || /\.(mp4|mov|m4v|webm)(?:[?#]|$)/i.test(value);
 }
 
 const styles = StyleSheet.create({
@@ -943,6 +1282,28 @@ const styles = StyleSheet.create({
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFill,
+  },
+  likesModalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 18,
+    paddingBottom: 110,
+    backgroundColor: 'rgba(9, 16, 27, 0.28)',
+  },
+  likesTooltip: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#dbe6f2',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    shadowColor: '#020617',
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  likesTooltipDark: {
+    borderColor: '#2a3e52',
+    backgroundColor: '#0f1b2a',
   },
   sheet: {
     borderTopLeftRadius: 24,

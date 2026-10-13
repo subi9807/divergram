@@ -1,0 +1,21 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Divergram">
+  <defs>
+    <linearGradient id="g1" x1="36" y1="28" x2="220" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0068FF"/>
+      <stop offset="1" stop-color="#00D4FF"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="54" y1="54" x2="202" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.18"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#001644" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="66" fill="#08101F"/>
+  <path d="M76 50C57.2 50 42 65.2 42 84V172C42 190.8 57.2 206 76 206H180C198.8 206 214 190.8 214 172V84C214 65.2 198.8 50 180 50H76Z" fill="url(#g1)" filter="url(#shadow)"/>
+  <path d="M78 70H178C189.046 70 198 78.9543 198 90V166C198 177.046 189.046 186 178 186H78C66.9543 186 58 177.046 58 166V90C58 78.9543 66.9543 70 78 70Z" fill="#0B1020" fill-opacity="0.28" stroke="url(#g2)" stroke-width="2"/>
+  <circle cx="104" cy="112" r="26" stroke="white" stroke-opacity="0.92" stroke-width="12"/>
+  <path d="M139 95C151.703 95 162 105.297 162 118C162 130.703 151.703 141 139 141C126.297 141 116 130.703 116 118C116 105.297 126.297 95 139 95Z" fill="white" fill-opacity="0.16"/>
+  <path d="M140 154C123.432 154 110 167.432 110 184V186H170V184C170 167.432 156.568 154 140 154Z" fill="white" fill-opacity="0.92"/>
+</svg>

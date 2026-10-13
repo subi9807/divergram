@@ -2,7 +2,6 @@ import React from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import type { PolicyType } from '../../models';
 import { PolicyDocumentView } from './PolicyDocumentView';
-import { getPolicyDocumentByType } from '../../services/policyService';
 
 const policyTypes: PolicyType[] = [
   'terms',
@@ -36,7 +35,5 @@ export default function PolicyDocumentDynamicScreen() {
   const params = useLocalSearchParams<{ type?: string | string[] }>();
   const rawType = Array.isArray(params.type) ? params.type[0] : params.type;
   const parsedType = policyTypes.includes(String(rawType) as PolicyType) ? (String(rawType) as PolicyType) : 'terms';
-  const doc = getPolicyDocumentByType(parsedType, 'ko');
-
-  return <PolicyDocumentView type={parsedType} titleOverride={doc?.title || '정책 문서'} />;
+  return <PolicyDocumentView type={parsedType} />;
 }

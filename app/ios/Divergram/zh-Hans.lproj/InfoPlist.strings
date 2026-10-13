@@ -1,0 +1,11 @@
+"CFBundleDisplayName" = "Divergram";
+"NSLocationWhenInUseUsageDescription" = "位置信息用于潜水点、度假村距离和潜水日志记录。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "当您开始潜水追踪后，位置信息用于记录路线。";
+"NSCameraUsageDescription" = "相机用于拍摄个人资料、帖子、潜水日志和度假村签到所需的照片与视频。";
+"NSMicrophoneUsageDescription" = "麦克风用于录制潜水日志语音备忘，并在您请求时转换为文字。";
+"NSMotionUsageDescription" = "运动信息用于潜水活动记录和安全功能。";
+"NSPhotoLibraryUsageDescription" = "选择用于个人资料、证书、帖子和潜水日志的照片、视频及拍摄信息。";
+"NSPhotoLibraryAddUsageDescription" = "将您选择的潜水记录图片保存到照片图库。";
+"NSBluetoothAlwaysUsageDescription" = "蓝牙用于搜索并连接受支持的潜水设备。";
+"NSBluetoothPeripheralUsageDescription" = "蓝牙用于与受支持的潜水设备交换数据。";
+"NSUserTrackingUsageDescription" = "经您同意后，广告标识符将用于个性化广告和广告效果衡量。";

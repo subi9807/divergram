@@ -14,6 +14,7 @@ import {
 } from 'react-native-google-mobile-ads';
 import { getAdMobNativeUnitId } from '../../config/ads';
 import { initializeAdMob } from '../../lib/initAdMob';
+import { feedCardStyle } from './feedCardStyle';
 
 const MAX_LOAD_ATTEMPTS = 2;
 let adRequestQueue: Promise<void> = Promise.resolve();
@@ -109,7 +110,8 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
     <View style={styles.container}>
       {nativeAd ? (
         <NativeAdView nativeAd={nativeAd} style={styles.card}>
-          <View style={styles.header}>
+          <View collapsable={false}>
+          <View style={styles.header} collapsable={false}>
             {nativeAd.icon ? (
               <NativeAsset assetType={NativeAssetType.ICON}>
                 <Image source={{ uri: nativeAd.icon.url }} style={styles.icon} />
@@ -117,7 +119,7 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
             ) : (
               <View style={styles.iconPlaceholder} />
             )}
-            <View style={styles.titleGroup}>
+            <View style={styles.titleGroup} collapsable={false}>
               <NativeAsset assetType={NativeAssetType.HEADLINE}>
                 <Text style={styles.headline} numberOfLines={1}>
                   {nativeAd.headline}
@@ -153,6 +155,7 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
               </Text>
             </NativeAsset>
           ) : null}
+          </View>
         </NativeAdView>
       ) : (
         <View style={styles.placeholder}>
@@ -169,13 +172,13 @@ export function FeedAdSlot(_props: FeedAdSlotProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginBottom: 20,
+    marginHorizontal: feedCardStyle.marginHorizontal,
+    marginBottom: feedCardStyle.marginBottom,
   },
   card: {
     overflow: 'hidden',
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: feedCardStyle.borderRadius,
+    borderWidth: feedCardStyle.borderWidth,
     borderColor: 'rgba(15, 23, 42, 0.12)',
     backgroundColor: '#fff',
     shadowColor: '#0f172a',
@@ -257,7 +260,7 @@ const styles = StyleSheet.create({
     height: 92,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 22,
+    borderRadius: feedCardStyle.borderRadius,
     borderWidth: StyleSheet.hairlineWidth,
     borderStyle: 'dashed',
     borderColor: '#cbd5e1',

@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { processAdminPushJob } from './lib/adminPushDelivery.js';
+import { loadApiSettingsIntoEnvironment } from './lib/apiSettings.js';
 
 dotenv.config({ path: process.env.DIVERGRAM_ENV_FILE || path.resolve(process.cwd(), '.env') });
 
@@ -27,9 +28,8 @@ const pool = new pg.Pool({
 const POLL_MS = Math.max(500, Number(process.env.JOB_WORKER_POLL_MS || 2000));
 const BATCH_SIZE = Math.min(200, Math.max(1, Number(process.env.JOB_WORKER_BATCH || 25)));
 const MAX_ATTEMPTS = Math.min(20, Math.max(1, Number(process.env.JOB_WORKER_MAX_ATTEMPTS || 5)));
-const FCM_SERVICE_ACCOUNT_JSON = String(process.env.FCM_SERVICE_ACCOUNT_JSON || '').trim();
-const FCM_SERVICE_ACCOUNT_PATH = String(process.env.FCM_SERVICE_ACCOUNT_PATH || '').trim();
 let fcmAccessTokenCache = { token: '', exp: 0 };
+let apiSettingsLoadedAt = 0;
 
 async function claimJobs(limit = BATCH_SIZE) {
   const q = await pool.query(
@@ -57,6 +57,8 @@ function base64url(input) {
 }
 
 function readServiceAccount() {
+  const FCM_SERVICE_ACCOUNT_JSON = String(process.env.FCM_SERVICE_ACCOUNT_JSON || '').trim();
+  const FCM_SERVICE_ACCOUNT_PATH = String(process.env.FCM_SERVICE_ACCOUNT_PATH || '').trim();
   let raw = '';
   if (FCM_SERVICE_ACCOUNT_JSON) {
     raw = FCM_SERVICE_ACCOUNT_JSON;
@@ -199,7 +201,7 @@ async function processJob(job) {
       return;
     }
 
-    if (job.type === 'admin.push.send') {
+    if (job.type === 'admin.push.send' || job.type === 'admin.push.retry') {
       await processAdminPushJob(pool, job.payload || {}, { actorUserId: job.payload?.actorUserId || null });
       return;
     }
@@ -222,6 +224,11 @@ async function settleJobFail(id, attempts, err) {
 }
 
 async function tick() {
+  if (Date.now() - apiSettingsLoadedAt > 60_000) {
+    await loadApiSettingsIntoEnvironment(pool);
+    apiSettingsLoadedAt = Date.now();
+    fcmAccessTokenCache = { token: '', exp: 0 };
+  }
   const jobs = await claimJobs(BATCH_SIZE);
   if (!jobs.length) return { picked: 0, done: 0, failed: 0 };
 
@@ -243,6 +250,8 @@ async function tick() {
 }
 
 async function main() {
+  await loadApiSettingsIntoEnvironment(pool);
+  apiSettingsLoadedAt = Date.now();
   console.log(`[queue-worker] start poll=${POLL_MS}ms batch=${BATCH_SIZE} maxAttempts=${MAX_ATTEMPTS}`);
 
   let stop = false;

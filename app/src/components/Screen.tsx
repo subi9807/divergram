@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, SafeAreaView, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cn } from '../lib/utils';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
@@ -12,7 +13,7 @@ interface ScreenProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function Screen({ children, className, safe = true, tone = 'gradient', style }: ScreenProps) {
+export function Screen({ children, className, safe = true, tone = 'plain', style }: ScreenProps) {
   const Container = safe ? SafeAreaView : View;
   const { isDark } = useResolvedTheme();
 
@@ -40,7 +41,7 @@ export function Screen({ children, className, safe = true, tone = 'gradient', st
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: '#f8fbfe',
+    backgroundColor: '#f6f8fb',
     flex: 1,
   },
   rootDark: {

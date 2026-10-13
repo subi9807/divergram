@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Deep-link pages are handled by one mobile-aware fallback page. Existing files
+# and the .well-known association files continue to be served directly.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(post|posts|reel|reels|profile|profiles|resort|resorts|guide|guides|marine-life)(/.*)?$ /open-app.html [L]
+
+RewriteRule ^post/?$ /open-app.html [L]

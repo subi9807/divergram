@@ -3,9 +3,10 @@ const { defineConfig } = require('eslint/config');
 const expoConfig = require("eslint-config-expo/flat");
 
 module.exports = defineConfig([
+  { ignores: ["dist/**", ".expo/**", ".codex-artifacts/**", "ios/**", "android/**", "node_modules/**"] },
   expoConfig,
   {
-    ignores: ["dist/*"],
+    ignores: ["dist/**", ".expo/**", "ios/build-simulator/**", "android/app/build/**"],
     // React Compiler is not enabled for this Expo app; keep runtime lint rules
     // without treating compiler-only optimization guidance as build failures.
     rules: {

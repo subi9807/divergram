@@ -2,19 +2,27 @@ import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../../components/Screen';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 
 const licenses = [
+  { name: 'React', license: 'MIT' },
   { name: 'React Native', license: 'MIT' },
   { name: 'Expo', license: 'MIT' },
+  { name: 'Expo Router', license: 'MIT' },
+  { name: 'Expo IAP / OpenIAP', license: 'MIT' },
   { name: 'Zustand', license: 'MIT' },
   { name: 'TanStack Query', license: 'MIT' },
+  { name: 'i18next / react-i18next', license: 'MIT' },
+  { name: 'Axios', license: 'MIT' },
+  { name: 'NativeWind', license: 'MIT' },
   { name: 'Lucide Icons', license: 'ISC' },
 ];
 
 export default function OpenSourceLicenseScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
   const colors = {
     backBorder: isDark ? '#2a3e52' : '#D6E2EE',
@@ -43,11 +51,11 @@ export default function OpenSourceLicenseScreen() {
           >
             <ChevronLeft size={18} color={colors.backIcon} />
           </TouchableOpacity>
-          <Text style={{ marginLeft: 10, color: colors.backText, fontWeight: '700' }}>뒤로가기</Text>
+          <Text style={{ marginLeft: 10, color: colors.backText, fontWeight: '700' }}>{t('common.back')}</Text>
         </View>
 
-        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>오픈소스 라이선스</Text>
-        <Text style={{ marginTop: 8, color: colors.subtitle }}>Divergram에서 사용 중인 주요 오픈소스 라이선스입니다.</Text>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{t('openSourceLicenses.title')}</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>{t('openSourceLicenses.subtitle')}</Text>
 
         <View style={{ marginTop: 16 }}>
           {licenses.map((item) => (

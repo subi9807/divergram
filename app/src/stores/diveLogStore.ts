@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { DiveLog, DiveLogVisibilityType, MediaFile, MediaType } from '../models';
 import { mockDiveLogs } from '../mock/divergramExpansionMock';
+import { correctedDiveSources, initialDiveSources, sourceForDiveImport } from '../utils/diveProvenance';
 
 function nowIso() {
   return new Date().toISOString();
@@ -48,11 +49,17 @@ export type DiveLogEditablePatch = Partial<
     | 'visibility'
     | 'aiSummary'
     | 'aiCaption'
+    | 'copilotIgnoredSuggestionIds'
   >
 > & { media?: MediaFile[] };
 
 interface DiveLogStoreState {
   logs: DiveLog[];
+  loading: boolean;
+  error: string | null;
+  replaceLogs: (items: DiveLog[]) => void;
+  upsertLog: (item: DiveLog) => void;
+  setLoadState: (loading: boolean, error?: string | null) => void;
   getLogById: (logId: string) => DiveLog | undefined;
   updateDiveLog: (logId: string, patch: DiveLogEditablePatch) => void;
   setVisibilityType: (logId: string, value: DiveLogVisibilityType) => void;
@@ -63,6 +70,17 @@ interface DiveLogStoreState {
 
 export const useDiveLogStore = create<DiveLogStoreState>((set, get) => ({
   logs: __DEV__ ? mockDiveLogs : [],
+  loading: false,
+  error: null,
+
+  replaceLogs: (items) => set({ logs: items, loading: false, error: null }),
+
+  upsertLog: (item) => set((state) => ({
+    logs: [item, ...state.logs.filter((row) => row.id !== item.id)],
+    error: null,
+  })),
+
+  setLoadState: (loading, error = null) => set({ loading, error }),
 
   getLogById: (logId) => get().logs.find((item) => item.id === logId),
 
@@ -74,6 +92,7 @@ export const useDiveLogStore = create<DiveLogStoreState>((set, get) => ({
           : {
               ...item,
               ...patch,
+              fieldSources: correctedDiveSources(item, patch, item.fieldSources ?? initialDiveSources(item, sourceForDiveImport(item.sourceType))),
               media: patch.media ?? item.media,
               updatedAt: nowIso(),
             }

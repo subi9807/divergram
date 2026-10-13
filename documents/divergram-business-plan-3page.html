@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divergram | 창업 아이디어 제안서</title>
+  <style>
+    :root {
+      --ink: #102238;
+      --muted: #5b6d82;
+      --blue: #1169c9;
+      --cyan: #09a9b7;
+      --navy: #071c32;
+      --line: #d8e5f1;
+      --soft: #f3f8fc;
+      --gold: #d5a21d;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #e9f0f6; color: var(--ink); font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; }
+    body { padding: 22px 0; }
+    .page {
+      position: relative;
+      width: 297mm;
+      height: 210mm;
+      margin: 0 auto 22px;
+      padding: 15mm 16mm 12mm;
+      overflow: hidden;
+      contain: layout paint;
+      background: #fff;
+      box-shadow: 0 16px 45px rgba(12, 41, 69, .14);
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: auto; }
+    .page::before { content: ""; position: absolute; inset: 0 0 auto; height: 4mm; background: linear-gradient(90deg, var(--blue), var(--cyan) 57%, var(--gold)); }
+    .page::after { content: ""; position: absolute; width: 95mm; height: 95mm; right: -48mm; bottom: -52mm; border: 18mm solid rgba(17,105,201,.045); border-radius: 50%; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5mm; break-inside: avoid; page-break-inside: avoid; }
+    .brand { display: flex; align-items: center; gap: 3mm; font-weight: 800; letter-spacing: -.02em; }
+    .brand img { width: 10mm; height: 10mm; border-radius: 2.4mm; }
+    .brand small { display: block; margin-top: .7mm; color: var(--muted); font-size: 8px; font-weight: 500; letter-spacing: 0; }
+    .eyebrow { color: var(--blue); font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; max-width: 245mm; font-size: 29px; line-height: 1.18; letter-spacing: -.045em; }
+    h2 { margin: 0; font-size: 17px; line-height: 1.3; letter-spacing: -.025em; }
+    h3 { margin: 0 0 2mm; font-size: 12px; }
+    p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.62; }
+    .lead { margin-top: 3mm; max-width: 252mm; font-size: 11px; line-height: 1.62; }
+    .grid { display: grid; gap: 4mm; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card { border: .35mm solid var(--line); border-radius: 3mm; background: #fff; padding: 4mm; }
+    .card.soft { background: linear-gradient(145deg, #f8fbfe, #edf6fc); }
+    .dark { color: #fff; background: linear-gradient(135deg, #071c32, #103d61); border: 0; }
+    .dark p, .dark .label { color: #c8d8e7; }
+    .label { margin-bottom: 1.4mm; color: var(--blue); font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .number { font-size: 24px; font-weight: 900; line-height: 1; letter-spacing: -.04em; }
+    .number span { color: var(--muted); font-size: 10px; font-weight: 600; }
+    .section { margin-top: 5mm; }
+    .problem-flow { display: grid; grid-template-columns: 1fr 14mm 1fr; gap: 3mm; align-items: stretch; margin-top: 5mm; }
+    .arrow { display: grid; place-items: center; color: var(--blue); font-size: 25px; font-weight: 300; }
+    ul { margin: 2mm 0 0; padding-left: 4.5mm; color: var(--muted); font-size: 9.5px; line-height: 1.65; }
+    li + li { margin-top: .8mm; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 4mm; }
+    .stat { padding: 3mm 3.5mm; border-left: 1.3mm solid var(--cyan); background: var(--soft); }
+    .stat strong { display: block; font-size: 19px; letter-spacing: -.04em; }
+    .stat span { color: var(--muted); font-size: 8.5px; }
+    .journey { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 5mm; }
+    .step { position: relative; min-height: 34mm; padding: 4mm; border: .35mm solid var(--line); border-radius: 3mm; background: linear-gradient(155deg, #fff, #f1f7fc); }
+    .step:not(:last-child)::after { content: "→"; position: absolute; right: -3.7mm; top: 13mm; z-index: 2; color: var(--blue); font-weight: 900; }
+    .step b { display: grid; place-items: center; width: 7mm; height: 7mm; margin-bottom: 2.5mm; border-radius: 50%; color: #fff; background: var(--blue); font-size: 9px; }
+    .revenue { display: grid; grid-template-columns: 1.2fr .8fr; gap: 4mm; margin-top: 4mm; }
+    .revenue-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm; }
+    .revenue-item { padding: 3mm; border-radius: 2.5mm; background: var(--soft); }
+    .revenue-item strong { display: block; margin-bottom: 1mm; font-size: 10px; }
+    .revenue-item span { color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+    .loop { display: grid; place-items: center; text-align: center; border-radius: 4mm; background: radial-gradient(circle at 50% 45%, #148ec2 0, #0b5798 48%, #072542 100%); color: #fff; }
+    .loop strong { font-size: 17px; line-height: 1.35; }
+    .loop span { margin-top: 2mm; color: #cce9f6; font-size: 9px; line-height: 1.5; }
+    .roadmap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-top: 4mm; }
+    .phase { position: relative; padding: 4mm 3.5mm 3.5mm; border-top: 1.2mm solid var(--blue); background: var(--soft); }
+    .phase:nth-child(2) { border-color: #168ea8; }
+    .phase:nth-child(3) { border-color: #57a86b; }
+    .phase:nth-child(4) { border-color: var(--gold); }
+    .phase strong { display: block; margin-bottom: 1.5mm; font-size: 11px; }
+    .phase p { font-size: 8.7px; line-height: 1.5; }
+    .bars { display: grid; gap: 2.5mm; margin-top: 3mm; }
+    .bar-row { display: grid; grid-template-columns: 23mm 1fr 10mm; gap: 2mm; align-items: center; font-size: 9px; }
+    .track { height: 2.8mm; overflow: hidden; border-radius: 9mm; background: #e4edf5; }
+    .fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+    .kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.5mm; margin-top: 3mm; }
+    .kpi div { padding: 3mm; border: .35mm solid var(--line); border-radius: 2.5mm; }
+    .kpi strong { display: block; color: var(--blue); font-size: 9.5px; }
+    .kpi span { color: var(--muted); font-size: 8px; line-height: 1.4; }
+    .quote { margin-top: 4mm; padding: 3.5mm 4mm; border-left: 1.4mm solid var(--cyan); background: #eff9f8; color: var(--ink); font-size: 10px; font-weight: 700; line-height: 1.55; }
+    footer { position: absolute; left: 16mm; right: 16mm; bottom: 7mm; display: flex; justify-content: space-between; padding-top: 2.5mm; border-top: .3mm solid var(--line); color: #6f8193; font-size: 8px; }
+    .note { font-size: 7.5px; color: #8291a0; }
+    @page { size: A4 landscape; margin: 0; }
+    @media print {
+      html, body { background: #fff; }
+      body { padding: 0; }
+      .page {
+        height: 209.8mm;
+        margin: 0;
+        box-shadow: none;
+        break-after: page;
+        break-inside: avoid;
+        page-break-after: always;
+        page-break-inside: avoid;
+      }
+      .page:last-child { break-after: auto; page-break-after: auto; }
+      .page + .page { break-before: page; page-break-before: always; }
+      header { break-inside: avoid; page-break-inside: avoid; }
+    }
+    @media screen and (max-width: 1120px) {
+      body { padding: 0; }
+      .page { transform-origin: top left; margin-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <header>
+      <div class="brand">
+        <img src="../app/assets/images/divergram-logo-blue.png" alt="Divergram logo">
+        <div>Divergram<small>다이빙 기록과 안전을 연결하는 플랫폼</small></div>
+      </div>
+      <div class="eyebrow">Policy Proposal · 01</div>
+    </header>
+    <div class="eyebrow">01 · Idea Introduction</div>
+    <h1>모든 다이빙을 더 안전하게 기록하고<br>더 쉽게 연결하는 플랫폼, Divergram</h1>
+    <p class="lead">Divergram은 스쿠버다이빙·프리다이빙·스노클링 사용자를 위한 다이빙 특화 플랫폼입니다. 다이빙포인트, 해양 날씨, 장비 로그, 사진·영상, 버디와 지역 리조트 정보를 하나의 사용자 경험으로 연결합니다.</p>
+
+    <div class="problem-flow">
+      <article class="card">
+        <div class="label">What It Is</div>
+        <h2>다이빙 전후를 잇는 디지털 로그북</h2>
+        <ul>
+          <li>입수 전에는 포인트와 해양 상태를 확인해 준비를 돕습니다.</li>
+          <li>다이빙 후에는 수심·시간·장비·버디·사진을 하나의 로그로 저장합니다.</li>
+          <li>기록은 공유 콘텐츠이자 다음 다이빙을 위한 개인 이력이 됩니다.</li>
+        </ul>
+      </article>
+      <div class="arrow">→</div>
+      <article class="card soft">
+        <div class="label">Core Idea</div>
+        <h2>기록과 안전 정보의 선순환</h2>
+        <ul>
+          <li>공공 해양데이터를 사용자가 이해하기 쉬운 정보로 제공합니다.</li>
+          <li>장비·위치·사진 데이터를 연결해 반복 입력을 줄입니다.</li>
+          <li>축적된 비식별 기록은 포인트와 지역 정보의 품질을 높입니다.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><strong>DISCOVER</strong><span>다이빙포인트와 주변 정보 탐색</span></div>
+      <div class="stat"><strong>PREPARE</strong><span>파고·조류·수온·시야 확인</span></div>
+      <div class="stat"><strong>RECORD</strong><span>장비·버디·미디어 통합 기록</span></div>
+      <div class="stat"><strong>SHARE</strong><span>AI 요약과 콘텐츠 공유</span></div>
+    </div>
+
+    <div class="grid cols-3 section">
+      <article class="card"><div class="label">Target</div><h3>다이버와 해양레저 사용자</h3><p>스쿠버·프리다이버, 스노클링 사용자와 강사, 입문자를 대상으로 합니다.</p></article>
+      <article class="card"><div class="label">Technology</div><h3>AI + 공공데이터 + 장비 연동</h3><p>해양데이터, 다이빙 컴퓨터 로그와 AI를 결합해 기록과 판단을 돕습니다.</p></article>
+      <article class="card dark"><div class="label">Vision</div><h3>지역 해양레저 연결 플랫폼</h3><p>다이버의 기록을 리조트·샵·교육기관·다이빙포인트와 연결합니다.</p></article>
+    </div>
+    <div class="note section">공모분야: ① 창업 · 연계 주제: AI, 공공데이터, 해양 안전, 지역 관광</div>
+    <footer><span>Divergram · 2026 창업 아이디어 제안서</span><span>01 / 03</span></footer>
+  </section>
+
+  <section class="page">
+    <header>
+      <div class="brand"><img src="../app/assets/images/divergram-logo-blue.png" alt="Divergram logo"><div>Divergram<small>왜 필요한가</small></div></div>
+      <div class="eyebrow">Policy Proposal · 02</div>
+    </header>
+    <div class="eyebrow">02 · Why It Is Needed</div>
+    <h1>현재의 다이빙 경험은 기록·안전·장비·공유가 분리되어 있습니다</h1>
+    <p class="lead">다이빙은 준비, 입수, 기록, 공유, 재방문이 이어지는 활동입니다. 그러나 사용자는 여러 앱과 웹사이트를 오가며 같은 정보를 다시 입력하고, 입수 전 안전 정보와 다이빙 후 실제 경험을 서로 연결하지 못합니다.</p>
+
+    <div class="journey">
+      <article class="step"><b>1</b><h3>정보가 흩어짐</h3><p>포인트, 날씨, 장비 로그, 사진과 메모가 서로 다른 서비스에 저장됩니다.</p></article>
+      <article class="step"><b>2</b><h3>안전 확인이 복잡함</h3><p>파고·조류·수온·시야를 여러 사이트에서 찾아 스스로 해석해야 합니다.</p></article>
+      <article class="step"><b>3</b><h3>기록이 번거로움</h3><p>다이빙 후 장비 데이터와 사진을 다시 정리해야 해 기록이 쉽게 누락됩니다.</p></article>
+      <article class="step"><b>4</b><h3>지역과 단절됨</h3><p>포인트의 실제 경험이 리조트·샵·교육과 자연스럽게 연결되지 않습니다.</p></article>
+    </div>
+
+    <div class="revenue">
+      <div class="revenue-list">
+        <div class="revenue-item"><strong>사용자 문제</strong><span>반복 검색과 수동 입력으로<br>준비·기록 시간이 늘어남</span></div>
+        <div class="revenue-item"><strong>안전 문제</strong><span>전문적인 해양 정보를 사용자가<br>직관적으로 판단하기 어려움</span></div>
+        <div class="revenue-item"><strong>지역 문제</strong><span>소규모 리조트·샵은 디지털 홍보와<br>사용자 접점 확보가 어려움</span></div>
+        <div class="revenue-item"><strong>데이터 문제</strong><span>개인의 실제 다이빙 경험이<br>지역별 정보 자산으로 축적되지 않음</span></div>
+      </div>
+      <div class="loop">
+        <strong>기록 편의<br>+ 안전 판단<br>+ 지역 연결</strong>
+        <span>세 가지 문제를 하나의 사용 흐름으로<br>해결하는 것이 Divergram의 필요성입니다.</span>
+      </div>
+    </div>
+
+    <div class="grid cols-3 section">
+      <article class="card"><div class="label">Convenience</div><h3>기록 시간을 줄입니다</h3><p>위치·날씨·장비 데이터를 자동으로 연결하고 사용자는 경험만 보완합니다.</p></article>
+      <article class="card"><div class="label">Safety</div><h3>확인 습관을 만듭니다</h3><p>입수 전 필요한 조건과 주의 문구를 한 화면에 제공해 확인 누락을 줄입니다.</p></article>
+      <article class="card"><div class="label">Local Impact</div><h3>지역 방문을 연결합니다</h3><p>포인트 탐색에서 주변 리조트·샵·교육 정보를 만나 지역 소비로 이어집니다.</p></article>
+    </div>
+    <div class="quote">Divergram은 “SNS를 하나 더 만드는 아이디어”가 아니라, 다이빙 전후에 반복되는 불편을 하나의 표준 흐름으로 해결하는 아이디어입니다.</div>
+    <footer><span>Divergram · 2026 창업 아이디어 제안서</span><span>02 / 03</span></footer>
+  </section>
+
+  <section class="page">
+    <header>
+      <div class="brand"><img src="../app/assets/images/divergram-logo-blue.png" alt="Divergram logo"><div>Divergram<small>주요 기능과 실현 가능성</small></div></div>
+      <div class="eyebrow">Policy Proposal · 03</div>
+    </header>
+    <div class="eyebrow">03 · Features & Feasibility</div>
+    <h1>핵심 기능부터 현장에서 검증하고 단계적으로 확장합니다</h1>
+    <p class="lead">초기에는 로그북·포인트·해양 날씨로 가장 중요한 사용 흐름을 검증합니다. 이후 장비 연동, AI 공유, 리조트·교육 연결을 추가해 다이버와 지역 생태계를 잇는 플랫폼으로 발전시킵니다.</p>
+
+    <div class="roadmap">
+      <article class="phase"><strong>로그북 Feed</strong><p>수심·시간·버디·장비·사진·영상·공개 범위를 하나의 기록으로 관리</p></article>
+      <article class="phase"><strong>포인트 · 해양 날씨</strong><p>지도 탐색과 파고·조류·수온·시야, 보수적인 위험도·주의 문구 제공</p></article>
+      <article class="phase"><strong>장비 연동 · AI</strong><p>Garmin·Suunto·Shearwater·BLE 로그와 AI 요약·캡션·공유 이미지</p></article>
+      <article class="phase"><strong>지역 연결</strong><p>리조트·샵·강습·교육·방문 스탬프를 포인트와 사용자 기록에 연결</p></article>
+    </div>
+
+    <div class="grid cols-2 section">
+      <article class="card soft">
+        <div class="label">MVP Validation</div>
+        <h2>초기 검증 지표</h2>
+        <div class="bars">
+          <div class="bar-row"><span>로그 작성</span><div class="track"><div class="fill" style="width:90%"></div></div><b>건수</b></div>
+          <div class="bar-row"><span>작성 편의</span><div class="track"><div class="fill" style="width:78%"></div></div><b>시간</b></div>
+          <div class="bar-row"><span>안전 정보</span><div class="track"><div class="fill" style="width:68%"></div></div><b>조회율</b></div>
+          <div class="bar-row"><span>반복 사용</span><div class="track"><div class="fill" style="width:58%"></div></div><b>재방문</b></div>
+        </div>
+        <p class="note" style="margin-top:3mm">파일럿 사용자 로그와 인터뷰로 편의성·안전 정보 활용·재사용 의향을 확인합니다.</p>
+      </article>
+      <article class="card dark">
+        <div class="label">Risk Control</div>
+        <h2>신뢰를 제품으로 설계합니다</h2>
+        <ul>
+          <li>외부 API: provider 어댑터, 캐시, fallback, 재시도</li>
+          <li>안전 정보: 보수적 위험도, 참고용 고지, 명확한 경고</li>
+          <li>개인·위치정보: 공개 범위, 동의 이력, 삭제·권한 관리</li>
+          <li>범위 과다: 기록·날씨·연동·공유의 핵심 흐름부터 단계화</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="section">
+      <div class="label">Expected Impact</div>
+      <h2>Divergram이 만드는 변화</h2>
+      <div class="kpi">
+        <div><strong>다이버</strong><span>간편한 기록<br>입수 전 정보 확인<br>개인 이력 축적</span></div>
+        <div><strong>지역 사업자</strong><span>디지털 노출<br>예약·교육 연결<br>신규 고객 접점</span></div>
+        <div><strong>지역사회</strong><span>해양 안전 인식<br>관광 서비스 품질<br>방문 데이터 축적</span></div>
+        <div><strong>확장성</strong><span>국내 포인트 확대<br>장비 생태계 연결<br>글로벌 적용</span></div>
+      </div>
+    </div>
+
+    <div class="quote">실현 기반: 20년 이상의 IT 제품 개발·설계 경험과 10년 이상의 다이빙 현장 및 강사 경험을 바탕으로 기술 구현과 사용자 검증을 함께 수행할 수 있습니다.</div>
+    <div class="note section">안전 정보는 의사결정을 대체하지 않는 참고 정보로 제공하며, 보수적 위험도·명확한 고지·개인정보 보호를 기본 원칙으로 합니다.</div>
+    <footer><span>Divergram · 2026 창업 아이디어 제안서</span><span>03 / 03</span></footer>
+  </section>
+</body>
+</html>

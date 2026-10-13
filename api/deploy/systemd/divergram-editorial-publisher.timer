@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Divergram editorial publisher every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+AccuracySec=1s
+Unit=divergram-editorial-publisher.service
+
+[Install]
+WantedBy=timers.target

@@ -50,6 +50,7 @@ ios/Pods/
 ios/build/
 app/ios/Pods/
 app/ios/build/
+app/ios/build-*/
 app/.build/
 app/.release/
 app/android/.gradle/
@@ -65,6 +66,12 @@ app/build-*.ipa
 .codex-bin/
 .codex-sim/
 .codex-*.png
+.codex-artifacts/
+app/.codex-artifacts/
+artifacts/
+output/
+app/fastlane/backups/
+branding/metabytree/website/
 tmp/
 
 # local env / helper scripts

@@ -11,6 +11,26 @@
             "comment": "Shared Divergram posts"
           },
           {
+            "/": "/reel*",
+            "comment": "Shared Divergram reels"
+          },
+          {
+            "/": "/profile*",
+            "comment": "Shared Divergram profiles"
+          },
+          {
+            "/": "/resort*",
+            "comment": "Shared Divergram resorts"
+          },
+          {
+            "/": "/guide*",
+            "comment": "Shared Divergram guides"
+          },
+          {
+            "/": "/marine-life*",
+            "comment": "Shared Divergram marine life sightings"
+          },
+          {
             "/": "/notifications*",
             "comment": "Notification inbox"
           }

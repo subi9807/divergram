@@ -5,6 +5,9 @@ import { fetchGarminDiveLogs } from './garminService';
 import { fetchShearwaterDiveLogs } from './shearwaterService';
 import { fetchSuuntoDiveLogs } from './suuntoService';
 import { getProviderTokenState } from './providerTokenService';
+import { initialDiveSources, sourceForDiveImport } from '../utils/diveProvenance';
+import { canonicalImportedDiveLogId } from './diveLogIdentity';
+import i18n from '../lib/i18n';
 
 export type ExternalProviderType = 'garmin' | 'suunto' | 'shearwater';
 
@@ -23,8 +26,8 @@ const EXTERNAL_PROVIDER_SET = new Set<ExternalProviderType>(['garmin', 'suunto',
 
 export function convertExternalToDiveLog(input: ExternalDiveLog, userId: string): DiveLog {
   const now = new Date().toISOString();
-  return {
-    id: `${input.sourceType}-${input.externalLogId}`,
+  const result: DiveLog = {
+    id: canonicalImportedDiveLogId(input.sourceType, input.externalLogId),
     userId,
     sourceType: input.sourceType,
     externalLogId: input.externalLogId,
@@ -50,6 +53,9 @@ export function convertExternalToDiveLog(input: ExternalDiveLog, userId: string)
     createdAt: now,
     updatedAt: now,
   };
+  result.originalSource = { kind: 'UNVERIFIED_IMPORT', payload: JSON.parse(JSON.stringify(input.rawPayload ?? input)) };
+  result.fieldSources = initialDiveSources(result, sourceForDiveImport(input.sourceType));
+  return result;
 }
 
 export function isDuplicateDiveLog(logs: DiveLog[], sourceType: DiveLog['sourceType'], externalLogId?: string): boolean {
@@ -184,7 +190,7 @@ export async function importManualDiveLogs(userId = 'me'): Promise<DiveLog[]> {
       avgDepth: 10.4,
       waterTemperature: 22,
       divePointName: 'Jeju Munseom',
-      memo: '수동 가져오기 샘플 로그 #1',
+      memo: i18n.t('manualImportSample.firstMemo'),
       media: [],
       tags: ['manual', 'scuba'],
       isPublic: false,
@@ -205,7 +211,7 @@ export async function importManualDiveLogs(userId = 'me'): Promise<DiveLog[]> {
       avgDepth: 7.9,
       waterTemperature: 23,
       divePointName: 'Amed Reef',
-      memo: '수동 가져오기 샘플 로그 #2',
+      memo: i18n.t('manualImportSample.secondMemo'),
       media: [],
       tags: ['manual', 'freediving'],
       isPublic: true,

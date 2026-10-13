@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divergram Apple Wallet License Sample</title>
+  <style>
+    :root {
+      --ocean: #0d5fa8;
+      --deep: #06345f;
+      --ice: #d9efff;
+      --ink: #10213a;
+      --muted: #60758d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Avenir Next", "Helvetica Neue", sans-serif;
+      background:
+        radial-gradient(circle at 16% 8%, rgba(70, 179, 235, .24), transparent 30%),
+        radial-gradient(circle at 90% 86%, rgba(13, 95, 168, .20), transparent 28%),
+        linear-gradient(145deg, #eff9ff, #f7fbff 55%, #e7f5ff);
+    }
+    main {
+      width: 1180px;
+      margin: 0 auto;
+      padding: 58px 50px 68px;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--ocean);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2em;
+    }
+    h1 { margin: 0; font-size: 34px; letter-spacing: -.04em; }
+    .lead { margin: 10px 0 40px; color: var(--muted); font-size: 16px; }
+    .stage {
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 46px;
+      align-items: center;
+    }
+    .phone {
+      position: relative;
+      width: 420px;
+      min-height: 720px;
+      padding: 22px 18px 28px;
+      overflow: hidden;
+      border: 8px solid #151a20;
+      border-radius: 58px;
+      background: linear-gradient(180deg, #e9edf1, #f7f8fa 36%);
+      box-shadow: 0 30px 70px rgba(17, 65, 101, .25), inset 0 0 0 1px rgba(255,255,255,.7);
+    }
+    .island {
+      width: 112px;
+      height: 30px;
+      margin: -10px auto 25px;
+      border-radius: 18px;
+      background: #050607;
+    }
+    .wallet-head { display: flex; justify-content: space-between; align-items: center; padding: 0 10px 15px; }
+    .wallet-head strong { font-size: 28px; letter-spacing: -.04em; }
+    .wallet-head span { color: var(--ocean); font-size: 16px; font-weight: 700; }
+    .pass {
+      position: relative;
+      min-height: 530px;
+      padding: 22px 22px 20px;
+      overflow: hidden;
+      color: white;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 90% 10%, rgba(85, 200, 245, .52), transparent 28%),
+        linear-gradient(155deg, #0d6fbb, #0b5ca2 46%, #06345f);
+      box-shadow: 0 18px 38px rgba(6, 52, 95, .26);
+    }
+    .pass::after {
+      content: "";
+      position: absolute;
+      right: -70px;
+      bottom: 72px;
+      width: 260px;
+      height: 260px;
+      opacity: .13;
+      border: 34px solid white;
+      border-radius: 50%;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; position: relative; z-index: 1; }
+    .brand img { width: 42px; height: 42px; border-radius: 12px; background: white; }
+    .brand strong { font-size: 19px; letter-spacing: .08em; }
+    .brand .tag { margin-left: auto; color: var(--ice); font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+    .cert { position: relative; z-index: 1; margin: 58px 0 34px; }
+    .label { display: block; margin-bottom: 5px; color: var(--ice); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+    .cert strong { font-size: 30px; line-height: 1.08; letter-spacing: -.035em; }
+    .fields { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 26px 18px; }
+    .value { display: block; font-size: 16px; font-weight: 700; line-height: 1.25; }
+    .barcode {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      align-items: center;
+      gap: 16px;
+      margin-top: 34px;
+      padding: 13px;
+      color: #122033;
+      border-radius: 15px;
+      background: white;
+    }
+    .qr { display: grid; grid-template-columns: repeat(9, 1fr); width: 72px; height: 72px; padding: 4px; background: white; }
+    .qr i { background: #10213a; }
+    .qr i:nth-child(3n), .qr i:nth-child(5n+1), .qr i:nth-child(7n+2) { background: white; }
+    .barcode strong { display: block; font-size: 14px; }
+    .barcode span { color: #6a7888; font-size: 11px; }
+    .info {
+      padding: 34px 38px;
+      border: 1px solid rgba(13, 95, 168, .12);
+      border-radius: 28px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 22px 54px rgba(17, 65, 101, .12);
+      backdrop-filter: blur(18px);
+    }
+    .info h2 { margin: 0 0 7px; font-size: 25px; letter-spacing: -.035em; }
+    .info > p { margin: 0 0 30px; color: var(--muted); line-height: 1.6; }
+    .detail { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .detail div { min-height: 86px; padding: 16px; border: 1px solid #d8e8f4; border-radius: 16px; background: #fff; }
+    .detail strong { display: block; margin-top: 7px; font-size: 15px; }
+    .notice { margin-top: 22px; padding: 16px 18px; color: #42617c; border-radius: 15px; background: #edf8ff; font-size: 13px; line-height: 1.55; }
+    .button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+      padding: 16px;
+      color: white;
+      border-radius: 15px;
+      background: #111;
+      font-weight: 700;
+    }
+    .apple { font-size: 23px; line-height: 1; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">DIVERGRAM DIGITAL CREDENTIAL</p>
+    <h1>Apple Wallet 다이빙 라이선스 샘플</h1>
+    <p class="lead">활성 라이선스를 안전하게 확인하고, QR로 등록 정보를 검증하는 디지털 카드입니다.</p>
+    <section class="stage">
+      <div class="phone">
+        <div class="island"></div>
+        <div class="wallet-head"><strong>Wallet</strong><span>완료</span></div>
+        <article class="pass">
+          <div class="brand">
+            <img src="../app/assets/images/divergram-logo-blue.png" alt="Divergram">
+            <strong>DIVERGRAM</strong>
+            <span class="tag">DIVING LICENSE</span>
+          </div>
+          <div class="cert">
+            <span class="label">CERTIFICATION</span>
+            <strong>OPEN WATER DIVER</strong>
+          </div>
+          <div class="fields">
+            <div><span class="label">DIVER</span><span class="value">SEOKGEUN KIM</span></div>
+            <div><span class="label">AGENCY</span><span class="value">PADI</span></div>
+            <div><span class="label">LICENSE NO.</span><span class="value">DG-PADI-240901</span></div>
+            <div><span class="label">DISCIPLINE</span><span class="value">SCUBA</span></div>
+            <div><span class="label">MEMBER NO.</span><span class="value">DG-SC-2024-7A3F</span></div>
+          </div>
+          <div class="barcode">
+            <div class="qr">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div><strong>DG-PADI-240901</strong><span>Scan to verify this Divergram record</span></div>
+          </div>
+        </article>
+      </div>
+      <aside class="info">
+        <h2>카드 상세 정보</h2>
+        <p>Wallet에서 카드를 열거나 뒷면 정보 버튼을 선택하면 발급일, 만료일과 검증 안내를 확인할 수 있습니다.</p>
+        <div class="detail">
+          <div><span class="label" style="color:#6a8198">ISSUED</span><strong>2024. 09. 01.</strong></div>
+          <div><span class="label" style="color:#6a8198">EXPIRES</span><strong>NO EXPIRATION</strong></div>
+          <div><span class="label" style="color:#6a8198">STATUS</span><strong style="color:#0b8b69">ACTIVE</strong></div>
+          <div><span class="label" style="color:#6a8198">VERIFICATION</span><strong>divergram.com/license</strong></div>
+        </div>
+        <div class="notice">이 카드는 Divergram에 등록된 라이선스 정보를 표시합니다. 공식 증명이 필요한 경우 발급 교육단체에서 별도로 확인할 수 있습니다.</div>
+        <div class="button"><span class="apple">●</span> Add to Apple Wallet</div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

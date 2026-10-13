@@ -55,10 +55,11 @@ export default function SettingsSection({ refresh, refreshSession, sessionUser, 
 
       const payload = {
         full_name,
-        contact_phone,
         fullName: full_name,
-        contactPhone: contact_phone,
       };
+      if (normalizePhone(contact_phone) !== currentContactPhone) {
+        throw new Error('contact_phone_verification_required');
+      }
       if (email && email !== currentEmail) payload.email = email;
       const result = await api('/api/auth/me', { method: 'PATCH', body: payload });
       if (result?.emailVerificationRequested) {
@@ -74,7 +75,13 @@ export default function SettingsSection({ refresh, refreshSession, sessionUser, 
       await refresh?.();
       await refreshSession?.();
     } catch (error) {
-      setProfileError(error.message === 'no_changes' ? '변경할 내용이 없어.' : error.message || '프로필 저장 실패');
+      setProfileError(
+        error.message === 'no_changes'
+          ? '변경할 내용이 없어.'
+          : error.message === 'contact_phone_verification_required'
+            ? '연락처 변경은 앱에서 SMS 인증 후 진행해 주세요.'
+            : error.message || '프로필 저장 실패',
+      );
     } finally {
       setProfileBusy(false);
     }

@@ -1,7 +1,7 @@
 import React from 'react';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-type SocialProvider = 'google' | 'apple' | 'instagram';
+type SocialProvider = 'google' | 'apple' | 'instagram' | 'facebook';
 
 type SocialBrandIconProps = {
   provider: SocialProvider;
@@ -27,6 +27,15 @@ export function SocialBrandIcon({ provider, size = 24 }: SocialBrandIconProps) {
           fill="#000000"
           d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.32.03-1.75-.79-3.27-.79-1.53 0-2 .77-3.25.82-1.3.05-2.29-1.32-3.13-2.55-1.7-2.46-3-6.95-1.25-9.99.87-1.51 2.43-2.47 4.12-2.5 1.28-.02 2.5.87 3.27.87.76 0 2.2-1.07 3.71-.91.63.03 2.4.25 3.54 1.92-.09.06-2.11 1.24-2.09 3.75.03 3 2.63 4 2.66 4.01-.03.07-.41 1.42-1.26 2.9M13.15 3.69c.64-.73 1.69-1.28 2.61-1.32.12 1.08-.28 2.16-.9 2.93-.61.78-1.62 1.38-2.62 1.3-.14-1.06.36-2.16.91-2.91Z"
         />
+      </Svg>
+    );
+  }
+
+  if (provider === 'facebook') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityLabel="Facebook">
+        <Circle cx="12" cy="12" r="11" fill="#1877F2" />
+        <Path fill="#ffffff" d="M13.7 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5H17V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.5V13h2.8v8h3.4Z" />
       </Svg>
     );
   }

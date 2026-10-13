@@ -1,0 +1,30 @@
+.footer-business {
+  display: grid;
+  gap: 5px;
+  max-width: 760px;
+}
+
+.footer-business strong {
+  color: #aab7c7;
+  font-size: 13px;
+}
+
+.footer-business span {
+  line-height: 1.65;
+}
+
+.footer-business a {
+  color: #91a8bf;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer-bottom {
+  gap: 30px;
+}
+
+@media (max-width: 620px) {
+  .footer-bottom {
+    align-items: flex-start;
+  }
+}

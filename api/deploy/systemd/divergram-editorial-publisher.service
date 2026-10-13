@@ -1,0 +1,9 @@
+[Unit]
+Description=Divergram scheduled editorial publisher
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/divergram/api
+ExecStart=/root/.nvm/versions/node/v22.14.0/bin/node /home/divergram/api/scripts/publish-editorial-content.mjs --run
+User=root

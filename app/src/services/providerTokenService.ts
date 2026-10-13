@@ -1,3 +1,4 @@
+import * as SecureStore from 'expo-secure-store';
 import { type ExternalProviderAuthResult, type ExternalProviderKey } from '../lib/api';
 import { storage } from '../lib/storage';
 
@@ -15,6 +16,12 @@ export type ProviderTokenState = {
 function tokenStorageKey(provider: ExternalProviderKey) {
   return `provider_token_${provider}`;
 }
+
+function secureTokenStorageKey(provider: ExternalProviderKey) {
+  return `external_provider_credentials_${provider}`;
+}
+
+const credentialCache = new Map<ExternalProviderKey, Pick<ProviderTokenState, 'accessToken' | 'refreshToken'>>();
 
 function toIso(value: unknown): string | undefined {
   const raw = String(value || '').trim();
@@ -54,11 +61,23 @@ export function setProviderTokenState(provider: ExternalProviderKey, next: Parti
   const base = getProviderTokenState(provider);
   const merged = sanitizeTokenState({ ...(base || {}), ...next, provider }, provider);
   storage.set(tokenStorageKey(provider), JSON.stringify(merged));
+  const accessToken = String(next.accessToken || '').trim() || undefined;
+  const refreshToken = String(next.refreshToken || '').trim() || undefined;
+  if (accessToken || refreshToken) {
+    credentialCache.set(provider, { accessToken, refreshToken });
+    void SecureStore.setItemAsync(
+      secureTokenStorageKey(provider),
+      JSON.stringify({ accessToken, refreshToken }),
+      { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK }
+    ).catch(() => undefined);
+  }
   return merged;
 }
 
 export function clearProviderTokenState(provider: ExternalProviderKey) {
   storage.delete(tokenStorageKey(provider));
+  credentialCache.delete(provider);
+  void SecureStore.deleteItemAsync(secureTokenStorageKey(provider)).catch(() => undefined);
 }
 
 export function updateProviderTokenFromAuthResult(provider: ExternalProviderKey, result: ExternalProviderAuthResult) {
@@ -80,6 +99,25 @@ export function isProviderTokenExpired(state: ProviderTokenState | null, skewMs 
 }
 
 export async function ensureProviderAccessToken(provider: ExternalProviderKey): Promise<string | undefined> {
-  void provider;
-  return undefined;
+  const cached = credentialCache.get(provider);
+  if (cached?.accessToken) return cached.accessToken;
+  try {
+    const raw = await SecureStore.getItemAsync(secureTokenStorageKey(provider));
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as { accessToken?: string; refreshToken?: string };
+    const credentials = {
+      accessToken: String(parsed.accessToken || '').trim() || undefined,
+      refreshToken: String(parsed.refreshToken || '').trim() || undefined,
+    };
+    credentialCache.set(provider, credentials);
+    return credentials.accessToken;
+  } catch {
+    await SecureStore.deleteItemAsync(secureTokenStorageKey(provider)).catch(() => undefined);
+    return undefined;
+  }
+}
+
+export async function getProviderCredentials(provider: ExternalProviderKey) {
+  await ensureProviderAccessToken(provider);
+  return credentialCache.get(provider) || {};
 }

@@ -47,16 +47,37 @@ export default function PushSection({ reports = [], certifications = [], reportB
   const [memberQuery, setMemberQuery] = useState('');
   const [memberResults, setMemberResults] = useState([]);
   const [memberBusy, setMemberBusy] = useState(false);
+  const [audiencePreview, setAudiencePreview] = useState(null);
+  const [audienceBusy, setAudienceBusy] = useState(false);
+  const [audienceConfirmed, setAudienceConfirmed] = useState(false);
   const hasPushDataJson = pushForm.dataJson.trim().length > 0;
   const hasTestDataJson = testForm.dataJson.trim().length > 0;
+  const audiencePayload = useMemo(() => ({
+    targetRole: pushForm.targetRole,
+    targetUserIds: pushForm.targetUserIds,
+    createdAfter: pushForm.createdAfter || undefined,
+    createdBefore: pushForm.createdBefore || undefined,
+    scubaLevel: pushForm.scubaLevel || undefined,
+    freedivingLevel: pushForm.freedivingLevel || undefined,
+    blockedState: pushForm.blockedState,
+  }), [pushForm.targetRole, pushForm.targetUserIds, pushForm.createdAfter, pushForm.createdBefore, pushForm.scubaLevel, pushForm.freedivingLevel, pushForm.blockedState]);
+  const audienceSignature = useMemo(() => JSON.stringify(audiencePayload), [audiencePayload]);
+
+  useEffect(() => {
+    setAudiencePreview(null);
+    setAudienceConfirmed(false);
+  }, [audienceSignature]);
 
   const loadPushHistory = async () => {
     try {
       const result = await api('/api/admin/push/history?limit=8');
       setPushHistory([
         ...(result?.sent || []).map((item) => ({ ...item, kind: 'sent' })),
-        ...(result?.scheduled || []).map((item) => ({ ...item, kind: 'scheduled' })),
-      ].slice(0, 8));
+        ...(result?.scheduled || []).map((item) => ({
+          ...item,
+          kind: item.type === 'admin.push.dead-letter' ? 'dead-letter' : item.type === 'admin.push.retry' ? 'retry' : 'scheduled',
+        })),
+      ].sort((a, b) => Date.parse(b.created_at || b.updated_at || 0) - Date.parse(a.created_at || a.updated_at || 0)).slice(0, 8));
     } catch {
       setPushHistory([]);
     }
@@ -93,6 +114,21 @@ export default function PushSection({ reports = [], certifications = [], reportB
     setPushForm((prev) => ({ ...prev, targetUserIds: ids.join(', ') }));
   };
 
+  const loadAudiencePreview = async () => {
+    setAudienceBusy(true);
+    setPushError('');
+    try {
+      const result = await api('/api/admin/push/audience-preview', { method: 'POST', body: audiencePayload });
+      setAudiencePreview({ ...result, signature: audienceSignature });
+      setAudienceConfirmed(false);
+    } catch (error) {
+      setAudiencePreview(null);
+      setPushError(error.message || '푸시 대상을 확인하지 못했습니다.');
+    } finally {
+      setAudienceBusy(false);
+    }
+  };
+
   const pushPreview = useMemo(() => {
     try {
       return hasPushDataJson ? JSON.parse(pushForm.dataJson) : {};
@@ -114,6 +150,12 @@ export default function PushSection({ reports = [], certifications = [], reportB
     setPushBusy(true);
     setPushError('');
     try {
+      if (!audiencePreview || audiencePreview.signature !== audienceSignature) {
+        throw new Error('발송 전에 현재 조건의 대상을 확인해 주세요.');
+      }
+      if (audiencePreview.requiresConfirmation && !audienceConfirmed) {
+        throw new Error('전체 또는 대량 발송 대상을 확인했다는 항목에 체크해 주세요.');
+      }
       let payloadData = {};
       if (pushForm.dataJson.trim()) {
         payloadData = JSON.parse(pushForm.dataJson);
@@ -135,6 +177,8 @@ export default function PushSection({ reports = [], certifications = [], reportB
           deepLink: pushForm.deepLink,
           scheduleAt: pushForm.scheduleEnabled ? pushForm.scheduleAt || undefined : undefined,
           data: payloadData,
+          confirmAudience: audienceConfirmed,
+          audienceFingerprint: audiencePreview.fingerprint,
         },
       });
       setPushResult(result);
@@ -177,6 +221,8 @@ export default function PushSection({ reports = [], certifications = [], reportB
     setPushForm(EMPTY_PUSH_FORM);
     setPushResult(null);
     setPushError('');
+    setAudiencePreview(null);
+    setAudienceConfirmed(false);
   };
 
   const clearTest = () => {
@@ -413,6 +459,34 @@ export default function PushSection({ reports = [], certifications = [], reportB
             </label>
             <label className="switch-row push-switch"><input type="checkbox" checked={pushForm.scheduleEnabled} onChange={(e) => setPushForm((prev) => ({ ...prev, scheduleEnabled: e.target.checked }))} /><span>예약 발송</span></label>
           </div>
+          <div className="preview-box push-audience-preview">
+            <div className="panel-head">
+              <div>
+                <strong>발송 대상 확인</strong>
+                <p className="muted">현재 필터에 연결된 활성 기기만 집계하며 토큰 원문은 표시하지 않습니다.</p>
+              </div>
+              <button type="button" className="chip" onClick={() => void loadAudiencePreview()} disabled={audienceBusy}>
+                {audienceBusy ? '확인 중...' : '대상 확인'}
+              </button>
+            </div>
+            {audiencePreview && audiencePreview.signature === audienceSignature ? (
+              <div className="auth-check-box">
+                <p>회원: <strong>{audiencePreview.userCount ?? 0}명</strong></p>
+                <p>활성 기기: <strong>{audiencePreview.tokenCount ?? 0}대</strong></p>
+                <p>iOS: <strong>{audiencePreview.platforms?.ios ?? 0}대</strong></p>
+                <p>Android: <strong>{audiencePreview.platforms?.android ?? 0}대</strong></p>
+                <p>FCM: <strong>{audiencePreview.tokenTypes?.fcm ?? 0}개</strong> · Expo: <strong>{audiencePreview.tokenTypes?.expo ?? 0}개</strong></p>
+                {audiencePreview.requiresConfirmation && (
+                  <label className="switch-row push-switch push-audience-confirm">
+                    <input type="checkbox" checked={audienceConfirmed} onChange={(event) => setAudienceConfirmed(event.target.checked)} />
+                    <span>전체 또는 대량 발송 대상을 확인했습니다.</span>
+                  </label>
+                )}
+              </div>
+            ) : (
+              <p className="muted">대상 확인 후 발송 버튼이 활성화됩니다.</p>
+            )}
+          </div>
           {pushForm.scheduleEnabled && (
             <div className="field-grid push-grid">
               <label><span>예약 시각</span><input type="datetime-local" value={pushForm.scheduleAt} onChange={(e) => setPushForm((prev) => ({ ...prev, scheduleAt: e.target.value }))} /></label>
@@ -435,7 +509,7 @@ export default function PushSection({ reports = [], certifications = [], reportB
             </div>
           </div>
           <div className="detail-actions">
-            <button type="submit" disabled={pushBusy}>{pushBusy ? '발송 중...' : '푸시 발송'}</button>
+            <button type="submit" disabled={pushBusy || audienceBusy || !audiencePreview || audiencePreview.signature !== audienceSignature || (audiencePreview.requiresConfirmation && !audienceConfirmed)}>{pushBusy ? '발송 중...' : '푸시 발송'}</button>
             <button type="button" onClick={clearPush} disabled={pushBusy}>초기화</button>
           </div>
           {pushError && <p className="error">{pushError}</p>}
@@ -467,7 +541,9 @@ export default function PushSection({ reports = [], certifications = [], reportB
                 <div key={item.id} className="push-history-item">
                   <div className="push-history-top">
                     <strong>{renderHistoryLabel(item)}</strong>
-                    <span className={`badge ${item.kind === 'scheduled' ? 'admin' : 'active'}`}>{item.kind === 'scheduled' ? '예약/대기' : '발송'}</span>
+                    <span className={`badge ${['scheduled', 'retry'].includes(item.kind) ? 'admin' : item.kind === 'dead-letter' ? 'danger' : 'active'}`}>
+                      {item.kind === 'scheduled' ? '예약/대기' : item.kind === 'retry' ? '재시도' : item.kind === 'dead-letter' ? '최종 실패' : '발송'}
+                    </span>
                   </div>
                   <p>
                     대상: {detail?.filters?.targetRole || detail?.targetRole || 'all'}
@@ -475,7 +551,23 @@ export default function PushSection({ reports = [], certifications = [], reportB
                     성공: {detail?.successCount ?? '-'}
                     {' · '}
                     실패: {detail?.failureCount ?? '-'}
+                    {' · '}
+                    무효: {detail?.invalidTokenCount ?? '-'}
+                    {' · '}
+                    재시도: {detail?.retryQueuedCount ?? '-'}
+                    {' · '}
+                    최종 실패: {detail?.deadLetterCount ?? '-'}
                   </p>
+                  {Number(item.notification_count || 0) > 0 && (
+                    <p>
+                      알림함: {item.notification_count}개
+                      {' · '}접수: {item.sent_count || 0}
+                      {' · '}대기: {item.queued_count || 0}
+                      {' · '}실패: {item.failed_count || 0}
+                      {' · '}읽음: {item.read_count || 0}
+                      {' · '}열림: {item.open_count || 0}
+                    </p>
+                  )}
                   <small>{String(item.created_at || item.updated_at || '').replace('T', ' ').slice(0, 19)}</small>
                 </div>
               );

@@ -1,11 +1,15 @@
 import { storage } from '../lib/storage';
-import { mockDivePoints, mockMarineWeather } from '../mock/divergramExpansionMock';
+import i18n from '../lib/i18n';
+import { mockDivePoints } from '../mock/divergramExpansionMock';
+import { apiClient } from '../lib/api';
 import type { MarineRiskLevel, MarineWeather } from '../models';
 
-const STORMGLASS_BASE = process.env.EXPO_PUBLIC_STORMGLASS_API_BASE || 'https://api.stormglass.io/v2';
-const STORMGLASS_KEY = process.env.EXPO_PUBLIC_STORMGLASS_API_KEY || process.env.STORMGLASS_API_KEY || '';
 const CACHE_TTL_MS = 1000 * 60 * 30;
 const STALE_OBS_MS = 1000 * 60 * 60 * 6;
+
+function weatherText(key: string, options?: Record<string, unknown>) {
+  return String(i18n.t(`marineWeather.service.${key}`, options));
+}
 
 type StormglassWeatherHour = {
   time?: string;
@@ -30,10 +34,12 @@ function pickNumber(source?: Record<string, number | undefined>): number | undef
   if (!source) return undefined;
   const order = ['sg', 'noaa', 'icon'];
   for (const key of order) {
+    if (source[key] == null || String(source[key]).trim() === '') continue;
     const value = Number(source[key]);
     if (Number.isFinite(value)) return value;
   }
   for (const value of Object.values(source)) {
+    if (value == null || String(value).trim() === '') continue;
     const n = Number(value);
     if (Number.isFinite(n)) return n;
   }
@@ -62,7 +68,7 @@ function msToKnots(valueMs?: number): number | undefined {
 }
 
 function cacheKey(lat: number, lng: number) {
-  return `stormglass_cache_${lat.toFixed(4)}_${lng.toFixed(4)}`;
+  return `stormglass_measured_v2_${lat.toFixed(4)}_${lng.toFixed(4)}`;
 }
 
 function readCacheEntry(lat: number, lng: number): { data: MarineWeather; cachedAtMs: number; isFresh: boolean } | null {
@@ -92,7 +98,7 @@ function fromStaleCache(entry: { data: MarineWeather; cachedAtMs: number }): Mar
   const staleMinutes = Math.max(1, Math.round((Date.now() - entry.cachedAtMs) / (1000 * 60)));
   const staleTooLong = staleMinutes >= 24 * 60;
   const warnings = [
-    `캐시 데이터가 ${staleMinutes}분 경과하여 최신성과 정확도가 낮을 수 있습니다.`,
+    weatherText('staleCacheWarning', { minutes: staleMinutes }),
     ...(entry.data.warnings || []),
   ].filter((item, index, arr) => arr.indexOf(item) === index);
   return {
@@ -102,10 +108,10 @@ function fromStaleCache(entry: { data: MarineWeather; cachedAtMs: number }): Mar
     recommendationScore: staleTooLong ? Math.min(25, Number(entry.data.recommendationScore || 25)) : entry.data.recommendationScore,
     riskConfidence: 'low',
     diveAllowed: false,
-    noDiveReason: '실시간 데이터 확인 불가(만료 캐시 사용)',
+    noDiveReason: weatherText('expiredCacheReason'),
     summary: staleTooLong
-      ? '만료 캐시가 24시간 이상 경과했습니다. 입수를 중단하고 현장/공식 기상 데이터를 먼저 확인하세요.'
-      : '실시간 데이터를 불러오지 못해 만료된 캐시를 표시합니다. 보수적으로 입수 여부를 판단하세요.',
+      ? weatherText('expiredCacheDaySummary')
+      : weatherText('expiredCacheSummary'),
     warnings,
     fetchedAt: new Date().toISOString(),
   };
@@ -152,11 +158,11 @@ function variabilityPenalty(input: { waveSpan: number; currentSpan: number }) {
 
   if (Number.isFinite(waveSpan) && waveSpan >= 1.0) {
     penalty += waveSpan >= 1.6 ? 14 : 8;
-    warnings.push('단시간 파고 변동폭이 커 수면/입출수 구간 안정성이 낮습니다.');
+    warnings.push(weatherText('waveVariability'));
   }
   if (Number.isFinite(currentSpan) && currentSpan >= 0.9) {
     penalty += currentSpan >= 1.4 ? 14 : 8;
-    warnings.push('단시간 조류 변동폭이 커 감압/부력 제어 리스크가 증가할 수 있습니다.');
+    warnings.push(weatherText('currentVariability'));
   }
   return { penalty: clamp(0, penalty, 22), warnings };
 }
@@ -173,7 +179,7 @@ function trendPenalty(hourly: { recommendationScore?: number }[]) {
   if (diff < 12) return { penalty: 0, warnings: [] as string[] };
   return {
     penalty: diff >= 20 ? 10 : 6,
-    warnings: ['향후 수시간 내 조건이 악화되는 추세가 감지되었습니다. 보수적으로 다이브 플랜을 조정하세요.'],
+    warnings: [weatherText('worseningTrend')],
   };
 }
 
@@ -188,12 +194,12 @@ function thermalShiftPenalty(hourly: { waterTempC?: number }[]) {
   if (span >= 4) {
     return {
       penalty: 10,
-      warnings: ['단시간 수온 변동폭이 매우 큽니다. 체온 저하와 장비 세팅(보온/가중) 변화를 고려하세요.'],
+      warnings: [weatherText('severeThermalShift')],
     };
   }
   return {
     penalty: 6,
-    warnings: ['수온 변동폭이 커 보온 장비/입수 시간 조정을 권장합니다.'],
+    warnings: [weatherText('thermalShift')],
   };
 }
 
@@ -214,21 +220,21 @@ function riskStreakPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?: 
   if (maxStreak >= 4) {
     return {
       penalty: 16,
-      warnings: ['위험/주의 시간대가 연속으로 길게 이어집니다. 오늘 다이빙은 연기하는 것이 안전합니다.'],
+      warnings: [weatherText('longRiskStreak')],
       forceNoDive: true,
     };
   }
   if (maxStreak >= 3) {
     return {
       penalty: 10,
-      warnings: ['위험/주의 시간대가 연속으로 이어져 입수 타이밍이 제한적입니다.'],
+      warnings: [weatherText('riskStreak')],
       forceNoDive: true,
     };
   }
   if (maxStreak >= 2) {
     return {
       penalty: 6,
-      warnings: ['연속 위험 구간이 있어 짧은 입수 윈도우만 고려해야 합니다.'],
+      warnings: [weatherText('shortDiveWindow')],
       forceNoDive: false,
     };
   }
@@ -243,20 +249,20 @@ function horizonRiskPenalty(hourly: { riskLevel?: MarineRiskLevel; diveAllowed?:
   if (ratio >= 0.7) {
     return {
       penalty: 18,
-      warnings: ['향후 시간대의 위험 구간 비중이 매우 높아 오늘 다이빙은 연기하는 것이 안전합니다.'],
+      warnings: [weatherText('highRiskHorizon')],
       forceNoDive: true,
     };
   }
   if (ratio >= 0.5) {
     return {
       penalty: 10,
-      warnings: ['시간대 예보의 절반 이상이 주의/위험 구간입니다. 입수 계획을 재검토하세요.'],
+      warnings: [weatherText('halfRiskHorizon')],
       forceNoDive: true,
     };
   }
   return {
     penalty: 6,
-    warnings: ['시간대 예보 중 위험 구간 비중이 높아 보수적 다이브 플랜이 필요합니다.'],
+    warnings: [weatherText('elevatedRiskHorizon')],
     forceNoDive: false,
   };
 }
@@ -265,7 +271,7 @@ function forecastContinuityPenalty(hourly: { timeIso?: string }[]) {
   if (hourly.length < 3) {
     return {
       penalty: 8,
-      warnings: ['시간대 예보 구간이 짧아 추세 판단 신뢰도가 낮습니다.'],
+      warnings: [weatherText('shortForecast')],
       severeGap: true,
     };
   }
@@ -282,7 +288,7 @@ function forecastContinuityPenalty(hourly: { timeIso?: string }[]) {
   if (!diffs.length) {
     return {
       penalty: 10,
-      warnings: ['시간대 예보 시각이 비정상적이어서 보수적 판단이 필요합니다.'],
+      warnings: [weatherText('invalidForecastTime')],
       severeGap: true,
     };
   }
@@ -292,14 +298,14 @@ function forecastContinuityPenalty(hourly: { timeIso?: string }[]) {
   if (severeGapCount > 0) {
     return {
       penalty: 14,
-      warnings: ['시간대 예보 간격에 큰 공백(4시간+)이 있어 추천 신뢰도가 낮습니다.'],
+      warnings: [weatherText('severeForecastGap')],
       severeGap: true,
     };
   }
   if (largeGapCount >= 2) {
     return {
       penalty: 8,
-      warnings: ['시간대 예보 간격이 불규칙해 급변 구간 누락 가능성이 있습니다.'],
+      warnings: [weatherText('irregularForecastGap')],
       severeGap: false,
     };
   }
@@ -353,13 +359,13 @@ export function calculateMarineRisk(input: {
   if (waveHeightM == null || currentSpeedKnot == null || visibilityM == null) {
     return {
       level: 'normal',
-      reason: '관측 데이터가 일부 부족하여 보수적으로 판단합니다.',
+      reason: weatherText('partialObservationReason'),
       score: 56,
-      warnings: ['실시간 관측 데이터가 일부 누락되었습니다.'],
+      warnings: [weatherText('partialObservationWarning')],
       diveAllowed: false,
-      noDiveReason: '핵심 관측 데이터 누락',
+      noDiveReason: weatherText('coreObservationMissing'),
       beginnerSafe: false,
-      beginnerWarning: '초보자는 현장 브리핑 후 입수 여부를 결정하세요.',
+      beginnerWarning: weatherText('beginnerBriefing'),
     };
   }
 
@@ -390,33 +396,33 @@ export function calculateMarineRisk(input: {
     else if (windSpeedMps > 9) score -= 12;
   }
 
-  // 복합 위험(파고/조류/시야/수온/풍속 동시 악화)을 별도 반영해 단일지표 과신을 방지
+  // Apply compound penalties so one favorable measurement cannot mask several unsafe conditions.
   let compoundPenalty = 0;
   if (waveHeightM > 1.8 && currentSpeedKnot > 2.0) {
     compoundPenalty += 14;
-    warnings.push('파고와 조류가 동시에 높아 입출수 및 수중 이동 리스크가 큽니다.');
+    warnings.push(weatherText('waveAndCurrent'));
   }
   if (visibilityM < 4 && currentSpeedKnot > 1.6) {
     compoundPenalty += 12;
-    warnings.push('저시야+강조류 조합으로 버디 이탈 및 방향 상실 위험이 높습니다.');
+    warnings.push(weatherText('lowVisibilityAndCurrent'));
   }
   if (waterTempC != null && waterTempC < 16 && currentSpeedKnot > 1.6) {
     compoundPenalty += 8;
-    warnings.push('저수온과 강한 조류가 겹쳐 피로/체온 저하 리스크가 증가할 수 있습니다.');
+    warnings.push(weatherText('coldAndCurrent'));
   }
   if (windSpeedMps != null && windSpeedMps > 11 && waveHeightM > 1.5) {
     compoundPenalty += 8;
-    warnings.push('강풍과 파고 상승이 동반되어 수면 대기 안정성이 낮습니다.');
+    warnings.push(weatherText('windAndWave'));
   }
   score -= clamp(0, compoundPenalty, 28);
 
   score = Math.round(clamp(0, score, 100));
 
-  if (waveHeightM > 1.8) warnings.push('파고가 높아 입출수 구간 충격이 커질 수 있습니다.');
-  if (currentSpeedKnot > 1.6) warnings.push('조류가 강해 라인/버디 이탈 위험이 있습니다.');
-  if (visibilityM < 5) warnings.push('시야가 낮아 버디 간격과 라이트 사용에 주의하세요.');
-  if (waterTempC != null && waterTempC < 17) warnings.push('수온이 낮아 보온 장비 준비가 필요합니다.');
-  if (windSpeedMps != null && windSpeedMps > 9) warnings.push('풍속이 높아 수면 대기 및 보트 접근에 주의하세요.');
+  if (waveHeightM > 1.8) warnings.push(weatherText('highWave'));
+  if (currentSpeedKnot > 1.6) warnings.push(weatherText('strongCurrent'));
+  if (visibilityM < 5) warnings.push(weatherText('lowVisibility'));
+  if (waterTempC != null && waterTempC < 17) warnings.push(weatherText('coldWater'));
+  if (windSpeedMps != null && windSpeedMps > 9) warnings.push(weatherText('highWind'));
 
   const beginnerSafe =
     waveHeightM <= 1.2 &&
@@ -426,7 +432,7 @@ export function calculateMarineRisk(input: {
 
   const beginnerWarning = beginnerSafe
     ? undefined
-    : '초보자는 강사/가이드 동행 및 보수적 다이브 플랜을 권장합니다.';
+    : weatherText('beginnerGuide');
 
   const hardNoDive =
     waveHeightM > 2.6 ||
@@ -440,18 +446,18 @@ export function calculateMarineRisk(input: {
   const diveAllowed = !hardNoDive && level !== 'danger';
   const noDiveReason =
     hardNoDive || level === 'danger'
-      ? warnings[0] || '파고/조류/시야 조건이 안전 기준을 벗어났습니다.'
+      ? warnings[0] || weatherText('unsafeConditions')
       : undefined;
 
   const reason =
     warnings[0] ||
     (level === 'good'
-      ? '파고/조류/시야가 안정적입니다.'
+      ? weatherText('goodConditions')
       : level === 'normal'
-        ? '일반적인 레저 다이빙 가능한 수준입니다.'
+        ? weatherText('normalConditions')
         : level === 'caution'
-          ? '조류 또는 파고가 높아 초보자에게 부담될 수 있습니다.'
-          : '파고/조류/시야 조건이 위험 구간입니다.');
+          ? weatherText('cautionConditions')
+          : weatherText('dangerConditions'));
 
   return {
     level,
@@ -466,84 +472,34 @@ export function calculateMarineRisk(input: {
 }
 
 export function buildMarineRiskDescription(level: MarineRiskLevel, score?: number, beginnerWarning?: string): string {
-  const scoreText = Number.isFinite(score) ? `추천도 ${Math.round(Number(score))}점.` : '';
-  if (level === 'good') return `${scoreText} 오늘은 파고가 낮고 시야가 좋아 다이빙하기 좋은 조건입니다.`.trim();
+  const scoreText = Number.isFinite(score) ? weatherText('score', { score: Math.round(Number(score)) }) : '';
+  if (level === 'good') return weatherText('goodSummary', { scoreText }).trim();
   if (level === 'normal') {
-    return `${scoreText} 기본적인 다이빙 조건입니다. 표준 안전 수칙을 지켜주세요.`.trim();
+    return weatherText('normalSummary', { scoreText }).trim();
   }
   if (level === 'caution') {
-    return `${scoreText} 현재 조류/파고 조건으로 초보자는 보수적으로 접근하는 것이 좋습니다.${beginnerWarning ? ` ${beginnerWarning}` : ''}`.trim();
+    return weatherText('cautionSummary', { scoreText, beginnerWarning: beginnerWarning || '' }).trim();
   }
-  return `${scoreText} 위험 조건입니다. 입수를 권장하지 않습니다.`.trim();
-}
-
-async function fetchStormglassWeather(lat: number, lng: number): Promise<StormglassWeatherResponse> {
-  const params = [
-    'waveHeight',
-    'currentDirection',
-    'currentSpeed',
-    'waterTemperature',
-    'windSpeed',
-    'airTemperature',
-  ].join(',');
-
-  const url = `${STORMGLASS_BASE}/weather/point?lat=${lat}&lng=${lng}&params=${params}&source=sg,noaa`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: STORMGLASS_KEY,
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`stormglass_weather_failed:${response.status}:${body.slice(0, 160)}`);
-  }
-  return (await response.json()) as StormglassWeatherResponse;
-}
-
-async function fetchStormglassTides(lat: number, lng: number): Promise<StormglassTideResponse> {
-  const url = `${STORMGLASS_BASE}/tide/extremes/point?lat=${lat}&lng=${lng}`;
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: STORMGLASS_KEY,
-    },
-  });
-  if (!response.ok) {
-    return { data: [] };
-  }
-  return (await response.json()) as StormglassTideResponse;
+  return weatherText('dangerSummary', { scoreText }).trim();
 }
 
 function buildFallbackWeather(pointId: string, lat: number, lng: number): MarineWeather {
-  const sample = mockMarineWeather[0];
   const fallback: MarineWeather = {
-    ...(sample || {
-      pointId,
-      lat,
-      lng,
-      riskLevel: 'normal',
-      riskReason: '해양 정보 없음',
-      summary: '해양 정보 없음',
-      source: 'none',
-      observedAt: new Date().toISOString(),
-      fetchedAt: new Date().toISOString(),
-    }),
+    riskLevel: 'caution',
+    observedAt: '',
     pointId,
     lat,
     lng,
     source: 'none',
-    summary: '해양 정보 없음',
-    riskReason: '실시간 데이터 조회 실패',
-    recommendationScore: 42,
-    dataCompletenessScore: 12,
+    summary: weatherText('noMarineData'),
+    riskReason: weatherText('liveLookupFailed'),
+    dataCompletenessScore: 0,
     riskConfidence: 'low',
     diveAllowed: false,
-    noDiveReason: '실시간 데이터 없음',
+    noDiveReason: weatherText('noLiveData'),
     beginnerSafe: false,
-    beginnerWarning: '실시간 데이터가 없어 초보자 입수는 권장되지 않습니다.',
-    warnings: ['실시간 해양 데이터를 불러오지 못했습니다.'],
+    beginnerWarning: weatherText('beginnerNoLiveData'),
+    warnings: [weatherText('liveDataLoadFailed')],
     fetchedAt: new Date().toISOString(),
   };
   return fallback;
@@ -570,15 +526,16 @@ function withDerivedQuality(weather: MarineWeather): MarineWeather {
 }
 
 export async function getMarineWeatherByLatLng(lat: number, lng: number): Promise<MarineWeather | null> {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   const freshCache = readCache(lat, lng);
   const cacheEntry = readCacheEntry(lat, lng);
   const staleCache = cacheEntry && !cacheEntry.isFresh ? fromStaleCache(cacheEntry) : null;
-  if (!STORMGLASS_KEY) {
-    return withDerivedQuality(freshCache || staleCache || buildFallbackWeather(`latlng-${lat.toFixed(3)}-${lng.toFixed(3)}`, lat, lng));
-  }
+  if (freshCache) return withDerivedQuality(freshCache);
 
   try {
-    const [weatherRes, tideRes] = await Promise.all([fetchStormglassWeather(lat, lng), fetchStormglassTides(lat, lng)]);
+    const source = await apiClient.getMarineWeatherSource(lat, lng);
+    const weatherRes: StormglassWeatherResponse = source.weather;
+    const tideRes: StormglassTideResponse = source.tides;
     const nowMs = Date.now();
     const sortedHours = normalizeHours(weatherRes.hours);
     const nearestIndex = sortedHours.reduce((bestIndex, hour, index) => {
@@ -608,7 +565,8 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const windSpeedMps = pickNumber(first.windSpeed as Record<string, number | undefined>);
     const airTempC = pickNumber(first.airTemperature as Record<string, number | undefined>);
 
-    const visibilityM = freshCache?.visibilityM ?? staleCache?.visibilityM ?? mockMarineWeather[0]?.visibilityM ?? undefined;
+    // This provider response contains no underwater visibility measurement.
+    const visibilityM: number | undefined = undefined;
     const dataCompletenessScore = calculateDataCompleteness({
       waveHeightM,
       currentSpeedKnot,
@@ -653,7 +611,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const hourlySignalCount = hourly.filter((item) => item.waveHeightM != null && item.currentSpeedKnot != null).length;
     const sparseHourly = hourly.length < 3 || hourlySignalCount < Math.min(3, Math.max(2, hourly.length));
     const sparseHourlyWarning = sparseHourly
-      ? '시간대별 해양 데이터가 부족하여 예측 신뢰도가 낮습니다.'
+      ? weatherText('sparseHourlyWarning')
       : undefined;
     const waveValues = hourly.map((item) => Number(item.waveHeightM)).filter((value) => Number.isFinite(value));
     const currentValues = hourly.map((item) => Number(item.currentSpeedKnot)).filter((value) => Number.isFinite(value));
@@ -710,7 +668,10 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     const tidePenalty = tideTransitionPenalty(nearestTide?.minutesDiff ?? NaN);
     const tideWarning =
       tidePenalty > 0 && nearestTide
-        ? `조석 ${nearestTide.type === 'high' ? '만조' : '간조'} 전후 ${Math.round(nearestTide.minutesDiff)}분 구간으로 조류 변화가 클 수 있습니다.`
+        ? weatherText('tideTransition', {
+            tide: weatherText(nearestTide.type === 'high' ? 'highTide' : 'lowTide'),
+            minutes: Math.round(nearestTide.minutesDiff),
+          })
         : undefined;
     const adjustedScore = clamp(
       0,
@@ -743,9 +704,9 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
       ? [sparseHourlyWarning, ...adjustedWarnings].filter((item, index, arr) => arr.indexOf(item) === index)
       : adjustedWarnings;
     const sparseDiveAllowed = sparseHourly ? false : adjustedDiveAllowed;
-    const sparseNoDiveReason = sparseHourly ? '시간대별 해양 데이터 부족' : adjustedNoDiveReason;
+    const sparseNoDiveReason = sparseHourly ? weatherText('sparseHourlyReason') : adjustedNoDiveReason;
     const sparseSummary = sparseHourly
-      ? '시간대별 해양 데이터가 충분하지 않아 입수 판단을 보류합니다. 최신 데이터로 다시 확인하세요.'
+      ? weatherText('sparseHourlySummary')
       : buildMarineRiskDescription(adjustedLevel, adjustedScore, risk.beginnerWarning);
 
     const out: MarineWeather = {
@@ -788,19 +749,19 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
     if (Number.isFinite(observedMs)) {
       const observedAgeMs = nowMs - observedMs;
       if (observedAgeMs > STALE_OBS_MS) {
-        const staleWarning = '관측 시각이 오래되어 실시간 판단이 어렵습니다. 최신 데이터 갱신 후 확인하세요.';
+        const staleWarning = weatherText('staleObservationWarning');
         const warnings = [staleWarning, ...(normalized.warnings || [])].filter((item, index, arr) => arr.indexOf(item) === index);
         normalized = {
           ...normalized,
           riskLevel: normalized.riskLevel === 'danger' ? 'danger' : 'caution',
           riskConfidence: 'low',
           diveAllowed: false,
-          noDiveReason: '관측 시각이 오래됨',
-          summary: '실시간성이 낮은 해양 데이터입니다. 최신 정보 갱신 후 입수 여부를 판단하세요.',
+          noDiveReason: weatherText('staleObservationReason'),
+          summary: weatherText('staleObservationSummary'),
           warnings,
         };
       } else if (observedAgeMs > 2 * 60 * 60 * 1000) {
-        const agedWarning = '관측 시각이 2시간 이상 경과했습니다. 입수 전 현장 조건을 추가 확인하세요.';
+        const agedWarning = weatherText('agedObservationWarning');
         const warnings = [agedWarning, ...(normalized.warnings || [])].filter((item, index, arr) => arr.indexOf(item) === index);
         const adjustedScore = clamp(0, Number(normalized.recommendationScore || 0) - 8, 100);
         const adjustedLevel = riskLevelFromScore(adjustedScore);
@@ -816,7 +777,7 @@ export async function getMarineWeatherByLatLng(lat: number, lng: number): Promis
           noDiveReason:
             normalized.diveAllowed && adjustedLevel !== 'danger'
               ? normalized.noDiveReason
-              : normalized.noDiveReason || '관측 시각 경과로 보수적 판단 필요',
+              : normalized.noDiveReason || weatherText('agedObservationReason'),
         };
       }
     }

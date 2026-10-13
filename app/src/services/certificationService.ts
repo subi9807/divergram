@@ -1,4 +1,4 @@
-import type { Certification } from '../models';
+import type { Certification, CertificationDiscipline } from '../models';
 import { mockCertifications } from '../mock/divergramExpansionMock';
 import { normalizeCertificationAgency } from '../models/Certification';
 import { storage } from '../lib/storage';
@@ -15,6 +15,7 @@ export type CertificationSyncState = {
 
 type RegisterCertificationInput = {
   userId?: string;
+  discipline: CertificationDiscipline;
   agency: string;
   certificationNumber?: string;
   level?: string;
@@ -71,6 +72,7 @@ function normalizeCertificationRow(row: any): Certification | null {
   return {
     id,
     userId: String(row.user_id || row.userId || 'me').trim() || 'me',
+    discipline: row.discipline === 'freediving' ? 'freediving' : row.discipline === 'scuba' ? 'scuba' : undefined,
     agency: agencyRaw,
     certificationNumber: String(row.certification_number || row.certificationNumber || '').trim() || undefined,
     level: String(row.level || '').trim() || undefined,
@@ -117,7 +119,7 @@ export async function listCertifications(userId = 'me'): Promise<Certification[]
       const migrated: Certification[] = [];
       for (const item of stored) {
         const created = await apiClient.createCertification({
-          id: item.id, user_id: item.userId, agency: item.agency,
+          id: item.id, user_id: item.userId, discipline: item.discipline || 'scuba', agency: item.agency,
           certification_number: item.certificationNumber, level: item.level,
           issued_at: item.issuedAt, expires_at: item.expiresAt,
           image_url: item.imageUrl, status: item.status,
@@ -131,7 +133,7 @@ export async function listCertifications(userId = 'me'): Promise<Certification[]
       return sortByCreatedAtDesc(migrated);
     }
     setSyncState('backend', 'empty');
-    return sortByCreatedAtDesc(mockCertifications);
+    return __DEV__ ? sortByCreatedAtDesc(mockCertifications) : [];
   } catch (error) {
     setSyncState('local', 'backend_read_failed');
     if (stored.length) return sortByCreatedAtDesc(stored);
@@ -144,15 +146,18 @@ export async function registerCertification(input: RegisterCertificationInput): 
   const nextId = `cert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const nextUserId = input.userId || 'me';
   const nextAgency = normalizeCertificationAgency(input.agency) || 'PADI';
+  const nextImageUrl = String(input.imageUrl || '').trim();
+  if (!nextImageUrl) throw new Error('certification_image_required');
   const next: Certification = {
     id: nextId,
     userId: nextUserId,
+    discipline: input.discipline,
     agency: nextAgency,
     certificationNumber: String(input.certificationNumber || '').trim() || undefined,
     level: String(input.level || '').trim() || undefined,
     issuedAt: String(input.issuedAt || '').trim() || undefined,
     expiresAt: String(input.expiresAt || '').trim() || undefined,
-    imageUrl: String(input.imageUrl || '').trim() || undefined,
+    imageUrl: nextImageUrl,
     status: 'reviewing',
     createdAt: now,
     updatedAt: now,
@@ -162,6 +167,7 @@ export async function registerCertification(input: RegisterCertificationInput): 
     const createdRow = await apiClient.createCertification({
       id: next.id,
       user_id: next.userId,
+      discipline: input.discipline,
       agency: next.agency,
       certification_number: next.certificationNumber,
       level: next.level,
@@ -218,6 +224,7 @@ export async function updateCertificationDetails(
     updated_at: new Date().toISOString(),
   };
   if (input.agency !== undefined) patch.agency = normalizeCertificationAgency(input.agency) || 'PADI';
+  if (input.discipline !== undefined) patch.discipline = input.discipline;
   if (input.certificationNumber !== undefined) patch.certification_number = String(input.certificationNumber || '').trim();
   if (input.level !== undefined) patch.level = String(input.level || '').trim();
   if (input.issuedAt !== undefined) patch.issued_at = String(input.issuedAt || '').trim();

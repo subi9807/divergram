@@ -1,8 +1,5 @@
 import type { DeviceInfo, DiveDevice, DiveLog, ExternalDiveLog } from '../models';
 import { convertExternalToDiveLog } from './diveLogSyncService';
-import { fetchGarminDiveLogs } from './garminService';
-import { fetchShearwaterDiveLogs } from './shearwaterService';
-import { fetchSuuntoDiveLogs } from './suuntoService';
 
 export interface DiveComputerAdapter {
   scanDevices(): Promise<DiveDevice[]>;
@@ -83,22 +80,6 @@ export class GenericBluetoothAdapter implements DiveComputerAdapter {
   }
 }
 
-function toBluetoothLogs(provider: 'garmin' | 'suunto' | 'shearwater', rows: ExternalDiveLog[], device: DiveDevice): ExternalDiveLog[] {
-  const sourcePrefix = provider === 'garmin' ? 'g' : provider === 'suunto' ? 's' : 'sw';
-  return rows.map((row, index) => ({
-    ...row,
-    sourceType: 'bluetooth',
-    externalLogId: row.externalLogId ? `bt-${sourcePrefix}-${row.externalLogId}` : `bt-${sourcePrefix}-${Date.now()}-${index}`,
-    deviceId: device.id,
-    deviceName: device.name,
-    rawPayload: {
-      ...(row.rawPayload || {}),
-      importedVia: 'bluetooth',
-      provider,
-    },
-  }));
-}
-
 abstract class BrandedBluetoothAdapter extends GenericBluetoothAdapter {
   protected provider: 'garmin' | 'suunto' | 'shearwater';
 
@@ -132,8 +113,7 @@ export class GarminBluetoothAdapter extends BrandedBluetoothAdapter {
   }
 
   async getDiveLogList(): Promise<ExternalDiveLog[]> {
-    const all = await fetchGarminDiveLogs().catch(() => []);
-    return toBluetoothLogs('garmin', all, this.currentDevice);
+    throw new Error('bluetooth_log_protocol_unsupported');
   }
 }
 
@@ -154,8 +134,7 @@ export class SuuntoBluetoothAdapter extends BrandedBluetoothAdapter {
   }
 
   async getDiveLogList(): Promise<ExternalDiveLog[]> {
-    const all = await fetchSuuntoDiveLogs().catch(() => []);
-    return toBluetoothLogs('suunto', all, this.currentDevice);
+    throw new Error('bluetooth_log_protocol_unsupported');
   }
 }
 
@@ -176,8 +155,7 @@ export class ShearwaterBluetoothAdapter extends BrandedBluetoothAdapter {
   }
 
   async getDiveLogList(): Promise<ExternalDiveLog[]> {
-    const all = await fetchShearwaterDiveLogs().catch(() => []);
-    return toBluetoothLogs('shearwater', all, this.currentDevice);
+    throw new Error('bluetooth_log_protocol_unsupported');
   }
 }
 

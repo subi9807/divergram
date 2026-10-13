@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -17,7 +17,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import {
@@ -30,11 +30,19 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { getSocialAuthConfig } from '../../src/config/socialAuth';
+import { getLatestPolicyVersionMap } from '../../src/services/policyService';
 import { LoadingOverlay } from '../../src/components/LoadingOverlay';
 import { SocialBrandIcon } from '../../src/components/SocialBrandIcon';
 import { useAuth } from '../../src/hooks/useAuth';
 import type { SocialLinkInput, SocialSignupInput } from '../../src/providers/AuthProvider';
-import { setPendingSignupDraft } from '../../src/services/signupFlowService';
+import type { ConsentKey } from '../../src/models';
+import { useLegalStore } from '../../src/stores/legalStore';
+import {
+  clearPendingSignupConsents,
+  getPendingSignupConsents,
+  setPendingSignupDraft,
+  setPendingSocialSignupDraft,
+} from '../../src/services/signupFlowService';
 
 type Provider = 'google' | 'apple' | 'instagram';
 type FocusedField = 'name' | 'contact' | 'email' | 'password' | null;
@@ -46,15 +54,17 @@ const heroImage = {
 const brandLogo = require('../../assets/images/logo.png');
 
 export default function LoginScreen() {
+  const params = useLocalSearchParams<{ mode?: string; consent?: string }>();
   const { t } = useTranslation();
   const {
     loginWithGoogle,
     loginWithApple,
     loginWithInstagram,
     loginWithEmail,
-    signupWithSocialAccount,
+    signupWithEmail,
     linkSocialAccount,
   } = useAuth();
+  const registerConsents = useLegalStore((state) => state.registerConsents);
   const nameRef = useRef<TextInput>(null);
   const contactRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
@@ -74,9 +84,26 @@ export default function LoginScreen() {
   const hasGoogleLogin = Boolean(socialAuth.googleClientIdIos || socialAuth.googleClientIdAndroid || socialAuth.googleClientIdWeb);
   const hasInstagramLogin = true;
   const appVersion = Constants.nativeAppVersion || Constants.expoConfig?.version || '-';
-  const appBuildVersion = Constants.nativeBuildVersion;
+  const appBuildVersion = Constants.nativeBuildVersion
+    || (Platform.OS === 'ios'
+      ? Constants.expoConfig?.ios?.buildNumber
+      : Constants.expoConfig?.android?.versionCode);
   const isSigninDisabled = !email.trim() || !password;
   const isSignupDisabled = !name.trim() || !contact.trim() || !email.trim() || !password;
+
+  useEffect(() => {
+    if (params.mode === 'signup' && params.consent === 'ready') {
+      setShowEmailForm(true);
+      setEmailAuthMode('signup');
+      setPendingSocialLink(null);
+    }
+  }, [params.consent, params.mode]);
+
+  const beginEmailSignup = () => {
+    clearPendingSignupConsents();
+    setPendingSocialLink(null);
+    router.push('/(auth)/consent?mode=signup-intro');
+  };
 
   const resolveErrorMessage = (error: unknown, mode: EmailAuthMode | 'social' = 'social') => {
     const status = (error as any)?.response?.status;
@@ -91,14 +118,14 @@ export default function LoginScreen() {
     const rawLower = raw.toLowerCase();
     if (rawLower.includes('urlstring') || rawLower.includes('invalid url')) return t('auth.oauthConfigInvalid');
     if (raw.includes('google_requires_dev_build')) return t('auth.googleRequiresDevBuild');
-    if (raw.includes('google_request_not_ready')) return 'Google 로그인을 준비하는 중입니다. 잠시 후 다시 시도해주세요.';
-    if (raw.includes('google_access_token_missing')) return 'Google 인증 토큰을 확인할 수 없습니다. 다시 로그인해주세요.';
-    if (raw.includes('google_tokeninfo_failed') || raw.includes('google_userinfo_failed')) return 'Google 계정 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
+    if (raw.includes('google_request_not_ready')) return t('auth.googleRequestNotReady');
+    if (raw.includes('google_access_token_missing')) return t('auth.googleAccessTokenMissing');
+    if (raw.includes('google_tokeninfo_failed') || raw.includes('google_userinfo_failed')) return t('auth.googleUserInfoFailed');
     if (raw.includes('profile_missing_fields') || raw.includes('google_profile_missing_fields')) return t('auth.googleProfileMissing');
-    if (raw.includes('apple_requires_ios')) return 'Apple 로그인은 iOS 기기에서만 사용할 수 있습니다.';
-    if (raw.includes('apple_login_unavailable')) return '현재 기기에서 Apple 로그인을 사용할 수 없습니다.';
-    if (raw.includes('apple_identity_token_missing')) return 'Apple 인증 토큰을 확인할 수 없습니다.';
-    if (raw.includes('apple_identity_verify_failed')) return 'Apple 인증 정보를 확인하지 못했습니다. 다시 로그인해주세요.';
+    if (raw.includes('apple_requires_ios')) return t('auth.appleRequiresIos');
+    if (raw.includes('apple_login_unavailable')) return t('auth.appleLoginUnavailable');
+    if (raw.includes('apple_identity_token_missing')) return t('auth.appleIdentityTokenMissing');
+    if (raw.includes('apple_identity_verify_failed')) return t('auth.appleIdentityVerifyFailed');
     if (raw.includes('missing_google_client_id')) return t('auth.googleConfigMissing');
     if (raw.includes('invalid_auth_url') || raw.includes('invalid_return_url') || raw.includes('instagram_config_missing')) return t('auth.oauthConfigInvalid');
     if (raw.includes('oauth_backend_not_available')) return t('auth.oauthBackendMissing');
@@ -106,12 +133,12 @@ export default function LoginScreen() {
     if (raw.includes('sso_signup_required')) return t('auth.socialSignupFailed');
     if (raw.includes('sso_email_exists')) return t('auth.socialEmailExists');
     if (raw.includes('sso_linked_email_login_required')) return t('auth.socialLinkedEmailLoginRequired');
-    if (raw.includes('instagram_cancelled')) return 'Instagram 로그인이 취소되었습니다.';
+    if (raw.includes('instagram_cancelled')) return t('auth.instagramCancelled');
     if (raw.includes('instagram_token_exchange_failed')) return t('auth.socialLinkFailed');
     if (raw.includes('instagram_userinfo_failed')) return t('auth.socialLinkFailed');
-    if (raw.includes('unsupported_provider_for_mobile')) return '현재 서버에서 이 SNS 로그인을 지원하지 않습니다.';
-    if (raw.includes('profile_missing_fields')) return 'SNS 계정 정보를 확인하지 못했습니다. 이메일 공개 설정을 확인해주세요.';
-    if (raw.includes('oauth_mobile_failed')) return 'SNS 로그인 처리 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    if (raw.includes('unsupported_provider_for_mobile')) return t('auth.unsupportedProviderForMobile');
+    if (raw.includes('profile_missing_fields')) return t('auth.socialProfileMissingFields');
+    if (raw.includes('oauth_mobile_failed')) return t('auth.oauthMobileFailed');
     if (
       raw.includes('oauth_email_mismatch') ||
       raw.includes('oauth_link_failed') ||
@@ -148,28 +175,15 @@ export default function LoginScreen() {
     setShowPassword(false);
   };
 
-  const completeSocialLink = async (socialLink: SocialLinkInput, options?: { silent?: boolean }) => {
+  const completeSocialLink = async (socialLink: SocialLinkInput) => {
     await linkSocialAccount(socialLink);
-    if (!options?.silent) {
-      Alert.alert(
-        t('auth.ssoLinkedTitle'),
-        t('auth.ssoLinkedMessage', {
-          provider: getProviderDisplayName(socialLink.provider as Provider),
-        })
-      );
-    }
+    Alert.alert(
+      t('auth.ssoLinkedTitle'),
+      t('auth.ssoLinkedMessage', {
+        provider: getProviderDisplayName(socialLink.provider as Provider),
+      })
+    );
     setPendingSocialLink(null);
-  };
-
-  const completeSocialSignup = async (socialSignup: SocialSignupInput) => {
-    const outcome = await signupWithSocialAccount(socialSignup);
-    if (!outcome.profileCompletionRequired) {
-      Alert.alert(
-        t('auth.socialSignupCompleteTitle'),
-        t('auth.socialSignupCompleteMessage')
-      );
-    }
-    return outcome;
   };
 
   const handleSocialLogin = async (provider: Provider) => {
@@ -212,20 +226,10 @@ export default function LoginScreen() {
             { text: t('common.cancel'), style: 'cancel' },
             {
               text: t('auth.signUp'),
-              onPress: async () => {
-                setLoading(true);
-                try {
-                  const signupOutcome = await completeSocialSignup(socialSignup);
-                  if (signupOutcome?.profileCompletionRequired) {
-                    router.replace('/(tabs)/profile-edit');
-                    return;
-                  }
-                  router.replace('/(tabs)/feed');
-                } catch (signupError) {
-                  Alert.alert(t('auth.error'), resolveErrorMessage(signupError, 'signup'));
-                } finally {
-                  setLoading(false);
-                }
+              onPress: () => {
+                clearPendingSignupConsents();
+                setPendingSocialSignupDraft(socialSignup);
+                router.push('/(auth)/consent');
               },
             },
           ]
@@ -233,17 +237,8 @@ export default function LoginScreen() {
         return;
       }
       if (socialLink && code.includes('sso_email_exists')) {
-        if (provider === 'apple') {
-          try {
-            await completeSocialLink(socialLink, { silent: true });
-            router.replace('/(tabs)/feed');
-          } catch (linkError) {
-            Alert.alert(t('auth.error'), resolveErrorMessage(linkError, 'social'));
-          }
-          return;
-        }
         Alert.alert(
-          t('auth.error'),
+          t('auth.socialLinkRequiredTitle'),
           t('auth.socialEmailExistsPrompt', { email: socialLink.email }),
           [
             { text: t('common.cancel'), style: 'cancel' },
@@ -295,7 +290,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      await loginWithEmail(normalizedEmail, password);
+      const authOutcome = await loginWithEmail(normalizedEmail, password);
       if (pendingSocialLink) {
         try {
           await completeSocialLink(pendingSocialLink);
@@ -304,6 +299,10 @@ export default function LoginScreen() {
           router.replace('/(tabs)/feed');
           return;
         }
+      }
+      if (authOutcome.profileCompletionRequired) {
+        router.replace('/(tabs)/profile-edit');
+        return;
       }
       router.replace('/(tabs)/feed');
     } catch (error) {
@@ -326,13 +325,45 @@ export default function LoginScreen() {
       return;
     }
 
-    setPendingSignupDraft({
-      email: normalizedEmail,
-      password,
-      name: normalizedName,
-      contact: normalizedContact,
-    });
-    router.push('/(auth)/consent');
+    const consents = getPendingSignupConsents();
+    if (!consents) {
+      setPendingSignupDraft({
+        email: normalizedEmail,
+        password,
+        name: normalizedName,
+        contact: normalizedContact,
+      });
+      router.push('/(auth)/consent');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const createdUser = await signupWithEmail(
+        normalizedEmail,
+        password,
+        normalizedName,
+        normalizedContact,
+        consents
+      );
+      if (createdUser?.id) {
+        const consentValues = consents.reduce((values, receipt) => {
+          values[receipt.key as ConsentKey] = receipt.agreed;
+          return values;
+        }, {} as Record<ConsentKey, boolean>);
+        registerConsents({
+          userId: createdUser.id,
+          values: consentValues,
+          versionMap: getLatestPolicyVersionMap('ko'),
+        });
+      }
+      clearPendingSignupConsents();
+      router.replace('/(tabs)/profile-edit');
+    } catch (error) {
+      Alert.alert(t('auth.error'), resolveErrorMessage(error, 'signup'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -410,7 +441,7 @@ export default function LoginScreen() {
                 {!hasGoogleLogin && !isIOS && !hasInstagramLogin ? (
                   <View style={styles.noProviderNotice}>
                     <Text style={styles.noProviderText}>
-                      현재 설정된 SNS 로그인이 없습니다. 이메일 로그인으로 진행해 주세요.
+                  {t('auth.noSocialLoginConfigured')}
                     </Text>
                   </View>
                 ) : null}
@@ -449,7 +480,7 @@ export default function LoginScreen() {
                     <Text style={[styles.modeSwitchText, emailAuthMode === 'signin' && styles.modeSwitchTextActive]}>{t('auth.signIn')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => setEmailAuthMode('signup')}
+                    onPress={beginEmailSignup}
                     activeOpacity={0.88}
                     style={[styles.modeSwitchButton, emailAuthMode === 'signup' && styles.modeSwitchButtonActive]}
                   >
@@ -589,7 +620,10 @@ export default function LoginScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => setEmailAuthMode((prev) => (prev === 'signin' ? 'signup' : 'signin'))}
+                  onPress={() => {
+                    if (emailAuthMode === 'signin') beginEmailSignup();
+                    else setEmailAuthMode('signin');
+                  }}
                   activeOpacity={0.86}
                   disabled={loading}
                   style={styles.modeHintButton}
@@ -629,7 +663,7 @@ export default function LoginScreen() {
             </Link>
           </View>
           <Text style={styles.versionText}>
-            v{appVersion}{appBuildVersion ? ` (${appBuildVersion})` : ''}
+            v{appVersion}{appBuildVersion ? ` · Build ${appBuildVersion}` : ''}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

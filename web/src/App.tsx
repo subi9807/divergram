@@ -15,6 +15,9 @@ import Notifications from './components/Notifications';
 import LocationMapPage from './components/LocationMapPage';
 import ProfileEdit from './components/ProfileEdit';
 import SettingsPage from './components/SettingsPage';
+import AccountDeletionGuide from './components/AccountDeletionGuide';
+import MemberPortal from './components/MemberPortal';
+import ResortPartnerPortal from './components/ResortPartnerPortal';
 import { db } from './lib/internal-db';
 
 function MainApp() {
@@ -485,7 +488,32 @@ function MainApp() {
   );
 }
 
+function MemberPortalEntry() {
+  const { profile } = useAuth();
+  return String(profile?.account_type || '').toLowerCase() === 'resort'
+    ? <ResortPartnerPortal />
+    : <MemberPortal />;
+}
+
 function App() {
+  if (window.location.pathname === '/account-deletion') {
+    return <AccountDeletionGuide />;
+  }
+
+  const isMemberPortal = window.location.hostname === 'mns.divergram.com'
+    || window.location.pathname === '/member-portal'
+    || new URLSearchParams(window.location.search).get('mns') === '1';
+
+  if (isMemberPortal) {
+    return (
+      <AuthProvider>
+        <AppSettingsProvider>
+          <MemberPortalEntry />
+        </AppSettingsProvider>
+      </AuthProvider>
+    );
+  }
+
   return (
     <AuthProvider>
       <AppSettingsProvider>

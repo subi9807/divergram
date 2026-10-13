@@ -2,6 +2,8 @@ import { create } from 'axios';
 import i18n from './i18n';
 import { storage } from './storage';
 import { getSecureAuthValue } from './secureAuthStorage';
+import { normalizeResortAddressFields, normalizeResortLocation } from '../utils/resortLocation';
+import { optionalDiveMetric } from '../utils/feedDiveRecords';
 
 const RAW_API_BASE =
   process.env.EXPO_PUBLIC_DIVERGRAM_API_BASE ||
@@ -104,6 +106,115 @@ async function tryCandidateRequests<T>(candidates: CandidateRequest[]): Promise<
 }
 
 export type ExternalProviderKey = 'garmin' | 'suunto' | 'shearwater';
+
+export type EducationApplication = {
+  id: string;
+  userId: string;
+  track: 'scuba' | 'freediving';
+  courseId: string;
+  courseLevel: string;
+  courseTitle: string;
+  applicantName: string;
+  contact: string;
+  preferredRegion: string;
+  preferredSchedule: string;
+  preferredDate?: string | null;
+  privacyConsent: boolean;
+  thirdPartyConsent: boolean;
+  consentedAt?: string | null;
+  consentVersion?: string;
+  status: 'received' | 'consulting' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+  assignedResortId?: string | null;
+  assignedResortName?: string;
+  assignedInstructorUserId?: string | null;
+  assignedInstructorName?: string;
+  adminNote?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ResortBooking = {
+  id: string; bookingNumber?: string; resortId: string; resortName: string; resortCoverUrl?: string; priceId?: string | null; priceTitle?: string;
+  bookingDate: string; bookingEndDate?: string; participants: number; diveType: string; applicantName: string; contactPhone?: string; contactEmail?: string;
+  note?: string; adminNote?: string; status: 'pending'|'confirmed'|'rejected'|'cancelled'|'completed'|'no_show';
+  cancellationType?: ''|'pre_payment'|'customer'|'provider';
+  depositAmount: number; depositCurrency: string; depositStatus: 'pending'|'paid'|'waived'|'refund_requested'|'partially_refunded'|'refunded'; paymentReference?: string;
+  refundPolicyVersion?: string; refundPolicy?: { version?: string; processingBusinessDays?: string; noShowRefundPercent?: number }; bookingPolicyAcceptedAt?: string | null; noShowAt?: string | null; refundRequestedAt?: string | null; refundReason?: string; refundAmount?: number; refundProcessedAt?: string | null;
+  createdAt: string; updatedAt: string;
+};
+
+export type ResortPaymentConfig = {
+  enabled: boolean;
+  provider: 'gateway' | 'disabled' | string;
+  sampleMode?: boolean;
+  currency: 'USD';
+  applePay: {
+    enabled: boolean;
+    merchantIdentifier: string;
+    countryCode: string;
+    supportedNetworks: string[];
+  };
+  googlePay: {
+    enabled: boolean;
+    environment: 'TEST' | 'PRODUCTION';
+    merchantName: string;
+    merchantId: string;
+    countryCode: string;
+    supportedNetworks: string[];
+    gateway: string;
+    gatewayMerchantId: string;
+  };
+  card: {
+    enabled: boolean;
+    mode: 'gateway_checkout' | 'airwallex_hpp' | 'paypal_checkout';
+    sample?: boolean;
+  };
+  paypal?: { enabled: boolean; environment: 'sandbox' | 'production' };
+};
+
+export type AirwallexPaymentSession = {
+  sample: boolean;
+  paymentIntentId: string;
+  checkoutUrl: string;
+  alreadyProcessed?: boolean;
+  status?: string;
+};
+
+export type PayPalPaymentSession = AirwallexPaymentSession;
+
+export type AnnualMembershipConfig = {
+  planCode: 'annual_ai';
+  monthlyCredits: number;
+  priceHintUsd: string;
+  appAccountToken: string;
+  obfuscatedAccountId: string;
+  ios: { enabled: boolean; productId: string };
+  android: { enabled: boolean; productId: string };
+  allowance: {
+    plan: 'free' | 'annual';
+    monthlyLimit: number;
+    usedCredits: number;
+    remainingCredits: number;
+    periodStart: string | null;
+    membershipExpiresAt: string | null;
+  } | null;
+};
+
+export type DiveGuide = {
+  id: string;
+  category: 'safety' | 'equipment' | 'skills' | 'environment' | 'travel' | 'marine_life' | 'news';
+  title: string;
+  summary: string;
+  body: string;
+  coverImageUrl: string;
+  videoUrl: string;
+  featured: boolean;
+  publishedAt: string | null;
+};
+
+export function getApiEndpoint(path: string) {
+  return `${API_ROOT}${path.startsWith('/') ? path : `/${path}`}`;
+}
 
 export type ExternalProviderAuthResult = {
   provider: ExternalProviderKey;
@@ -226,6 +337,7 @@ const dataApi = {
       order?: { column: string; ascending?: boolean };
       range?: [number, number];
       limit?: number;
+      channel?: 'feed' | 'reels';
     }
   ): Promise<{ data: T[]; count: number }> => {
     const params: Record<string, string | number> = {};
@@ -233,9 +345,22 @@ const dataApi = {
     if (options?.order) params.order = JSON.stringify(options.order);
     if (options?.range) params.range = JSON.stringify(options.range);
     if (options?.limit !== undefined) params.limit = options.limit;
+    if (options?.channel) params.channel = options.channel;
 
-    const res = await axiosInstance.get(`/data/${table}`, { params });
-    return { data: res.data?.data || [], count: res.data?.count || 0 };
+    const start = options?.range?.[0] ?? 0;
+    const requested = options?.limit ?? (options?.range ? options.range[1] - start + 1 : 1000);
+    const data: T[] = [];
+    while (data.length < requested) {
+      const size = Math.min(2000, requested - data.length);
+      const offset = start + data.length;
+      const res = await axiosInstance.get(`/data/${table}`, {
+        params: { ...params, limit: size, range: JSON.stringify([offset, offset + size - 1]) },
+      });
+      const page = res.data?.data || [];
+      data.push(...page);
+      if (page.length < size) break;
+    }
+    return { data, count: data.length };
   },
   insert: async <T>(table: string, rows: T[]): Promise<T[]> => {
     const res = await axiosInstance.post(`/data/${table}`, { rows });
@@ -252,7 +377,9 @@ const dataApi = {
 };
 
 function normalizeImageUrl(url: unknown): string | undefined {
-  const raw = typeof url === 'string' ? url.trim() : '';
+  const raw = typeof url === 'string'
+    ? url.trim().replace(/&amp;/gi, '&').replace(/&#38;/g, '&')
+    : '';
   if (!/^(https?:\/\/|file:\/\/|content:\/\/)/i.test(raw)) return undefined;
   return raw;
 }
@@ -333,6 +460,14 @@ export interface FeedMediaItem {
   order: number;
 }
 
+export interface PostLikeUser {
+  id: string;
+  username: string;
+  name: string;
+  avatar?: string;
+  likedAt?: string;
+}
+
 export interface NotificationFeedItem {
   id: string;
   type: string;
@@ -366,13 +501,58 @@ export interface ActiveAdSlot {
   endAt?: string;
 }
 
+export type MarineLifeSightingItem = {
+  id: string;
+  speciesName: string;
+  imageUrl: string;
+  mediaType: 'image' | 'video';
+  mediaUrl: string;
+  category: 'fish' | 'coral' | 'marine_mammal' | 'reptile' | 'mollusk' | 'crustacean' | 'echinoderm' | 'cnidarian' | 'sponge' | 'algae' | 'other';
+  observedAt: string | null;
+  locationName: string;
+  scientificName: string;
+  summary: string;
+  habitat: string;
+  identificationTips: string[];
+  notes: string;
+  source: 'USER' | 'AI_CONFIRMED';
+  aiConfidence: 'low' | 'medium' | 'high' | null;
+  aiCandidates: string[];
+  visibilityType: 'inherit' | 'public' | 'followers' | 'private';
+  createdAt: string | null;
+  user?: { id: string; name: string; avatar: string };
+};
+
+export type MarineLifeFeedItem = MarineLifeSightingItem & {
+  user: { id: string; name: string; avatar: string };
+};
+
+export type MarineSpeciesSearchItem = {
+  id: string;
+  commonName: string;
+  scientificName: string;
+  rank: string;
+  observationsCount: number;
+  taxonomy: { class: string; order: string; family: string; genus: string };
+  providerUrl: string;
+  wikipediaUrl: string;
+  photo: null | { url: string; attribution: string; license: string; sourceUrl: string };
+};
+
 function normalizeFeedMedia(post: any): FeedMediaItem[] {
+  const normalizeVideoUrl = (value: unknown) => {
+    const url = normalizeImageUrl(value);
+    if (url && /commondatastorage\.googleapis\.com\/gtv-videos-bucket\/sample\//i.test(url)) {
+      return 'https://www.w3schools.com/html/mov_bbb.mp4';
+    }
+    return url;
+  };
   const rows = Array.isArray(post?.post_media) ? post.post_media : [];
   const fromRows = rows
     .map((item: any, index: number) => {
-      const url = normalizeImageUrl(item?.media_url);
-      if (!url) return null;
       const mediaType = item?.media_type === 'video' ? 'video' : 'image';
+      const url = mediaType === 'video' ? normalizeVideoUrl(item?.media_url) : normalizeImageUrl(item?.media_url);
+      if (!url) return null;
       const order = Number.isFinite(Number(item?.order_index)) ? Number(item.order_index) : index;
       return {
         id: String(item?.id || `${post?.id || 'post'}-media-${index}`),
@@ -389,7 +569,7 @@ function normalizeFeedMedia(post: any): FeedMediaItem[] {
 
   const fallback: FeedMediaItem[] = [];
   const image = normalizeImageUrl(post?.image_url);
-  const video = normalizeImageUrl(post?.video_url);
+  const video = normalizeVideoUrl(post?.video_url);
   if (image) {
     fallback.push({ id: `${post?.id || 'post'}-image`, url: image, type: 'image', order: 0 });
   }
@@ -406,7 +586,7 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
     id: String(post.id),
     user: {
       id: String(post.user_id),
-      name: profile.username || profile.full_name || 'Diver',
+      name: profile.full_name || profile.username || 'Diver',
       avatar: profile.avatar_url || undefined,
     },
     content: caption,
@@ -421,14 +601,17 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
     gasType: post.gas_type || undefined,
     gasPercent: normalizeNumber(post.gas_percent),
     resort: post.buddy || undefined,
-    maxDepth: normalizeNumber(post.max_depth),
-    diveDuration: normalizeNumber(post.dive_duration),
-    waterTemperature: normalizeNumber(post.water_temperature),
-    visibility: normalizeNumber(post.visibility),
+    buddyName: post.buddy_name || undefined,
+    maxDepth: optionalDiveMetric(post.max_depth),
+    diveDuration: optionalDiveMetric(post.dive_duration),
+    waterTemperature: optionalDiveMetric(post.water_temperature),
+    visibility: optionalDiveMetric(post.visibility),
     locationLat: normalizeNumber(post.location_lat),
     locationLng: normalizeNumber(post.location_lng),
     publishToFeed: post.publish_to_feed !== false,
     publishToReels: post.publish_to_reels === true,
+    visibilityType: normalizeString(post.visibility_type || 'inherit') as 'inherit' | 'public' | 'followers' | 'private',
+    effectiveVisibility: normalizeString(post.effective_visibility || post.visibility_type || 'inherit') as 'inherit' | 'public' | 'followers' | 'private',
     tags: extractHashtags(caption),
   };
 }
@@ -436,11 +619,11 @@ function normalizeFeedItem(post: any, profileMap: Record<string, any>, likesCoun
 function normalizeAdSlot(row: any): ActiveAdSlot {
   return {
     id: normalizeString(row?.id || ''),
-    title: normalizeString(row?.title || '') || '광고 슬롯',
+    title: normalizeString(row?.title || '') || i18n.t('feed.ad.slotLabel'),
     placement: normalizeString(row?.placement || ''),
     status: normalizeString(row?.status || 'draft'),
     note: normalizeString(row?.note || ''),
-    actionLabel: normalizeString(row?.action_label || row?.actionLabel || '자세히 보기') || '자세히 보기',
+    actionLabel: normalizeString(row?.action_label || row?.actionLabel || '') || i18n.t('feed.ad.cta'),
     targetUrl: normalizeString(row?.target_url || row?.targetUrl || '') || undefined,
     sortOrder: normalizeNumber(row?.sort_order ?? row?.sortOrder) || 0,
     isActive: Boolean(row?.is_active ?? row?.isActive ?? true),
@@ -450,9 +633,109 @@ function normalizeAdSlot(row: any): ActiveAdSlot {
 }
 
 export const apiClient = {
+  getMarineWeatherSource: async (lat: number, lng: number) => {
+    const response = await axiosInstance.get('/marine-weather', { params: { lat, lng } });
+    return response.data.data;
+  },
+  getDiveGuides: async (locale: 'ko' | 'en' | 'ja' | 'zh', offset = 0, category = ''): Promise<{ data: DiveGuide[]; nextOffset: number | null }> => {
+    const response = await axiosInstance.get('/dive-guides', { params: { locale, offset, limit: 10, category } });
+    const nextOffset = response.data?.nextOffset;
+    return {
+      data: Array.isArray(response.data?.data) ? response.data.data : [],
+      nextOffset: typeof nextOffset === 'number' && Number.isInteger(nextOffset) && nextOffset > offset ? nextOffset : null,
+    };
+  },
+  getDiveGuide: async (id: string, locale: 'ko' | 'en' | 'ja' | 'zh'): Promise<DiveGuide> => {
+    const response = await axiosInstance.get(`/dive-guides/${encodeURIComponent(id)}`, { params: { locale } });
+    return response.data?.data;
+  },
+  sendPresenceHeartbeat: async (payload: {
+    platform: string;
+    deviceId: string;
+    appVersion: string;
+    buildNumber: string;
+    currentRoute?: string;
+  }): Promise<void> => {
+    await axiosInstance.post('/presence/heartbeat', payload);
+  },
+  getMyEducationApplications: async (): Promise<EducationApplication[]> => {
+    const response = await axiosInstance.get('/education-applications/me');
+    return Array.isArray(response.data?.applications) ? response.data.applications : [];
+  },
+
+  createEducationApplication: async (payload: {
+    track: 'scuba' | 'freediving';
+    courseId: string;
+    courseLevel: string;
+    courseTitle: string;
+    applicantName: string;
+    contact: string;
+    preferredRegion?: string;
+    preferredDate: string;
+    privacyConsent: boolean;
+    thirdPartyConsent: boolean;
+  }): Promise<EducationApplication> => {
+    const response = await axiosInstance.post('/education-applications', payload);
+    return response.data.application;
+  },
+  cancelEducationApplication: async (applicationId: string): Promise<EducationApplication> => {
+    const response = await axiosInstance.patch(`/education-applications/${encodeURIComponent(applicationId)}/cancel`);
+    return response.data.application;
+  },
+  getMyResortBookings: async (): Promise<ResortBooking[]> => {
+    const response = await axiosInstance.get('/resort-bookings/me');
+    return Array.isArray(response.data?.bookings) ? response.data.bookings : [];
+  },
+  getMyResortBooking: async (bookingId: string): Promise<ResortBooking> => {
+    const response = await axiosInstance.get(`/resort-bookings/${encodeURIComponent(bookingId)}`);
+    return response.data.booking;
+  },
+  createResortBooking: async (payload: { resortId:string; priceId?:string; bookingDate:string; bookingEndDate:string; participants:number; diveType:string; applicantName:string; contactPhone?:string; contactEmail?:string; note?:string; bookingTermsAccepted:boolean }): Promise<ResortBooking> => {
+    const response = await axiosInstance.post('/resort-bookings', payload);
+    return response.data.booking;
+  },
+  cancelResortBooking: async (bookingId:string): Promise<ResortBooking> => {
+    const response = await axiosInstance.patch(`/resort-bookings/${encodeURIComponent(bookingId)}/cancel`);
+    return response.data.booking;
+  },
+  getResortBookingAvailability: async (resortId:string): Promise<{ bookingEnabled:boolean; defaultCapacity:number; minNoticeDays:number; timezone:string; currency:string; refundPolicy:any; slots:any[] }> => {
+    const response = await axiosInstance.get(`/resorts/${encodeURIComponent(resortId)}/booking-availability`);
+    return response.data;
+  },
+  requestResortBookingRefund: async (bookingId:string, reason = ''): Promise<{ daysBefore:number|null; refundPercent:number; refundAmount:number }> => {
+    const response = await axiosInstance.post(`/resort-bookings/${encodeURIComponent(bookingId)}/refund-request`, { reason });
+    return response.data.refund;
+  },
+  getResortPaymentConfig: async (): Promise<ResortPaymentConfig> => {
+    const response = await axiosInstance.get('/resort-payments/config');
+    return response.data;
+  },
+  createAirwallexPaymentSession: async (bookingId: string, idempotencyKey: string, locale: string): Promise<AirwallexPaymentSession> => {
+    const response = await axiosInstance.post(`/resort-bookings/${encodeURIComponent(bookingId)}/payments/airwallex/session`, { idempotencyKey, locale }, { headers: { 'Idempotency-Key': idempotencyKey } });
+    return response.data;
+  },
+  createPayPalPaymentSession: async (bookingId: string, idempotencyKey: string, locale: string): Promise<PayPalPaymentSession> => {
+    const response = await axiosInstance.post(`/resort-bookings/${encodeURIComponent(bookingId)}/payments/paypal/session`, { idempotencyKey, locale }, { headers: { 'Idempotency-Key': idempotencyKey } });
+    return response.data;
+  },
+  getAnnualMembershipConfig: async (): Promise<AnnualMembershipConfig> => {
+    const response = await axiosInstance.get('/memberships/annual/config');
+    return response.data?.data;
+  },
+  verifyAnnualMembershipPurchase: async (platform: 'ios' | 'android', purchase: { transactionId?: string | null; purchaseToken?: string | null; productId: string; environment?: string | null }) => {
+    const response = await axiosInstance.post(`/memberships/annual/verify/${platform === 'ios' ? 'apple' : 'google'}`, purchase);
+    return response.data as { ok: boolean; allowance: AnnualMembershipConfig['allowance'] };
+  },
+  recordIapDiagnostic: async (event: { stage: string; platform: 'ios' | 'android'; appVersion?: string; buildVersion?: string; productId?: string; code?: string; message?: string; connected?: boolean; productCount?: number }) => {
+    await axiosInstance.post('/memberships/annual/diagnostics', event);
+  },
   generateAiText: async (task: string, prompt: string): Promise<string> => {
     const response = await axiosInstance.post('/ai/generate', { task, prompt });
     return normalizeString(response.data?.text || '');
+  },
+  translateText: async (text: string, targetLanguage: 'ko' | 'en' | 'ja' | 'zh'): Promise<string> => {
+    const response = await axiosInstance.post('/translations/text', { text, targetLanguage });
+    return normalizeString(response.data?.translatedText || '');
   },
   getUserPreferences: async () => {
     const response = await axiosInstance.get('/preferences/me');
@@ -481,6 +764,45 @@ export const apiClient = {
     return Array.isArray(response.data?.data) ? response.data.data : [];
   },
 
+  createAppleWalletPass: async (licenseId: string) => {
+    const response = await axiosInstance.post('/wallet/apple-pass', { licenseId });
+    return {
+      ready: response.data?.ready === true,
+      message: normalizeString(response.data?.message || ''),
+      passUrl: normalizeString(response.data?.passUrl || ''),
+    };
+  },
+
+  getAppleWalletPassStatus: async () => {
+    const response = await axiosInstance.get('/wallet/apple-pass/status');
+    return {
+      ready: response.data?.ready === true,
+      message: normalizeString(response.data?.message || ''),
+    };
+  },
+
+  createGoogleWalletPass: async (licenseId: string) => {
+    const response = await axiosInstance.post('/wallet/google-pass', { licenseId });
+    return {
+      ready: response.data?.ready === true,
+      message: normalizeString(response.data?.message || ''),
+      passUrl: normalizeString(response.data?.passUrl || ''),
+    };
+  },
+
+  getResortCheckinContext: async () => {
+    const response = await axiosInstance.get('/resort-checkins/context');
+    return {
+      resorts: Array.isArray(response.data?.resorts) ? response.data.resorts : [],
+      recent: Array.isArray(response.data?.recent) ? response.data.recent : [],
+    };
+  },
+
+  scanResortCheckin: async (resortId: string, qrData: string) => {
+    const response = await axiosInstance.post('/resort-checkins/scan', { resortId, qrData });
+    return response.data as { ok: boolean; duplicate: boolean; checkin: Record<string, any> };
+  },
+
   getDiveLogDraft: async (logId: string) => {
     const response = await axiosInstance.get(`/dive-log-drafts/${encodeURIComponent(logId)}`);
     return { data: response.data?.data || null, exists: response.data?.exists === true };
@@ -493,6 +815,135 @@ export const apiClient = {
 
   deleteDiveLogDraft: async (logId: string) => {
     await axiosInstance.delete(`/dive-log-drafts/${encodeURIComponent(logId)}`);
+  },
+
+  analyzeDivePhoto: async (logId: string, mediaId: string) => {
+    const response = await axiosInstance.post('/dive-ai/photo-analysis', { logId, mediaId, consent: true });
+    return { ...response.data?.data, cached: response.data?.cached === true } as {
+      marineLifeCandidates: string[]; environmentCandidates: string[]; confidence: 'low' | 'medium' | 'high'; notes: string;
+      source: 'AI_SUGGESTION'; confirmed: false; cached: boolean;
+    };
+  },
+
+  getMarineLifeSightings: async (): Promise<MarineLifeSightingItem[]> => {
+    const response = await axiosInstance.get('/marine-life/sightings');
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  getMarineLifeSighting: async (id: string): Promise<MarineLifeSightingItem> => {
+    const response = await axiosInstance.get(`/marine-life/sightings/${encodeURIComponent(id)}`);
+    return response.data?.data as MarineLifeSightingItem;
+  },
+
+  getMarineLifeFeed: async (limit = 24): Promise<MarineLifeFeedItem[]> => {
+    const response = await axiosInstance.get('/marine-life/feed', { params: { limit } });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  searchMarineSpecies: async (query: string, locale = 'en'): Promise<MarineSpeciesSearchItem[]> => {
+    const response = await axiosInstance.get('/marine-life/species-search', { params: { q: query, locale } });
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  },
+
+  getMarineAiAllowance: async () => {
+    const response = await axiosInstance.get('/marine-life/ai-allowance');
+    return response.data?.data as {
+      plan: 'free' | 'annual';
+      monthlyLimit: number;
+      usedCredits: number;
+      remainingCredits: number;
+      periodStart: string | null;
+      membershipExpiresAt: string | null;
+    };
+  },
+
+  analyzeMarineLifePhoto: async (uri: string, fileName = `marine-life-${Date.now()}.jpg`, mimeType = 'image/jpeg', locale = 'en', additionalFrames: { uri: string; fileName: string; mimeType: string }[] = [], mediaType: 'image' | 'video' = 'image') => {
+    const form = new FormData();
+    form.append('photo', { uri, name: fileName, type: mimeType } as any);
+    for (const frame of additionalFrames.slice(0, 2)) {
+      form.append('frames', { uri: frame.uri, name: frame.fileName, type: frame.mimeType } as any);
+    }
+    form.append('consent', 'true');
+    form.append('locale', locale);
+    form.append('mediaType', mediaType);
+    const response = await axiosInstance.post('/marine-life/analyze', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return {
+      analysisId: normalizeString(response.data?.analysisId),
+      cached: response.data?.cached === true,
+      allowance: response.data?.allowance,
+      marineLifeCandidates: Array.isArray(response.data?.data?.marineLifeCandidates) ? response.data.data.marineLifeCandidates.map(normalizeString).filter(Boolean) : [],
+      candidateDetails: Array.isArray(response.data?.data?.candidateDetails) ? response.data.data.candidateDetails.map((item: any) => ({
+        name: normalizeString(item?.name),
+        category: normalizeString(item?.category) || 'other',
+        scientificName: normalizeString(item?.scientificName),
+        summary: normalizeString(item?.summary),
+        habitat: normalizeString(item?.habitat),
+        identificationTips: Array.isArray(item?.identificationTips) ? item.identificationTips.map(normalizeString).filter(Boolean) : [],
+      })).filter((item: any) => item.name) : [],
+      confidence: ['low', 'medium', 'high'].includes(response.data?.data?.confidence) ? response.data.data.confidence : 'low',
+      notes: normalizeString(response.data?.data?.notes),
+    } as {
+      analysisId: string;
+      cached: boolean;
+      allowance?: { plan: 'free' | 'annual'; monthlyLimit: number; usedCredits: number; remainingCredits: number };
+      marineLifeCandidates: string[];
+      candidateDetails: { name: string; category: string; scientificName: string; summary: string; habitat: string; identificationTips: string[] }[];
+      confidence: 'low' | 'medium' | 'high';
+      notes: string;
+    };
+  },
+
+  createMarineLifeSighting: async (payload: {
+    speciesName: string;
+    imageUrl: string;
+    mediaType?: 'image' | 'video';
+    mediaUrl?: string;
+    category?: string;
+    observedAt?: string;
+    locationName?: string;
+    notes?: string;
+    analysisId?: string;
+    visibilityType?: 'inherit' | 'public' | 'followers' | 'private';
+  }) => {
+    const response = await axiosInstance.post('/marine-life/sightings', payload);
+    return response.data?.data;
+  },
+
+  deleteMarineLifeSighting: async (id: string) => {
+    await axiosInstance.delete(`/marine-life/sightings/${encodeURIComponent(id)}`);
+  },
+
+  updateMarineLifeVisibility: async (id: string, visibility: 'inherit' | 'public' | 'followers' | 'private') => {
+    const response = await axiosInstance.patch(`/marine-life/sightings/${encodeURIComponent(id)}/visibility`, { visibility });
+    return response.data?.data;
+  },
+
+  getMyContentVisibility: async () => {
+    const response = await axiosInstance.get('/profile/content-visibility');
+    return response.data?.data as { profile: 'public' | 'followers' | 'private'; feed: 'public' | 'followers' | 'private'; reels: 'public' | 'followers' | 'private'; diveLogs: 'public' | 'followers' | 'private'; marineLife: 'public' | 'followers' | 'private' };
+  },
+
+  updateMyContentVisibility: async (patch: Partial<{ profile: 'public' | 'followers' | 'private'; feed: 'public' | 'followers' | 'private'; reels: 'public' | 'followers' | 'private'; diveLogs: 'public' | 'followers' | 'private'; marineLife: 'public' | 'followers' | 'private' }>) => {
+    const response = await axiosInstance.patch('/profile/content-visibility', patch);
+    return response.data?.data;
+  },
+
+  getProfileContent: async (userId: string) => {
+    const response = await axiosInstance.get(`/profiles/${encodeURIComponent(userId)}/content`);
+    return response.data?.data as { posts: any[]; reels: any[]; diveLogs: any[]; marineLife: any[]; visibility: Record<string, string>; restricted: boolean };
+  },
+
+  updatePostContentVisibility: async (id: string, visibility: 'inherit' | 'public' | 'followers' | 'private') => {
+    const response = await axiosInstance.patch(`/profile/content-visibility/posts/${encodeURIComponent(id)}`, { visibility });
+    return response.data?.data;
+  },
+
+  transcribeDiveVoice: async (uri: string, mimeType = 'audio/mp4') => {
+    const form = new FormData();
+    form.append('audio', { uri, name: `dive-memo-${Date.now()}.m4a`, type: mimeType } as any);
+    form.append('consent', 'true');
+    const response = await axiosInstance.post('/dive-ai/transcribe', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    return response.data?.data as { transcript: string; source: 'SPEECH_TO_TEXT'; confirmed: false };
   },
 
   uploadProfileAvatar: async (imageData: string): Promise<{ avatar_url: string }> => {
@@ -522,6 +973,16 @@ export const apiClient = {
     return data;
   },
 
+  startOAuthLink: async (provider: 'facebook' | 'threads', returnTo: string) => {
+    const response = await axiosInstance.get(`/auth/oauth/${provider}/start`, {
+      params: { mode: 'link', returnTo },
+    });
+    return {
+      url: String(response.data?.url || ''),
+      returnUrl: returnTo,
+    };
+  },
+
   authWithOAuth: async (provider: string, accessToken: string, userInfo?: any, sessionDays = 30) => {
     const body = { provider, accessToken, userInfo, sessionDays };
     const data = await tryCandidateRequests<any>([
@@ -545,7 +1006,7 @@ export const apiClient = {
     return { data };
   },
 
-  authWithOAuthSignup: async (provider: string, accessToken: string, userInfo?: any, sessionDays = 30) => {
+  authWithOAuthSignup: async (provider: string, accessToken: string, userInfo?: any, sessionDays = 30, consents: any[] = [], locale = 'ko') => {
     const body = {
       provider,
       accessToken,
@@ -558,10 +1019,10 @@ export const apiClient = {
       email: userInfo?.email,
       name: userInfo?.name || userInfo?.nickname || userInfo?.fullName,
       avatar: userInfo?.avatar || userInfo?.picture || userInfo?.profile_image,
+      consents,
+      locale,
     };
     const data = await tryCandidateRequests<any>([
-      { method: 'post', path: '/auth/oauth/mobile/signup', data: body },
-      { method: 'post', path: '/auth/oauth/signup', data: body },
       { method: 'post', path: '/auth/oauth/mobile', data: body },
       { method: 'post', path: '/auth/oauth', data: body },
     ]);
@@ -572,7 +1033,7 @@ export const apiClient = {
     axiosInstance.post('/auth/oauth/mobile/link', { linkToken }),
 
   linkOAuthProvider: (
-    provider: 'google' | 'apple' | 'instagram',
+    provider: 'google' | 'apple' | 'instagram' | 'facebook',
     accessToken: string,
     userInfo?: Record<string, unknown>,
     idToken?: string
@@ -587,7 +1048,7 @@ export const apiClient = {
   linkOAuthMobileConfirm: (linkToken: string, action: 'approve' | 'cancel' = 'approve') =>
     axiosInstance.post('/auth/oauth/mobile/link/confirm', { linkToken, action }),
 
-  getOAuthLinks: async (): Promise<{ links: { provider: string; linkedAt?: string }[] }> => {
+  getOAuthLinks: async (): Promise<{ links: { provider: string; accountName?: string; linkedAt?: string }[] }> => {
     const data = await tryCandidateRequests<any>([
       { method: 'get', path: '/auth/oauth/links' },
     ]);
@@ -595,6 +1056,7 @@ export const apiClient = {
     return {
       links: links.map((item: any) => ({
         provider: String(item?.provider || '').toLowerCase(),
+        accountName: String(item?.accountName || item?.account_name || item?.providerSub || item?.provider_sub || '').trim(),
         linkedAt: item?.linkedAt || item?.linked_at || item?.created_at,
       })),
     };
@@ -615,9 +1077,20 @@ export const apiClient = {
     password: string,
     username: string,
     accountType: 'personal' | 'resort' = 'personal',
-    sessionDays = 30
+    sessionDays = 30,
+    consents: any[] = [],
+    locale = 'ko'
   ) =>
-    axiosInstance.post('/auth/signup', { email, password, username, account_type: accountType, sessionDays }),
+    axiosInstance.post('/auth/signup', { email, password, username, account_type: accountType, sessionDays, consents, locale }),
+
+  saveSignupConsents: (consents: any[], locale = 'ko') =>
+    axiosInstance.post('/auth/consents', { consents, locale }),
+
+  getSignupConsents: () => axiosInstance.get('/auth/consents'),
+
+  getPublishedLegalPolicies: (locale = 'ko') => axiosInstance.get('/legal/policies', { params: { locale, _ts: Date.now() } }),
+
+  getSignupConsentPolicies: () => axiosInstance.get('/legal/signup-consents', { params: { _ts: Date.now() } }),
 
   connectExternalProvider: async (
     provider: ExternalProviderKey,
@@ -819,17 +1292,48 @@ export const apiClient = {
   getNotifications: async (userId?: string): Promise<NotificationFeedItem[]> => {
     const uid = normalizeString(userId || '');
     const filters = uid ? [{ column: 'user_id', op: 'eq' as const, value: uid }] : undefined;
-    const [notificationsRes, profilesRes] = await Promise.all([
-      dataApi.list<any>('notifications', {
-        filters,
-        order: { column: 'created_at', ascending: false },
-        limit: 100,
-      }),
-      dataApi.list<any>('profiles', { limit: 2000 }),
+    const notificationsRes = await dataApi.list<any>('notifications', {
+      filters,
+      order: { column: 'created_at', ascending: false },
+      limit: 100,
+    });
+    const postIds = [...new Set(
+      notificationsRes.data
+        .map((row) => normalizeString(row.post_id || ''))
+        .filter(Boolean)
+    )];
+    const actorIds = [...new Set(notificationsRes.data.map(row => normalizeString(row.actor_id || '')).filter(Boolean))];
+    const [profilesRes, postsRes, postMediaRes] = await Promise.all([
+      actorIds.length ? dataApi.list<any>('profiles', { filters: [{ column: 'id', op: 'in', value: actorIds }], limit: actorIds.length }) : Promise.resolve({ data: [], count: 0 }),
+      postIds.length
+        ? dataApi.list<any>('posts', {
+            filters: [{ column: 'id', op: 'in', value: postIds }],
+            limit: postIds.length,
+          })
+        : Promise.resolve({ data: [], count: 0 }),
+      postIds.length
+        ? dataApi.list<any>('post_media', {
+            filters: [{ column: 'post_id', op: 'in', value: postIds }],
+            order: { column: 'order_index', ascending: true },
+            limit: Math.max(postIds.length * 5, 100),
+          })
+        : Promise.resolve({ data: [], count: 0 }),
     ]);
 
     const profileMap: Record<string, any> = {};
     for (const profile of profilesRes.data) profileMap[String(profile.id)] = profile;
+    const postImageMap: Record<string, string> = {};
+    for (const post of postsRes.data) {
+      const imageUrl = normalizeImageUrl(post.image_url);
+      if (imageUrl) postImageMap[String(post.id)] = imageUrl;
+    }
+    for (const media of postMediaRes.data) {
+      const postId = String(media.post_id || '');
+      const mediaUrl = normalizeImageUrl(media.media_url);
+      if (!postImageMap[postId] && mediaUrl && String(media.media_type || '').toLowerCase() !== 'video') {
+        postImageMap[postId] = mediaUrl;
+      }
+    }
 
     return notificationsRes.data.map((row) => {
       const actor = profileMap[String(row.actor_id)] || {};
@@ -847,18 +1351,18 @@ export const apiClient = {
         type: String(row.type || 'system'),
         unread: !Boolean(row.is_read),
         title: normalizeString(row.title || ''),
-        text: normalizeString(row.body || row.message || row.text || row.summary || row.reason || '알림'),
+        text: normalizeString(row.body || row.message || row.text || row.summary || row.reason || i18n.t('common.notification')),
         when,
         createdAt,
         actor: {
           id: String(row.actor_id || ''),
-          name: actor.username || actor.full_name || 'Diver',
+          name: actor.full_name || actor.username || 'Diver',
           avatar: actor.avatar_url || undefined,
         },
         postId: row.post_id ? String(row.post_id) : undefined,
         commentId: row.comment_id ? String(row.comment_id) : undefined,
         deepLink: normalizeString(row.deep_link || row.data?.deepLink || row.data?.deep_link || '') || undefined,
-        imageUrl: normalizeString(row.image_url || '') || undefined,
+        imageUrl: normalizeImageUrl(row.image_url) || postImageMap[String(row.post_id || '')] || undefined,
       } satisfies NotificationFeedItem;
     });
   },
@@ -901,6 +1405,55 @@ export const apiClient = {
         active: false,
       };
     });
+  },
+
+  getChatRooms: async () => {
+    const response = await axiosInstance.get('/chat/rooms');
+    return Array.isArray(response.data?.rooms) ? response.data.rooms : [];
+  },
+
+  getOrCreateDirectRoom: async (targetUserId: string) => {
+    const target = normalizeString(targetUserId);
+    if (!target) throw new Error('invalid_target_user');
+    const response = await axiosInstance.post('/chat/direct', { targetUserId: target });
+    return response.data?.room;
+  },
+
+  createGroupChatRoom: async (name: string, targetUserIds: string[]) => {
+    const groupName = normalizeString(name);
+    const participants = [...new Set(targetUserIds.map(normalizeString).filter(Boolean))];
+    if (!groupName || participants.length < 2) throw new Error('invalid_group_chat');
+    const response = await axiosInstance.post('/chat/groups', {
+      name: groupName,
+      targetUserIds: participants,
+    });
+    return response.data?.room;
+  },
+
+  getChatMessages: async (roomId: string, limit = 60) => {
+    const id = normalizeString(roomId);
+    if (!id) return [];
+    const response = await axiosInstance.get(`/chat/rooms/${encodeURIComponent(id)}/messages`, {
+      params: { limit },
+    });
+    return Array.isArray(response.data?.messages) ? response.data.messages : [];
+  },
+
+  sendChatMessage: async (roomId: string, content: string) => {
+    const id = normalizeString(roomId);
+    const message = normalizeString(content);
+    if (!id || !message) throw new Error('invalid_chat_message');
+    const response = await axiosInstance.post(`/chat/rooms/${encodeURIComponent(id)}/messages`, {
+      content: message,
+    });
+    return response.data?.message;
+  },
+
+  markChatRoomRead: async (roomId: string) => {
+    const id = normalizeString(roomId);
+    if (!id) return false;
+    await axiosInstance.post(`/chat/rooms/${encodeURIComponent(id)}/read`);
+    return true;
   },
 
   markNotificationRead: async (notificationId: string, read = true) => {
@@ -1106,7 +1659,7 @@ export const apiClient = {
     const id = normalizeString(userId);
     if (!id) return null;
 
-    const [profileRes, postsRes] = await Promise.all([
+    const [profileRes, postsRes, socialResult] = await Promise.all([
       dataApi.list<any>('profiles', {
         filters: [{ column: 'id', op: 'eq', value: id }],
         limit: 1,
@@ -1115,6 +1668,10 @@ export const apiClient = {
         filters: [{ column: 'user_id', op: 'eq', value: id }],
         limit: 5000,
       }),
+      axiosInstance
+        .get(`/profiles/${encodeURIComponent(id)}/social-summary`)
+        .then((response) => response.data?.data || {})
+        .catch(() => ({})),
     ]);
 
     const profile = profileRes.data[0] || null;
@@ -1139,6 +1696,9 @@ export const apiClient = {
       totalDives: posts.length,
       maxDepth,
       totalTime,
+      followingCount: Number(socialResult?.followingCount || 0),
+      followerCount: Number(socialResult?.followerCount || 0),
+      certifications: Array.isArray(socialResult?.certifications) ? socialResult.certifications : [],
       diving_level: normalizeString(profile.diving_level || extras.diving_level || ''),
       scuba_level: normalizeString(profile.scuba_level || extras.scuba_level || ''),
       freediving_level: normalizeString(profile.freediving_level || extras.freediving_level || ''),
@@ -1147,6 +1707,100 @@ export const apiClient = {
       license_number: normalizeString(profile.license_number || extras.license_number || ''),
       license_issued_at: normalizeString(profile.license_issued_at || extras.license_issued_at || ''),
     };
+  },
+
+  getStampMetrics: async (userId: string) => {
+    const id = normalizeString(userId);
+    if (!id) {
+      return {
+        dives: 0,
+        verifiedResortVisits: 0,
+        uniquePoints: 0,
+        maxDepth: 0,
+        diveHours: 0,
+        posts: 0,
+        reels: 0,
+        following: 0,
+        followers: 0,
+        likesReceived: 0,
+        commentsReceived: 0,
+        marineSightings: 0,
+        marineSpecies: 0,
+      };
+    }
+
+    const [postsRes, likesRes, commentsRes, socialResult, marineResult] = await Promise.all([
+      dataApi.list<any>('posts', {
+        filters: [{ column: 'user_id', op: 'eq', value: id }],
+        limit: 5000,
+      }),
+      dataApi.list<any>('likes', { limit: 10000 }),
+      dataApi.list<any>('comments', { limit: 10000 }),
+      axiosInstance
+        .get(`/profiles/${encodeURIComponent(id)}/social-summary`)
+        .then((response) => response.data?.data || {})
+        .catch(() => ({})),
+      axiosInstance
+        .get('/marine-life/sightings')
+        .then((response) => Array.isArray(response.data?.data) ? response.data.data : [])
+        .catch(() => []),
+    ]);
+    const posts = postsRes.data || [];
+    const postIds = new Set(posts.map((post) => String(post?.id || '')).filter(Boolean));
+    const divePosts = posts.filter((post) =>
+      Boolean(
+        post?.dive_date ||
+        post?.dive_site ||
+        post?.dive_type ||
+        normalizeNumber(post?.max_depth) != null ||
+        normalizeNumber(post?.dive_duration) != null
+      )
+    );
+    const uniquePoints = new Set(
+      divePosts
+        .map((post) => {
+          const lat = normalizeNumber(post?.location_lat);
+          const lng = normalizeNumber(post?.location_lng);
+          const name = normalizeString(post?.dive_site || post?.location || '').toLowerCase();
+          if (lat != null && lng != null) return `${lat.toFixed(3)}:${lng.toFixed(3)}:${name}`;
+          return name;
+        })
+        .filter(Boolean)
+    ).size;
+    const maxDepth = divePosts.reduce((max, post) => Math.max(max, normalizeNumber(post?.max_depth) || 0), 0);
+    const totalMinutes = divePosts.reduce((total, post) => total + (normalizeNumber(post?.dive_duration) || 0), 0);
+    const marineSightings = Array.isArray(marineResult) ? marineResult : [];
+    const marineSpecies = new Set(
+      marineSightings
+        .map((sighting) => normalizeString(sighting?.scientificName || sighting?.speciesName).normalize('NFKC').toLocaleLowerCase())
+        .filter(Boolean)
+    ).size;
+
+    return {
+      dives: divePosts.length,
+      verifiedResortVisits: 0,
+      uniquePoints,
+      maxDepth,
+      diveHours: Math.round((totalMinutes / 60) * 10) / 10,
+      posts: posts.filter((post) => post?.publish_to_feed !== false).length,
+      reels: posts.filter((post) => post?.publish_to_reels === true).length,
+      following: Number(socialResult?.followingCount || 0),
+      followers: Number(socialResult?.followerCount || 0),
+      likesReceived: (likesRes.data || []).filter((like) => postIds.has(String(like?.post_id || ''))).length,
+      commentsReceived: (commentsRes.data || []).filter((comment) => postIds.has(String(comment?.post_id || ''))).length,
+      marineSightings: marineSightings.length,
+      marineSpecies,
+    };
+  },
+
+  getProfileConnections: async (userId: string, type: 'followers' | 'following') => {
+    const id = normalizeString(userId);
+    if (!id) return [];
+    const response = await axiosInstance.get(`/profiles/${encodeURIComponent(id)}/connections`, {
+      params: { type },
+    });
+    const rows = response.data?.data || [];
+    return Array.isArray(rows) ? rows : [];
   },
 
   updateProfile: async (
@@ -1217,6 +1871,26 @@ export const apiClient = {
     return response.data?.data || response.data || {};
   },
 
+  requestEmailVerification: async () => {
+    const response = await axiosInstance.post('/auth/email/verify/request');
+    return response.data || {};
+  },
+
+  confirmEmailVerification: async (code: string) => {
+    const response = await axiosInstance.post('/auth/email/verify/confirm', { code: normalizeString(code) });
+    return response.data || {};
+  },
+
+  requestPhoneVerification: async (phone: string) => {
+    const response = await axiosInstance.post('/auth/phone/verify/request', { phone: normalizeString(phone) });
+    return response.data || {};
+  },
+
+  confirmPhoneVerification: async (code: string) => {
+    const response = await axiosInstance.post('/auth/phone/verify/confirm', { code: normalizeString(code) });
+    return response.data || {};
+  },
+
   updateAccountUsername: async (username: string) => {
     const normalizedUsername = normalizeString(username).replace(/^@+/, '');
     if (!/^[a-zA-Z0-9_]{4,32}$/.test(normalizedUsername)) throw new Error('invalid_username');
@@ -1253,6 +1927,7 @@ export const apiClient = {
   createCertification: async (payload: {
     id: string;
     user_id: string;
+    discipline: 'scuba' | 'freediving';
     agency: string;
     certification_number?: string;
     level?: string;
@@ -1271,6 +1946,7 @@ export const apiClient = {
     certificationId: string,
     patch: Partial<{
       agency: string;
+      discipline: 'scuba' | 'freediving';
       certification_number: string;
       level: string;
       issued_at: string;
@@ -1325,6 +2001,36 @@ export const apiClient = {
       limit: 1,
     });
     return res.data.length > 0;
+  },
+
+  getPostLikeUsers: async (postId: string): Promise<PostLikeUser[]> => {
+    const pid = normalizeString(postId);
+    if (!pid) return [];
+    const likesRes = await dataApi.list<any>('likes', {
+      filters: [{ column: 'post_id', op: 'eq', value: pid }],
+      order: { column: 'created_at', ascending: false },
+      limit: 5000,
+    });
+    const userIds = [...new Set(likesRes.data.map((row) => normalizeString(row.user_id)).filter(Boolean))];
+    if (!userIds.length) return [];
+    const profilesRes = await dataApi.list<any>('profiles', {
+      filters: [{ column: 'id', op: 'in', value: userIds }],
+      limit: userIds.length,
+    });
+    const profileMap = new Map(profilesRes.data.map((profile) => [String(profile.id), profile]));
+    return likesRes.data.reduce<PostLikeUser[]>((users, like) => {
+      const userId = normalizeString(like.user_id);
+      const profile: any = profileMap.get(userId);
+      if (!userId || !profile) return users;
+      users.push({
+        id: userId,
+        username: normalizeString(profile.username),
+        name: normalizeString(profile.full_name || profile.username || 'Diver'),
+        avatar: normalizeImageUrl(profile.avatar_url) || undefined,
+        likedAt: normalizeIsoDate(like.created_at),
+      });
+      return users;
+    }, []);
   },
 
   togglePostLike: async (postId: string, userId: string) => {
@@ -1462,7 +2168,7 @@ export const apiClient = {
         createdAt: comment.created_at || new Date().toISOString(),
         user: {
           id: String(comment.user_id),
-          name: profile.username || profile.full_name || 'Diver',
+          name: profile.full_name || profile.username || 'Diver',
           avatar: profile.avatar_url || undefined,
         },
       };
@@ -1493,7 +2199,7 @@ export const apiClient = {
       createdAt: inserted?.created_at || new Date().toISOString(),
       user: {
         id: uid,
-        name: profile?.username || profile?.full_name || 'Diver',
+        name: profile?.full_name || profile?.username || 'Diver',
         avatar: profile?.avatar_url || undefined,
       },
     };
@@ -1509,7 +2215,7 @@ export const apiClient = {
       pointName?: string;
       diveSite?: string;
       resortName?: string;
-      diveType?: 'scuba' | 'freediving';
+      diveType?: 'scuba' | 'freediving' | 'daily';
       gasType?: 'air' | 'nitrox' | 'heliox';
       gasPercent?: number | string;
       depth?: number | string;
@@ -1522,6 +2228,7 @@ export const apiClient = {
       longitude?: number | null;
       publishToFeed?: boolean;
       publishToReels?: boolean;
+      visibilityType?: 'inherit' | 'public' | 'followers' | 'private';
       imageUri?: string | null;
       videoUri?: string | null;
       mediaAssets?: { uri?: string | null; url?: string | null; type?: 'image' | 'video'; order?: number }[];
@@ -1556,16 +2263,17 @@ export const apiClient = {
     if (patch.diveType !== undefined || nextDiveType) postPatch.dive_type = nextDiveType || null;
     if (patch.gasType !== undefined || nextGasType !== undefined) postPatch.gas_type = nextGasType;
     if (patch.gasPercent !== undefined || nextGasPercent !== undefined) postPatch.gas_percent = nextGasPercent ?? null;
-    if (patch.depth !== undefined) postPatch.max_depth = patch.depth === null ? null : normalizeNumber(patch.depth);
-    if (patch.duration !== undefined) postPatch.dive_duration = patch.duration === null ? null : normalizeNumber(patch.duration);
-    if (patch.temperature !== undefined) postPatch.water_temperature = patch.temperature === null ? null : normalizeNumber(patch.temperature);
-    if (patch.visibility !== undefined) postPatch.visibility = patch.visibility === null ? null : normalizeNumber(patch.visibility);
+    if (patch.depth !== undefined) postPatch.max_depth = optionalDiveMetric(patch.depth) ?? null;
+    if (patch.duration !== undefined) postPatch.dive_duration = optionalDiveMetric(patch.duration) ?? null;
+    if (patch.temperature !== undefined) postPatch.water_temperature = optionalDiveMetric(patch.temperature) ?? null;
+    if (patch.visibility !== undefined) postPatch.visibility = optionalDiveMetric(patch.visibility) ?? null;
     if (patch.buddy !== undefined || nextResortName) postPatch.buddy = nextResortName || null;
     if (patch.buddyName !== undefined || nextBuddyName) postPatch.buddy_name = nextBuddyName || null;
     if (patch.latitude !== undefined) postPatch.location_lat = patch.latitude === null ? null : normalizeNumber(patch.latitude);
     if (patch.longitude !== undefined) postPatch.location_lng = patch.longitude === null ? null : normalizeNumber(patch.longitude);
     if (patch.publishToFeed !== undefined) postPatch.publish_to_feed = Boolean(patch.publishToFeed);
     if (patch.publishToReels !== undefined) postPatch.publish_to_reels = Boolean(patch.publishToReels);
+    if (patch.visibilityType !== undefined) postPatch.visibility_type = patch.visibilityType;
 
     const mediaAssets = Array.isArray(patch.mediaAssets) ? patch.mediaAssets : undefined;
     if (mediaAssets) {
@@ -1579,7 +2287,7 @@ export const apiClient = {
 
       const firstImage = normalizedMedia.find((item) => item.type === 'image')?.uri || '';
       const firstVideo = normalizedMedia.find((item) => item.type === 'video')?.uri || '';
-      postPatch.image_url = firstImage || null;
+      postPatch.image_url = firstImage || normalizeImageUrl(patch.imageUri) || null;
       postPatch.video_url = firstVideo || null;
 
       await Promise.allSettled([
@@ -1777,7 +2485,7 @@ export const apiClient = {
         location: 'Bali Amed',
         dive_site: 'Amed Reef',
         image_url: 'https://images.unsplash.com/photo-1682687982501-1e58ab814714?w=1400',
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
         created_at: new Date(now - 1000 * 60 * 16).toISOString(),
       },
       {
@@ -1785,7 +2493,7 @@ export const apiClient = {
         location: 'Cebu Moalboal',
         dive_site: 'Pescador Wall',
         image_url: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?w=1400',
-        video_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+        video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
         created_at: new Date(now - 1000 * 60 * 24).toISOString(),
       },
     ];
@@ -1812,12 +2520,12 @@ export const apiClient = {
     if (p2?.id) {
       mediaRows.push(
         { post_id: p2.id, media_url: 'https://images.unsplash.com/photo-1682687982501-1e58ab814714?w=1400', media_type: 'image', order_index: 0 },
-        { post_id: p2.id, media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', media_type: 'video', order_index: 1 }
+        { post_id: p2.id, media_url: 'https://www.w3schools.com/html/mov_bbb.mp4', media_type: 'video', order_index: 1 }
       );
     }
     if (p3?.id) {
       mediaRows.push(
-        { post_id: p3.id, media_url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4', media_type: 'video', order_index: 0 }
+        { post_id: p3.id, media_url: 'https://www.w3schools.com/html/mov_bbb.mp4', media_type: 'video', order_index: 0 }
       );
     }
 
@@ -1845,15 +2553,19 @@ export const apiClient = {
     const pageSize = 10;
     const offset = Number(cursor || '0') || 0;
 
-    const [postsRes, profilesRes, likesRes, commentsRes, mediaRes] = await Promise.all([
-      dataApi.list<any>('posts', {
-        order: { column: 'created_at', ascending: false },
-        range: [offset, offset + pageSize - 1],
-      }),
-      dataApi.list<any>('profiles', { limit: 1000 }),
-      dataApi.list<any>('likes', { limit: 5000 }),
-      dataApi.list<any>('comments', { limit: 5000 }),
-      dataApi.list<any>('post_media', { limit: 15000 }),
+    const postsRes = await dataApi.list<any>('posts', {
+      order: { column: 'created_at', ascending: false },
+      range: [offset, offset + pageSize - 1],
+      channel: 'feed',
+    });
+    const postIds = postsRes.data.map((post) => post.id);
+    const authorIds = [...new Set(postsRes.data.map((post) => post.user_id))];
+    const related = [{ column: 'post_id', op: 'in' as const, value: postIds }];
+    const [profilesRes, likesRes, commentsRes, mediaRes] = await Promise.all([
+      dataApi.list<any>('profiles', { filters: [{ column: 'id', op: 'in', value: authorIds }], limit: 10 }),
+      dataApi.list<any>('likes', { filters: related, limit: 5000 }),
+      dataApi.list<any>('comments', { filters: related, limit: 5000 }),
+      dataApi.list<any>('post_media', { filters: related, limit: 2000 }),
     ]);
 
     const profileMap: Record<string, any> = {};
@@ -1959,6 +2671,7 @@ export const apiClient = {
         filters: [{ column: 'publish_to_reels', op: 'eq', value: true }],
         order: { column: 'created_at', ascending: false },
         limit: 50,
+        channel: 'reels',
       }),
       dataApi.list<any>('profiles', { limit: 1000 }),
       dataApi.list<any>('likes', { limit: 5000 }),
@@ -2068,24 +2781,108 @@ export const apiClient = {
   },
 
   getResorts: async () => {
-    const res = await dataApi.list<any>('profiles', {
-      filters: [{ column: 'account_type', op: 'eq', value: 'resort' }],
-      limit: 100,
-    });
-    return res.data.map((item) => ({
+    const rows: any[] = [];
+    const pageSize = 500;
+    for (let offset = 0; ; offset += pageSize) {
+      const page = await dataApi.list<any>('profiles', {
+        filters: [{ column: 'account_type', op: 'eq', value: 'resort' }],
+        order: { column: 'id', ascending: true },
+        range: [offset, offset + pageSize - 1],
+      });
+      rows.push(...page.data);
+      if (page.data.length < pageSize) break;
+    }
+    return rows.map((item) => {
+      const { country, region, address } = normalizeResortAddressFields({
+        country: item.resort_country || item.country,
+        region: item.resort_region,
+        address: item.resort_address,
+      });
+      return {
       id: String(item.id),
       name: item.full_name || item.username || i18n.t('api.resorts.defaultName'),
-      country: item.resort_country || item.country || '',
-      region: item.resort_region || '',
-      address: item.resort_address || '',
-      area: [item.resort_country, item.resort_region, item.resort_address].filter(Boolean).join(' · ') || item.bio || i18n.t('api.resorts.noArea'),
+      country,
+      region,
+      address,
+      area: [region, country].filter(Boolean).join(' · ') || normalizeResortLocation(item.bio) || i18n.t('api.resorts.noArea'),
       lat: normalizeNumber(item.resort_lat ?? item.lat ?? item.location_lat),
       lng: normalizeNumber(item.resort_lng ?? item.lng ?? item.location_lng),
       rating: Number(item.resort_rating_avg || 0),
       reviewCount: Number(item.resort_review_count || 0),
-      tags: item.website || item.account_type || 'resort',
+      description: item.bio || '',
+      coverUrl: normalizeImageUrl(item.resort_cover_url || item.avatar_url) || '',
+      photoUrls: Array.from(new Set([item.resort_cover_url, ...(Array.isArray(item.resort_photo_urls) ? item.resort_photo_urls : [])].map(normalizeImageUrl).filter(Boolean))),
+      amenities: Array.isArray(item.resort_amenities) ? item.resort_amenities : [],
+      certifications: Array.isArray(item.resort_certifications) ? item.resort_certifications : [],
+      phones: Array.isArray(item.resort_phones) ? item.resort_phones : [],
+      emails: Array.isArray(item.resort_emails) ? item.resort_emails : [],
+      website: item.website || '',
+      socialUrls: {
+        instagram: item.resort_instagram_url || '',
+        facebook: item.resort_facebook_url || '',
+        youtube: item.resort_youtube_url || '',
+        tiktok: item.resort_tiktok_url || '',
+      },
+      tags: Array.isArray(item.resort_certifications) ? item.resort_certifications.join(' · ') : '',
+      source: item.resort_source || '',
+      sourceUrl: item.resort_source_url || '',
+      bookingEnabled: item.resort_booking_enabled === true,
+      bookingDepositAmount: Number(item.resort_booking_deposit_amount || 0),
+      bookingDepositCurrency: normalizeString(item.resort_booking_deposit_currency || 'USD'),
       updatedAt: item.updated_at || item.created_at || new Date().toISOString(),
-    }));
+    };
+    });
+  },
+
+  getResortPrices: async (resortId: string) => {
+    const res = await dataApi.list<any>('resort_prices', {
+      filters: [
+        { column: 'resort_id', op: 'eq', value: String(resortId || '') },
+        { column: 'is_active', op: 'eq', value: true },
+      ],
+      order: { column: 'sort_order', ascending: true },
+      limit: 100,
+    });
+    return res.data;
+  },
+
+  getSavedResortIds: async (userId: string) => {
+    const uid = normalizeString(userId);
+    if (!uid) return [] as string[];
+    const res = await dataApi.list<any>('saved_resorts', {
+      filters: [{ column: 'user_id', op: 'eq', value: uid }],
+      order: { column: 'created_at', ascending: false },
+      limit: 1000,
+    });
+    return res.data.map((row) => normalizeString(row.resort_id)).filter(Boolean);
+  },
+
+  toggleSavedResort: async (resortId: string, userId: string) => {
+    const rid = normalizeString(resortId);
+    const uid = normalizeString(userId);
+    if (!rid || !uid) throw new Error('invalid_saved_resort_target');
+    const existing = await dataApi.list<any>('saved_resorts', {
+      filters: [
+        { column: 'resort_id', op: 'eq', value: rid },
+        { column: 'user_id', op: 'eq', value: uid },
+      ],
+      limit: 1,
+    });
+    if (existing.data.length) {
+      await dataApi.remove('saved_resorts', [{ column: 'id', op: 'eq', value: existing.data[0].id }]);
+      return { saved: false };
+    }
+    await dataApi.insert('saved_resorts', [{ resort_id: rid, user_id: uid }]);
+    return { saved: true };
+  },
+
+  getSavedResorts: async (userId: string) => {
+    const [resorts, savedIds] = await Promise.all([
+      apiClient.getResorts(),
+      apiClient.getSavedResortIds(userId),
+    ]);
+    const savedSet = new Set(savedIds);
+    return resorts.filter((resort) => savedSet.has(String(resort.id)));
   },
 
   getDivePoints: async (userId?: string) => {
@@ -2182,7 +2979,8 @@ export const apiClient = {
     const title = String(data.title || '').trim();
     const notes = String(data.notes || '').trim();
     const caption = [title, notes].filter(Boolean).join('\n').trim() || i18n.t('api.logs.defaultCaption');
-    const diveType = String(data.diveType || 'freediving') === 'scuba' ? 'scuba' : 'freediving';
+    const requestedDiveType = String(data.diveType || 'freediving');
+    const diveType = requestedDiveType === 'scuba' || requestedDiveType === 'daily' ? requestedDiveType : 'freediving';
     const gasType = diveType === 'scuba' ? String(data.gasType || 'air') : null;
     const gasPercent = diveType === 'scuba' && gasType !== 'air' ? normalizeNumber(data.gasPercent) : undefined;
     const latitude = normalizeNumber(data.latitude);
@@ -2213,10 +3011,10 @@ export const apiClient = {
       location: locationLabel || null,
       dive_site: pointName || null,
       dive_type: diveType,
-      max_depth: normalizeNumber(data.depth),
-      dive_duration: normalizeNumber(data.duration),
-      water_temperature: normalizeNumber(data.temperature),
-      visibility: normalizeNumber(data.visibility),
+      max_depth: optionalDiveMetric(data.depth) ?? null,
+      dive_duration: optionalDiveMetric(data.duration) ?? null,
+      water_temperature: optionalDiveMetric(data.temperature) ?? null,
+      visibility: optionalDiveMetric(data.visibility) ?? null,
       gas_type: gasType,
       gas_percent: gasPercent,
       buddy: String(data.resortName || '').trim() || null,
@@ -2225,6 +3023,7 @@ export const apiClient = {
       location_lng: longitude,
       publish_to_feed: data.publishToFeed !== false,
       publish_to_reels: data.publishToReels === true,
+      visibility_type: ['inherit', 'public', 'followers', 'private'].includes(String(data.visibilityType)) ? data.visibilityType : 'inherit',
       created_at: new Date().toISOString(),
     };
     const [created] = await dataApi.insert('posts', [row]);

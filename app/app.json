@@ -1,12 +1,155 @@
 {
   "expo": {
     "name": "Divergram",
-    "slug": "divergram"
-  },
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-6018533601998790~9736334888",
-    "ios_app_id": "ca-app-pub-6018533601998790~5278215124",
-    "delay_app_measurement_init": true,
-    "user_tracking_usage_description": "맞춤형 광고와 앱 성능 개선을 위해 광고 식별자를 사용합니다."
+    "slug": "divergram",
+    "locales": {
+      "ko": "./locales/ko.json",
+      "ja": "./locales/ja.json"
+    },
+    "runtimeVersion": "1.2.12-build68",
+    "updates": {
+      "url": "https://u.expo.dev/2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0EA5E9"
+      },
+      "package": "com.divergram.app",
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 67,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/reel"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/reel"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/profile"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/profile"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/resort"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/resort"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/guide"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/guide"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/marine-life"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/marine-life"
+            },
+            {
+              "scheme": "https",
+              "host": "divergram.com",
+              "pathPrefix": "/notifications"
+            },
+            {
+              "scheme": "https",
+              "host": "www.divergram.com",
+              "pathPrefix": "/notifications"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_ADVERTISE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.divergram.app.ios",
+      "buildNumber": "68",
+      "associatedDomains": [
+        "applinks:divergram.com",
+        "applinks:www.divergram.com"
+      ],
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "usesAppleSignIn": true,
+      "entitlements": {
+        "aps-environment": "development"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "위치 정보는 다이빙 로그 기록에 사용됩니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "백그라운드에서 다이빙 경로 추적을 위해 위치 권한이 필요합니다.",
+        "NSCameraUsageDescription": "프로필, 게시물, 다이빙 로그에 사용할 사진과 영상을 촬영하기 위해 카메라 권한이 필요합니다.",
+        "NSMotionUsageDescription": "다이빙 활동 기록과 안전 기능에 필요한 움직임 정보를 확인하기 위해 모션 권한이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "사진 GPS 정보를 읽어 다이빙 포인트를 자동으로 설정합니다.",
+        "NSPhotoLibraryAddUsageDescription": "다이빙 로그 저장을 위해 사진 접근이 필요합니다.",
+        "NSBluetoothAlwaysUsageDescription": "다이빙 장비와의 연결을 위해 블루투스 권한이 필요합니다.",
+        "NSBluetoothPeripheralUsageDescription": "다이빙 디바이스와의 데이터 교환을 위해 블루투스 권한이 필요합니다.",
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "divergram-app",
+            "CFBundleURLSchemes": [
+              "divergram"
+            ]
+          }
+        ]
+      }
+    }
   }
 }

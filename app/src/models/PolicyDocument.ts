@@ -30,7 +30,7 @@ export interface PolicyDocument {
   type: PolicyType;
   title: string;
   version: string;
-  locale: 'ko' | 'en';
+  locale: 'ko' | 'en' | 'ja' | 'zh';
   content: string;
   requiredForSignup?: boolean;
   effectiveFrom: string;

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getVideoInfo } from '../utils/videoUtils';
 
 interface MediaItem {
@@ -15,6 +16,7 @@ interface MediaCarouselProps {
 }
 
 export default function MediaCarousel({ media, className = '', style }: MediaCarouselProps) {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [videoErrorMap, setVideoErrorMap] = useState<Record<string, boolean>>({});
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -22,10 +24,11 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
-  const sortedMedia = [...(media || [])].sort((a, b) => a.order_index - b.order_index);
+  const sortedMedia = useMemo(() => [...(media || [])].sort((a, b) => a.order_index - b.order_index), [media]);
 
   useEffect(() => {
     const el = containerRef.current;
+    const mountedVideoRefs = videoRefs.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(
@@ -33,7 +36,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
         const visible = !!entry?.isIntersecting && entry.intersectionRatio >= 0.6;
         setIsVisible(visible);
         if (!visible) {
-          Object.values(videoRefs.current).forEach((v) => v?.pause());
+          Object.values(mountedVideoRefs).forEach((v) => v?.pause());
         }
       },
       { threshold: [0, 0.3, 0.6, 1] }
@@ -42,7 +45,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
     observer.observe(el);
     return () => {
       observer.disconnect();
-      Object.values(videoRefs.current).forEach((v) => v?.pause());
+      Object.values(mountedVideoRefs).forEach((v) => v?.pause());
     };
   }, []);
 
@@ -60,7 +63,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
         v.pause();
       }
     });
-  }, [currentIndex, isVisible]);
+  }, [currentIndex, isVisible, sortedMedia]);
 
   const goToPrevious = () => setCurrentIndex((prev) => Math.max(0, prev - 1));
   const goToNext = () => setCurrentIndex((prev) => Math.min(sortedMedia.length - 1, prev + 1));
@@ -100,7 +103,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
             if (m.media_type === 'image') {
               return (
                 <div key={key} className="w-full h-full shrink-0">
-                  <img src={m.media_url} alt="Post" draggable={false} className="w-full h-full object-cover" />
+                  <img src={m.media_url} alt={t('feed.media.imageAlt')} draggable={false} className="w-full h-full object-cover" />
                 </div>
               );
             }
@@ -114,7 +117,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
                     className="absolute top-0 left-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    title="Video player"
+                    title={t('feed.media.videoTitle')}
                   />
                 </div>
               );
@@ -124,7 +127,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
               <div key={key} className="w-full h-full shrink-0 bg-gradient-to-b from-black/70 via-black/85 to-black/70">
                 {videoErrorMap[key] ? (
                   <div className="w-full h-full bg-black flex items-center justify-center text-center px-4">
-                    <div className="text-white/80 text-sm">영상을 불러오지 못했어요. 다른 미디어를 확인해 주세요.</div>
+                    <div className="text-white/80 text-sm">{t('feed.media.videoLoadFailed')}</div>
                   </div>
                 ) : (
                   <video
@@ -158,7 +161,7 @@ export default function MediaCarousel({ media, className = '', style }: MediaCar
               <button
                 key={m.id}
                 onClick={() => setCurrentIndex(idx)}
-                aria-label={`Go to media ${idx + 1}`}
+                aria-label={t('feed.media.goToMedia', { number: idx + 1 })}
                 className={`h-1.5 rounded-full transition-all ${idx === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/55 hover:bg-white/80'}`}
               />
             ))}

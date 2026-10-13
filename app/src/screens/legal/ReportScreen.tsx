@@ -7,26 +7,13 @@ import { useResolvedTheme } from '../../hooks/useResolvedTheme';
 import type { ReportReason, ReportTargetType, ReportStatus } from '../../models';
 import { useLegalStore } from '../../stores/legalStore';
 import { apiClient } from '../../lib/api';
+import { normalizePolicyLocale } from '../../legal/policyCatalog';
 import { getLatestPolicyVersionMap } from '../../services/policyService';
+import { useTranslation } from 'react-i18next';
 
-const targetOptions: { key: ReportTargetType; label: string }[] = [
-  { key: 'user', label: '사용자' },
-  { key: 'post', label: '게시글' },
-  { key: 'comment', label: '댓글' },
-  { key: 'dive_log', label: 'DiveLog' },
-  { key: 'media', label: '사진/영상' },
-];
+const targetOptions: ReportTargetType[] = ['user', 'post', 'comment', 'dive_log', 'media'];
 
-const reasonOptions: { key: ReportReason; label: string }[] = [
-  { key: 'sexual_content', label: '음란물' },
-  { key: 'violence', label: '폭력성' },
-  { key: 'hate', label: '혐오 표현' },
-  { key: 'misinformation', label: '허위 정보' },
-  { key: 'dangerous_behavior', label: '위험 행위 조장' },
-  { key: 'copyright', label: '저작권 침해' },
-  { key: 'impersonation', label: '사칭' },
-  { key: 'spam', label: '스팸' },
-];
+const reasonOptions: ReportReason[] = ['sexual_content', 'violence', 'hate', 'misinformation', 'dangerous_behavior', 'copyright', 'impersonation', 'spam'];
 
 const detailMinLengthByReason: Partial<Record<ReportReason, number>> = {
   misinformation: 8,
@@ -35,21 +22,6 @@ const detailMinLengthByReason: Partial<Record<ReportReason, number>> = {
   impersonation: 6,
 };
 const MAX_DETAIL_LENGTH = 1000;
-const targetIdPlaceholderMap: Record<ReportTargetType, string> = {
-  user: '사용자 ID (예: user_123)',
-  post: '게시글 ID (예: post_456)',
-  comment: '댓글 ID (예: cmt_789)',
-  dive_log: 'DiveLog ID (예: log_001)',
-  media: '미디어 ID (예: media_321)',
-};
-
-const reportStatusLabelMap: Record<ReportStatus, string> = {
-  received: '접수됨',
-  reviewing: '검토중',
-  resolved: '처리완료',
-  rejected: '반려',
-};
-
 const reportStatusColorMap: Record<ReportStatus, string> = {
   received: '#334155',
   reviewing: '#1D4ED8',
@@ -57,18 +29,20 @@ const reportStatusColorMap: Record<ReportStatus, string> = {
   rejected: '#B91C1C',
 };
 
-function formatReportError(error: any) {
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+function formatReportError(error: any, t: Translate) {
   const message = String(error?.message || error || '');
   if (message.includes('duplicate_report_recent')) {
-    return '동일 대상/사유 신고가 이미 접수되었습니다. 잠시 후 다시 시도해주세요.';
+    return t('reportScreen.errors.duplicate');
   }
   if (message.includes('invalid_report_target_type')) {
-    return '지원하지 않는 신고 대상입니다.';
+    return t('reportScreen.errors.invalidTarget');
   }
   if (message.includes('invalid_report_reason')) {
-    return '지원하지 않는 신고 사유입니다.';
+    return t('reportScreen.errors.invalidReason');
   }
-  return message || '알 수 없는 오류';
+  return message || t('reportScreen.errors.unknown');
 }
 
 function shouldQueueReportSync(error: any) {
@@ -79,14 +53,14 @@ function shouldQueueReportSync(error: any) {
   return false;
 }
 
-function validateTargetIdByType(targetType: ReportTargetType, targetId: string) {
+function validateTargetIdByType(targetType: ReportTargetType, targetId: string, t: Translate) {
   const value = targetId.trim();
-  if (value.length < 2) return '대상 ID를 입력해주세요.';
-  if (value.length > 64) return '대상 ID는 64자 이내로 입력해주세요.';
-  if (/\s/.test(value)) return '대상 ID에는 공백을 사용할 수 없습니다.';
-  if (!/^[A-Za-z0-9_:\-]+$/.test(value)) return '대상 ID는 영문/숫자/언더스코어/하이픈/콜론만 사용할 수 있습니다.';
-  if (targetType === 'user' && value.length < 4) return '사용자 ID는 4자 이상 입력해주세요.';
-  if (targetType !== 'user' && value.length < 3) return '대상 ID는 3자 이상 입력해주세요.';
+  if (value.length < 2) return t('reportScreen.errors.targetRequired');
+  if (value.length > 64) return t('reportScreen.errors.targetTooLong');
+  if (/\s/.test(value)) return t('reportScreen.errors.targetWhitespace');
+  if (!/^[A-Za-z0-9_:\-]+$/.test(value)) return t('reportScreen.errors.targetCharacters');
+  if (targetType === 'user' && value.length < 1) return t('reportScreen.errors.userRequired');
+  if (targetType !== 'user' && value.length < 3) return t('reportScreen.errors.targetTooShort');
   return '';
 }
 
@@ -98,25 +72,26 @@ function requiredDetailLength(reason: ReportReason) {
   return detailMinLengthByReason[reason] || 0;
 }
 
-function validateDetailQuality(reason: ReportReason, detailText: string) {
+function validateDetailQuality(reason: ReportReason, detailText: string, t: Translate) {
   const detail = detailText.trim();
   if (!detail) return '';
   if (/(.)\1{7,}/.test(detail.replace(/\s+/g, ''))) {
-    return '동일 문자 반복이 과도합니다. 신고 사유를 구체적으로 입력해주세요.';
+    return t('reportScreen.errors.repeatedCharacters');
   }
   if (!/[0-9A-Za-z\u3131-\u318E\uAC00-\uD7A3]/.test(detail)) {
-    return '상세 설명에는 식별 가능한 문자(글자/숫자)를 포함해주세요.';
+    return t('reportScreen.errors.identifiableCharacters');
   }
   if (reason === 'copyright') {
     const hasLink = /(https?:\/\/|www\.)/i.test(detail);
     if (!hasLink && detail.length < 24) {
-      return '저작권 침해 신고는 출처 링크 또는 구체 설명(24자 이상)을 입력해주세요.';
+      return t('reportScreen.errors.copyrightDetail');
     }
   }
   return '';
 }
 
 export default function ReportScreen() {
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const { isDark } = useResolvedTheme();
@@ -126,11 +101,14 @@ export default function ReportScreen() {
   const advanceReportWorkflow = useLegalStore((state) => state.advanceReportWorkflow);
   const hasRequiredSignupConsents = useLegalStore((state) => state.hasRequiredSignupConsents);
   const reportHistory = useLegalStore((state) => state.reports);
-  const latestPolicyVersionMap = useMemo(() => getLatestPolicyVersionMap('ko'), []);
+  const latestPolicyVersionMap = useMemo(
+    () => getLatestPolicyVersionMap(normalizePolicyLocale(i18n.resolvedLanguage || i18n.language)),
+    [i18n.language, i18n.resolvedLanguage]
+  );
 
   const initialTargetType = useMemo<ReportTargetType>(() => {
     const raw = String(params.targetType || '').trim();
-    if (targetOptions.some((item) => item.key === raw)) return raw as ReportTargetType;
+    if (targetOptions.includes(raw as ReportTargetType)) return raw as ReportTargetType;
     if (params.postId) return 'post';
     if (params.reportedUserId) return 'user';
     return 'post';
@@ -167,22 +145,22 @@ export default function ReportScreen() {
     [reportHistory, user?.id]
   );
 
-  const targetIdError = useMemo(() => validateTargetIdByType(targetType, targetId), [targetId, targetType]);
+  const targetIdError = useMemo(() => validateTargetIdByType(targetType, targetId, t), [t, targetId, targetType]);
   const detailError = useMemo(() => {
-    if (detail.length > MAX_DETAIL_LENGTH) return `상세 설명은 최대 ${MAX_DETAIL_LENGTH}자까지 입력할 수 있습니다.`;
+    if (detail.length > MAX_DETAIL_LENGTH) return t('reportScreen.errors.detailTooLong', { count: MAX_DETAIL_LENGTH });
     const minLength = requiredDetailLength(reason);
     if (!minLength) return '';
     if (detail.trim().length < minLength) {
-      return `선택한 신고 사유는 상세 설명(최소 ${minLength}자)이 필요합니다.`;
+      return t('reportScreen.errors.detailRequired', { count: minLength });
     }
-    return validateDetailQuality(reason, detail) || '';
-  }, [detail, reason]);
+    return validateDetailQuality(reason, detail, t) || '';
+  }, [detail, reason, t]);
 
   const optionalDetailError = useMemo(() => {
     if (requiredDetailLength(reason) > 0) return '';
-    if (detail.length > MAX_DETAIL_LENGTH) return `상세 설명은 최대 ${MAX_DETAIL_LENGTH}자까지 입력할 수 있습니다.`;
-    return validateDetailQuality(reason, detail);
-  }, [detail, reason]);
+    if (detail.length > MAX_DETAIL_LENGTH) return t('reportScreen.errors.detailTooLong', { count: MAX_DETAIL_LENGTH });
+    return validateDetailQuality(reason, detail, t);
+  }, [detail, reason, t]);
   const canSubmit = Boolean(reason) && !submitting && !targetIdError && !detailError && !optionalDetailError;
   const colors = useMemo(
     () => ({
@@ -226,7 +204,7 @@ export default function ReportScreen() {
       return Date.now() - createdMs < 10 * 60 * 1000;
     });
     if (duplicateRecent) {
-      return '동일 신고가 최근 접수되어 중복 제출할 수 없습니다.';
+      return t('reportScreen.errors.recentDuplicate');
     }
     const anyRecentSameTarget = reportHistory.find((item) => {
       if (item.reporterUserId !== user?.id) return false;
@@ -237,7 +215,7 @@ export default function ReportScreen() {
       return Date.now() - createdMs < 30 * 1000;
     });
     if (anyRecentSameTarget) {
-      return '동일 대상에 대한 연속 신고는 30초 후 다시 시도해주세요.';
+      return t('reportScreen.errors.targetCooldown');
     }
     const dailyCount = reportHistory.filter((item) => {
       if (item.reporterUserId !== user?.id) return false;
@@ -246,15 +224,15 @@ export default function ReportScreen() {
       return Date.now() - createdMs < 24 * 60 * 60 * 1000;
     }).length;
     if (dailyCount >= 20) {
-      return '신고는 24시간 기준 최대 20건까지 접수할 수 있습니다.';
+      return t('reportScreen.errors.dailyLimit');
     }
     if (Date.now() - lastSubmittedAt < 3500) {
-      return '연속 신고 방지를 위해 잠시 후 다시 시도해주세요.';
+      return t('reportScreen.errors.submitCooldown');
     }
     if (targetType === 'user') {
       const selfId = normalizeTargetId(String(user?.id || ''));
       if (selfId && normalizedTargetId === selfId) {
-        return '본인 계정은 신고할 수 없습니다.';
+        return t('reportScreen.errors.selfReport');
       }
     }
     return '';
@@ -262,14 +240,14 @@ export default function ReportScreen() {
 
   const onSubmit = async () => {
     if (!user?.id) {
-      Alert.alert('로그인 필요', '신고 기능은 로그인 후 이용할 수 있습니다.');
+      Alert.alert(t('reportScreen.loginRequired'), t('reportScreen.loginRequiredBody'));
       return;
     }
     if (!hasLegalConsentForReport) {
-      Alert.alert('정책 동의 필요', '신고 기능 사용 전 필수 정책 동의가 필요합니다.', [
-        { text: '취소', style: 'cancel' },
+      Alert.alert(t('reportScreen.consentRequired'), t('reportScreen.consentRequiredBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '동의하러 가기',
+          text: t('reportScreen.goToConsent'),
           onPress: () =>
             router.push(`/(auth)/consent?mode=reconsent&returnTo=${encodeURIComponent('/(tabs)/report')}` as never),
         },
@@ -279,7 +257,7 @@ export default function ReportScreen() {
     if (!canSubmit) return;
     const validationError = validateBeforeSubmit();
     if (validationError) {
-      Alert.alert('입력 확인', validationError);
+      Alert.alert(t('reportScreen.checkInput'), validationError);
       return;
     }
     const normalizedTargetId = targetId.trim();
@@ -306,24 +284,24 @@ export default function ReportScreen() {
       markReportSyncStatus(localReportId, 'synced');
       setLastSubmittedAt(Date.now());
 
-      Alert.alert('신고 접수 완료', '신고가 접수되었습니다. 검토 후 조치됩니다.', [
-        { text: '확인', onPress: () => router.back() },
+      Alert.alert(t('reportScreen.submitted'), t('reportScreen.submittedBody'), [
+        { text: t('common.confirm'), onPress: () => router.back() },
       ]);
     } catch (error: any) {
       if (localReportId && shouldQueueReportSync(error)) {
-        markReportSyncStatus(localReportId, 'pending', formatReportError(error));
+        markReportSyncStatus(localReportId, 'pending', formatReportError(error, t));
         setLastSubmittedAt(Date.now());
         Alert.alert(
-          '신고 접수 완료 (동기화 대기)',
-          '네트워크 또는 서버 상태로 즉시 동기화되지 않았습니다. 신고 내용은 앱에 보관되며 이후 동기화됩니다.',
-          [{ text: '확인', onPress: () => router.back() }]
+          t('reportScreen.queued'),
+          t('reportScreen.queuedBody'),
+          [{ text: t('common.confirm'), onPress: () => router.back() }]
         );
         return;
       }
       if (localReportId) {
-        markReportSyncStatus(localReportId, 'failed', formatReportError(error));
+        markReportSyncStatus(localReportId, 'failed', formatReportError(error, t));
       }
-      Alert.alert('신고 실패', formatReportError(error));
+      Alert.alert(t('reportScreen.submitFailed'), formatReportError(error, t));
     } finally {
       setSubmitting(false);
     }
@@ -333,7 +311,7 @@ export default function ReportScreen() {
     const report = reportHistory.find((item) => item.id === reportId);
     if (!report || !user?.id) return;
     if (!hasLegalConsentForReport) {
-      Alert.alert('정책 동의 필요', '동기화 재시도 전 필수 정책 동의가 필요합니다.');
+      Alert.alert(t('reportScreen.consentRequired'), t('reportScreen.retryConsentBody'));
       return;
     }
     setSyncingReportId(reportId);
@@ -346,11 +324,11 @@ export default function ReportScreen() {
         userId: user.id,
       });
       markReportSyncStatus(reportId, 'synced');
-      Alert.alert('동기화 완료', '대기 중이던 신고가 서버에 동기화되었습니다.');
+      Alert.alert(t('reportScreen.syncComplete'), t('reportScreen.syncCompleteBody'));
     } catch (error: any) {
       const pending = shouldQueueReportSync(error);
-      markReportSyncStatus(reportId, pending ? 'pending' : 'failed', formatReportError(error));
-      Alert.alert('동기화 실패', formatReportError(error));
+      markReportSyncStatus(reportId, pending ? 'pending' : 'failed', formatReportError(error, t));
+      Alert.alert(t('reportScreen.syncFailed'), formatReportError(error, t));
     } finally {
       setSyncingReportId('');
     }
@@ -385,7 +363,7 @@ export default function ReportScreen() {
         } catch (error: any) {
           if (cancelled) continue;
           const pending = shouldQueueReportSync(error);
-          markReportSyncStatus(item.id, pending ? 'pending' : 'failed', formatReportError(error));
+          markReportSyncStatus(item.id, pending ? 'pending' : 'failed', formatReportError(error, t));
         }
       }
       if (!cancelled) setAutoSyncDone(true);
@@ -395,68 +373,68 @@ export default function ReportScreen() {
     return () => {
       cancelled = true;
     };
-  }, [autoSyncDone, hasLegalConsentForReport, markReportSyncStatus, reportHistory, user?.id]);
+  }, [autoSyncDone, hasLegalConsentForReport, markReportSyncStatus, reportHistory, t, user?.id]);
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 44 }}>
-        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>신고하기</Text>
-        <Text style={{ marginTop: 8, color: colors.subtitle }}>커뮤니티 정책 위반 콘텐츠를 신고할 수 있습니다.</Text>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{t('reportScreen.title')}</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>{t('reportScreen.subtitle')}</Text>
 
         <View style={{ marginTop: 16 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>신고 대상</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{t('reportScreen.target')}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {targetOptions.map((item) => (
               <TouchableOpacity
-                key={item.key}
+                key={item}
                 onPress={() => {
-                  setTargetType(item.key);
-                  if (item.key !== targetType) setTargetId('');
+                  setTargetType(item);
+                  if (item !== targetType) setTargetId('');
                 }}
-                style={{ borderRadius: 999, borderWidth: 1, borderColor: targetType === item.key ? '#0D5FA8' : colors.chipBorder, backgroundColor: targetType === item.key ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
+                style={{ borderRadius: 999, borderWidth: 1, borderColor: targetType === item ? '#0D5FA8' : colors.chipBorder, backgroundColor: targetType === item ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
               >
-                <Text style={{ color: targetType === item.key ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{item.label}</Text>
+                <Text style={{ color: targetType === item ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{t(`reportScreen.targets.${item}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>대상 ID</Text>
-          <TextInput value={targetId} onChangeText={setTargetId} placeholder={targetIdPlaceholderMap[targetType]} placeholderTextColor="#94A3B8" style={{ borderWidth: 1, borderColor: targetIdError ? '#FCA5A5' : colors.inputBorder, borderRadius: 12, backgroundColor: colors.inputBg, color: colors.inputText, padding: 12 }} />
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{t('reportScreen.targetId')}</Text>
+          <TextInput value={targetId} onChangeText={setTargetId} placeholder={t(`reportScreen.targetPlaceholders.${targetType}`)} placeholderTextColor="#94A3B8" style={{ borderWidth: 1, borderColor: targetIdError ? '#FCA5A5' : colors.inputBorder, borderRadius: 12, backgroundColor: colors.inputBg, color: colors.inputText, padding: 12 }} />
           {targetIdError ? <Text style={{ marginTop: 6, color: '#B91C1C', fontSize: 12 }}>{targetIdError}</Text> : null}
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>신고 사유</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{t('reportScreen.reason')}</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {reasonOptions.map((item) => (
               <TouchableOpacity
-                key={item.key}
-                onPress={() => setReason(item.key)}
-                style={{ borderRadius: 999, borderWidth: 1, borderColor: reason === item.key ? '#0D5FA8' : colors.chipBorder, backgroundColor: reason === item.key ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
+                key={item}
+                onPress={() => setReason(item)}
+                style={{ borderRadius: 999, borderWidth: 1, borderColor: reason === item ? '#0D5FA8' : colors.chipBorder, backgroundColor: reason === item ? '#EAF4FF' : colors.chipBg, paddingHorizontal: 13, paddingVertical: 8 }}
               >
-                <Text style={{ color: reason === item.key ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{item.label}</Text>
+                <Text style={{ color: reason === item ? '#0D5FA8' : colors.chipText, fontWeight: '700' }}>{t(`reportScreen.reasons.${item}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         <View style={{ marginTop: 14 }}>
-          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>상세 설명 (선택)</Text>
+          <Text style={{ marginBottom: 8, color: colors.sectionTitle, fontWeight: '700' }}>{t('reportScreen.detailsOptional')}</Text>
           <TextInput
             value={detail}
             onChangeText={(next) => setDetail(next.slice(0, MAX_DETAIL_LENGTH))}
             multiline
             textAlignVertical="top"
-            placeholder="추가 설명을 입력해주세요."
+            placeholder={t('reportScreen.detailsPlaceholder')}
             placeholderTextColor="#94A3B8"
             style={{ borderWidth: 1, borderColor: detailError || optionalDetailError ? '#FCA5A5' : colors.inputBorder, borderRadius: 12, backgroundColor: colors.inputBg, color: colors.inputText, padding: 12, minHeight: 120 }}
           />
           <Text style={{ marginTop: 4, color: '#94A3B8', fontSize: 12, textAlign: 'right' }}>{detail.length}/{MAX_DETAIL_LENGTH}</Text>
           {requiredDetailLength(reason) > 0 ? (
             <Text style={{ marginTop: 6, color: detailError ? '#B91C1C' : '#B45309', fontSize: 12 }}>
-              {detailError || `현재 선택한 사유는 상세 설명(최소 ${requiredDetailLength(reason)}자)이 필요합니다.`}
+              {detailError || t('reportScreen.detailRequiredHint', { count: requiredDetailLength(reason) })}
             </Text>
           ) : optionalDetailError ? (
             <Text style={{ marginTop: 6, color: '#B91C1C', fontSize: 12 }}>{optionalDetailError}</Text>
@@ -464,22 +442,22 @@ export default function ReportScreen() {
         </View>
 
         <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.previewBorder, backgroundColor: colors.previewBg, padding: 12 }}>
-          <Text style={{ color: colors.previewTitle, fontWeight: '700' }}>접수 미리보기</Text>
-          <Text style={{ marginTop: 6, color: colors.previewText }}>대상: {targetType} / {targetId.trim() || '-'}</Text>
-          <Text style={{ marginTop: 2, color: colors.previewText }}>사유: {reason}</Text>
-          <Text style={{ marginTop: 2, color: colors.subtitle }}>상세: {detail.trim() || '(없음)'}</Text>
+          <Text style={{ color: colors.previewTitle, fontWeight: '700' }}>{t('reportScreen.preview')}</Text>
+          <Text style={{ marginTop: 6, color: colors.previewText }}>{t('reportScreen.target')}: {t(`reportScreen.targets.${targetType}`)} / {targetId.trim() || '-'}</Text>
+          <Text style={{ marginTop: 2, color: colors.previewText }}>{t('reportScreen.reason')}: {t(`reportScreen.reasons.${reason}`)}</Text>
+          <Text style={{ marginTop: 2, color: colors.subtitle }}>{t('reportScreen.details')}: {detail.trim() || t('reportScreen.none')}</Text>
         </View>
 
         {myPendingReports.length ? (
           <View style={{ marginTop: 14, borderRadius: 12, borderWidth: 1, borderColor: '#FED7AA', backgroundColor: '#FFFBEB', padding: 12 }}>
-            <Text style={{ color: '#9A3412', fontWeight: '800' }}>동기화 대기 신고 {myPendingReports.length}건</Text>
+            <Text style={{ color: '#9A3412', fontWeight: '800' }}>{t('reportScreen.pendingReports', { count: myPendingReports.length })}</Text>
             {myPendingReports.map((item) => (
               <View key={item.id} style={{ marginTop: 10, borderRadius: 10, borderWidth: 1, borderColor: '#FDBA74', backgroundColor: colors.chipBg, padding: 10 }}>
                 <Text style={{ color: '#7C2D12', fontWeight: '700' }}>
                   {item.targetType} / {item.targetId}
                 </Text>
                 <Text style={{ marginTop: 2, color: '#9A3412', fontSize: 12 }}>
-                  상태: {item.syncStatus === 'failed' ? '실패' : '대기'}{item.syncError ? ` · ${item.syncError}` : ''}
+                  {t('reportScreen.status')}: {t(item.syncStatus === 'failed' ? 'reportScreen.failed' : 'reportScreen.pending')}{item.syncError ? ` · ${item.syncError}` : ''}
                 </Text>
                 <TouchableOpacity
                   onPress={() => retryPendingReport(item.id)}
@@ -496,7 +474,7 @@ export default function ReportScreen() {
                   }}
                 >
                   <Text style={{ color: syncingReportId === item.id ? '#94A3B8' : '#92400E', fontWeight: '700', fontSize: 12 }}>
-                    {syncingReportId === item.id ? '동기화중...' : '지금 동기화'}
+                    {t(syncingReportId === item.id ? 'reportScreen.syncing' : 'reportScreen.syncNow')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -509,17 +487,17 @@ export default function ReportScreen() {
           disabled={!canSubmit}
           onPress={onSubmit}
         >
-          <Text style={{ color: '#fff', fontWeight: '800' }}>{submitting ? '처리중...' : '신고 접수'}</Text>
+          <Text style={{ color: '#fff', fontWeight: '800' }}>{t(submitting ? 'reportScreen.processing' : 'reportScreen.submit')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/(tabs)/community-policy' as never)} style={{ marginTop: 12 }}>
-          <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>커뮤니티 운영정책 보기</Text>
+          <Text style={{ color: '#0D5FA8', fontWeight: '700' }}>{t('reportScreen.viewPolicy')}</Text>
         </TouchableOpacity>
 
         <View style={{ marginTop: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.historyBorder, backgroundColor: colors.historyBg, padding: 12 }}>
-          <Text style={{ color: colors.title, fontWeight: '700' }}>최근 신고 이력 (로컬 확인용)</Text>
+          <Text style={{ color: colors.title, fontWeight: '700' }}>{t('reportScreen.recentHistory')}</Text>
           {myRecentReports.length === 0 ? (
-            <Text style={{ marginTop: 6, color: colors.subtitle }}>최근 신고 이력이 없습니다.</Text>
+            <Text style={{ marginTop: 6, color: colors.subtitle }}>{t('reportScreen.noHistory')}</Text>
           ) : (
             myRecentReports.map((item) => (
               <View key={item.id} style={{ marginTop: 8 }}>
@@ -528,7 +506,7 @@ export default function ReportScreen() {
                     {item.targetType} / {item.targetId}
                   </Text>
                   <Text style={{ color: reportStatusColorMap[item.status], fontWeight: '800', fontSize: 12 }}>
-                    {reportStatusLabelMap[item.status]}
+                    {t(`reportScreen.statuses.${item.status}`)}
                   </Text>
                 </View>
                 <Text style={{ marginTop: 2, color: '#64748B' }}>{item.reason}</Text>
@@ -539,7 +517,7 @@ export default function ReportScreen() {
                     onPress={() => {
                       const result = advanceReportWorkflow(item.id);
                       if (!result.ok) {
-                        Alert.alert('안내', result.message || '처리할 수 없는 상태입니다.');
+                        Alert.alert(t('reportScreen.notice'), result.message || t('reportScreen.unavailableState'));
                         return;
                       }
                     }}
@@ -554,7 +532,7 @@ export default function ReportScreen() {
                       paddingVertical: 6,
                     }}
                   >
-                    <Text style={{ color: '#334155', fontWeight: '700', fontSize: 12 }}>검토 진행 (mock)</Text>
+                    <Text style={{ color: '#334155', fontWeight: '700', fontSize: 12 }}>{t('reportScreen.advanceReviewMock')}</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>

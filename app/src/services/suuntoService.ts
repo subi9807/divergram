@@ -4,6 +4,7 @@ import { buildMockExternalLogs, mapProviderLogs } from './externalDiveLogMapper'
 import {
   clearProviderTokenState,
   ensureProviderAccessToken,
+  getProviderCredentials,
   getProviderTokenState,
   updateProviderTokenFromAuthResult,
 } from './providerTokenService';
@@ -29,11 +30,12 @@ export async function connectSuuntoAccount(authCode?: string): Promise<{ connect
 
 export async function disconnectSuuntoAccount(): Promise<void> {
   const tokenState = getProviderTokenState('suunto');
+  const credentials = await getProviderCredentials('suunto');
   try {
     await apiClient.disconnectExternalProvider('suunto', {
       providerUserId: tokenState?.providerUserId,
-      accessToken: tokenState?.accessToken,
-      refreshToken: tokenState?.refreshToken,
+      accessToken: credentials.accessToken,
+      refreshToken: credentials.refreshToken,
     });
   } catch (error: any) {
     if (!isEndpointUnavailable(error)) throw error;

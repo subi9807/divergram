@@ -4,6 +4,7 @@ import { buildMockExternalLogs, mapProviderLogs } from './externalDiveLogMapper'
 import {
   clearProviderTokenState,
   ensureProviderAccessToken,
+  getProviderCredentials,
   getProviderTokenState,
   updateProviderTokenFromAuthResult,
 } from './providerTokenService';
@@ -29,11 +30,12 @@ export async function connectGarminAccount(authCode?: string): Promise<{ connect
 
 export async function disconnectGarminAccount(): Promise<void> {
   const tokenState = getProviderTokenState('garmin');
+  const credentials = await getProviderCredentials('garmin');
   try {
     await apiClient.disconnectExternalProvider('garmin', {
       providerUserId: tokenState?.providerUserId,
-      accessToken: tokenState?.accessToken,
-      refreshToken: tokenState?.refreshToken,
+      accessToken: credentials.accessToken,
+      refreshToken: credentials.refreshToken,
     });
   } catch (error: any) {
     if (!isEndpointUnavailable(error)) throw error;

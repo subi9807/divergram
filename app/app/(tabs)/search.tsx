@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Search } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
+import { appRouteMap } from '../../src/config/sitemap';
 import { apiClient } from '../../src/lib/api';
 
 export default function SearchScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const params = useLocalSearchParams<{ q?: string }>();
   const [q, setQ] = useState('');
   const normalizedQuery = q.trim().replace(/^@+/, '');
@@ -22,6 +24,7 @@ export default function SearchScreen() {
     ? searchBase
         .filter((item) => item && typeof item === 'object')
         .map((item: any, index: number) => ({
+          postId: String(item.postId || item.id || ''),
           title: String(item.title || t('api.explore.defaultTitle')),
           location: String(item.location || ''),
           meta: String(item.meta || ''),
@@ -66,7 +69,16 @@ export default function SearchScreen() {
                 {t('pages.search.people', { defaultValue: '다이버' })}
               </Text>
               {profileResults.map((profile: any) => (
-                <View key={String(profile.id)} className="mb-2 flex-row items-center rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-3">
+                <TouchableOpacity
+                  key={String(profile.id)}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    const userId = String(profile.id || '').trim();
+                    if (!userId) return;
+                    router.push(`${appRouteMap.account.path}?userId=${encodeURIComponent(userId)}` as never);
+                  }}
+                  className="mb-2 flex-row items-center rounded-2xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-3"
+                >
                   {profile.avatar_url ? (
                     <Image source={{ uri: String(profile.avatar_url) }} className="h-12 w-12 rounded-full bg-gray-100" />
                   ) : (
@@ -78,12 +90,20 @@ export default function SearchScreen() {
                     <Text className="font-semibold text-gray-950 dark:text-surface-50">{profile.full_name || profile.username}</Text>
                     <Text className="mt-0.5 text-sm text-gray-500">@{profile.username}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ) : null}
           {results.map((item) => (
-            <TouchableOpacity key={item.key} className="mb-3 rounded-3xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
+            <TouchableOpacity
+              key={item.key}
+              activeOpacity={0.85}
+              onPress={() => {
+                if (!item.postId) return;
+                router.push(`${appRouteMap.post.path}?post=${encodeURIComponent(item.postId)}` as never);
+              }}
+              className="mb-3 rounded-3xl border border-gray-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4"
+            >
               <Text className="text-base font-semibold text-gray-950 dark:text-surface-50">{item.title}</Text>
               <Text className="mt-1 text-sm text-gray-500">{item.meta}</Text>
               <Text className="mt-2 text-sm text-gray-600">📍 {item.location}</Text>

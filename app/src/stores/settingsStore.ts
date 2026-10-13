@@ -15,12 +15,24 @@ const zustandStorage = {
   },
 };
 
-export type BottomTabRoute = 'index' | 'explore' | 'location' | 'logs' | 'profile' | 'messages' | 'notifications' | 'resorts';
+export type BottomTabRoute =
+  | 'index' | 'explore' | 'location' | 'logs' | 'profile' | 'messages' | 'notifications' | 'resorts'
+  | 'reels' | 'saved' | 'stamps' | 'license-management' | 'activity' | 'settings' | 'donate'
+  | 'booking-history' | 'dive-education' | 'dive-guide' | 'dive-discovery' | 'app-info' | 'membership';
 
-export const bottomTabCandidates: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'resorts'];
+export const bottomTabCandidates: BottomTabRoute[] = [
+  'index', 'explore', 'location', 'logs', 'profile', 'reels', 'messages', 'notifications',
+  'resorts', 'saved', 'stamps', 'license-management', 'activity', 'settings',
+  'booking-history', 'dive-education', 'dive-guide', 'dive-discovery',
+];
 export const bottomTabDefault: BottomTabRoute[] = ['index', 'explore', 'location', 'logs', 'profile'];
+export const headerMenuDefault = [
+  'explore', 'messages', 'settings', 'activity', 'reels', 'resorts', 'booking_history', 'dive_education', 'dive_guide', 'location', 'stamps',
+  'dive_discovery', 'notifications', 'license_management', 'app_info',
+  'membership',
+];
 
-function normalizeBottomTabItems(input: BottomTabRoute[]): BottomTabRoute[] {
+export function normalizeBottomTabItems(input: BottomTabRoute[]): BottomTabRoute[] {
   const seen = new Set<BottomTabRoute>();
   const ordered: BottomTabRoute[] = [];
 
@@ -36,16 +48,16 @@ function normalizeBottomTabItems(input: BottomTabRoute[]): BottomTabRoute[] {
     seen.add('index');
   }
 
-  if (ordered.length < 3) {
+  if (ordered.length < 4) {
     for (const fallback of bottomTabDefault) {
       if (seen.has(fallback)) continue;
       ordered.push(fallback);
       seen.add(fallback);
-      if (ordered.length >= 3) break;
+      if (ordered.length >= 4) break;
     }
   }
 
-  if (ordered.length > 5) return ordered.slice(0, 5);
+  if (ordered.length > 6) return ordered.slice(0, 6);
   return ordered;
 }
 
@@ -76,11 +88,15 @@ interface SettingsState {
   defaultDiveMode: 'recreational' | 'technical';
 
   emergencyShareEnabled: boolean;
+  shareToInstagramAfterPost: boolean;
+  shareToFacebookAfterPost: boolean;
+  shareToThreadsAfterPost: boolean;
   aiSummaryEnabled: boolean;
   aiPointRecommendEnabled: boolean;
   aiCaptionEnabled: boolean;
   aiRiskDescriptionEnabled: boolean;
   bottomTabItems: BottomTabRoute[];
+  headerMenuItems: string[];
 
   updateLanguage: (language: 'ko' | 'en' | 'ja' | 'zh') => void;
   updateTheme: (theme: 'light' | 'dark' | 'system') => void;
@@ -95,6 +111,10 @@ interface SettingsState {
     value: boolean
   ) => void;
   updateSafetySetting: (key: 'emergencyShareEnabled', value: boolean) => void;
+  updateSocialPublishingSetting: (
+    key: 'shareToInstagramAfterPost' | 'shareToFacebookAfterPost' | 'shareToThreadsAfterPost',
+    value: boolean
+  ) => void;
   updatePostVisibility: (value: 'public' | 'followers' | 'private') => void;
   updateDiveLogVisibility: (value: 'public' | 'followers' | 'private') => void;
   updatePreferredDiveType: (value: 'scuba' | 'freediving' | 'snorkeling') => void;
@@ -106,6 +126,7 @@ interface SettingsState {
     value: boolean
   ) => void;
   updateBottomTabItems: (items: BottomTabRoute[]) => void;
+  updateHeaderMenuItems: (items: string[]) => void;
   resetSettings: () => void;
 }
 
@@ -132,11 +153,15 @@ const defaultSettings = {
   units: 'metric' as const,
   defaultDiveMode: 'recreational' as const,
   emergencyShareEnabled: false,
+  shareToInstagramAfterPost: false,
+  shareToFacebookAfterPost: false,
+  shareToThreadsAfterPost: false,
   aiSummaryEnabled: true,
   aiPointRecommendEnabled: true,
   aiCaptionEnabled: true,
   aiRiskDescriptionEnabled: true,
   bottomTabItems: bottomTabDefault,
+  headerMenuItems: headerMenuDefault,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -203,6 +228,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       updateSafetySetting: (key, value) => set({ [key]: value }),
 
+      updateSocialPublishingSetting: (key, value) => set({ [key]: value }),
+
       updatePostVisibility: (value) => set({ postVisibility: value }),
 
       updateDiveLogVisibility: (value) => set({ diveLogVisibility: value }),
@@ -218,6 +245,8 @@ export const useSettingsStore = create<SettingsState>()(
       updateAiSetting: (key, value) => set({ [key]: value }),
 
       updateBottomTabItems: (items) => set({ bottomTabItems: normalizeBottomTabItems(items) }),
+
+      updateHeaderMenuItems: (items) => set({ headerMenuItems: [...new Set(items)] }),
 
       resetSettings: () => set(defaultSettings),
     }),

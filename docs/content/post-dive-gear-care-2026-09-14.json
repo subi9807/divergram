@@ -1,0 +1,31 @@
+[
+  {
+    "category": "equipment",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 80,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/4339ac80-a55e-4403-9062-d965c56b252d.png",
+    "translations": {
+      "ko": {
+        "title": "다이빙 후 장비 관리 · 헹구고, 말리고, 살펴보기",
+        "summary": "장비 관리는 다음 다이빙을 준비하는 마지막 절차입니다. 민물 헹굼부터 그늘 건조와 손상 기록까지 차근차근 확인해 보세요.",
+        "body": "다이빙은 물 밖에서도 이어집니다\n바닷물과 모래가 묻은 장비를 그대로 두면 염분과 이물질이 남을 수 있습니다. 다이빙을 마친 뒤에는 장비 제조사의 관리 지침을 먼저 확인하고, 가능한 한 빠르게 깨끗한 민물로 헹굽니다. 여러 사람이 함께 쓰는 세척수는 오염 상태를 살피고 임의의 세제나 소독제를 사용하지 않습니다.\n\n장비마다 알맞은 방식으로\n마스크, 핀, 슈트, BCD, 호흡기처럼 재질과 구조가 다른 장비를 한 가지 방식으로 다루지 마세요. 밸브나 전자 부품이 있는 장비는 제조사 지침이 특히 중요합니다. 생명 유지 장비를 임의로 분해하거나 내부를 수리하지 말고, 이상이 의심되면 사용을 중지한 뒤 자격을 갖춘 서비스 담당자에게 맡깁니다.\n\n그늘과 공기가 건조의 핵심\n헹군 장비는 물이 빠지고 공기가 잘 통하는 그늘에서 완전히 말립니다. 강한 직사광선이나 높은 열에 오래 노출하지 않고, 젖은 상태로 밀폐된 가방이나 차 안에 보관하지 않습니다. 완전히 마른 뒤에도 호스가 심하게 꺾이거나 무거운 물건에 눌리지 않도록 여유 있게 정리하세요.\n\n보관 전에 한 번 더 살펴보기\n스트랩, 버클, 지퍼, 솔기, 호스에 눈에 띄는 갈라짐이나 변형이 없는지 확인합니다. 문제가 보이면 기억에만 맡기지 말고 장비와 로그에 기록해 다음 사용 전 점검이나 정비로 연결하세요. 겉보기에 깨끗하더라도 정기 정비 주기는 제조사와 교육기관의 안내를 따릅니다.\n\n다음 다이빙 전 확인은 별도입니다\n세척과 보관을 잘했더라도 입수 전 장비 점검과 버디 체크를 생략할 수는 없습니다. 장비 관리 기록은 안전 절차를 대신하는 것이 아니라, 이상을 더 일찍 발견하도록 돕는 습관입니다.\n\n이 글은 일반적인 장비 관리 안내이며 제조사 설명서와 공인 교육, 전문 정비를 대신하지 않습니다. 표지는 새로 제작한 AI 개념 일러스트로 실제 세척 절차나 장비 조립의 기준이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Post-dive gear care · Rinse, dry and inspect",
+        "summary": "Gear care is the final step of preparing for the next dive. Build a simple routine around fresh water, shade and a written note of anything unusual.",
+        "body": "The dive continues on shore\nSalt and grit can remain when wet equipment is left unattended. Check each manufacturer's care instructions first, then rinse the gear with clean fresh water as soon as practical. Notice the condition of shared rinse water, and do not add improvised cleaners or disinfectants.\n\nDifferent equipment needs different care\nA mask, fins, exposure suit, BCD and regulator do not share one universal cleaning method. Manufacturer guidance matters especially for equipment with valves or electronics. Do not dismantle or repair life-support equipment on your own. Stop using anything that seems abnormal and send it to a qualified service professional.\n\nShade and airflow finish the job\nLet rinsed equipment drain and dry completely in a shaded, well-ventilated place. Avoid prolonged strong sunlight and high heat. Do not seal damp gear inside a bag or leave it in a hot vehicle. Once dry, store it without sharply bending hoses or placing heavy objects on top.\n\nInspect before storing\nLook for visible cracks, distortion or damage around straps, buckles, zippers, seams and hoses. If you notice a problem, tag the item and write it in your gear or dive log so it reaches inspection or service before the next use. Clean-looking equipment still needs the service schedule recommended by its manufacturer and your training organization.\n\nPre-dive checks are still separate\nGood cleaning and storage never replace an equipment check and buddy check before entering the water. A care record supports safe procedures by helping you notice changes earlier; it does not replace them.\n\nThis article offers general equipment-care guidance and does not replace the manufacturer's manual, certified training or professional service. The cover is a newly created AI concept illustration, not a reference for cleaning steps or equipment assembly.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "ダイビング後の器材ケア · すすぐ、乾かす、確かめる",
+        "summary": "器材の手入れは次のダイビングへの最後の準備です。真水、日陰、異常の記録を軸に無理のない習慣を作りましょう。",
+        "body": "ダイビングは陸に上がっても続きます\n海水や砂が付いた器材を放置すると、塩分や異物が残ることがあります。まず各メーカーの手入れ方法を確認し、できるだけ早くきれいな真水ですすぎます。共同の洗い場では水の汚れにも注意し、自己判断で洗剤や消毒剤を加えないでください。\n\n器材ごとに適した方法を\nマスク、フィン、スーツ、BCD、レギュレーターは材質も構造も異なり、すべてに共通する一つの洗い方はありません。バルブや電子部品を含む器材では、メーカーの説明が特に重要です。生命維持に関わる器材を自分で分解、修理せず、異常が疑われる場合は使用を中止して資格のある専門担当者に依頼します。\n\n日陰と風通しで仕上げる\nすすいだ器材は水を切り、風通しの良い日陰で完全に乾かします。強い直射日光や高温に長くさらさず、濡れたまま密閉したバッグや暑い車内に置かないでください。乾いた後はホースを強く曲げたり、重い物で押さえたりせず、余裕を持って保管します。\n\nしまう前にもう一度確認\nストラップ、バックル、ファスナー、縫い目、ホースに目立つひび、変形、損傷がないか見ます。問題を見つけたら器材に印を付け、ログにも残し、次回使用前の点検や整備につなげましょう。見た目がきれいでも、メーカーと講習団体が案内する定期整備を守ります。\n\n次回の潜水前点検は別の手順です\n適切に洗浄、保管しても、入水前の器材点検とバディチェックは省略できません。手入れの記録は安全手順の代わりではなく、変化を早く見つけるための習慣です。\n\n本記事は一般的な器材ケアの案内であり、メーカーの説明書、認定講習、専門整備を代替しません。表紙は新たに制作したAI概念イラストで、実際の洗浄手順や器材組み立ての基準ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "潜水后的装备护理 · 冲洗、晾干、检查",
+        "summary": "装备护理是为下一次潜水做准备的最后一步。围绕清水、阴凉通风和异常记录，建立简单可靠的习惯。",
+        "body": "上岸后，潜水仍未结束\n海水和沙粒附着在湿装备上时，盐分与杂质可能继续残留。先查看各制造商的保养说明，再尽快用干净淡水冲洗。使用公共清洗池时要留意水质，不要自行加入不确定的清洁剂或消毒剂。\n\n不同装备需要不同方法\n面镜、脚蹼、防寒服、BCD和调节器的材质与结构不同，并不存在适用于所有装备的单一清洗方式。带有阀门或电子部件的装备尤其应遵循制造商说明。不要自行拆解或维修生命支持装备；发现异常时应停止使用，并交给具备资质的专业人员处理。\n\n阴凉与通风完成干燥\n让冲洗后的装备充分沥水，在阴凉、通风的位置完全晾干。避免长时间暴露在强烈阳光或高温中，也不要把潮湿装备密封在包内或留在炎热车厢里。完全干燥后，收纳时避免软管过度弯折或被重物挤压。\n\n收纳前再看一遍\n检查肩带、卡扣、拉链、接缝与软管是否有明显裂纹、变形或损伤。发现问题后不要只靠记忆，可以给装备做标记并写入装备或潜水日志，确保下次使用前完成检查或维护。即使外观看起来干净，也应遵循制造商和培训机构建议的定期保养周期。\n\n下次潜水前仍需单独检查\n清洗和收纳做得再好，也不能替代入水前的装备检查与潜伴互检。护理记录的作用是帮助更早发现变化，而不是代替安全程序。\n\n本文提供一般性的装备护理说明，不能替代制造商手册、认证培训或专业维护。封面为新制作的AI概念插画，不作为实际清洗步骤或装备组装的依据。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

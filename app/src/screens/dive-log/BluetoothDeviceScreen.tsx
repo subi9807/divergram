@@ -9,7 +9,9 @@ import { connectGarminAccount, disconnectGarminAccount } from '../../services/ga
 import { connectShearwaterAccount, disconnectShearwaterAccount } from '../../services/shearwaterService';
 import { connectSuuntoAccount, disconnectSuuntoAccount } from '../../services/suuntoService';
 import { useDiveLogStore } from '../../stores/diveLogStore';
-import { useIntegrationStore } from '../../stores/integrationStore';
+import { privateDiveLogService } from '../../services/privateDiveLogService';
+import { resolveIntegrationStatusMessage, useIntegrationStore } from '../../stores/integrationStore';
+import { useTranslation } from 'react-i18next';
 
 type BluetoothDiveServiceModule = typeof import('../../services/bluetoothDiveService');
 
@@ -61,18 +63,18 @@ function formatRssi(rssi?: number) {
 
 function getSignalLabel(rssi?: number) {
   const value = Number(rssi);
-  if (!Number.isFinite(value)) return { label: '알 수 없음', color: '#64748B' };
-  if (value >= -55) return { label: '매우 강함', color: '#166534' };
-  if (value >= -67) return { label: '강함', color: '#15803D' };
-  if (value >= -75) return { label: '보통', color: '#0D5FA8' };
-  if (value >= -85) return { label: '약함', color: '#B45309' };
-  return { label: '매우 약함', color: '#B91C1C' };
+  if (!Number.isFinite(value)) return { key: 'unknown', color: '#64748B' };
+  if (value >= -55) return { key: 'veryStrong', color: '#166534' };
+  if (value >= -67) return { key: 'strong', color: '#15803D' };
+  if (value >= -75) return { key: 'normal', color: '#0D5FA8' };
+  if (value >= -85) return { key: 'weak', color: '#B45309' };
+  return { key: 'veryWeak', color: '#B91C1C' };
 }
 
 function joinList(values?: string[], maxItems = 6) {
   if (!values || values.length === 0) return '-';
   const sliced = values.slice(0, maxItems);
-  const suffix = values.length > maxItems ? ` 외 ${values.length - maxItems}개` : '';
+  const suffix = values.length > maxItems ? ` +${values.length - maxItems}` : '';
   return `${sliced.join(', ')}${suffix}`;
 }
 
@@ -96,6 +98,7 @@ function wait(ms: number) {
 }
 
 export default function BluetoothDeviceScreen() {
+  const { t } = useTranslation();
   const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scanRunIdRef = useRef(0);
   const scanAbortRef = useRef(false);
@@ -154,14 +157,14 @@ export default function BluetoothDeviceScreen() {
       setPermissionGranted(ok);
       setConnectedDeviceId(getConnectedDiveComputerId());
       if (ok) {
-        updateIntegration('bluetooth', { connected: true, statusMessage: '권한 허용됨' });
+        updateIntegration('bluetooth', { connected: true, statusMessage: 'i18nKey:bluetoothDevices.permissionGranted' });
       }
     };
     void bootstrapPermission();
     return () => {
       mounted = false;
     };
-  }, [updateIntegration]);
+  }, [t, updateIntegration]);
 
   useEffect(() => {
     return () => {
@@ -183,13 +186,13 @@ export default function BluetoothDeviceScreen() {
     const ok = await requestBluetoothPermission();
     setPermissionGranted(ok);
     if (!ok) {
-      markSyncFailure('bluetooth', 'Bluetooth 권한 거부');
+      markSyncFailure('bluetooth', t('bluetoothDevices.messages.permissionDenied'));
       if (!silentDeniedAlert) {
-        Alert.alert('권한 필요', 'Bluetooth 권한이 거부되어 기기 스캔을 진행할 수 없습니다.');
+        Alert.alert(t('bluetoothDevices.messages.permissionTitle'), t('bluetoothDevices.messages.permissionDeniedBody'));
       }
       return false;
     }
-    updateIntegration('bluetooth', { connected: true, statusMessage: '권한 허용됨' });
+    updateIntegration('bluetooth', { connected: true, statusMessage: 'i18nKey:bluetoothDevices.permissionGranted' });
     return true;
   };
 
@@ -197,10 +200,10 @@ export default function BluetoothDeviceScreen() {
     if (scanning) return;
     const hasPermission = permissionGranted || (await requestPermission({ silentDeniedAlert: true }));
     if (!hasPermission) {
-      setScanStatusMessage('Bluetooth 권한이 없어 스캔할 수 없습니다.');
+      setScanStatusMessage(t('bluetoothDevices.messages.cannotScanWithoutPermission'));
       return;
     }
-    setScanStatusMessage('주변 BLE 기기를 검색 중입니다...');
+    setScanStatusMessage(t('bluetoothDevices.messages.searchingNearby'));
     setDevices([]);
     setScanning(true);
     scanAbortRef.current = false;
@@ -218,14 +221,13 @@ export default function BluetoothDeviceScreen() {
         .then(({ stopDiveComputerScan }) => stopDiveComputerScan())
         .catch(() => undefined);
       setScanning(false);
-      setScanStatusMessage('3분 스캔 시간이 종료되어 자동으로 중지되었습니다. 다시 검색할 수 있습니다.');
+      setScanStatusMessage(t('bluetoothDevices.messages.scanTimedOut'));
     }, 185000);
 
     try {
       const {
         getBluetoothScanDiagnostics,
         scanDiveComputers,
-        stopDiveComputerScan,
       } = await loadBluetoothDiveService();
       let merged: DiveDevice[] = [];
       while (!scanAbortRef.current && scanRunId === scanRunIdRef.current && Date.now() < deadlineMs) {
@@ -239,17 +241,17 @@ export default function BluetoothDeviceScreen() {
           setDevices(merged);
           setLastScanAt(now);
           merged.forEach((item) => markDiveDeviceSeen(item.id, item.lastSeenAt || now));
-          const status = `기기 ${merged.length}개 검색됨`;
+          const status = t('bluetoothDevices.messages.devicesFound', { count: merged.length });
           setScanStatusMessage(status);
           updateIntegration('bluetooth', { statusMessage: status });
         } else {
           const remainSec = Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
           const diag = getBluetoothScanDiagnostics();
-          const filterHint = diag.activeFilterKeywords.length ? ` · 필터 ${diag.activeFilterKeywords.length}개` : '';
+          const filterHint = diag.activeFilterKeywords.length ? ` · ${t('bluetoothDevices.filter')} ${diag.activeFilterKeywords.length}` : '';
           const stateHint = diag.lastNativeState ? ` · state=${diag.lastNativeState}` : '';
           const callbackHint = Number.isFinite(Number(diag.lastNativeCallbackCount)) ? ` · callbacks=${diag.lastNativeCallbackCount}` : '';
           const errorHint = diag.lastNativeError ? ` · native=${diag.lastNativeError}` : '';
-          setScanStatusMessage(`주변 BLE 기기 검색 중... (${remainSec}초 남음${filterHint}${stateHint}${callbackHint}${errorHint})`);
+          setScanStatusMessage(t('bluetoothDevices.messages.searchingRemaining', { seconds: remainSec, diagnostics: `${filterHint}${stateHint}${callbackHint}${errorHint}` }));
         }
         if (Date.now() >= deadlineMs) break;
         await wait(200);
@@ -258,28 +260,28 @@ export default function BluetoothDeviceScreen() {
       if (!merged.length) {
         const diag = getBluetoothScanDiagnostics();
         const filterText = diag.activeFilterKeywords.length
-          ? `현재 필터(${diag.activeFilterKeywords.join(', ')})와 일치하는 기기가 없습니다.`
-          : '주변 블루투스 기기가 없습니다.';
-        const nativeText = diag.lastNativeError ? `\n상태: ${diag.lastNativeError}` : '';
+          ? t('bluetoothDevices.messages.noFilterMatch', { filters: diag.activeFilterKeywords.join(', ') })
+          : t('bluetoothDevices.messages.noNearbyDevices');
+        const nativeText = diag.lastNativeError ? `\n${t('bluetoothDevices.status')}: ${diag.lastNativeError}` : '';
         setDevices([]);
         setLastScanAt(new Date().toISOString());
-        setScanStatusMessage('검색된 기기가 없습니다.');
-        Alert.alert('검색 결과 없음', `${filterText}${nativeText}`);
+        setScanStatusMessage(t('bluetoothDevices.noDevices'));
+        Alert.alert(t('bluetoothDevices.messages.noResultsTitle'), `${filterText}${nativeText}`);
       } else {
-        setScanStatusMessage(`검색 완료 · 총 ${merged.length}개`);
+        setScanStatusMessage(t('bluetoothDevices.messages.searchComplete', { count: merged.length }));
       }
     } catch (error) {
       const message = String(error);
       if (message.includes('bluetooth_permission_denied')) {
-        setScanStatusMessage('Bluetooth/위치 권한 또는 위치 서비스가 필요합니다.');
+        setScanStatusMessage(t('bluetoothDevices.messages.permissionsRequired'));
         Alert.alert(
-          '권한 필요',
-          '스캔을 위해 Bluetooth 권한, 위치 권한, 위치 서비스(기기 설정)가 모두 필요합니다. 설정에서 허용 후 다시 시도해주세요.'
+          t('bluetoothDevices.messages.permissionTitle'),
+          t('bluetoothDevices.messages.permissionsRequiredBody')
         );
       } else {
-        setScanStatusMessage(`스캔 실패: ${message}`);
+        setScanStatusMessage(t('bluetoothDevices.messages.scanFailedWithReason', { reason: message }));
         markSyncFailure('bluetooth', message);
-        Alert.alert('스캔 실패', message);
+        Alert.alert(t('bluetoothDevices.messages.scanFailed'), message);
       }
     } finally {
       if (scanRunId === scanRunIdRef.current) {
@@ -314,14 +316,14 @@ export default function BluetoothDeviceScreen() {
     }
     setScanning(false);
     setScanSheetVisible(false);
-    setScanStatusMessage('스캔 중지됨');
+    setScanStatusMessage(t('bluetoothDevices.messages.scanStopped'));
   };
 
   const syncExternalProvider = async (provider: ExternalProviderType, options?: { silent?: boolean }) => {
     const silent = Boolean(options?.silent);
     const integration = integrations.find((item) => item.type === provider);
     if (!integration?.connected) {
-      if (!silent) Alert.alert('연동 필요', `${provider} 계정을 먼저 연결해주세요.`);
+      if (!silent) Alert.alert(t('bluetoothDevices.messages.integrationRequired'), t('bluetoothDevices.messages.connectProviderFirst', { provider }));
       return { status: 'skipped' as const, imported: 0, duplicate: 0, failed: 0, message: 'provider_not_connected' };
     }
     const isMockAccount = /\(mock\)/i.test(String(integration.accountLabel || ''));
@@ -331,21 +333,22 @@ export default function BluetoothDeviceScreen() {
     try {
       const result = await syncExternalDiveLogs({ provider, userId: 'me', existingLogs: logs });
       if (result.status === 'failed') {
-        markSyncFailure(provider, result.errorMessage || '동기화 실패');
-        if (!silent) Alert.alert('동기화 실패', `${provider}: ${result.errorMessage || '오류'}`);
+        markSyncFailure(provider, result.errorMessage || t('bluetoothDevices.messages.syncFailed'));
+        if (!silent) Alert.alert(t('bluetoothDevices.messages.syncFailed'), `${provider}: ${result.errorMessage || t('common.error')}`);
         return { status: 'failed' as const, imported: 0, duplicate: 0, failed: 1, message: result.errorMessage || 'sync_failed' };
       }
-      appendImportedLogs(result.imported);
+      const saved = await privateDiveLogService.createMany(result.imported as unknown as Record<string, unknown>[]);
+      appendImportedLogs(saved);
       const summaryMessage = isMockAccount
-        ? `동기화 완료 (샘플 데이터 · 신규 ${result.imported.length}, 중복 ${result.duplicateCount})`
-        : `동기화 완료 (신규 ${result.imported.length}, 중복 ${result.duplicateCount})`;
+        ? t('bluetoothDevices.messages.syncSummarySample', { imported: result.imported.length, duplicate: result.duplicateCount })
+        : t('bluetoothDevices.messages.syncSummary', { imported: result.imported.length, duplicate: result.duplicateCount });
       markSyncSuccess(provider, summaryMessage);
       if (!silent) {
         Alert.alert(
-          '동기화 완료',
+          t('bluetoothDevices.messages.syncComplete'),
           isMockAccount
-            ? `${provider} 로그 ${result.imported.length}개를 가져왔습니다. 현재는 샘플 데이터 모드입니다.`
-            : `${provider} 로그 ${result.imported.length}개를 가져왔습니다.`
+            ? t('bluetoothDevices.messages.providerImportedSample', { provider, count: result.imported.length })
+            : t('bluetoothDevices.messages.providerImported', { provider, count: result.imported.length })
         );
       }
       return {
@@ -358,7 +361,7 @@ export default function BluetoothDeviceScreen() {
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure(provider, message);
-      if (!silent) Alert.alert('동기화 실패', message);
+      if (!silent) Alert.alert(t('bluetoothDevices.messages.syncFailed'), message);
       return { status: 'failed' as const, imported: 0, duplicate: 0, failed: 1, message };
     } finally {
       setProviderBusyType(null);
@@ -382,18 +385,18 @@ export default function BluetoothDeviceScreen() {
       updateIntegration(provider, {
         connected: result.connected,
         accountLabel: normalizedLabel || result.accountLabel,
-        statusMessage: result.connected ? (testMode ? '테스트 모드 연결됨 (운영 키 필요)' : '연결됨') : '연결 실패',
+        statusMessage: `i18nKey:${result.connected ? (testMode ? 'bluetoothDevices.messages.testModeConnected' : 'bluetoothDevices.messages.connected') : 'bluetoothDevices.messages.connectionFailed'}`,
       });
       Alert.alert(
-        '연결 완료',
+        t('bluetoothDevices.messages.connectionComplete'),
         testMode
-          ? `${provider} 계정이 테스트 모드로 연결되었습니다. 운영 키 연동 전까지는 샘플 데이터로 동작합니다.`
-          : `${provider} 계정이 연결되었습니다.`
+          ? t('bluetoothDevices.messages.providerConnectedTest', { provider })
+          : t('bluetoothDevices.messages.providerConnected', { provider })
       );
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure(provider, message);
-      Alert.alert('연결 실패', message);
+      Alert.alert(t('bluetoothDevices.messages.connectionFailed'), message);
     } finally {
       setProviderBusyType(null);
     }
@@ -408,12 +411,12 @@ export default function BluetoothDeviceScreen() {
       updateIntegration(provider, {
         connected: false,
         accountLabel: undefined,
-        statusMessage: '연결 해제됨',
+        statusMessage: 'i18nKey:bluetoothDevices.messages.disconnected',
       });
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure(provider, message);
-      Alert.alert('연결 해제 실패', message);
+      Alert.alert(t('bluetoothDevices.messages.disconnectFailed'), message);
     } finally {
       setProviderBusyType(null);
     }
@@ -428,12 +431,12 @@ export default function BluetoothDeviceScreen() {
         setConnectedDeviceId(null);
         updateIntegration('bluetooth', {
           connected: false,
-          statusMessage: '기기 연결 해제됨',
+          statusMessage: 'i18nKey:bluetoothDevices.messages.deviceDisconnected',
         });
-        markDiveDeviceSynced(reg.deviceId, { message: '연결 해제됨' });
+        markDiveDeviceSynced(reg.deviceId, { message: t('bluetoothDevices.messages.disconnected') });
       } catch (error: any) {
         markSyncFailure('bluetooth', String(error?.message || error));
-        Alert.alert('연결 해제 실패', String(error?.message || error));
+        Alert.alert(t('bluetoothDevices.messages.disconnectFailed'), String(error?.message || error));
       }
       return;
     }
@@ -443,16 +446,16 @@ export default function BluetoothDeviceScreen() {
       const { connectDiveComputer } = await loadBluetoothDiveService();
       const result = await connectDiveComputer(device.id);
       setConnectedDeviceId(result.device.id);
-      markDiveDeviceConnected(result.device.id, new Date().toISOString(), `연결됨 (배터리 ${result.info.batteryLevel ?? '-'}%)`);
+      markDiveDeviceConnected(result.device.id, new Date().toISOString(), t('bluetoothDevices.messages.connectedBattery', { battery: result.info.batteryLevel ?? '-' }));
       updateIntegration('bluetooth', {
         connected: true,
         accountLabel: result.device.name,
-        statusMessage: `연결됨 (배터리 ${result.info.batteryLevel ?? '-'}%)`,
+        statusMessage: t('bluetoothDevices.messages.connectedBattery', { battery: result.info.batteryLevel ?? '-' }),
       });
-      Alert.alert('연결 완료', `${result.device.name} 연결됨`);
+      Alert.alert(t('bluetoothDevices.messages.connectionComplete'), t('bluetoothDevices.messages.deviceConnected', { name: result.device.name }));
     } catch (error: any) {
       markSyncFailure('bluetooth', String(error?.message || error));
-      Alert.alert('연결 실패', String(error?.message || error));
+      Alert.alert(t('bluetoothDevices.messages.connectionFailed'), String(error?.message || error));
     } finally {
       setConnectingDeviceId(null);
     }
@@ -466,23 +469,23 @@ export default function BluetoothDeviceScreen() {
         const { connectDiveComputer } = await loadBluetoothDiveService();
         const result = await connectDiveComputer(device.id);
         setConnectedDeviceId(result.device.id);
-        markDiveDeviceConnected(result.device.id, new Date().toISOString(), `연결됨 (배터리 ${result.info.batteryLevel ?? '-'}%)`);
+        markDiveDeviceConnected(result.device.id, new Date().toISOString(), t('bluetoothDevices.messages.connectedBattery', { battery: result.info.batteryLevel ?? '-' }));
         updateIntegration('bluetooth', {
           connected: true,
           accountLabel: result.device.name,
-          statusMessage: `연결됨 (배터리 ${result.info.batteryLevel ?? '-'}%)`,
+          statusMessage: t('bluetoothDevices.messages.connectedBattery', { battery: result.info.batteryLevel ?? '-' }),
         });
       }
       const syncResult = await syncRegisteredDevice(device.id, { silent: true });
       if (syncResult.status === 'completed') {
-        Alert.alert('가져오기 완료', `신규 ${syncResult.imported}개, 중복 ${syncResult.duplicate}개`);
+        Alert.alert(t('bluetoothDevices.messages.importComplete'), t('bluetoothDevices.messages.importSummary', { imported: syncResult.imported, duplicate: syncResult.duplicate }));
       } else if (syncResult.status === 'failed') {
-        Alert.alert('동기화 실패', syncResult.message || '알 수 없는 오류');
+        Alert.alert(t('bluetoothDevices.messages.syncFailed'), syncResult.message || t('bluetoothDevices.messages.unknownError'));
       }
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure('bluetooth', message);
-      Alert.alert('연결/동기화 실패', message);
+      Alert.alert(t('bluetoothDevices.messages.connectSyncFailed'), message);
     } finally {
       setConnectingDeviceId(null);
     }
@@ -492,7 +495,7 @@ export default function BluetoothDeviceScreen() {
     const silent = Boolean(options?.silent);
     const reg = getRegisteredDiveDeviceByDeviceId(deviceId);
     if (!reg) {
-      if (!silent) Alert.alert('등록 필요', '먼저 기기를 등록해주세요.');
+      if (!silent) Alert.alert(t('bluetoothDevices.messages.registrationRequired'), t('bluetoothDevices.messages.registerDeviceFirst'));
       return { status: 'skipped' as const, imported: 0, duplicate: 0, failed: 0, message: 'device_not_registered' };
     }
 
@@ -521,7 +524,10 @@ export default function BluetoothDeviceScreen() {
       });
       const duplicateByExisting = Math.max(0, pulled.length - imported.length);
 
-      if (imported.length) appendImportedLogs(imported);
+      if (imported.length) {
+        const saved = await privateDiveLogService.createMany(imported as unknown as Record<string, unknown>[]);
+        appendImportedLogs(saved);
+      }
 
       const mergedExternalIds = [
         ...new Set(
@@ -530,8 +536,8 @@ export default function BluetoothDeviceScreen() {
       ];
       const syncMessage =
         imported.length > 0
-          ? `동기화 완료 (신규 ${imported.length}개)`
-          : '신규 데이터 없음 (마지막 동기화 이후 추가 데이터 없음)';
+          ? t('bluetoothDevices.messages.deviceSyncImported', { count: imported.length })
+          : t('bluetoothDevices.messages.noNewData');
 
       markDiveDeviceSynced(deviceId, {
         syncedAt: new Date().toISOString(),
@@ -539,7 +545,7 @@ export default function BluetoothDeviceScreen() {
         message: syncMessage,
       });
       markSyncSuccess('bluetooth', syncMessage);
-      if (!silent) Alert.alert('동기화 완료', syncMessage);
+      if (!silent) Alert.alert(t('bluetoothDevices.messages.syncComplete'), syncMessage);
       return {
         status: 'completed' as const,
         imported: imported.length,
@@ -550,7 +556,7 @@ export default function BluetoothDeviceScreen() {
     } catch (error: any) {
       const message = String(error?.message || error);
       markSyncFailure('bluetooth', message);
-      if (!silent) Alert.alert('동기화 실패', message);
+      if (!silent) Alert.alert(t('bluetoothDevices.messages.syncFailed'), message);
       return { status: 'failed' as const, imported: 0, duplicate: 0, failed: 1, message };
     } finally {
       setSyncingDeviceId(null);
@@ -563,17 +569,17 @@ export default function BluetoothDeviceScreen() {
       const { syncDiveLogsByBluetooth } = await loadBluetoothDiveService();
       const pulled = await syncDiveLogsByBluetooth(deviceId);
       if (!pulled.length) {
-        Alert.alert('데이터 형식 체크', '검증 가능한 로그가 없습니다.');
+        Alert.alert(t('bluetoothDevices.messages.dataCheck'), t('bluetoothDevices.messages.noLogsToValidate'));
         return;
       }
       const invalid = pulled.filter((item) => !item.diveDate || (!item.maxDepth && !item.totalDiveTime));
       if (invalid.length) {
-        Alert.alert('데이터 형식 경고', `필수 최소 필드 누락 로그 ${invalid.length}개가 감지되었습니다.`);
+        Alert.alert(t('bluetoothDevices.messages.dataWarning'), t('bluetoothDevices.messages.invalidLogs', { count: invalid.length }));
         return;
       }
-      Alert.alert('데이터 형식 정상', `최소 필드(날짜/수심 또는 시간) 검증 완료: ${pulled.length}개`);
+      Alert.alert(t('bluetoothDevices.messages.dataValid'), t('bluetoothDevices.messages.validLogs', { count: pulled.length }));
     } catch (error: any) {
-      Alert.alert('체크 실패', String(error?.message || error));
+      Alert.alert(t('bluetoothDevices.messages.checkFailed'), String(error?.message || error));
     } finally {
       setCheckingShapeDeviceId(null);
     }
@@ -581,7 +587,7 @@ export default function BluetoothDeviceScreen() {
 
   const syncAllRegistered = async () => {
     if (syncTargetCount <= 0) {
-      Alert.alert('동기화 대상 없음', '연결된 외부 서비스 또는 등록된 기기가 없습니다.');
+      Alert.alert(t('bluetoothDevices.messages.noSyncTargets'), t('bluetoothDevices.messages.noSyncTargetsBody'));
       return;
     }
     setSyncingAll(true);
@@ -616,11 +622,11 @@ export default function BluetoothDeviceScreen() {
         summary.duplicate += result.duplicate;
       }
       Alert.alert(
-        '전체 동기화 완료',
-        `서비스 ${summary.providersDone}개, 기기 ${summary.devicesDone}개 처리\n신규 ${summary.imported}개 · 중복 ${summary.duplicate}개 · 실패 ${summary.failed}개`
+        t('bluetoothDevices.messages.syncAllComplete'),
+        t('bluetoothDevices.messages.syncAllSummary', summary)
       );
       updateIntegration('bluetooth', {
-        statusMessage: `전체동기화 완료 (신규 ${summary.imported}, 중복 ${summary.duplicate}, 실패 ${summary.failed})`,
+        statusMessage: t('bluetoothDevices.messages.syncAllStatus', summary),
         lastSyncAt: new Date().toISOString(),
       });
     } finally {
@@ -634,20 +640,20 @@ export default function BluetoothDeviceScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 56 }}>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: '#0F172A' }}>다이빙 컴퓨터 관리</Text>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: '#0F172A' }}>{t('bluetoothDevices.title')}</Text>
         <Text style={{ marginTop: 8, color: '#64748B' }}>
-          Bluetooth 검색/연결, 외부 서비스 동기화, 데이터 형식 체크를 한 화면에서 관리합니다.
+          {t('bluetoothDevices.subtitle')}
         </Text>
 
         <View style={{ marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 14 }}>
           <Text style={{ color: '#0F172A', fontWeight: '800' }}>
-            연동 {connectedProviderCount}개 · 등록기기 {registeredDiveDevices.length}개 · 동기화 대상 {syncTargetCount}개
+            {t('bluetoothDevices.summary', { providers: connectedProviderCount, devices: registeredDiveDevices.length, targets: syncTargetCount })}
           </Text>
           <Text style={{ marginTop: 4, color: '#64748B', fontSize: 12 }}>
-            전체 동기화는 연결된 서비스와 등록된 기기를 순차 처리합니다.
+            {t('bluetoothDevices.syncHint')}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#334155', fontWeight: '700' }}>자동 동기화</Text>
+            <Text style={{ color: '#334155', fontWeight: '700' }}>{t('bluetoothDevices.autoSync')}</Text>
             <Switch
               value={autoSyncEnabled}
               onValueChange={setAutoSyncEnabled}
@@ -662,7 +668,7 @@ export default function BluetoothDeviceScreen() {
                 void requestPermission();
               }}
             >
-              <Text style={{ color: '#fff', fontWeight: '800' }}>{permissionGranted ? '권한 허용됨' : '권한 요청'}</Text>
+              <Text style={{ color: '#fff', fontWeight: '800' }}>{t(permissionGranted ? 'bluetoothDevices.permissionGranted' : 'bluetoothDevices.requestPermission')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{
@@ -678,12 +684,12 @@ export default function BluetoothDeviceScreen() {
               onPress={openScanSheet}
               disabled={scanning}
             >
-              <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>{scanning ? '검색중...' : '기기 검색'}</Text>
+              <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>{t(scanning ? 'bluetoothDevices.scanning' : 'bluetoothDevices.searchDevices')}</Text>
             </TouchableOpacity>
           </View>
           <Text style={{ marginTop: 8, color: '#64748B', fontSize: 12 }}>
-            {scanStatusMessage || '기기 검색을 눌러 주변 다이빙 컴퓨터를 찾으세요.'}
-            {lastScanAt ? ` · 마지막 스캔: ${formatTime(lastScanAt)}` : ''}
+            {scanStatusMessage || t('bluetoothDevices.searchHint')}
+            {lastScanAt ? ` · ${t('bluetoothDevices.lastScan')}: ${formatTime(lastScanAt)}` : ''}
           </Text>
           <TouchableOpacity
             style={{
@@ -697,20 +703,20 @@ export default function BluetoothDeviceScreen() {
             onPress={syncAllRegistered}
             disabled={syncingAll}
           >
-            <Text style={{ color: '#fff', fontWeight: '800' }}>{syncingAll ? '전체 동기화중...' : '전체 동기화'}</Text>
+            <Text style={{ color: '#fff', fontWeight: '800' }}>{t(syncingAll ? 'bluetoothDevices.syncingAll' : 'bluetoothDevices.syncAll')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={{ marginTop: 18 }}>
-          <Text style={{ marginBottom: 8, fontSize: 17, fontWeight: '800', color: '#0F172A' }}>외부 서비스 연동</Text>
+          <Text style={{ marginBottom: 8, fontSize: 17, fontWeight: '800', color: '#0F172A' }}>{t('bluetoothDevices.externalServices')}</Text>
           {integrationItems.map((item) => (
             <IntegrationStatusCard
               key={item.id}
               item={item}
               syncDisabled={providerBusyType === item.type || syncingAll}
               actionDisabled={providerBusyType === item.type || syncingAll}
-              syncLabel={providerBusyType === item.type ? '동기화중...' : undefined}
-              actionLabel={providerBusyType === item.type ? '처리중...' : undefined}
+              syncLabel={providerBusyType === item.type ? t('bluetoothDevices.syncing') : undefined}
+              actionLabel={providerBusyType === item.type ? t('bluetoothDevices.processing') : undefined}
               onSync={() => syncExternalProvider(item.type as ExternalProviderType)}
               onDisconnect={() =>
                 void (item.connected
@@ -722,19 +728,19 @@ export default function BluetoothDeviceScreen() {
         </View>
 
         <View style={{ marginTop: 16 }}>
-          <Text style={{ marginBottom: 8, fontSize: 17, fontWeight: '800', color: '#0F172A' }}>등록된 다이빙 컴퓨터</Text>
+          <Text style={{ marginBottom: 8, fontSize: 17, fontWeight: '800', color: '#0F172A' }}>{t('bluetoothDevices.registeredComputers')}</Text>
           {registeredDiveDevices.length === 0 ? (
             <View style={{ borderRadius: 14, borderWidth: 1, borderColor: '#D9E4F1', backgroundColor: '#fff', padding: 12 }}>
-              <Text style={{ color: '#64748B' }}>등록된 기기가 없습니다. 검색 후 기기를 등록해주세요.</Text>
+              <Text style={{ color: '#64748B' }}>{t('bluetoothDevices.noRegisteredDevices')}</Text>
             </View>
           ) : (
             registeredDiveDevices.map((entry) => (
               <View key={entry.id} style={{ marginBottom: 10, borderRadius: 16, borderWidth: 1, borderColor: '#D7E4F1', backgroundColor: '#fff', padding: 14 }}>
                 <Text style={{ fontSize: 16, fontWeight: '800', color: '#0F172A' }}>{entry.name}</Text>
                 <Text style={{ marginTop: 4, color: '#64748B' }}>
-                  브랜드: {entry.brand || 'other'} / 모델: {entry.model || '-'} / 마지막 동기화: {formatTime(entry.lastSyncedAt)}
+                  {t('bluetoothDevices.deviceMeta', { brand: entry.brand || 'other', model: entry.model || '-', syncedAt: formatTime(entry.lastSyncedAt) })}
                 </Text>
-                <Text style={{ marginTop: 2, color: '#64748B' }}>상태: {entry.statusMessage || '-'}</Text>
+                <Text style={{ marginTop: 2, color: '#64748B' }}>{t('bluetoothDevices.status')}: {resolveIntegrationStatusMessage(entry.statusMessage, t) || '-'}</Text>
                 <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                   <TouchableOpacity
                     style={{
@@ -747,7 +753,7 @@ export default function BluetoothDeviceScreen() {
                     disabled={connectingDeviceId === entry.deviceId}
                   >
                     <Text style={{ color: connectedDeviceId === entry.deviceId ? '#DC2626' : '#166534', fontWeight: '800' }}>
-                      {connectingDeviceId === entry.deviceId ? '연결중...' : connectedDeviceId === entry.deviceId ? '연결 해제' : '기기 연결'}
+                      {t(connectingDeviceId === entry.deviceId ? 'bluetoothDevices.connecting' : connectedDeviceId === entry.deviceId ? 'bluetoothDevices.disconnect' : 'bluetoothDevices.connectDevice')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -756,7 +762,7 @@ export default function BluetoothDeviceScreen() {
                     disabled={syncingDeviceId === entry.deviceId}
                   >
                     <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>
-                      {syncingDeviceId === entry.deviceId ? '동기화중...' : '로그 동기화'}
+                      {t(syncingDeviceId === entry.deviceId ? 'bluetoothDevices.syncing' : 'bluetoothDevices.syncLogs')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -765,14 +771,14 @@ export default function BluetoothDeviceScreen() {
                     disabled={checkingShapeDeviceId === entry.deviceId}
                   >
                     <Text style={{ color: '#4338CA', fontWeight: '800' }}>
-                      {checkingShapeDeviceId === entry.deviceId ? '검사중...' : '데이터 형식 체크'}
+                      {t(checkingShapeDeviceId === entry.deviceId ? 'bluetoothDevices.checking' : 'bluetoothDevices.checkDataShape')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ borderRadius: 10, backgroundColor: '#FEF2F2', paddingVertical: 10, paddingHorizontal: 12 }}
                     onPress={() => unregisterDiveDevice(entry.id)}
                   >
-                    <Text style={{ color: '#B91C1C', fontWeight: '800' }}>등록 해제</Text>
+                    <Text style={{ color: '#B91C1C', fontWeight: '800' }}>{t('bluetoothDevices.unregister')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -795,7 +801,7 @@ export default function BluetoothDeviceScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: '#0F172A' }}>블루투스 기기 스캔</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#0F172A' }}>{t('bluetoothDevices.scanTitle')}</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity
                   onPress={() => {
@@ -811,33 +817,33 @@ export default function BluetoothDeviceScreen() {
                     opacity: scanning ? 0.6 : 1,
                   }}
                 >
-                  <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>{scanning ? '검색중...' : '다시 검색'}</Text>
+                  <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>{t(scanning ? 'bluetoothDevices.scanning' : 'bluetoothDevices.searchAgain')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={closeScanSheet}
                   style={{ borderRadius: 10, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 10, paddingVertical: 8 }}
                 >
-                  <Text style={{ color: '#334155', fontWeight: '700' }}>닫기</Text>
+                  <Text style={{ color: '#334155', fontWeight: '700' }}>{t('common.close')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
             <Text style={{ marginTop: 8, color: '#64748B' }}>
-              {scanStatusMessage || '주변 BLE 광고 기기를 검색해 연결하고 바로 로그를 가져올 수 있습니다.'}
+              {scanStatusMessage || t('bluetoothDevices.scanDescription')}
             </Text>
-            <Text style={{ marginTop: 4, color: '#64748B' }}>검색된 기기: {devices.length}개</Text>
+            <Text style={{ marginTop: 4, color: '#64748B' }}>{t('bluetoothDevices.foundDevices', { count: devices.length })}</Text>
 
             <ScrollView style={{ marginTop: 12 }} contentContainerStyle={{ paddingBottom: 16 }}>
               {scanning ? (
                 <View style={{ marginBottom: 10, borderRadius: 14, borderWidth: 1, borderColor: '#D7E4F1', padding: 12, alignItems: 'center' }}>
                   <ActivityIndicator color="#0D5FA8" />
-                  <Text style={{ marginTop: 8, color: '#64748B' }}>스캔 중입니다... (실시간으로 목록이 갱신됩니다)</Text>
+                  <Text style={{ marginTop: 8, color: '#64748B' }}>{t('bluetoothDevices.scanningLive')}</Text>
                 </View>
               ) : null}
               {devices.length === 0 ? (
                 <View style={{ borderRadius: 14, borderWidth: 1, borderColor: '#D7E4F1', padding: 16 }}>
-                  <Text style={{ color: '#64748B' }}>검색된 기기가 없습니다.</Text>
+                  <Text style={{ color: '#64748B' }}>{t('bluetoothDevices.noDevices')}</Text>
                   <Text style={{ marginTop: 6, color: '#94A3B8', fontSize: 12 }}>
-                    Bluetooth 켜짐/권한 허용/기기 광고모드(Discoverable) 상태를 확인한 뒤 다시 검색하세요. iOS 특성상 BLE 광고가 없는 클래식 BT 기기는 목록에 보이지 않을 수 있습니다.
+                    {t('bluetoothDevices.noDevicesHint')}
                   </Text>
                 </View>
               ) : (
@@ -850,7 +856,7 @@ export default function BluetoothDeviceScreen() {
                     >
                       <Text style={{ fontSize: 15, fontWeight: '800', color: '#0F172A' }}>{item.name}</Text>
                       <Text style={{ marginTop: 2, color: '#64748B' }}>
-                        브랜드: {item.brand || 'other'} / 모델: {item.model || '-'} / RSSI: {formatRssi(item.rssi)} / 감도: {signal.label}
+                        {t('bluetoothDevices.scanDeviceMeta', { brand: item.brand || 'other', model: item.model || '-', rssi: formatRssi(item.rssi), signal: t(`bluetoothDevices.signal.${signal.key}`) })}
                       </Text>
                       <Text style={{ marginTop: 2, color: '#64748B' }}>
                         Device ID: {item.id} / Local Name: {item.localName || '-'} / Connectable: {item.isConnectable === false ? 'No' : 'Yes'}
@@ -865,7 +871,7 @@ export default function BluetoothDeviceScreen() {
                         TX Power: {Number.isFinite(Number(item.txPowerLevel)) ? `${item.txPowerLevel} dBm` : '-'} / MTU: {Number.isFinite(Number(item.mtu)) ? item.mtu : '-'}
                       </Text>
                       <Text style={{ marginTop: 2, color: '#64748B' }}>Manufacturer Data: {previewData(item.manufacturerData, 42)}</Text>
-                      <Text style={{ marginTop: 2, color: signal.color, fontWeight: '700' }}>신호 상태: {signal.label}</Text>
+                      <Text style={{ marginTop: 2, color: signal.color, fontWeight: '700' }}>{t('bluetoothDevices.signalStatus')}: {t(`bluetoothDevices.signal.${signal.key}`)}</Text>
                       <View style={{ marginTop: 9, flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity
                           style={{ flex: 1, borderRadius: 10, backgroundColor: '#EAF4FF', paddingVertical: 10, alignItems: 'center' }}
@@ -873,7 +879,7 @@ export default function BluetoothDeviceScreen() {
                           disabled={connectingDeviceId === item.id || syncingDeviceId === item.id}
                         >
                           <Text style={{ color: '#0D5FA8', fontWeight: '800' }}>
-                            {connectingDeviceId === item.id ? '연결중...' : connectedDeviceId === item.id ? '연결 해제' : '연결'}
+                            {t(connectingDeviceId === item.id ? 'bluetoothDevices.connecting' : connectedDeviceId === item.id ? 'bluetoothDevices.disconnect' : 'bluetoothDevices.connect')}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -882,7 +888,7 @@ export default function BluetoothDeviceScreen() {
                           disabled={connectingDeviceId === item.id || syncingDeviceId === item.id}
                         >
                           <Text style={{ color: '#166534', fontWeight: '800' }}>
-                            {syncingDeviceId === item.id ? '가져오는 중...' : '연결 후 로그 가져오기'}
+                            {t(syncingDeviceId === item.id ? 'bluetoothDevices.importing' : 'bluetoothDevices.connectAndImport')}
                           </Text>
                         </TouchableOpacity>
                       </View>

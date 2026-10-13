@@ -1,10 +1,10 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Device from 'expo-device';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { storage } from './storage';
 import { getBlePlxModule } from './blePlx';
+import { isRemoteNotificationRuntimeEnabled } from './notifications';
 
 export type RuntimePermissionStatus = 'granted' | 'denied' | 'unavailable' | 'unknown';
 export type RuntimePermissionResult = {
@@ -52,6 +52,9 @@ export async function requestLocationPermission(): Promise<RuntimePermissionResu
 }
 
 export async function checkPushPermission(): Promise<RuntimePermissionResult> {
+  if (!isRemoteNotificationRuntimeEnabled()) {
+    return { status: 'unavailable', granted: false };
+  }
   try {
     const { status } = await Notifications.getPermissionsAsync();
     const normalized = normalizeStatus(status);
@@ -63,7 +66,7 @@ export async function checkPushPermission(): Promise<RuntimePermissionResult> {
 
 export async function requestPushPermission(): Promise<RuntimePermissionResult> {
   try {
-    if (Platform.OS === 'ios' && !Device.isDevice) {
+    if (!isRemoteNotificationRuntimeEnabled()) {
       return { status: 'unavailable', granted: false };
     }
     const { status } = await Notifications.requestPermissionsAsync();
@@ -187,9 +190,7 @@ export async function requestBluetoothPermission(): Promise<RuntimePermissionRes
 }
 
 export async function requestCoreRuntimePermissions() {
-  const push = Platform.OS === 'ios' && !Device.isDevice
-    ? { status: 'unavailable' as const, granted: false }
-    : await requestPushPermission();
+  const push = await requestPushPermission();
   const location = await requestLocationPermission();
   const bluetooth = await requestBluetoothPermission();
   return { push, location, bluetooth };

@@ -1,13 +1,28 @@
 import type { ExternalDiveLog, ExternalSourceType } from '../models';
 import type { ExternalProviderKey } from '../lib/api';
 
-const sourceByProvider: Record<ExternalProviderKey, ExternalSourceType> = {
+export type DiveImportProviderKey = ExternalProviderKey | 'legacy';
+
+const sourceByProvider: Record<DiveImportProviderKey, ExternalSourceType> = {
   garmin: 'garmin_api',
   suunto: 'suunto_api',
   shearwater: 'shearwater_api',
+  legacy: 'legacy_import',
 };
 
+function stableImportedExternalId(sourceType: string, row: unknown, index: number) {
+  const value = JSON.stringify(row ?? null);
+  let hash = 0x811c9dc5;
+  for (let position = 0; position < value.length; position += 1) {
+    hash ^= value.charCodeAt(position);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `${sourceType}_${index}_${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
 function asNumber(value: unknown): number | undefined {
+  if (typeof value !== 'number' && typeof value !== 'string') return undefined;
+  if (typeof value === 'string' && !value.trim()) return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
 }
@@ -19,20 +34,17 @@ function asString(value: unknown): string {
 function toDateOnly(value: unknown): string | undefined {
   const raw = asString(value);
   if (!raw) return undefined;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date.toISOString().slice(0, 10);
+  const day = raw.match(/^\d{4}-\d{2}-\d{2}(?=$|T| )/)?.[0];
+  if (!day || !Number.isFinite(Date.parse(day))) return undefined;
+  return new Date(day).toISOString().slice(0, 10) === day ? day : undefined;
 }
 
 function toTime(value: unknown): string | undefined {
   const raw = asString(value);
   if (!raw) return undefined;
-  const hhmm = raw.match(/(\d{2}):(\d{2})/);
+  const hhmm = raw.match(/(?:^|T| )([01]\d|2[0-3]):([0-5]\d)(?=$|:|Z|[+-])/);
   if (hhmm) return `${hhmm[1]}:${hhmm[2]}`;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return undefined;
-  return date.toISOString().slice(11, 16);
+  return undefined;
 }
 
 function firstValue(row: any, keys: string[]) {
@@ -45,11 +57,17 @@ function firstValue(row: any, keys: string[]) {
   return undefined;
 }
 
-function toMinutes(value: unknown): number | undefined {
-  const n = asNumber(value);
-  if (n === undefined) return undefined;
-  if (n > 3000) return Math.round(n / 60); // seconds -> minutes
-  return Math.round(n);
+function toMinutes(row: Record<string, unknown>): number | undefined {
+  const minutes = asNumber(firstValue(row, ['totalDiveTimeMin', 'durationMin']));
+  if (minutes !== undefined) return minutes >= 0 ? minutes : undefined;
+  const seconds = asNumber(firstValue(row, ['totalDiveTimeSec', 'durationSec', 'durationSeconds']));
+  if (seconds !== undefined) return seconds >= 0 ? seconds / 60 : undefined;
+  const value = asNumber(firstValue(row, ['duration', 'bottomTime', 'diveTime']));
+  const unit = asString(row.durationUnit).toLowerCase();
+  if (value === undefined || value < 0) return undefined;
+  if (['min', 'minute', 'minutes'].includes(unit)) return value;
+  if (['s', 'sec', 'second', 'seconds'].includes(unit)) return value / 60;
+  return undefined;
 }
 
 function normalizeGraph(value: unknown): { t: number; depth: number }[] | undefined {
@@ -65,23 +83,23 @@ function normalizeGraph(value: unknown): { t: number; depth: number }[] | undefi
   return rows.length ? rows : undefined;
 }
 
-export function mapProviderLogs(provider: ExternalProviderKey, rows: any[]): ExternalDiveLog[] {
+export function mapProviderLogs(provider: DiveImportProviderKey, rows: any[]): ExternalDiveLog[] {
   const sourceType = sourceByProvider[provider];
   return rows
     .map((row, index) => {
       const externalLogId =
         asString(firstValue(row, ['externalLogId', 'logId', 'id', 'uuid', 'diveId'])) ||
-        `${provider}_${Date.now()}_${index}`;
+        stableImportedExternalId(provider, row, index);
 
       const diveDate =
         toDateOnly(firstValue(row, ['diveDate', 'date', 'startDate', 'startTime', 'entryTime'])) ||
-        new Date().toISOString().slice(0, 10);
+        '';
 
       const entryTime = toTime(firstValue(row, ['entryTime', 'startTime', 'inTime']));
       const exitTime = toTime(firstValue(row, ['exitTime', 'endTime', 'outTime']));
 
-      const lat = asNumber(firstValue(row, ['lat', 'latitude', 'gpsLat', 'entryLat']));
-      const lng = asNumber(firstValue(row, ['lng', 'longitude', 'gpsLng', 'entryLng']));
+      const lat = asNumber(firstValue(row, ['lat', 'latitude', 'gpsLat', 'entryLat']) ?? row?.gpsLocation?.lat);
+      const lng = asNumber(firstValue(row, ['lng', 'longitude', 'gpsLng', 'entryLng']) ?? row?.gpsLocation?.lng);
 
       const avgHr = asNumber(firstValue(row, ['avgHeartRate', 'heartRateAvg', 'avg_hr']));
       const maxHr = asNumber(firstValue(row, ['maxHeartRate', 'heartRateMax', 'max_hr']));
@@ -94,16 +112,16 @@ export function mapProviderLogs(provider: ExternalProviderKey, rows: any[]): Ext
         diveDate,
         entryTime,
         exitTime,
-        totalDiveTimeMin: toMinutes(firstValue(row, ['totalDiveTimeMin', 'durationMin', 'duration', 'bottomTime', 'diveTime'])),
+        totalDiveTimeMin: toMinutes(row),
         maxDepthM: asNumber(firstValue(row, ['maxDepthM', 'maxDepth', 'depthMax'])),
         avgDepthM: asNumber(firstValue(row, ['avgDepthM', 'avgDepth', 'depthAvg'])),
         waterTemperatureC: asNumber(firstValue(row, ['waterTemperatureC', 'waterTempC', 'temperatureC', 'tempC'])),
-        gpsLocation: lat !== undefined && lng !== undefined ? { lat, lng } : undefined,
+        gpsLocation: lat !== undefined && lng !== undefined && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : undefined,
         heartRate: avgHr !== undefined || maxHr !== undefined ? { avg: avgHr, max: maxHr } : undefined,
         diveProfileGraph: normalizeGraph(firstValue(row, ['diveProfileGraph', 'profileGraph', 'profile'])),
         equipmentInfo: asString(firstValue(row, ['equipmentInfo', 'equipment', 'gear'])) || undefined,
         memo: asString(firstValue(row, ['memo', 'notes', 'comment'])) || undefined,
-        rawPayload: typeof row === 'object' && row ? row : undefined,
+        rawPayload: typeof row === 'object' && row ? JSON.parse(JSON.stringify(row)) : undefined,
       } as ExternalDiveLog;
     })
     .filter((row) => Boolean(row.externalLogId));

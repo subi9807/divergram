@@ -5,18 +5,8 @@ import type { NotificationSetting, NotificationType } from '../../models';
 import { getNotificationSetting, updateNotificationSetting } from '../../services/notificationService';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+import { useTranslation } from 'react-i18next';
 
-const labelMap: Record<NotificationType, string> = {
-  like: '좋아요 알림',
-  comment: '댓글 알림',
-  follow: '팔로우 알림',
-  marine_weather_alert: '해양 날씨 경고',
-  dive_schedule: '다이빙 일정 알림',
-  sync_complete: '로그 동기화 완료',
-  sync_failed: '로그 동기화 실패',
-  bluetooth_error: '블루투스 연결 오류',
-  certification_status: '자격증 인증 상태',
-};
 const visibleNotificationKeys: NotificationType[] = [
   'like',
   'comment',
@@ -29,6 +19,7 @@ const visibleNotificationKeys: NotificationType[] = [
 const syncNotificationKeys: NotificationType[] = ['dive_schedule', 'sync_complete', 'sync_failed'];
 
 export default function NotificationSettingsScreen() {
+  const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
   const colors = isDark
     ? {
@@ -99,7 +90,7 @@ export default function NotificationSettingsScreen() {
     return (
       <Screen>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <Text style={{ color: colors.subtitle }}>알림 설정을 불러오는 중...</Text>
+          <Text style={{ color: colors.subtitle }}>{t('notificationDetail.loading')}</Text>
         </View>
       </Screen>
     );
@@ -108,12 +99,12 @@ export default function NotificationSettingsScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 50 }}>
-        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>알림 설정 상세</Text>
-        <Text style={{ marginTop: 8, color: colors.subtitle }}>필수 알림 항목만 개별 제어할 수 있습니다.</Text>
+        <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>{t('notificationDetail.title')}</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>{t('notificationDetail.description')}</Text>
 
         <View style={{ marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: colors.rowTitle, fontWeight: '700' }}>푸시 알림 전체</Text>
+            <Text style={{ color: colors.rowTitle, fontWeight: '700' }}>{t('notificationDetail.master')}</Text>
             <Switch
               value={setting.pushEnabled}
               onValueChange={updatePushEnabled}
@@ -126,7 +117,7 @@ export default function NotificationSettingsScreen() {
         <View style={{ marginTop: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
           {visibleNotificationKeys.map((key, index, arr) => (
             <View key={key} style={{ paddingVertical: 10, borderBottomWidth: index === arr.length - 1 ? 0 : 1, borderBottomColor: colors.rowBorder, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.rowText }}>{labelMap[key]}</Text>
+              <Text style={{ color: colors.rowText }}>{t(`notificationDetail.items.${key}`)}</Text>
               <Switch value={setting.items[key]} onValueChange={(next) => updateItem(key, next)} trackColor={{ false: colors.switchFalse, true: '#0D5FA8' }} thumbColor="#fff" />
             </View>
           ))}

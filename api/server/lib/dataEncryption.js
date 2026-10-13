@@ -35,6 +35,17 @@ export function decryptSensitiveJson(value, fallback) {
   return JSON.parse(plaintext.toString('utf8'));
 }
 
+export function encryptSensitiveText(value) {
+  const text = String(value ?? '');
+  if (!text || text.startsWith(ENVELOPE_PREFIX)) return text;
+  return encryptSensitiveJson(text);
+}
+
+export function decryptSensitiveText(value, fallback = '') {
+  const decrypted = decryptSensitiveJson(value, fallback);
+  return typeof decrypted === 'string' ? decrypted : String(fallback ?? '');
+}
+
 export function redactIntegrationTokens(data) {
   if (!data || typeof data !== 'object') return data;
   const { accessToken: _accessToken, refreshToken: _refreshToken, authCode: _authCode, ...safe } = data;

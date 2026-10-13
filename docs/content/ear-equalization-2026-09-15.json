@@ -1,0 +1,31 @@
+[
+  {
+    "category": "safety",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 90,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/646b7ead-21c6-4fc9-b70d-9678e598093f.png",
+    "translations": {
+      "ko": {
+        "title": "귀 압력평형 · 통증은 잠시 멈추라는 신호",
+        "summary": "하강 중 귀의 불편함을 참지 말고, 일찍 부드럽게 압력을 맞추며 해결되지 않으면 다이빙을 중단하는 판단 기준을 알아봅니다.",
+        "body": "압력 변화는 귀가 먼저 알려줍니다\n수면 아래로 내려가면 주변 압력이 변하고, 중이의 압력도 이에 맞춰져야 합니다. 귀가 꽉 찬 느낌이나 불편함은 더 깊이 내려가도 된다는 신호가 아닙니다. 통증이 생기기 전에 교육받은 방법으로 일찍, 자주, 부드럽게 압력평형을 하는 습관이 중요합니다.\n\n하강은 속도가 아니라 제어가 우선입니다\n버디와 압력평형 신호를 미리 정하고, 필요하면 하강줄을 이용해 깊이를 세밀하게 조절합니다. 감기나 코막힘처럼 압력평형을 어렵게 만드는 상태가 있다면 무리해서 입수하지 않습니다. 약으로 증상을 가린 채 다이빙할지는 임의로 결정하지 말고 의사와 상의해야 합니다.\n\n불편하면 그 자리에서 멈춥니다\n귀에 압박감이나 통증이 느껴지면 즉시 하강을 멈추고 버디에게 알립니다. 조금 얕은 곳으로 이동해 압력이 줄어든 뒤, 교육받은 방법을 힘주지 않고 다시 시도할 수 있습니다. 강하게 밀어붙이거나 통증을 참고 계속 내려가면 귀 손상의 위험이 커집니다. 해결되지 않으면 다이빙을 안전하게 종료하는 것이 올바른 선택입니다.\n\n다이빙 뒤의 증상도 기록합니다\n다이빙 후에도 통증, 먹먹함, 청력 변화, 이명, 어지럼증이 남거나 귀에서 액체나 피가 보이면 추가 다이빙을 중단하고 의료 평가를 받습니다. 특히 심한 어지럼증이나 갑작스러운 청력 저하는 신속한 진료가 필요한 신호일 수 있습니다.\n\n중단은 실패가 아니라 안전 기술입니다\n압력평형은 사람마다, 또 같은 사람도 컨디션에 따라 달라질 수 있습니다. 계획한 수심보다 귀의 상태를 우선하고, 버디가 중단을 선택했을 때도 그 결정을 존중하세요. 안전하게 다음 기회를 남기는 판단이 좋은 다이빙의 일부입니다.\n\n이 글은 일반적인 안전 안내이며 공인 교육과 개인별 의료 진단을 대신하지 않습니다. 표지는 새로 제작한 AI 개념 일러스트로, 해부학 자료나 압력평형 동작의 실습 기준이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Ear equalization · Pain is a signal to pause",
+        "summary": "Learn why ear discomfort during descent calls for an early, gentle response and when ending the dive is the safest decision.",
+        "body": "Your ears notice pressure change early\nAs you descend, surrounding pressure changes and the pressure in the middle ear must adjust with it. Fullness or discomfort is not permission to keep going deeper. Use only the techniques from your training, beginning early and repeating them gently before pain develops.\n\nControl matters more than descent speed\nAgree on an equalization signal with your buddy and use a descent line when it helps you make small depth adjustments. Do not force a dive when a cold or congestion makes equalization difficult. Decisions about medication and diving should be discussed with a physician rather than improvised at the dive site.\n\nPause at the first sign of discomfort\nStop descending as soon as pressure or pain appears and tell your buddy. Moving slightly shallower may reduce the pressure enough to try a trained method again without force. Pushing harder or continuing downward through pain increases the risk of ear injury. If the problem does not resolve, end the dive safely.\n\nPay attention after surfacing\nDo not make another dive if pain, blocked sensation, hearing change, ringing or vertigo remains, or if fluid or blood appears from the ear. Seek medical assessment. Severe vertigo or sudden hearing loss may require urgent care.\n\nCalling the dive is a safety skill\nEqualization can vary between people and from one day to another. Put the condition of your ears ahead of a planned depth, and support a buddy who chooses to stop. Preserving the next safe opportunity is part of a successful dive.\n\nThis article provides general safety information and does not replace certified training or individual medical advice. The cover is a newly created AI concept illustration, not an anatomy reference or a practical standard for equalization technique.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "耳抜き · 痛みは一度止まるためのサイン",
+        "summary": "潜降中の耳の違和感を我慢せず、早く穏やかに対応し、解消しないときに潜水を終了する判断を確認します。",
+        "body": "圧力の変化は耳が早く知らせます\n潜降すると周囲の圧力が変わり、中耳の圧力もそれに合わせる必要があります。詰まった感じや違和感は、そのまま深く進んでよい合図ではありません。痛みが出る前から、講習で身につけた方法だけを早めに、繰り返し、穏やかに行います。\n\n速さよりも制御を優先します\n耳抜きに関する合図をバディと事前に決め、細かな深度調整に役立つ場合は潜降ラインを使います。風邪や鼻づまりで耳抜きが難しい状態なら、無理に潜らないでください。薬を使って潜る判断は現場の自己判断ではなく、医師に相談します。\n\n違和感があればその場で止まります\n圧迫感や痛みを感じたら、すぐに潜降を止めてバディに伝えます。少し浅い位置へ戻ると圧力が軽くなり、講習で習った方法を力まずに再度試せる場合があります。強く押し通したり、痛みを我慢して潜降を続けたりすると耳を傷める危険が高まります。解消しない場合は安全にダイビングを終了します。\n\n浮上後の症状も見逃しません\n痛み、閉塞感、聞こえ方の変化、耳鳴り、めまいが残る場合や、耳から液体や血が出た場合は次の潜水を中止し、医療機関で評価を受けます。強いめまいや突然の聴力低下は、速やかな診察が必要なことがあります。\n\n中止の判断も安全技術です\n耳抜きのしやすさは人によって異なり、同じ人でも体調で変わります。予定した深度より耳の状態を優先し、バディが中止を選んだときもその判断を尊重しましょう。次の安全な機会を残すことも、良いダイビングの一部です。\n\n本記事は一般的な安全情報であり、認定講習や個別の医療診断を代替しません。表紙は新たに制作したAI概念イラストで、解剖図や耳抜き動作の実技基準ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "耳压平衡 · 疼痛是在提醒你暂停",
+        "summary": "了解下潜时为何不能忍耐耳部不适，以及何时应以结束潜水作为最安全的选择。",
+        "body": "耳朵会先感受到压力变化\n下潜时，环境压力不断变化，中耳压力也需要随之调整。耳闷或不适并不表示可以继续下潜。应只使用培训中学过的方法，在疼痛出现前就开始，并以轻柔、频繁的方式进行压力平衡。\n\n控制深度比追求速度更重要\n事先与潜伴约定耳压平衡的手势；如果下潜绳有助于精细控制深度，就合理使用。感冒或鼻塞会让压力平衡更困难，此时不要勉强入水。是否借助药物潜水不应在现场自行决定，应先咨询医生。\n\n出现不适就暂停下潜\n一旦感到压迫或疼痛，应立即停止下潜并告知潜伴。稍微回到较浅处，压力可能减轻，此时可以不加蛮力地再次尝试培训中学过的方法。用力硬撑或忍痛继续下降会增加耳部损伤风险。若仍无法解决，应安全结束本次潜水。\n\n上岸后也要留意症状\n如果疼痛、堵塞感、听力变化、耳鸣或眩晕持续存在，或者耳内出现液体或血液，应停止后续潜水并接受医疗评估。严重眩晕或突发听力下降可能需要及时就医。\n\n终止潜水也是一种安全技能\n不同人的压力平衡能力不同，同一个人也会因当天状态而变化。应把耳朵的状况放在计划深度之前，也要尊重潜伴选择停止的决定。为下一次安全潜水保留机会，本身就是成功潜水的一部分。\n\n本文仅提供一般安全信息，不能替代认证培训或个体医疗建议。封面为新制作的AI概念插画，不是解剖资料，也不能作为压力平衡动作的实操标准。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

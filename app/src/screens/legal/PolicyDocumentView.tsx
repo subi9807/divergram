@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { Screen } from '../../components/Screen';
-import { getPolicyDocumentByType } from '../../services/policyService';
+import { getPolicyDocumentByType, refreshRemotePolicyDocuments } from '../../services/policyService';
 import type { PolicyType } from '../../models';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+import i18n from '../../lib/i18n';
+import { normalizePolicyLocale } from '../../legal/policyCatalog';
+import { useTranslation } from 'react-i18next';
 
-function splitPolicyContent(content: string): { heading: string; body: string[] }[] {
+function splitPolicyContent(content: string, defaultHeading: string): { heading: string; body: string[] }[] {
   const parts = content.split(/\n\n/).map((chunk) => chunk.trim()).filter(Boolean);
   const sections: { heading: string; body: string[] }[] = [];
   let current: { heading: string; body: string[] } | null = null;
@@ -17,7 +20,7 @@ function splitPolicyContent(content: string): { heading: string; body: string[] 
       if (current) sections.push(current);
       current = { heading: part.replace(/^##\s+/, ''), body: [] };
     } else {
-      if (!current) current = { heading: '안내', body: [] };
+      if (!current) current = { heading: defaultHeading, body: [] };
       current.body.push(part);
     }
   }
@@ -25,10 +28,19 @@ function splitPolicyContent(content: string): { heading: string; body: string[] 
   return sections;
 }
 
-export function PolicyDocumentView({ type, titleOverride }: { type: PolicyType; titleOverride?: string }) {
+export function PolicyDocumentView({ type }: { type: PolicyType }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
-  const doc = getPolicyDocumentByType(type, 'ko');
+  const locale = normalizePolicyLocale(i18n.resolvedLanguage || i18n.language);
+  const [revision, setRevision] = useState(0);
+  const doc = getPolicyDocumentByType(type, locale);
+  useEffect(() => {
+    let active = true;
+    refreshRemotePolicyDocuments(locale).then(() => { if (active) setRevision((value) => value + 1); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [locale, type]);
+  void revision;
   const colors = {
     backBorder: isDark ? '#2a3e52' : '#D6E2EE',
     backBg: isDark ? '#0f1b2a' : '#ffffff',
@@ -56,14 +68,14 @@ export function PolicyDocumentView({ type, titleOverride }: { type: PolicyType; 
           >
             <ChevronLeft size={18} color={colors.backIcon} />
           </TouchableOpacity>
-          <Text style={{ marginLeft: 10, color: colors.backText, fontWeight: '700' }}>뒤로가기</Text>
+          <Text style={{ marginLeft: 10, color: colors.backText, fontWeight: '700' }}>{t('common.back')}</Text>
         </View>
 
-        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{titleOverride || doc?.title || '정책 문서'}</Text>
-        <Text style={{ marginTop: 8, color: colors.subtitle }}>버전 {doc?.version || '-'} · 시행일 {doc?.effectiveFrom?.slice(0, 10) || '-'}</Text>
+        <Text style={{ fontSize: 27, fontWeight: '800', color: colors.title }}>{doc?.title || t('legalUi.document')}</Text>
+        <Text style={{ marginTop: 8, color: colors.subtitle }}>{t('legalUi.version')} {doc?.version || '-'} · {t('legalUi.effective')} {doc?.effectiveFrom?.slice(0, 10) || '-'}</Text>
 
         {doc ? (
-          splitPolicyContent(doc.content).map((section) => (
+          splitPolicyContent(doc.content, t('legalUi.info')).map((section) => (
             <View key={section.heading} style={{ marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, padding: 14 }}>
               <Text style={{ fontSize: 16, fontWeight: '800', color: colors.cardTitle }}>{section.heading}</Text>
               {section.body.map((line, index) => (
@@ -75,7 +87,7 @@ export function PolicyDocumentView({ type, titleOverride }: { type: PolicyType; 
           ))
         ) : (
           <View style={{ marginTop: 16, borderRadius: 16, borderWidth: 1, borderColor: '#FECACA', backgroundColor: '#FEF2F2', padding: 14 }}>
-            <Text style={{ color: '#991B1B' }}>정책 문서를 찾을 수 없습니다.</Text>
+            <Text style={{ color: '#991B1B' }}>{t('legalUi.missing')}</Text>
           </View>
         )}
       </ScrollView>

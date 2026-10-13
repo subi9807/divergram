@@ -1,0 +1,118 @@
+[
+  {
+    "category": "skills",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 30,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/1ca07a53-4154-41ed-9bb7-77bb5d8455db.jpg",
+    "translations": {
+      "ko": {
+        "title": "스쿠버다이빙 · 수중에서 호흡하며 만나는 바다",
+        "summary": "공기통과 호흡기를 사용해 바닷속을 탐험하는 다이빙. 처음 시작하는 분을 위한 특징과 입문 안내입니다.",
+        "body": "바다를 천천히 둘러보는 방법\n스쿠버는 등에 멘 실린더의 기체를 호흡기로 공급받으며 물속을 이동하는 다이빙입니다. 수중에서 머무르며 풍경과 생물을 관찰하는 즐거움이 있습니다.\n\n장비는 함께 작동합니다\n마스크는 시야를, 핀은 추진력을 돕습니다. 슈트는 체온을 보호하고, 부력조절기는 물속에서 몸의 뜨고 가라앉는 정도를 조절하는 데 쓰입니다. 호흡기와 실린더는 호흡을 위한 한 묶음의 장비입니다.\n\n첫 경험은 교육과 함께\n처음에는 강사에게 장비를 배우고 얕고 통제된 환경에서 익숙해지는 시간이 필요합니다. 이후에도 자신의 교육과 경험에 맞는 장소를 선택하고 버디와 계획을 나누세요.\n\n관찰하는 다이버가 되어보세요\n바닥과 산호를 건드리지 않고 적절한 거리를 유지하면 작은 생물도 더 오래 관찰할 수 있습니다. 물속에서 호흡을 참지 않는 등 실제 안전 기술은 강사에게 배우세요. 깊이보다 편안한 경험을 쌓는 것이 먼저입니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Scuba diving · Explore while breathing underwater",
+        "summary": "Discover the equipment, experience and first steps of recreational scuba diving.",
+        "body": "A slower way to explore\nScuba supplies breathing gas from a cylinder through a regulator, letting you move underwater and take time to notice marine life.\n\nEquipment works together\nA mask helps you see, fins help you move and a suit provides thermal protection. A buoyancy compensator helps manage flotation; the regulator and cylinder form the breathing system.\n\nStart with instruction\nLearn the equipment with an instructor in a controlled setting. Choose sites within your training and experience, and share a plan with your buddy.\n\nBecome an observer\nKeep clear of the bottom and coral. Give wildlife space. Learn practical safety skills, including not holding your breath on scuba, with an instructor. Build comfortable experiences before pursuing depth.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "スクーバダイビング · 水中で呼吸しながら海を探検",
+        "summary": "器材を使って海の世界へ。レクリエーションダイビングの特徴と始め方を紹介します。",
+        "body": "ゆっくり海を眺める楽しみ\nスクーバはシリンダーのガスを呼吸器から吸いながら水中を移動するダイビングです。景色や生き物を時間をかけて観察できます。\n\n器材は組み合わせて使います\nマスクは視界、フィンは推進、スーツは保温を助けます。浮力調整具は浮き沈みの調整に使い、シリンダーとレギュレーターが呼吸を支えます。\n\n最初は講習から\nインストラクターと管理された環境で器材に慣れましょう。その後も訓練と経験に合う場所を選び、バディと計画を共有します。\n\n観察するダイバーへ\n海底やサンゴに触れず、生き物との距離を保ちましょう。水中で息を止めないことなど、実際の安全技術は講習で学びます。深さより、落ち着いて楽しめる経験を積むことが大切です。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "水肺潜水 · 在水下呼吸，探索海洋",
+        "summary": "认识休闲水肺潜水的装备、体验和入门方式。",
+        "body": "慢慢观察海洋\n水肺潜水通过气瓶和调节器提供呼吸气体，让你在水下移动并细看海洋生物。\n\n装备相互配合\n面镜帮助观察，脚蹼帮助推进，潜水服帮助保温。浮力调节装置辅助控制浮沉，调节器与气瓶共同组成呼吸系统。\n\n从课程开始\n先在教练指导和受控环境中熟悉装备。之后仍应选择符合训练与经验的潜点，并与潜伴商量计划。\n\n做一位观察者\n不触碰海底和珊瑚，给生物留出空间。水肺潜水时不屏气等实际安全技能，应由教练指导学习。比起追求深度，先积累从容的潜水体验。\n\n内容制作：Divergram"
+      }
+    }
+  },
+  {
+    "category": "skills",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 20,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/8666c28d-0852-42e3-97ec-f3b79fb79223.jpg",
+    "translations": {
+      "ko": {
+        "title": "테크니컬 다이빙 · 더 정교한 계획과 팀워크",
+        "summary": "계획된 감압이나 직접 상승이 제한되는 환경을 다루는 스쿠버의 확장 분야입니다.",
+        "body": "장비보다 계획이 먼저인 다이빙\n테크니컬 다이빙은 스쿠버의 확장 분야입니다. 계획된 감압이나 수면으로 바로 돌아오기 어려운 환경처럼 추가 준비가 필요한 조건을 다룹니다.\n\n팀 전체가 하나의 계획을 공유합니다\n각자의 역할, 호흡 기체, 장비 문제에 대한 대응을 함께 준비합니다. 실린더가 많고 장비가 복잡해 보이는 것은 이런 목적을 위한 것이지, 장비 자체가 실력을 대신하는 것은 아닙니다.\n\n어디에서 시작할까요?\n부력과 자세, 버디와의 소통에 익숙해진 다음 관심 분야의 교육 요건을 확인하세요. 사용하는 장비와 환경이 달라지면 그에 맞는 별도 교육이 필요할 수 있습니다.\n\n소개와 실습은 다릅니다\n이 글과 그림은 분야를 이해하기 위한 설명입니다. 기체 배합, 감압 절차, 장비 구성법을 따라 하는 자료가 아닙니다. 자신의 자격 범위에서 전문 강사와 준비하세요.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Technical diving · Planning, precision and teamwork",
+        "summary": "An extension of scuba involving environments and obligations beyond recreational limits.",
+        "body": "Planning comes before equipment\nTechnical diving extends scuba into conditions requiring additional preparation, such as planned decompression or environments without a direct return to the surface.\n\nOne plan for the team\nDivers prepare their roles, breathing gases and responses to equipment problems together. Extra cylinders serve a purpose; owning them does not replace competence.\n\nWhere to begin\nDevelop buoyancy, trim and communication, then check training requirements for the field that interests you. Different equipment and environments may require separate training.\n\nAn introduction, not a procedure\nThis text and illustration explain the field. They do not provide gas mixtures, decompression procedures or equipment assembly instructions. Prepare with a specialist instructor within your qualifications.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "テクニカルダイビング · 計画とチームワークの世界",
+        "summary": "レクリエーションの範囲を超える環境や計画減圧に対応するスクーバの発展分野です。",
+        "body": "器材より先に計画を\nテクニカルダイビングはスクーバの発展分野です。計画減圧や直接浮上できない環境など、追加の準備が必要な条件を扱います。\n\nチームで計画を共有\n役割、呼吸ガス、器材の問題への対応を一緒に準備します。追加のシリンダーには目的がありますが、器材を持つだけでは技術の代わりになりません。\n\n始める前に\n浮力、姿勢、意思疎通を身につけ、関心のある分野の受講条件を確認しましょう。器材や環境によって別の専門教育が必要になることがあります。\n\n紹介と実技は別です\n本文とイラストは分野を理解するためのものです。ガス配合、減圧手順、器材の組み立てを示してはいません。資格の範囲で専門インストラクターと準備してください。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "技术潜水 · 更精细的计划与团队协作",
+        "summary": "水肺潜水的延伸领域，涉及超出休闲范围的环境与减压安排。",
+        "body": "先有计划，再谈装备\n技术潜水是水肺潜水的延伸领域，面对计划减压或无法直接返回水面的环境等需要额外准备的条件。\n\n全队共享一份计划\n共同准备分工、呼吸气体以及装备故障的应对方式。额外气瓶有其用途，但拥有装备不能代替能力。\n\n从哪里开始？\n先练好浮力、姿态与沟通，再了解感兴趣领域的培训条件。不同装备和环境可能需要分别接受专业训练。\n\n介绍不等于操作程序\n本文和插图用于理解这一领域，不提供混合气体配方、减压程序或装备组装方法。请在自身资质范围内，与专业教练一起准备。\n\n内容制作：Divergram"
+      }
+    }
+  },
+  {
+    "category": "skills",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 10,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/5d110b66-31c0-43c2-af90-3839fbae67dc.jpg",
+    "translations": {
+      "ko": {
+        "title": "프리다이빙 · 한 호흡으로 만나는 고요한 바다",
+        "summary": "수중 호흡 장비 없이 잠수하는 프리다이빙. 기록보다 중요한 편안함과 안전 체계를 알아보세요.",
+        "body": "간결한 장비로 느끼는 물의 감각\n프리다이빙은 수중 호흡 장비 없이 한 번의 호흡으로 잠수했다가 수면으로 돌아오는 활동입니다. 물속 움직임과 몸의 감각에 집중하는 매력이 있습니다.\n\n모두 같은 방식으로 즐기지는 않습니다\n수영장과 바다, 핀을 사용하는 방식과 사용하지 않는 방식 등 다양한 형태가 있습니다. 깊이나 시간을 겨루지 않고 편안한 움직임을 배우는 것도 좋은 시작입니다.\n\n버디는 선택 사항이 아닙니다\n물속 숨참기는 혼자 연습하지 마세요. 적절히 훈련된 버디가 직접 관찰하는 안전 체계 안에서 활동해야 합니다. 잠수 전 과호흡을 하지 않습니다.\n\n천천히 배우세요\n강사의 지도 아래 이완, 압력 평형, 움직임과 버디 안전을 배웁니다. 오늘의 컨디션을 존중하고 불편함이 있으면 중단하세요. 이 글의 그림은 분위기를 설명하는 이미지이며 훈련 자세나 안전 배치의 지침은 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Freediving · Discover the ocean on one breath",
+        "summary": "Explore breath-hold diving, where comfort and a trained safety buddy matter more than records.",
+        "body": "Feel the water with less equipment\nFreediving means diving on one breath and returning to the surface without an underwater breathing supply. It invites attention to movement and body awareness.\n\nMore than one way to enjoy it\nPool and open-water activities can use fins or no fins. Learning comfortable movement can be a goal in itself, without chasing depth or time.\n\nA buddy is essential\nNever practice underwater breath-holding alone. Use a safety system with direct observation by an appropriately trained buddy. Do not hyperventilate before diving.\n\nLearn gradually\nLearn relaxation, equalization, movement and buddy safety with an instructor. Respect how you feel and stop if uncomfortable. The illustration conveys the activity, not training positions or safety arrangements.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "フリーダイビング · 一呼吸で出会う静かな海",
+        "summary": "水中呼吸器を使わずに潜る世界。記録よりも快適さと安全体制を大切に。",
+        "body": "少ない器材で水を感じる\nフリーダイビングは水中呼吸器を使わず、一呼吸で潜って水面へ戻る活動です。動きや身体の感覚に意識を向ける魅力があります。\n\n楽しみ方はいろいろ\nプールや海、フィンあり・なしなど多様な形があります。深さや時間を競わず、心地よい動きを学ぶことも目標になります。\n\nバディは必須です\n水中の息こらえを一人で練習しないでください。適切に訓練されたバディが直接監視する安全体制が必要です。潜水前に過呼吸をしないでください。\n\n少しずつ学ぶ\nイラストは活動の雰囲気を伝えるもので、訓練姿勢や安全配置の指示ではありません。イコライゼーション、動き、バディの安全管理はインストラクターと学び、違和感があれば中止しましょう。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "自由潜水 · 一口气，感受安静的海洋",
+        "summary": "不使用水下呼吸气源的潜水方式，舒适状态和安全潜伴比纪录更重要。",
+        "body": "用更少装备感受水\n自由潜水不使用水下呼吸气源，而是屏住一次呼吸潜入水下再返回水面，专注于动作和身体感受。\n\n享受方式很多\n泳池、开放水域，以及使用或不使用脚蹼的项目各有特点。不追逐深度或时间，学习舒适的动作本身也可以是目标。\n\n潜伴不可缺少\n不要独自练习水下屏气。必须有受过适当训练的潜伴直接观察，并遵循安全程序。潜水前不要过度换气。\n\n循序渐进\n在教练指导下学习放松、耳压平衡、动作和潜伴安全技能。尊重当天状态，感到不适就停止。插图用于表达活动氛围，不是训练姿势或安全布置指南。\n\n内容制作：Divergram"
+      }
+    }
+  },
+  {
+    "category": "equipment",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 40,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/85767962-a1b0-439a-a06a-f96436a2e27e.jpg",
+    "translations": {
+      "ko": {
+        "title": "다이빙 장비 · 이름보다 역할부터 알아보기",
+        "summary": "마스크부터 다이브 컴퓨터까지, 장비가 하는 일과 스쿠버·프리다이빙의 차이를 알아보세요.",
+        "body": "처음 보는 장비, 무엇부터 알면 될까요?\n다이빙 장비는 보기, 움직이기, 체온 지키기, 호흡하기, 상태 확인하기로 나누면 이해하기 쉽습니다. 가격이나 개수보다 몸에 맞고 배운 활동에 적합한지가 먼저입니다.\n\n마스크와 스노클 · 보기와 수면 호흡\n마스크는 수중에서 시야를 확보하도록 돕습니다. 얼굴에 편안하게 맞는지 확인하세요. 스노클은 끝이 수면 위에 있을 때 쓰는 호흡 도구로, 수중에서 공기를 만들어주지 않습니다.\n\n핀 · 적은 움직임으로 이동\n핀은 발의 움직임을 추진력으로 바꿉니다. 스쿠버용과 프리다이빙용은 길이·강성·형태가 다를 수 있습니다. 긴 핀이 무조건 좋은 것은 아니며 체격, 기술, 장소에 맞춰 선택합니다.\n\n슈트 · 체온과 피부 보호\n웻슈트와 드라이슈트는 작동 방식이 다릅니다. 수온과 활동에 맞게 선택하고, 드라이슈트는 별도의 사용 교육을 받으세요. 슈트가 달라지면 부력과 필요한 웨이트도 달라질 수 있습니다.\n\n부력조절기(BCD)와 웨이트 · 떠오름과 가라앉음 조절\n스쿠버에서는 BCD와 웨이트를 함께 사용해 부력을 관리합니다. 프리다이빙에서는 보통 스쿠버용 BCD를 사용하지 않습니다. 웨이트 무게는 글이나 사진만 보고 정하지 말고 강사와 확인하세요.\n\n실린더와 레귤레이터 · 스쿠버의 호흡 시스템\n실린더에 담긴 호흡 기체를 레귤레이터가 호흡할 수 있도록 공급합니다. 모든 실린더에 순수 산소가 들어가는 것은 아닙니다. 기체 종류와 장비의 적합성은 교육과 점검이 필요한 부분입니다.\n\n다이브 컴퓨터와 잔압계 · 정보를 확인하는 도구\n컴퓨터는 수심·시간 등 다이빙 정보를 보여주고 모델과 모드에 따라 추가 정보를 제공합니다. 잔압계는 실린더의 남은 압력을 확인하는 도구입니다. 모든 컴퓨터가 잔압을 표시하는 것은 아니며, 기기가 교육과 판단을 대신하지 않습니다.\n\n부표와 신호 장비 · 위치 알리기\n다이빙 방식과 장소에 따라 부표, 수면 신호 장비 등을 사용합니다. 줄이 연결된 장비는 얽힘 위험도 있어 사용법을 배워야 합니다.\n\n처음에는 이렇게 준비하세요\n강사와 활동에 맞는 장비 목록을 정하고 대여 장비로 착용감을 확인해보세요. 사용 전 점검과 사용 후 세척·건조·보관은 제조사 지침을 따릅니다. 생명 유지 장비는 임의로 분해하거나 수리하지 마세요. 그림은 장비 역할을 소개하는 개념 이미지로 배관이나 조립 지침이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Diving equipment · Understand what each piece does",
+        "summary": "From masks to dive computers: the roles of everyday equipment and how scuba and freediving differ.",
+        "body": "Start with the job, not the name\nThink of equipment as helping you see, move, stay warm, breathe and monitor your dive. Fit and suitability matter more than price or quantity.\n\nMask and snorkel\nA mask helps you see underwater. Check a comfortable facial fit. A snorkel supports breathing only with its opening above the surface; it does not supply air underwater.\n\nFins\nFins turn movement into propulsion. Length, stiffness and shape vary between activities. Longer is not automatically better; match your body, skills and location.\n\nExposure suit\nWetsuits and drysuits work differently. Choose for the conditions and learn drysuit use with an instructor. Changing suits can change buoyancy and weighting needs.\n\nBuoyancy compensator and weights\nScuba divers use a BCD and weights to manage buoyancy. Freedivers generally do not use a scuba BCD. Determine weighting with an instructor, not from an article or picture.\n\nCylinder and regulator\nA regulator delivers the cylinder's breathing gas. Not every cylinder contains pure oxygen. Gas choice and equipment compatibility require training and checks.\n\nDive computer and pressure gauge\nComputers show depth, time and other information depending on model and mode. A pressure gauge indicates cylinder pressure. Not every computer displays gas pressure, and none replaces training or judgment.\n\nSurface signaling\nFloats and surface signaling equipment help indicate location. Lines can entangle, so learn the equipment before using it.\n\nYour first equipment plan\nChoose with an instructor and try rental equipment for fit. Follow manufacturer instructions for checks, cleaning, drying and storage. Do not improvise repairs to life-support equipment. The illustration is conceptual, not an assembly or hose-routing guide.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "ダイビング器材 · 名前より役割から理解しよう",
+        "summary": "マスクからダイブコンピューターまで。器材の役割とスクーバ・フリーダイビングの違いを紹介します。",
+        "body": "役割で考えてみましょう\n見る、動く、保温する、呼吸する、状態を確認する。器材はこの役割で整理するとわかりやすくなります。価格や数より、身体と活動に合うことが大切です。\n\nマスクとスノーケル\nマスクは水中の視界を助けます。顔への快適なフィットを確認しましょう。スノーケルは先端が水面上にあるときの呼吸用で、水中に空気を供給するものではありません。\n\nフィン\n動きを推進力に変える器材です。長さや硬さは用途で異なり、長ければよいとは限りません。身体、技術、場所に合わせます。\n\nスーツ\nウェットとドライでは仕組みが異なります。環境に合うものを選び、ドライスーツの使用は講習で学びましょう。スーツ変更で浮力や必要なウエイトも変わります。\n\nBCDとウエイト\nスクーバでは組み合わせて浮力を管理します。フリーダイビングでは通常スクーバ用BCDは使いません。ウエイト量は文章や写真だけで決めず、インストラクターと確認しましょう。\n\nシリンダーとレギュレーター\n呼吸器はシリンダーのガスを呼吸できるよう供給します。すべてが純酸素というわけではありません。ガスと器材の適合性には教育と点検が必要です。\n\nコンピューターと残圧計\nコンピューターは水深や時間などを表示し、機種とモードで機能が異なります。残圧計はシリンダーの圧力を確認します。すべてのコンピューターが残圧を示すわけではなく、教育や判断の代わりにはなりません。\n\n水面での信号\nブイや信号器材は位置を知らせます。ラインの絡まりにも注意が必要で、使い方を学びましょう。\n\n最初の準備\n講師と必要な器材を整理し、レンタルで着用感を確認しましょう。点検・洗浄・乾燥・保管はメーカーの指示に従い、呼吸器材を自己流で修理しないでください。イラストは役割の紹介用で組み立て図ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "潜水装备 · 先认识用途，再记住名字",
+        "summary": "从面镜到潜水电脑，了解常见装备的作用及水肺与自由潜水的区别。",
+        "body": "从用途理解装备\n观察、移动、保温、呼吸和监测状态。按这些用途认识装备更容易。合身和适用比价格或数量更重要。\n\n面镜与呼吸管\n面镜帮助水下观察，应贴合面部且舒适。呼吸管只有管口在水面上时才能用于呼吸，不会在水下制造空气。\n\n脚蹼\n把身体动作转化为推进力。长度、硬度和形状随活动而异，并非越长越好，要适合身体、技能与环境。\n\n潜水服\n湿式与干式潜水服原理不同，应按环境选择。干式潜水服需要学习使用方法，更换潜水服也可能改变浮力与配重需求。\n\n浮力调节装置与配重\n水肺潜水使用BCD和配重共同管理浮力。自由潜水通常不使用水肺BCD。配重量应与教练确认，不要仅凭文章或图片决定。\n\n气瓶与调节器\n调节器供应气瓶中的呼吸气体。并非所有气瓶都装纯氧，气体选择和装备兼容性需要培训与检查。\n\n潜水电脑与压力表\n电脑显示深度、时间等信息，功能因型号和模式而异。压力表用于查看气瓶压力，并非每款电脑都能显示气压。设备不能代替训练与判断。\n\n水面信号装备\n浮标和信号设备帮助标示位置。绳索存在缠绕风险，需要先学习使用方法。\n\n首次准备\n与教练确定清单，先用租赁装备检查穿戴感受。检查、清洗、干燥和存放应遵循制造商说明，不要自行改装或维修生命支持装备。插图用于介绍概念，不是组装或软管布置指南。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

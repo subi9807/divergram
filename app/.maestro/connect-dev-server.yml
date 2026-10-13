@@ -1,0 +1,16 @@
+appId: com.divergram.app.ios
+name: Connect installed development build to Metro
+---
+- launchApp
+- tapOn:
+    text: "OK"
+    optional: true
+- tapOn:
+    text: "Dismiss.*"
+    optional: true
+- tapOn: "Enter URL manually"
+- tapOn: "exp://"
+- inputText: "http://127.0.0.1:8081"
+- tapOn: "Connect"
+- waitForAnimationToEnd:
+    timeout: 30000

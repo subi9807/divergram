@@ -7,6 +7,8 @@ const oauthProviders = [
   { id: 'facebook' as const, label: 'Facebook으로 계속하기', mark: 'f' },
 ];
 
+const CONSENT_VERSION = '2026.07.22';
+
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -15,12 +17,27 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [accountType, setAccountType] = useState<'personal' | 'resort'>('personal');
+  const [consents, setConsents] = useState({ terms: false, privacy: false, age14: false, marketing: false, push: false });
+  const [consentVersion, setConsentVersion] = useState(CONSENT_VERSION);
+  const [consentPolicies, setConsentPolicies] = useState<Record<string, { version?: string }>>({});
   const { signIn, signUp } = useAuth();
 
   useEffect(() => {
     document.documentElement.classList.add('dg-auth-active');
     return () => document.documentElement.classList.remove('dg-auth-active');
   }, []);
+
+  useEffect(() => {
+    fetch('https://api.divergram.com/api/legal/signup-consents')
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('policy_fetch_failed')))
+      .then((result) => {
+        setConsentVersion(String(result?.version || CONSENT_VERSION));
+        setConsentPolicies(result?.policies || {});
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const policyVersion = (key: string) => String(consentPolicies?.[key]?.version || consentVersion || CONSENT_VERSION);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +48,16 @@ export default function Auth() {
       if (isLogin) {
         await signIn(email.trim(), password);
       } else {
-        await signUp(email.trim(), password, username.trim(), accountType);
+        if (!consents.terms || !consents.privacy || !consents.age14) {
+          throw new Error('필수 약관에 모두 동의해주세요.');
+        }
+        await signUp(email.trim(), password, username.trim(), accountType, [
+          { key: 'terms_required', policyType: 'terms', version: policyVersion('terms_required'), agreed: consents.terms },
+          { key: 'privacy_required', policyType: 'privacy', version: policyVersion('privacy_required'), agreed: consents.privacy },
+          { key: 'age14_required', policyType: 'age14_notice', version: policyVersion('age14_required'), agreed: consents.age14 },
+          { key: 'marketing_optional', policyType: 'marketing_consent', version: policyVersion('marketing_optional'), agreed: consents.marketing },
+          { key: 'push_optional', policyType: 'push_consent', version: policyVersion('push_optional'), agreed: consents.push },
+        ]);
       }
     } catch (err: any) {
       setError(err.message);
@@ -42,12 +68,34 @@ export default function Auth() {
 
   const handleOAuth = (provider: 'google' | 'apple' | 'facebook') => {
     setError('');
+    if (!isLogin && (!consents.terms || !consents.privacy || !consents.age14)) {
+      setError('SNS 회원가입 전에 필수 약관에 모두 동의해주세요.');
+      return;
+    }
     const redirect = window.location.href;
-    window.location.href = 'https://api.divergram.com/api/auth/oauth/' + provider + '/start?redirect=' + encodeURIComponent(redirect);
+    const params = new URLSearchParams({
+      redirect,
+      returnTo: redirect,
+      mode: isLogin ? 'login' : 'signup',
+    });
+    if (!isLogin) {
+      params.set('consentVersion', policyVersion('terms_required'));
+      params.set('termsVersion', policyVersion('terms_required'));
+      params.set('privacyVersion', policyVersion('privacy_required'));
+      params.set('age14Version', policyVersion('age14_required'));
+      params.set('marketingVersion', policyVersion('marketing_optional'));
+      params.set('pushVersion', policyVersion('push_optional'));
+      params.set('terms', String(consents.terms));
+      params.set('privacy', String(consents.privacy));
+      params.set('age14', String(consents.age14));
+      params.set('marketing', String(consents.marketing));
+      params.set('push', String(consents.push));
+    }
+    window.location.href = 'https://api.divergram.com/api/auth/oauth/' + provider + '/start?' + params.toString();
   };
 
   return (
-    <div className="fixed inset-0 h-[100dvh] overflow-hidden bg-gradient-to-b from-sky-50 via-white to-blue-50 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] flex items-center justify-center">
+    <div className="fixed inset-0 min-h-[100dvh] overflow-y-auto bg-gradient-to-b from-sky-50 via-white to-blue-50 px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1rem)] flex items-center justify-center">
       <div className="w-full max-w-[540px]">
         <div className="text-center mb-8 max-[420px]:mb-5 max-[760px]:mb-5">
           <img src="/assets/logo/divergram-logo-blue.png" alt="Divergram" className="mx-auto h-24 w-24 rounded-[1.7rem] object-cover shadow-2xl shadow-sky-200/80 max-[420px]:h-20 max-[420px]:w-20 max-[760px]:h-20 max-[760px]:w-20" />
@@ -105,7 +153,17 @@ export default function Auth() {
 
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full h-16 rounded-[1.45rem] border-2 border-gray-300 px-6 text-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-400 max-[420px]:h-11 max-[420px]:px-4 max-[420px]:text-base max-[760px]:h-11 max-[760px]:px-4 max-[760px]:text-base" placeholder="비밀번호" />
 
-            <button type="submit" disabled={loading} className="w-full h-16 rounded-[1.45rem] bg-sky-500 hover:bg-sky-600 text-white text-xl font-extrabold transition disabled:opacity-50 max-[420px]:h-12 max-[420px]:text-base max-[760px]:h-12 max-[760px]:text-base">
+            {!isLogin && (
+              <div className="space-y-2 rounded-2xl border border-gray-200 p-4 text-sm text-gray-700">
+                <label className="flex items-start gap-2"><input type="checkbox" checked={consents.terms} onChange={(e) => setConsents((value) => ({ ...value, terms: e.target.checked }))} /><span>[필수] <a className="font-semibold text-sky-700 underline" href="https://api.divergram.com/api/legal/terms" target="_blank" rel="noreferrer">이용약관</a> 동의</span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" checked={consents.privacy} onChange={(e) => setConsents((value) => ({ ...value, privacy: e.target.checked }))} /><span>[필수] <a className="font-semibold text-sky-700 underline" href="https://api.divergram.com/api/legal/privacy" target="_blank" rel="noreferrer">개인정보 수집·이용</a> 동의</span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" checked={consents.age14} onChange={(e) => setConsents((value) => ({ ...value, age14: e.target.checked }))} /><span>[필수] 만 14세 이상입니다.</span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" checked={consents.marketing} onChange={(e) => setConsents((value) => ({ ...value, marketing: e.target.checked }))} /><span>[선택] 마케팅 정보 수신</span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" checked={consents.push} onChange={(e) => setConsents((value) => ({ ...value, push: e.target.checked }))} /><span>[선택] 푸시 알림 수신</span></label>
+              </div>
+            )}
+
+            <button type="submit" disabled={loading || (!isLogin && (!consents.terms || !consents.privacy || !consents.age14))} className="w-full h-16 rounded-[1.45rem] bg-sky-500 hover:bg-sky-600 text-white text-xl font-extrabold transition disabled:opacity-50 max-[420px]:h-12 max-[420px]:text-base max-[760px]:h-12 max-[760px]:text-base">
               {loading ? '처리 중...' : isLogin ? '로그인' : '가입하기'}
             </button>
           </form>

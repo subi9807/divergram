@@ -1,0 +1,6 @@
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_pending TEXT;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_verify_code_hash TEXT;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_verify_expires TIMESTAMPTZ;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;

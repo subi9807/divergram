@@ -1,4 +1,4 @@
-export type ExternalSourceType = 'garmin_api' | 'suunto_api' | 'shearwater_api' | 'bluetooth';
+export type ExternalSourceType = 'garmin_api' | 'suunto_api' | 'shearwater_api' | 'bluetooth' | 'legacy_import';
 
 export interface ExternalDiveLog {
   sourceType: ExternalSourceType;

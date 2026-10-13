@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Keyboard, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Keyboard, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,14 +8,29 @@ import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Calendar, Camera, Droplets, Gauge, MapPin, Search, Thermometer, Timer, UserRound, Waves } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
+import { PhotoMetadataSummary } from '../../src/components/PhotoMetadataSummary';
+import { optionalCoordinate } from '../../src/utils/optionalCoordinate';
+import { countLogSupplement } from '../../src/utils/logSupplement';
+import { buildFeedEditState, normalizePostIdParam } from '../../src/utils/feedEditState';
+import { readPhotoMetadata, uniquePhotoLocations, type PhotoMetadata } from '../../src/utils/photoGps';
 import { useToast } from '../../src/components/Toast';
 import { apiClient } from '../../src/lib/api';
 import { uploadImage, uploadVideo } from '../../src/services/cloudinaryService';
-import { buildGoogleStaticMapUrl, isGoogleMapsApiConfigured, reverseGooglePoint, searchGooglePoint, type GooglePointResult } from '../../src/lib/googleMapSearch';
+import { buildGoogleStaticMapUrl, isGoogleMapsApiConfigured, searchGooglePoint, type GooglePointResult } from '../../src/lib/googleMapSearch';
+import { sharePostToSocialChannels, type SocialCrossPostTarget } from '../../src/services/socialCrossPostService';
+import { useSettingsStore } from '../../src/stores/settingsStore';
+import { useAuth } from '../../src/hooks/useAuth';
+import {
+  hasMainDiveLogDraftContent,
+  mainDiveLogDraftKey,
+  normalizeMainDiveLogDraft,
+  type MainDiveLogDraft,
+} from '../../src/services/mainDiveLogDraft';
 
-type DiveType = 'scuba' | 'freediving';
+type DiveType = 'scuba' | 'freediving' | 'daily';
 type GasType = 'air' | 'nitrox' | 'heliox';
-type SelectedMediaItem = { uri: string; type: 'image' | 'video' };
+type ContentVisibility = 'inherit' | 'public' | 'followers' | 'private';
+type SelectedMediaItem = { uri: string; type: 'image' | 'video'; photoMetadata?: PhotoMetadata };
 
 type DiveLogForm = {
   title: string;
@@ -54,53 +70,6 @@ const initialForm: DiveLogForm = {
   photoUri: '',
 };
 
-function toNumber(value: string): number | null {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function exifSignedValue(value: number, ref: unknown, positiveRef: string, negativeRef: string) {
-  if (typeof ref !== 'string') return value;
-  if (ref.toUpperCase() === negativeRef) return -Math.abs(value);
-  if (ref.toUpperCase() === positiveRef) return Math.abs(value);
-  return value;
-}
-
-function parseExifCoordinate(raw: unknown, ref: unknown, positiveRef: string, negativeRef: string): number | null {
-  if (typeof raw === 'number' && Number.isFinite(raw)) {
-    return exifSignedValue(raw, ref, positiveRef, negativeRef);
-  }
-  if (Array.isArray(raw) && raw.length >= 3) {
-    const d = Number(raw[0]);
-    const m = Number(raw[1]);
-    const s = Number(raw[2]);
-    if (!Number.isFinite(d) || !Number.isFinite(m) || !Number.isFinite(s)) return null;
-    const decimal = d + m / 60 + s / 3600;
-    return exifSignedValue(decimal, ref, positiveRef, negativeRef);
-  }
-  if (typeof raw === 'string') {
-    const parts = raw
-      .split(/[,\s/]+/)
-      .map((v) => Number(v))
-      .filter((v) => Number.isFinite(v));
-    if (!parts.length) return null;
-    if (parts.length === 1) return exifSignedValue(parts[0], ref, positiveRef, negativeRef);
-    const d = parts[0];
-    const m = parts[1] || 0;
-    const s = parts[2] || 0;
-    return exifSignedValue(d + m / 60 + s / 3600, ref, positiveRef, negativeRef);
-  }
-  return null;
-}
-
-function parseExifGps(exif: Record<string, unknown> | null | undefined): { lat: number; lng: number } | null {
-  if (!exif) return null;
-  const lat = parseExifCoordinate(exif.GPSLatitude, exif.GPSLatitudeRef, 'N', 'S');
-  const lng = parseExifCoordinate(exif.GPSLongitude, exif.GPSLongitudeRef, 'E', 'W');
-  if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  return { lat, lng };
-}
-
 function normalizePickedUri(raw: unknown): string {
   const uri = String(raw || '').trim();
   if (!uri) return '';
@@ -113,8 +82,9 @@ export default function LogsScreen() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const router = useRouter();
-  const params = useLocalSearchParams<{ postId?: string }>();
+  const params = useLocalSearchParams<{ postId?: string | string[] }>();
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
   const [form, setForm] = useState<DiveLogForm>(initialForm);
   const [pointQuery, setPointQuery] = useState('');
   const [pointSearchPending, setPointSearchPending] = useState(false);
@@ -122,20 +92,32 @@ export default function LogsScreen() {
   const [pointResults, setPointResults] = useState<GooglePointResult[]>([]);
   const [resortQuery, setResortQuery] = useState('');
   const [resortFocus, setResortFocus] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<SelectedMediaItem[]>([]);
   const [publishToFeed, setPublishToFeed] = useState(true);
   const [publishToReels, setPublishToReels] = useState(false);
-  const [editingPostId, setEditingPostId] = useState('');
+  const [contentVisibility, setContentVisibility] = useState<ContentVisibility>('inherit');
+  const editingPostId = normalizePostIdParam(params.postId);
   const [prefilledPostId, setPrefilledPostId] = useState('');
-  const [loadingExistingPost, setLoadingExistingPost] = useState(false);
   const [mapPreviewError, setMapPreviewError] = useState('');
+  const [draftReady, setDraftReady] = useState(false);
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftServerId = 'main-new';
+  const draftStorageKey = user?.id ? mainDiveLogDraftKey(user.id) : '';
+  const shareToInstagramAfterPost = useSettingsStore((state) => state.shareToInstagramAfterPost);
+  const shareToFacebookAfterPost = useSettingsStore((state) => state.shareToFacebookAfterPost);
+  const shareToThreadsAfterPost = useSettingsStore((state) => state.shareToThreadsAfterPost);
 
   const { data: resorts = [] } = useQuery({ queryKey: ['logs-resorts'], queryFn: apiClient.getResorts });
-  const { data: editingPost } = useQuery({
+  const { data: visibilitySettings } = useQuery({ queryKey: ['content-visibility'], queryFn: apiClient.getMyContentVisibility });
+  const editingPostQuery = useQuery({
     queryKey: ['log-edit-post', editingPostId],
-    enabled: Boolean(editingPostId),
+    enabled: Boolean(editingPostId) && !authLoading,
     queryFn: () => apiClient.getPostById(editingPostId),
+    retry: 2,
   });
+  const editingPost = editingPostQuery.data;
+  const loadingExistingPost = Boolean(editingPostId) && (authLoading || editingPostQuery.isPending);
 
   const resortCandidates = useMemo(() => {
     const keyword = resortQuery.trim().toLowerCase();
@@ -144,69 +126,102 @@ export default function LogsScreen() {
   }, [resorts, resortQuery]);
 
   const needsGasPercent = form.diveType === 'scuba' && form.gasType !== 'air';
-  const latNum = toNumber(form.locationLat);
-  const lngNum = toNumber(form.locationLng);
+  const latNum = optionalCoordinate(form.locationLat, 90);
+  const lngNum = optionalCoordinate(form.locationLng, 180);
   const mapPreview = buildGoogleStaticMapUrl(latNum ?? undefined, lngNum ?? undefined);
-  const hasOptionalCoreInput = Boolean(form.pointName.trim() || form.notes.trim() || selectedMedia.length);
   const hasVideoMedia = selectedMedia.some((item) => item.type === 'video');
   const hasPublishTarget = publishToFeed || publishToReels;
+  const isDailyPost = form.diveType === 'daily';
+  const detailCount = countLogSupplement(form);
   const canSubmit = Boolean(
     form.title.trim() &&
-    hasOptionalCoreInput &&
+    (!isDailyPost || (selectedMedia.length > 0 && form.notes.trim())) &&
     hasPublishTarget &&
     (!publishToReels || hasVideoMedia) &&
     (!needsGasPercent || form.gasPercent.trim())
   );
 
   useEffect(() => {
-    const nextEditingPostId = String(params.postId || '').trim();
-    setEditingPostId(nextEditingPostId);
     setPrefilledPostId('');
-    setLoadingExistingPost(Boolean(nextEditingPostId));
-  }, [params.postId]);
+    if (!editingPostId) return;
+    setForm(initialForm);
+    setSelectedMedia([]);
+    setPointQuery('');
+    setPointResults([]);
+    setResortQuery('');
+    setDetailsOpen(false);
+  }, [editingPostId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDraftReady(false);
+    if (!draftStorageKey || editingPostId) {
+      setDraftReady(true);
+      return () => { cancelled = true; };
+    }
+
+    void Promise.allSettled([
+      AsyncStorage.getItem(draftStorageKey),
+      apiClient.getDiveLogDraft(draftServerId),
+    ]).then((results) => {
+      if (cancelled) return;
+      const localRaw = results[0].status === 'fulfilled' ? results[0].value : null;
+      let local: MainDiveLogDraft | null = null;
+      try { local = normalizeMainDiveLogDraft(localRaw ? JSON.parse(localRaw) : null); } catch { local = null; }
+      const remote = results[1].status === 'fulfilled'
+        ? normalizeMainDiveLogDraft(results[1].value.data)
+        : null;
+      const draft = [local, remote]
+        .filter((item): item is MainDiveLogDraft => Boolean(item))
+        .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))[0];
+
+      const finish = () => { if (!cancelled) setDraftReady(true); };
+      if (!draft || !hasMainDiveLogDraftContent(draft)) {
+        finish();
+        return;
+      }
+      Alert.alert(t('diveEditor.restoreTitle'), t('diveEditor.restoreBody'), [
+        {
+          text: t('diveEditor.discard'),
+          style: 'destructive',
+          onPress: () => {
+            void AsyncStorage.removeItem(draftStorageKey);
+            void apiClient.deleteDiveLogDraft(draftServerId).catch(() => undefined);
+            finish();
+          },
+        },
+        {
+          text: t('diveEditor.restore'),
+          onPress: () => {
+            setForm(draft.form as DiveLogForm);
+            setSelectedMedia(draft.selectedMedia as SelectedMediaItem[]);
+            setPointQuery(draft.pointQuery);
+            setResortQuery(draft.resortQuery);
+            setDetailsOpen(draft.detailsOpen);
+            setPublishToFeed(draft.publishToFeed);
+            setPublishToReels(draft.publishToReels);
+            finish();
+          },
+        },
+      ]);
+    });
+
+    return () => { cancelled = true; };
+  }, [draftStorageKey, editingPostId, t]);
 
   useEffect(() => {
     if (!editingPostId || !editingPost || prefilledPostId === editingPostId) return;
-
-    const mediaRows = Array.isArray((editingPost as any)?.media) ? (editingPost as any).media : [];
-    const loadedMedia = mediaRows
-      .map((item: any) => ({
-        uri: String(item?.url || '').trim(),
-        type: item?.type === 'video' ? ('video' as const) : ('image' as const),
-      }))
-      .filter((item: SelectedMediaItem) => Boolean(item.uri));
-
-    setForm({
-      title: String((editingPost as any)?.content || '').split('\n')[0] || '',
-      diveType: (editingPost as any)?.diveType === 'scuba' ? 'scuba' : 'freediving',
-      gasType: ((editingPost as any)?.gasType || 'air') as GasType,
-      gasPercent: String((editingPost as any)?.gasPercent || ''),
-      pointName: String((editingPost as any)?.diveSite || (editingPost as any)?.location || ''),
-      pointAddress: String((editingPost as any)?.location || ''),
-      locationLat: String((editingPost as any)?.locationLat || ''),
-      locationLng: String((editingPost as any)?.locationLng || ''),
-      resortName: String((editingPost as any)?.resort || ''),
-      depth: String((editingPost as any)?.maxDepth || ''),
-      duration: String((editingPost as any)?.diveDuration || ''),
-      temperature: String((editingPost as any)?.waterTemperature || ''),
-      visibility: String((editingPost as any)?.visibility || ''),
-      buddy: '',
-      notes: String((editingPost as any)?.content || ''),
-      photoUri: String((editingPost as any)?.image || loadedMedia[0]?.uri || ''),
-    });
-    setPointQuery(String((editingPost as any)?.location || (editingPost as any)?.diveSite || ''));
-    setSelectedMedia(loadedMedia);
-    setPublishToFeed(Boolean((editingPost as any)?.publishToFeed !== false));
-    setPublishToReels(Boolean((editingPost as any)?.publishToReels));
+    const restored = buildFeedEditState(editingPost as Record<string, any>);
+    setForm(restored.form as DiveLogForm);
+    setPointQuery(restored.pointQuery);
+    setResortQuery(restored.resortQuery);
+    setSelectedMedia(restored.media as SelectedMediaItem[]);
+    setPublishToFeed(restored.publishToFeed);
+    setPublishToReels(restored.publishToReels);
+    setContentVisibility(restored.contentVisibility as ContentVisibility);
+    setDetailsOpen(restored.detailsOpen);
     setPrefilledPostId(editingPostId);
-    setLoadingExistingPost(false);
   }, [editingPost, editingPostId, prefilledPostId]);
-
-  useEffect(() => {
-    if (editingPostId && editingPost === null) {
-      setLoadingExistingPost(false);
-    }
-  }, [editingPost, editingPostId]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -218,43 +233,53 @@ export default function LogsScreen() {
             return { uri: rawUri, type: item.type, order: index };
           }
           const result = item.type === 'video' ? await uploadVideo(rawUri) : await uploadImage(rawUri);
-          return { uri: result.url, type: item.type, order: index };
+          return { uri: result.url, thumbnailUri: result.thumbnailUrl, type: item.type, order: index };
         })
       );
-      const mediaAssets = uploadedMedia.filter((item): item is { uri: string; type: 'image' | 'video'; order: number } => Boolean(item?.uri));
-      const primaryImageUri = mediaAssets.find((item) => item.type === 'image')?.uri || mediaAssets[0]?.uri || form.photoUri || null;
+      const mediaAssets = uploadedMedia.filter(
+        (item): item is { uri: string; thumbnailUri?: string; type: 'image' | 'video'; order: number } => Boolean(item?.uri)
+      );
+      const primaryImageUri =
+        mediaAssets.find((item) => item.type === 'image')?.uri ||
+        mediaAssets.find((item) => item.type === 'video')?.thumbnailUri ||
+        (form.photoUri && !/\/video\/upload\/|\.(mp4|mov|m4v|webm)(?:[?#]|$)/i.test(form.photoUri) ? form.photoUri : null);
 
       const payload = {
         title: form.title.trim(),
         diveType: form.diveType,
-        gasType: form.gasType,
-        gasPercent: form.gasPercent.trim(),
-        location: form.pointAddress.trim() || form.pointName.trim(),
-        diveSite: form.pointName.trim(),
-        pointName: form.pointName.trim(),
-        depth: form.depth.trim(),
-        duration: form.duration.trim(),
-        temperature: form.temperature.trim(),
-        visibility: form.visibility.trim(),
-        buddy: form.buddy.trim(),
+        gasType: isDailyPost ? 'air' as const : form.gasType,
+        gasPercent: isDailyPost ? '' : form.gasPercent.trim(),
+        location: isDailyPost ? '' : form.pointAddress.trim() || form.pointName.trim(),
+        diveSite: isDailyPost ? '' : form.pointName.trim(),
+        pointName: isDailyPost ? '' : form.pointName.trim(),
+        depth: isDailyPost ? '' : form.depth.trim(),
+        duration: isDailyPost ? '' : form.duration.trim(),
+        temperature: isDailyPost ? '' : form.temperature.trim(),
+        visibility: isDailyPost ? '' : form.visibility.trim(),
+        buddy: isDailyPost ? '' : form.buddy.trim(),
         notes: form.notes.trim(),
-        resortName: form.resortName.trim(),
-        latitude: latNum,
-        longitude: lngNum,
+        resortName: isDailyPost ? '' : form.resortName.trim(),
+        latitude: isDailyPost ? null : latNum,
+        longitude: isDailyPost ? null : lngNum,
         imageUri: primaryImageUri,
         mediaAssets,
         publishToFeed,
         publishToReels,
+        visibilityType: contentVisibility,
       };
 
       if (editingPostId) {
         await apiClient.updatePost(editingPostId, payload);
         return { mode: 'update' as const };
       }
-      await apiClient.createLog(payload);
-      return { mode: 'create' as const };
+      const created = await apiClient.createLog(payload);
+      return {
+        mode: 'create' as const,
+        postId: String(created?.id || ''),
+        caption: [payload.title, payload.notes].filter(Boolean).join('\n'),
+      };
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ['logs'] });
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
       await queryClient.invalidateQueries({ queryKey: ['reels'] });
@@ -265,6 +290,12 @@ export default function LogsScreen() {
       if (editingPostId) {
         await queryClient.invalidateQueries({ queryKey: ['post-detail', editingPostId] });
       }
+      if (draftStorageKey && !editingPostId) {
+        await Promise.allSettled([
+          AsyncStorage.removeItem(draftStorageKey),
+          apiClient.deleteDiveLogDraft(draftServerId),
+        ]);
+      }
       setForm(initialForm);
       setSelectedMedia([]);
       setPointQuery('');
@@ -272,12 +303,33 @@ export default function LogsScreen() {
       setResortQuery('');
       setPublishToFeed(true);
       setPublishToReels(false);
+      setContentVisibility('inherit');
       const nextEditingPostId = editingPostId;
-      setLoadingExistingPost(false);
+      const crossPostTargets: SocialCrossPostTarget[] = [];
+      if (result.mode === 'create' && shareToInstagramAfterPost) crossPostTargets.push('instagram');
+      if (result.mode === 'create' && shareToFacebookAfterPost) crossPostTargets.push('facebook');
+      if (result.mode === 'create' && shareToThreadsAfterPost) crossPostTargets.push('threads');
       Alert.alert(t('logsForm.saveSuccessTitle'), t('logsForm.saveSuccessMessage'), [
         {
-          text: t('common.confirm', { defaultValue: '확인' }),
-          onPress: () => {
+          text: t('common.confirm'),
+          onPress: async () => {
+            if (result.mode === 'create' && result.postId && crossPostTargets.length) {
+              try {
+                await sharePostToSocialChannels({
+                  postId: result.postId,
+                  caption: result.caption,
+                  targets: crossPostTargets,
+                  visibility: contentVisibility === 'inherit'
+                    ? (publishToReels && !publishToFeed ? visibilitySettings?.reels : visibilitySettings?.feed) || 'private'
+                    : contentVisibility,
+                });
+              } catch {
+                showToast({
+                  title: t('logsForm.socialShareFailed'),
+                  type: 'error',
+                });
+              }
+            }
             if (nextEditingPostId) {
               router.replace(`/(tabs)/post?post=${encodeURIComponent(nextEditingPostId)}` as never);
             }
@@ -295,9 +347,63 @@ export default function LogsScreen() {
     },
   });
 
+  useEffect(() => {
+    if (!draftReady || !draftStorageKey || editingPostId || mutation.isPending) return;
+    if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    const snapshot = normalizeMainDiveLogDraft({
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      form,
+      selectedMedia,
+      pointQuery,
+      resortQuery,
+      detailsOpen,
+      publishToFeed,
+      publishToReels,
+    });
+    if (!snapshot) return;
+    draftSaveTimer.current = setTimeout(() => {
+      if (!hasMainDiveLogDraftContent(snapshot)) {
+        void AsyncStorage.removeItem(draftStorageKey);
+        void apiClient.deleteDiveLogDraft(draftServerId).catch(() => undefined);
+        return;
+      }
+      void AsyncStorage.setItem(draftStorageKey, JSON.stringify(snapshot));
+      void apiClient.saveDiveLogDraft(draftServerId, snapshot).catch(() => undefined);
+    }, 800);
+    return () => {
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    };
+  }, [detailsOpen, draftReady, draftStorageKey, editingPostId, form, mutation.isPending, pointQuery, publishToFeed, publishToReels, resortQuery, selectedMedia]);
+
   const update = <K extends keyof DiveLogForm>(key: K, value: DiveLogForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  if (loadingExistingPost) {
+    return (
+      <Screen>
+        <View className="flex-1 items-center justify-center px-8">
+          <ActivityIndicator color="#0d5fa8" />
+          <Text className="mt-3 text-sm text-surface-500 dark:text-surface-400">{t('logsForm.editLoading')}</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (editingPostId && (editingPostQuery.isError || editingPost === null)) {
+    return (
+      <Screen>
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-lg font-bold text-surface-900 dark:text-surface-50">{t('logsForm.editLoadFailed')}</Text>
+          <Text className="mt-2 text-center text-sm text-surface-500 dark:text-surface-400">{t('logsForm.editLoadFailedBody')}</Text>
+          <TouchableOpacity className="mt-5 rounded-2xl bg-brand-600 px-6 py-3" onPress={() => editingPostQuery.refetch()}>
+            <Text className="font-semibold text-white">{t('common.retry')}</Text>
+          </TouchableOpacity>
+        </View>
+      </Screen>
+    );
+  }
 
   const choosePoint = (item: GooglePointResult) => {
     setForm((prev) => ({
@@ -350,69 +456,85 @@ export default function LogsScreen() {
   };
 
   const pickPhoto = async () => {
+    const remainingSelectionCount = Math.max(0, 10 - selectedMedia.length);
+    if (remainingSelectionCount <= 0) {
+      Alert.alert(t('diveEditor.limitTitle'), t('diveEditor.mediaLimit', { max: 10 }));
+      return;
+    }
+
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(t('logsForm.photo.permissionTitle'), t('logsForm.photo.permissionMessage'));
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: false,
-      allowsMultipleSelection: true,
-      selectionLimit: 10,
-      orderedSelection: true,
-      quality: 0.75,
-      exif: true,
-    });
+    const allowsMultipleSelection = Platform.OS !== 'ios';
+    let result: ImagePicker.ImagePickerResult;
+    try {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: false,
+        allowsMultipleSelection,
+        ...(allowsMultipleSelection
+          ? {
+              selectionLimit: remainingSelectionCount,
+              orderedSelection: true,
+            }
+          : {}),
+        quality: 0.75,
+        exif: true,
+        shouldDownloadFromNetwork: true,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+      });
+    } catch {
+      Alert.alert(t('logsForm.photo.selectFailedTitle'), t('logsForm.photo.selectFailedMessage'));
+      return;
+    }
 
     if (result.canceled || !result.assets?.length) return;
-    const assets = result.assets.slice(0, 10);
+    const assets = result.assets.slice(0, remainingSelectionCount);
     const mediaItems: SelectedMediaItem[] = assets
       .map((asset): SelectedMediaItem => ({
         uri: normalizePickedUri(asset.uri),
         type: asset.type === 'video' ? 'video' : 'image',
+        photoMetadata: asset.type === 'video' ? undefined : readPhotoMetadata(asset.exif),
       }))
       .filter((asset) => Boolean(asset.uri));
     if (!mediaItems.length) return;
 
-    setSelectedMedia(mediaItems);
-    if (mediaItems.some((item) => item.type === 'video')) setPublishToReels(true);
-    const primaryImage = mediaItems.find((item) => item.type === 'image')?.uri || mediaItems[0]?.uri || '';
+    const existingUris = new Set(selectedMedia.map((item) => item.uri));
+    const newMediaItems = mediaItems.filter((item) => !existingUris.has(item.uri));
+    if (!newMediaItems.length) return;
+    const nextMedia = [...selectedMedia, ...newMediaItems].slice(0, 10);
+
+    setSelectedMedia(nextMedia);
+    if (nextMedia.some((item) => item.type === 'video')) setPublishToReels(true);
+    const primaryImage = nextMedia.find((item) => item.type === 'image')?.uri || nextMedia[0]?.uri || '';
     setForm((prev) => ({ ...prev, photoUri: primaryImage }));
 
-    let gps: { lat: number; lng: number } | null = null;
-    for (const asset of assets) {
-      const found = parseExifGps(asset.exif as Record<string, unknown> | null | undefined);
-      if (found) {
-        gps = found;
-        break;
-      }
+    if (isDailyPost) return;
+    const locations = uniquePhotoLocations(nextMedia.flatMap(item => item.photoMetadata ? [item.photoMetadata] : []));
+    if (locations.length > 1) {
+      Alert.alert(t('photoMetadata.title'), t('photoMetadata.multipleLocations'));
+      return;
     }
+    const gps = locations[0];
     if (!gps) {
-      if (mediaItems.length === 1 && mediaItems[0]?.type === 'image') {
+      if (nextMedia.length === 1 && nextMedia[0]?.type === 'image') {
         Alert.alert(t('logsForm.photo.gpsNotFoundTitle'), t('logsForm.photo.gpsNotFoundMessage'));
       }
       return;
     }
 
-    let address = '';
-    try {
-      address = await reverseGooglePoint(gps.lat, gps.lng);
-    } catch {
-      address = '';
-    }
-
-    const locationLabel = address || `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
-    setForm((prev) => ({
-      ...prev,
-      pointAddress: locationLabel,
-      pointName: prev.pointName.trim() || locationLabel.split(',')[0].trim(),
-      locationLat: String(gps.lat),
-      locationLng: String(gps.lng),
-    }));
-    setPointQuery(locationLabel);
-    Alert.alert(t('logsForm.photo.gpsAppliedTitle'), t('logsForm.photo.gpsAppliedMessage'));
+    Alert.alert(t('photoMetadata.title'), t('photoMetadata.confirmLocation', { lat: gps.lat.toFixed(6), lng: gps.lng.toFixed(6) }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('photoMetadata.apply'), onPress: () => {
+        const locationLabel = `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}`;
+        setForm(prev => ({ ...prev, pointName: '', pointAddress: locationLabel, locationLat: String(gps.lat), locationLng: String(gps.lng) }));
+        setPointQuery(locationLabel);
+      } },
+    ]);
   };
 
   return (
@@ -420,10 +542,14 @@ export default function LogsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="px-5 pb-5 pt-4">
           <Text className="text-2xl font-bold text-surface-900 dark:text-surface-50">
-            {editingPostId ? t('logsForm.editTitle', { defaultValue: '로그 수정' }) : t('logsForm.title')}
+            {isDailyPost
+              ? t('logsForm.dailyTitle')
+              : editingPostId ? t('logsForm.editTitle') : t('logsForm.title')}
           </Text>
           <Text className="mt-1 text-surface-500 dark:text-surface-400">
-            {editingPostId ? t('logsForm.editSubtitle', { defaultValue: '기존 로그를 운영 폼 기준으로 수정합니다.' }) : t('logsForm.subtitle')}
+            {isDailyPost
+              ? t('logsForm.dailySubtitle')
+              : editingPostId ? t('logsForm.editSubtitle') : t('logsForm.subtitle')}
           </Text>
         </View>
 
@@ -444,29 +570,42 @@ export default function LogsScreen() {
         <View className="px-5">
           <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
             <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">
-              {t('logsForm.publish.title', { defaultValue: '게시 위치' })}
+              {t('logsForm.publish.title')}
             </Text>
             <Text className="mb-3 text-xs text-surface-500 dark:text-surface-400">
-              {t('logsForm.publish.subtitle', { defaultValue: '피드와 릴스 노출 위치를 선택하세요. 릴스는 영상이 필요합니다.' })}
+              {t('logsForm.publish.subtitle')}
             </Text>
             <View className="flex-row">
               <ChoiceChip
                 active={publishToFeed}
-                label={t('logsForm.publish.feed', { defaultValue: '피드' })}
+                label={t('logsForm.publish.feed')}
                 onPress={() => setPublishToFeed((prev) => !prev)}
               />
               <ChoiceChip
                 active={publishToReels}
-                label={t('logsForm.publish.reels', { defaultValue: '릴스' })}
+                label={t('logsForm.publish.reels')}
                 onPress={() => setPublishToReels((prev) => !prev)}
               />
             </View>
             {!hasPublishTarget ? (
-              <Text className="mt-2 text-xs text-red-500">{t('logsForm.publish.required', { defaultValue: '피드 또는 릴스 중 하나 이상 선택해주세요.' })}</Text>
+              <Text className="mt-2 text-xs text-red-500">{t('logsForm.publish.required')}</Text>
             ) : null}
             {publishToReels && !hasVideoMedia ? (
-              <Text className="mt-2 text-xs text-amber-600">{t('logsForm.publish.reelsNeedsVideo', { defaultValue: '릴스에는 영상 파일이 1개 이상 필요합니다.' })}</Text>
+              <Text className="mt-2 text-xs text-amber-600">{t('logsForm.publish.reelsNeedsVideo')}</Text>
             ) : null}
+            <Text className="mb-2 mt-4 text-xs font-semibold text-surface-500 dark:text-surface-400">
+              {t('logsForm.publish.visibility')}
+            </Text>
+            <View className="flex-row flex-wrap">
+              {(['inherit', 'public', 'followers', 'private'] as const).map((visibility) => (
+                <ChoiceChip
+                  key={visibility}
+                  active={contentVisibility === visibility}
+                  label={t(`logsForm.publish.visibilityOptions.${visibility}`)}
+                  onPress={() => setContentVisibility(visibility)}
+                />
+              ))}
+            </View>
           </View>
 
           <TouchableOpacity
@@ -476,7 +615,7 @@ export default function LogsScreen() {
           >
             <Camera size={20} color="#0d5fa8" />
             <Text className="ml-2 font-semibold text-brand-700">
-              {t('logsForm.photo.selectMultiple', { defaultValue: '사진/동영상 선택 (최대 10개)' })}
+              {t('logsForm.photo.selectMultiple')}
             </Text>
           </TouchableOpacity>
 
@@ -484,7 +623,7 @@ export default function LogsScreen() {
             <View className="mb-4 overflow-hidden rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900">
               <View className="flex-row items-center justify-between px-3 py-2">
                 <Text className="text-xs font-semibold text-surface-700 dark:text-surface-200">
-                  {t('logsForm.photo.selectedCount', { defaultValue: '{{count}}개 선택됨', count: selectedMedia.length })}
+                  {t('logsForm.photo.selectedCount', { count: selectedMedia.length })}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -493,7 +632,7 @@ export default function LogsScreen() {
                   }}
                 >
                   <Text className="text-xs font-semibold text-red-500">
-                    {t('logsForm.photo.clear', { defaultValue: '선택 해제' })}
+                    {t('logsForm.photo.clear')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -513,6 +652,7 @@ export default function LogsScreen() {
               </ScrollView>
               <View className="px-3 py-2">
                 <Text className="text-xs text-surface-500 dark:text-surface-400">{t('logsForm.photo.gpsHint')}</Text>
+                {selectedMedia.map((item, index) => <PhotoMetadataSummary key={`${item.uri}-metadata-${index}`} metadata={item.photoMetadata} />)}
               </View>
             </View>
           ) : null}
@@ -520,7 +660,7 @@ export default function LogsScreen() {
           <Text className="mb-2 text-sm font-semibold text-surface-700 dark:text-surface-200">{t('logsForm.fields.titleLabel')}</Text>
           <TextInput
             className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-4 text-base text-surface-900 dark:text-surface-50"
-            placeholder={t('logsForm.fields.titlePlaceholder')}
+            placeholder={isDailyPost ? t('logsForm.fields.dailyTitlePlaceholder') : t('logsForm.fields.titlePlaceholder')}
             placeholderTextColor="#9ca3af"
             value={form.title}
             onChangeText={(value) => update('title', value)}
@@ -539,7 +679,18 @@ export default function LogsScreen() {
                 label={t('logsForm.diveTypes.scuba')}
                 onPress={() => update('diveType', 'scuba')}
               />
+              <ChoiceChip
+                active={form.diveType === 'daily'}
+                label={t('logsForm.diveTypes.daily')}
+                onPress={() => update('diveType', 'daily')}
+              />
             </View>
+
+            {form.diveType === 'daily' ? (
+              <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                {t('logsForm.dailyHint')}
+              </Text>
+            ) : null}
 
             {form.diveType === 'scuba' ? (
               <>
@@ -571,6 +722,8 @@ export default function LogsScreen() {
             ) : null}
           </View>
 
+          {form.diveType !== 'daily' ? (
+            <>
           <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
             <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.pointNameLabel')}</Text>
             <TextInput
@@ -634,11 +787,7 @@ export default function LogsScreen() {
                 cachePolicy="disk"
                 transition={0}
                 onError={() => {
-                  setMapPreviewError(
-                    t('logsForm.map.previewFailed', {
-                      defaultValue: '지도 미리보기를 불러오지 못했습니다. 좌표 검색은 계속 사용할 수 있습니다.',
-                    })
-                  );
+                  setMapPreviewError(t('logsForm.map.previewFailed'));
                 }}
               />
             ) : (
@@ -654,17 +803,42 @@ export default function LogsScreen() {
                 className="mt-2 self-start rounded-full bg-brand-600 px-3 py-2"
                 onPress={() => setMapPreviewError('')}
               >
-                <Text className="text-xs font-semibold text-white">{t('common.retry', { defaultValue: '다시 시도' })}</Text>
+                <Text className="text-xs font-semibold text-white">{t('common.retry')}</Text>
               </TouchableOpacity>
             ) : null}
 
-            {!hasOptionalCoreInput ? (
-              <Text className="mt-3 text-xs text-amber-600">
-                {t('logsForm.validation.oneOfThreeRequired', { defaultValue: '포인트 위치, 사진, 메모 중 하나 이상 입력하면 제출할 수 있습니다.' })}
-              </Text>
-            ) : null}
           </View>
 
+          <View className="flex-row flex-wrap -mx-1">
+            <FieldCard
+              icon={<Gauge size={16} color="#64748b" />}
+              label={t('logsForm.fields.depthLabel')}
+              value={form.depth}
+              placeholder="18"
+              suffix="m"
+              keyboardType="numeric"
+              onChangeText={(value) => update('depth', value)}
+            />
+            <FieldCard
+              icon={<Timer size={16} color="#64748b" />}
+              label={t('logsForm.fields.durationLabel')}
+              value={form.duration}
+              placeholder="45"
+              suffix={t('logsForm.units.minute')}
+              keyboardType="numeric"
+              onChangeText={(value) => update('duration', value)}
+            />
+          </View>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityState={{ expanded: detailsOpen }}
+            onPress={() => { Keyboard.dismiss(); setResortFocus(false); setDetailsOpen(open => !open); }}
+            className="my-3 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4"
+          >
+            <Text className="text-sm font-semibold text-brand-600 dark:text-brand-400">{t(detailsOpen ? 'logDetails.hide' : 'logDetails.show')}</Text>
+            <Text className="mt-1 text-xs text-surface-500 dark:text-surface-400">{t('logDetails.filled', { count: detailCount })}</Text>
+          </TouchableOpacity>
+          {detailsOpen && <View>
           <View className="mb-4 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 p-4">
             <Text className="mb-2 text-xs font-semibold text-surface-500 dark:text-surface-400">{t('logsForm.fields.resortLabel')}</Text>
             <TextInput
@@ -703,24 +877,6 @@ export default function LogsScreen() {
 
           <View className="flex-row flex-wrap -mx-1">
             <FieldCard
-              icon={<Gauge size={16} color="#64748b" />}
-              label={t('logsForm.fields.depthLabel')}
-              value={form.depth}
-              placeholder="18"
-              suffix="m"
-              keyboardType="numeric"
-              onChangeText={(value) => update('depth', value)}
-            />
-            <FieldCard
-              icon={<Timer size={16} color="#64748b" />}
-              label={t('logsForm.fields.durationLabel')}
-              value={form.duration}
-              placeholder="45"
-              suffix={t('logsForm.units.minute')}
-              keyboardType="numeric"
-              onChangeText={(value) => update('duration', value)}
-            />
-            <FieldCard
               icon={<Thermometer size={16} color="#64748b" />}
               label={t('logsForm.fields.temperatureLabel')}
               value={form.temperature}
@@ -747,19 +903,26 @@ export default function LogsScreen() {
               onChangeText={(value) => update('buddy', value)}
             />
           </View>
+          </View>}
+            </>
+          ) : null}
 
-          <Text className="mb-2 mt-4 text-sm font-semibold text-surface-700 dark:text-surface-200">{t('logsForm.fields.notesLabel')}</Text>
+          <Text className="mb-2 mt-4 text-sm font-semibold text-surface-700 dark:text-surface-200">
+            {isDailyPost ? t('logsForm.fields.contentLabel') : t('logsForm.fields.notesLabel')}
+          </Text>
           <TextInput
             className="min-h-28 rounded-2xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-900 px-4 py-4 text-base text-surface-900 dark:text-surface-50"
             multiline
             textAlignVertical="top"
-            placeholder={t('logsForm.fields.notesPlaceholder')}
+            placeholder={isDailyPost ? t('logsForm.fields.dailyContentPlaceholder') : t('logsForm.fields.notesPlaceholder')}
             placeholderTextColor="#9ca3af"
             value={form.notes}
             onChangeText={(value) => update('notes', value)}
           />
           <Text className="mt-2 text-xs text-surface-500 dark:text-surface-400">
-            {t('logsForm.validation.oneOfThreeRequired', { defaultValue: '포인트 위치, 사진, 메모 중 하나 이상 입력하면 제출할 수 있습니다.' })}
+            {isDailyPost
+              ? t('logsForm.validation.dailyRequired')
+              : t('logsForm.validation.mediaOptional')}
           </Text>
 
           {!isGoogleMapsApiConfigured() ? (
@@ -773,7 +936,7 @@ export default function LogsScreen() {
           >
             <Text className="font-semibold text-white">
               {loadingExistingPost
-                ? t('common.loading', { defaultValue: '불러오는 중...' })
+                ? t('common.loading')
                 : mutation.isPending
                   ? t('logsForm.buttons.saving')
                   : t('logsForm.buttons.save')}
@@ -823,6 +986,7 @@ function FieldCard({
         </View>
         <View className="flex-row items-center">
           <TextInput
+            accessibilityLabel={label}
             className="flex-1 py-1 text-base font-semibold text-surface-900 dark:text-surface-50"
             placeholder={placeholder}
             placeholderTextColor="#9ca3af"

@@ -1,0 +1,17 @@
+appId: com.divergram.app.ios
+name: Feed translation smoke
+---
+- launchApp
+- tapOn:
+    text: "시작하기"
+    optional: true
+- extendedWaitUntil:
+    visible: "번역 보기"
+    timeout: 30000
+- tapOn:
+    text: "번역 보기"
+    index: 0
+- extendedWaitUntil:
+    visible: "원문 보기"
+    timeout: 30000
+- takeScreenshot: feed-translation-complete

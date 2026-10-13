@@ -15,10 +15,11 @@ export function getBlePlxModule(): BlePlxModule | null {
   }
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedModule = require('react-native-ble-plx') as BlePlxModule;
     return cachedModule;
   } catch (error) {
-    console.warn('[BLE] react-native-ble-plx 로드 실패', error);
+    console.warn('[BLE] Failed to load react-native-ble-plx', error);
     cachedModule = null;
     return cachedModule;
   }

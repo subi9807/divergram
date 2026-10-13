@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as AuthSession from 'expo-auth-session';
 import * as Google from 'expo-auth-session/providers/google';
@@ -25,7 +26,10 @@ import {
 } from '../lib/secureAuthStorage';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
 import { startUserPreferencesSync, stopUserPreferencesSync } from '../services/userPreferencesSyncService';
-import { notificationManager } from '../lib/notifications';
+import {
+  isRemoteNotificationRuntimeEnabled,
+  notificationManager,
+} from '../lib/notifications';
 
 function normalizeEnvValue(value: string | null | undefined): string {
   const normalized = String(value ?? '').trim();
@@ -129,6 +133,7 @@ interface User {
 
 type AuthOutcome = {
   profileCompletionRequired?: boolean;
+  user?: User | null;
 };
 
 function normalizeUser(raw: any): User | null {
@@ -156,9 +161,9 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<AuthOutcome>;
   loginWithApple: () => Promise<AuthOutcome>;
   loginWithInstagram: () => Promise<AuthOutcome>;
-  loginWithEmail: (email: string, password: string) => Promise<void>;
-  signupWithEmail: (email: string, password: string, name: string, contact: string) => Promise<User | null>;
-  signupWithSocialAccount: (signup: SocialSignupInput) => Promise<AuthOutcome>;
+  loginWithEmail: (email: string, password: string) => Promise<AuthOutcome>;
+  signupWithEmail: (email: string, password: string, name: string, contact: string, consents: SignupConsentReceipt[]) => Promise<User | null>;
+  signupWithSocialAccount: (signup: SocialSignupInput, consents: SignupConsentReceipt[]) => Promise<AuthOutcome>;
   linkSocialAccount: (link: SocialLinkInput, options?: { requireCurrentSession?: boolean }) => Promise<void>;
   logout: () => void;
   getAccessToken: () => string | null;
@@ -181,6 +186,13 @@ export type SocialSignupInput = {
   email?: string;
   name?: string;
   avatar?: string;
+};
+
+type SignupConsentReceipt = {
+  key: string;
+  policyType: string;
+  version: string;
+  agreed: boolean;
 };
 
 function normalizeOAuthErrorText(error: any) {
@@ -275,6 +287,7 @@ function buildSocialSignupError(provider: SocialProvider, accessToken: string, u
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [accountDeletion, setAccountDeletion] = useState<AccountDeletionStatus | null>(null);
@@ -311,13 +324,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (Platform.OS !== 'android' || !socialAuth.googleClientIdWeb) return;
+    if ((Platform.OS !== 'android' && Platform.OS !== 'ios') || !socialAuth.googleClientIdWeb) return;
     GoogleSignin.configure({
       webClientId: socialAuth.googleClientIdWeb,
+      iosClientId: socialAuth.googleClientIdIos || undefined,
       scopes: ['profile', 'email'],
       offlineAccess: false,
     });
-  }, [socialAuth.googleClientIdWeb]);
+  }, [socialAuth.googleClientIdIos, socialAuth.googleClientIdWeb]);
 
   // OAuth configuration
   const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
@@ -330,6 +344,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
   const clearAuthSession = useCallback(() => {
+    queryClient.clear();
     deleteSecureAuthValue(AUTH_TOKEN_KEY);
     deleteSecureAuthValue(REFRESH_TOKEN_KEY);
     storage.delete(AUTH_USER_KEY);
@@ -339,7 +354,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccountDeletion(null);
     setAccountDeletionLoading(false);
     setUser(null);
-  }, []);
+  }, [queryClient]);
 
   const extendAuthSession = useCallback((sessionDays = DEFAULT_SESSION_DAYS) => {
     const sessionExpiryMs = resolveSessionExpiryMs(sessionDays);
@@ -382,7 +397,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: nextUser,
         sessionExpiresAt: new Date(sessionExpiryMs).toISOString(),
       });
-      if (nextUser) {
+      if (nextUser && isRemoteNotificationRuntimeEnabled()) {
         void notificationManager.initialize();
       }
       return nextUser;
@@ -452,35 +467,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const buildAuthOutcome = useCallback((payload: any): AuthOutcome => {
     const profileCompletionRequired = Boolean(payload?.profileCompletionRequired) || isSyntheticOAuthEmail(payload?.user?.email || payload?.profile?.email);
-    return { profileCompletionRequired };
+    return { profileCompletionRequired, user: normalizeUser(payload?.user) };
   }, []);
-
-  const linkCurrentSocialAccountFromError = useCallback(async (provider: SocialProvider, error: any, userInfo?: any) => {
-    const body = error?.response?.data || {};
-    const linkToken = String(body?.linkToken || body?.link_token || '').trim();
-    const email = String(body?.email || userInfo?.email || '').trim().toLowerCase();
-    const currentEmail = String(user?.email || '').trim().toLowerCase();
-    if (!linkToken || !currentEmail || email !== currentEmail) return false;
-
-    try {
-      const response = await apiClient.linkOAuthMobile(linkToken);
-      persistAuthPayload(response.data, undefined, { sessionDays: DEFAULT_SESSION_DAYS });
-      await syncSocialLinksFromServer();
-      showToast({
-        type: 'success',
-        title: i18n.t('auth.ssoLinkedTitle'),
-        message: i18n.t('auth.ssoLinkedMessage', { provider }),
-      });
-      return true;
-    } catch (linkError: any) {
-      const linkMessage = String(linkError?.response?.data?.error || linkError?.message || '');
-      if (linkMessage.includes('oauth_already_linked')) {
-        await syncSocialLinksFromServer();
-        return true;
-      }
-      throw linkError;
-    }
-  }, [persistAuthPayload, showToast, syncSocialLinksFromServer, user?.email]);
 
   const linkSocialAccount = useCallback(async (link: SocialLinkInput, options?: { requireCurrentSession?: boolean }) => {
     const linkToken = String(link.linkToken || '').trim();
@@ -517,7 +505,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return buildAuthOutcome(response.data);
       } catch (error: any) {
         if (isSocialEmailExistsError(error)) {
-          if (await linkCurrentSocialAccountFromError('google', error)) return { profileCompletionRequired: false };
           throw buildSocialLinkError('google', error);
         }
         if (isSocialSignupRequiredError(error)) {
@@ -526,7 +513,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [buildAuthOutcome, linkCurrentSocialAccountFromError, persistAuthPayload, syncSocialLinksFromServer]
+    [buildAuthOutcome, persistAuthPayload, syncSocialLinksFromServer]
   );
 
   const checkAuthState = useCallback(async () => {
@@ -585,12 +572,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (!token) {
-      // 토큰이 없어도 캐시 사용자 정보가 있으면 세션 UX를 유지한다.
-      if (cachedUser) {
-        setUser(cachedUser);
-        setLoading(false);
-        return;
-      }
       clearAuthSession();
       setLoading(false);
       return;
@@ -607,8 +588,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (userData) {
         setUser(userData);
         storage.set(AUTH_USER_KEY, JSON.stringify(userData));
-      } else if (!cachedUser) {
-        setUser(null);
+      } else {
+        // A cached profile must never outlive its server session. Keeping it
+        // would make the UI look signed in while authenticated writes fail.
+        clearAuthSession();
       }
     } catch (error: any) {
       const status = error?.response?.status;
@@ -634,9 +617,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // refresh failed -> clear session below
           }
         }
-        if (!cachedUser) {
-          clearAuthSession();
-        }
+        clearAuthSession();
       }
     } finally {
       if (!cachedUser) {
@@ -673,8 +654,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!googleClientId) {
         throw new Error('missing_google_client_id');
       }
-      if (Platform.OS === 'android') {
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      if (Platform.OS === 'android' || Platform.OS === 'ios') {
+        if (Platform.OS === 'android') {
+          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        }
         const nativeResult = await GoogleSignin.signIn();
         if (!isGoogleSignInSuccess(nativeResult)) {
           throw new Error('google_login_cancelled');
@@ -826,13 +809,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: i18n.t('auth.welcomeBackTitle'),
         message: i18n.t('auth.welcomeBackMessage')
       });
+      return buildAuthOutcome(response.data);
     } catch (error) {
       console.error('Email login error:', error);
       throw error;
     }
   };
 
-  const signupWithEmail = async (email: string, password: string, name: string, contact: string): Promise<User | null> => {
+  const signupWithEmail = async (email: string, password: string, name: string, contact: string, consents: SignupConsentReceipt[]): Promise<User | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedName = name.trim();
     const normalizedContact = contact.trim();
@@ -846,7 +830,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     for (const username of attempts) {
       try {
-        const response = await apiClient.authWithEmailSignup(normalizedEmail, password, username, 'personal', DEFAULT_SESSION_DAYS);
+        const response = await apiClient.authWithEmailSignup(normalizedEmail, password, username, 'personal', DEFAULT_SESSION_DAYS, consents);
         const createdUser = persistAuthPayload(response.data, {
           email: normalizedEmail,
           name: normalizedName || username,
@@ -879,7 +863,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     throw lastError || new Error('signup_failed');
   };
 
-  const signupWithSocialAccount = async (signup: SocialSignupInput): Promise<AuthOutcome> => {
+  const signupWithSocialAccount = async (signup: SocialSignupInput, consents: SignupConsentReceipt[]): Promise<AuthOutcome> => {
     try {
       const userInfo = {
         ...(signup.userInfo || {}),
@@ -888,7 +872,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: signup.name,
         avatar: signup.avatar,
       };
-      const response = await apiClient.authWithOAuthSignup(signup.provider, signup.accessToken, userInfo, DEFAULT_SESSION_DAYS);
+      const response = await apiClient.authWithOAuthSignup(signup.provider, signup.accessToken, userInfo, DEFAULT_SESSION_DAYS, consents);
       const createdUser = persistAuthPayload(response.data, {
         email: signup.email,
         name: signup.name,
@@ -902,7 +886,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         message: i18n.t('auth.socialSignupCompleteMessage')
       });
       void createdUser;
-      return buildAuthOutcome(response.data);
+      return { ...buildAuthOutcome(response.data), profileCompletionRequired: true };
     } catch (error) {
       console.error('Social signup error:', error);
       throw error;
@@ -923,7 +907,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return buildAuthOutcome(response.data);
     } catch (error: any) {
       if (isSocialEmailExistsError(error)) {
-        if (await linkCurrentSocialAccountFromError(provider, error, userInfo)) return { profileCompletionRequired: false };
         throw buildSocialLinkError(provider, error, userInfo);
       }
       if (isSocialSignupRequiredError(error)) {

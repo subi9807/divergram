@@ -1,0 +1,46 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "6G5RCDLQLG.com.divergram.app.ios"
+        ],
+        "components": [
+          {
+            "/": "/post*",
+            "comment": "Shared Divergram posts"
+          },
+          {
+            "/": "/reel*",
+            "comment": "Shared Divergram reels"
+          },
+          {
+            "/": "/profile*",
+            "comment": "Shared Divergram profiles"
+          },
+          {
+            "/": "/resort*",
+            "comment": "Shared Divergram resorts"
+          },
+          {
+            "/": "/guide*",
+            "comment": "Shared Divergram guides"
+          },
+          {
+            "/": "/marine-life*",
+            "comment": "Shared Divergram marine life sightings"
+          },
+          {
+            "/": "/notifications*",
+            "comment": "Notification inbox"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "6G5RCDLQLG.com.divergram.app.ios"
+    ]
+  }
+}

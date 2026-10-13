@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import { isAdMobEnabled } from '../config/ads';
 
@@ -12,10 +11,44 @@ export function initializeAdMob(): Promise<boolean> {
   return initializationPromise;
 }
 
+export async function showAdPrivacyOptions(): Promise<boolean> {
+  if (!isAdMobEnabled()) return false;
+  try {
+    const { AdsConsent, AdsConsentPrivacyOptionsRequirementStatus } = await import('react-native-google-mobile-ads');
+    await AdsConsent.requestInfoUpdate({ tagForUnderAgeOfConsent: false });
+    const consentInfo = await AdsConsent.getConsentInfo();
+    if (consentInfo.privacyOptionsRequirementStatus !== AdsConsentPrivacyOptionsRequirementStatus.REQUIRED) return false;
+    await AdsConsent.showPrivacyOptionsForm();
+    return true;
+  } catch (error) {
+    console.warn('[AdMob] Privacy options failed', error);
+    return false;
+  }
+}
+
 async function initializeAdMobSdk() {
   const shouldUseTestAds = __DEV__ || !Device.isDevice || process.env.EXPO_PUBLIC_ADMOB_FORCE_TEST_ADS === 'true';
   try {
-    const { default: mobileAdsModule } = await import('react-native-google-mobile-ads');
+    const { AdsConsent, default: mobileAdsModule } = await import('react-native-google-mobile-ads');
+
+    try {
+      await AdsConsent.gatherConsent({
+        tagForUnderAgeOfConsent: false,
+        testDeviceIdentifiers: shouldUseTestAds ? ['EMULATOR'] : [],
+      });
+    } catch (error) {
+      // UMP can reuse the previous session's consent state when a refresh fails.
+      console.warn('[AdMob] Consent refresh failed', error);
+    }
+
+    try {
+      const consentInfo = await AdsConsent.getConsentInfo();
+      if (!consentInfo.canRequestAds) return false;
+    } catch (error) {
+      // Do not suppress ads solely because the consent status lookup is unavailable.
+      console.warn('[AdMob] Consent status lookup failed', error);
+    }
+
     const mobileAds = mobileAdsModule();
     await mobileAds.setRequestConfiguration({
       testDeviceIdentifiers: shouldUseTestAds ? ['EMULATOR'] : [],

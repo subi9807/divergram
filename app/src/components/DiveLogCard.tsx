@@ -4,8 +4,10 @@ import { ChevronRight, Clock3, MapPin, Waves } from 'lucide-react-native';
 import type { DiveLog } from '../models';
 import { SyncStatusBadge } from './SyncStatusBadge';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
+import { useTranslation } from 'react-i18next';
 
 export function DiveLogCard({ item, onPress }: { item: DiveLog; onPress: () => void }) {
+  const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
   const colors = isDark
     ? {
@@ -30,7 +32,7 @@ export function DiveLogCard({ item, onPress }: { item: DiveLog; onPress: () => v
       style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.bg, padding: 14, marginBottom: 10 }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: colors.title, fontSize: 16, fontWeight: '800' }}>{item.divePointName || 'Dive Point'}</Text>
+        <Text style={{ color: colors.title, fontSize: 16, fontWeight: '800' }}>{item.divePointName || t('diveCard.unknownSite')}</Text>
         <SyncStatusBadge status={item.syncStatus} />
       </View>
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -40,15 +42,15 @@ export function DiveLogCard({ item, onPress }: { item: DiveLog; onPress: () => v
       <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Waves size={13} color="#0D5FA8" />
-          <Text style={{ color: colors.text }}>Max {item.maxDepth ?? '-'}m</Text>
+          <Text style={{ color: colors.text }}>{t('diveCard.maxDepth', { value: item.maxDepth ?? '-' })}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Clock3 size={13} color="#0D5FA8" />
-          <Text style={{ color: colors.text }}>{item.totalDiveTime ?? '-'}min</Text>
+          <Text style={{ color: colors.text }}>{t('diveCard.duration', { value: item.totalDiveTime ?? '-' })}</Text>
         </View>
       </View>
       <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ color: colors.muted, fontWeight: '600' }}>출처: {item.sourceType}</Text>
+        <Text style={{ color: colors.muted, fontWeight: '600' }}>{t('diveCard.source', { source: t(`diveCard.sources.${item.sourceType}`, { defaultValue: item.sourceType }) })}</Text>
         <ChevronRight size={16} color={colors.muted} />
       </View>
     </TouchableOpacity>

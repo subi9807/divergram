@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import {
   Bell,
+  AtSign,
   Bluetooth,
   ChevronRight,
   CreditCard,
   Globe,
   HelpCircle,
-  HandCoins,
   Link2,
   LogOut,
   Mail,
@@ -23,7 +24,6 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { SocialBrandIcon } from '../../src/components/SocialBrandIcon';
-import { getSocialAuthConfig } from '../../src/config/socialAuth';
 import { useAuth } from '../../src/hooks/useAuth';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { useSettingsStore } from '../../src/stores/settingsStore';
@@ -31,10 +31,19 @@ import { useSettingsFeatureStore, type SocialProvider } from '../../src/stores/s
 import { appRouteMap } from '../../src/config/sitemap';
 import { storage } from '../../src/lib/storage';
 import { apiClient } from '../../src/lib/api';
+import { showAdPrivacyOptions } from '../../src/lib/initAdMob';
 
 const languageOptions: ('ko' | 'en' | 'ja' | 'zh')[] = ['ko', 'en', 'ja', 'zh'];
+const nativeLanguageLabels: Record<(typeof languageOptions)[number], string> = {
+  ko: '한국어',
+  en: 'English',
+  ja: '日本語',
+  zh: '中文',
+};
 type SettingsTab = 'account' | 'notifications' | 'privacy' | 'diving' | 'app' | 'safety';
 type IconComponent = React.ComponentType<{ size?: number | string; color?: any }>;
+type Visibility = 'public' | 'followers' | 'private';
+type ContentVisibility = { profile: Visibility; feed: Visibility; reels: Visibility; diveLogs: Visibility; marineLife: Visibility };
 const settingsTabs: SettingsTab[] = ['account', 'notifications', 'privacy', 'diving', 'app', 'safety'];
 const SETTINGS_LAST_TAB_KEY = 'divergram_settings_last_tab_v1';
 
@@ -222,7 +231,6 @@ export default function SettingsScreen() {
   const { isDark } = useResolvedTheme();
   const { logout } = useAuth();
   const isIOS = Platform.OS === 'ios';
-  const socialAuth = getSocialAuthConfig();
   const hasInstagramLogin = true;
   const socialLinks = useSettingsFeatureStore((state) => state.socialLinks);
   const syncSocialLinks = useSettingsFeatureStore((state) => state.syncSocialLinks);
@@ -244,6 +252,9 @@ export default function SettingsScreen() {
   const temperatureUnit = useSettingsStore((state) => state.temperatureUnit);
   const gasPressureUnit = useSettingsStore((state) => state.gasPressureUnit);
   const emergencyShareEnabled = useSettingsStore((state) => state.emergencyShareEnabled);
+  const shareToInstagramAfterPost = useSettingsStore((state) => state.shareToInstagramAfterPost);
+  const shareToFacebookAfterPost = useSettingsStore((state) => state.shareToFacebookAfterPost);
+  const shareToThreadsAfterPost = useSettingsStore((state) => state.shareToThreadsAfterPost);
 
   const updateLanguage = useSettingsStore((state) => state.updateLanguage);
   const updateTheme = useSettingsStore((state) => state.updateTheme);
@@ -251,10 +262,22 @@ export default function SettingsScreen() {
   const updateAllNotifications = useSettingsStore((state) => state.updateAllNotifications);
   const updatePrivacySetting = useSettingsStore((state) => state.updatePrivacySetting);
   const updateSafetySetting = useSettingsStore((state) => state.updateSafetySetting);
+  const updateSocialPublishingSetting = useSettingsStore((state) => state.updateSocialPublishingSetting);
   const updatePostVisibility = useSettingsStore((state) => state.updatePostVisibility);
   const updateDiveLogVisibility = useSettingsStore((state) => state.updateDiveLogVisibility);
+  const [contentVisibility, setContentVisibility] = useState<ContentVisibility>({ profile: profilePublic ? 'public' : 'private', feed: postVisibility, reels: postVisibility, diveLogs: diveLogVisibility, marineLife: 'private' });
 
-  const version = Constants.expoConfig?.version || '1.1';
+  useEffect(() => {
+    let active = true;
+    apiClient.getMyContentVisibility().then((value) => {
+      if (active && value) setContentVisibility(value);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || '1.1';
+  const buildNumber = Application.nativeBuildVersion
+    || String(Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber || '' : Constants.expoConfig?.android?.versionCode || '');
   const appYear = new Date().getFullYear();
   const shellColors = isDark
     ? {
@@ -286,9 +309,18 @@ export default function SettingsScreen() {
 
   const tx = (key: string, fallback: string, params?: Record<string, unknown>) =>
     t(key, { defaultValue: fallback, ...(params || {}) });
+  const linkedAccountLabel = (provider: SocialProvider) => {
+    const raw = String(socialLinks[provider]?.accountName || '').trim();
+    if (!raw) return tx('settingsPage.account.linked', '연동 중');
+    const masked = /^\d+$/.test(raw) && raw.length > 4 ? `••••${raw.slice(-4)}` : raw;
+    const account = (provider === 'instagram' || provider === 'threads') && !masked.startsWith('@') ? `@${masked}` : masked;
+    return tx('settingsPage.account.linkedAccount', '{{account}} 연동 중', { account });
+  };
   const socialActionLabel = (provider: SocialProvider) =>
     socialLinks[provider]?.linked
-      ? tx('settingsPage.account.unlinkAction', '연동끊기')
+      ? provider === 'instagram' || provider === 'facebook' || provider === 'threads'
+        ? linkedAccountLabel(provider)
+        : tx('settingsPage.account.unlinkAction', '연동끊기')
       : tx('settingsPage.account.linkAction', '연동하기');
 
   const tabMeta: Record<
@@ -364,10 +396,7 @@ export default function SettingsScreen() {
 
   const labelMap = {
     language: {
-      ko: tx('settingsPage.languages.ko', '한국어'),
-      en: tx('settingsPage.languages.en', 'English'),
-      ja: tx('settingsPage.languages.ja', '日本語'),
-      zh: tx('settingsPage.languages.zh', '中文'),
+      ...nativeLanguageLabels,
     },
     visibility: {
       public: tx('settingsPage.options.public', '공개'),
@@ -399,41 +428,49 @@ export default function SettingsScreen() {
   };
 
   const pickLanguage = () => {
+    const cancelLabel = i18n.t('common.cancel', {
+      lng: i18n.resolvedLanguage || i18n.language,
+      defaultValue: '취소',
+    });
     Alert.alert(
       tx('settingsPage.language.title', '언어 설정'),
       tx('settingsPage.language.subtitle', '앱에서 사용할 언어를 선택하세요.'),
       [
         ...languageOptions.map((lng) => ({ text: labelMap.language[lng], onPress: () => setLanguage(lng) })),
+        { text: cancelLabel, style: 'cancel' as const },
+      ]
+    );
+  };
+
+  const persistVisibility = async (key: keyof ContentVisibility, value: Visibility) => {
+    const previous = contentVisibility[key];
+    setContentVisibility((current) => ({ ...current, [key]: value }));
+    try {
+      await apiClient.updateMyContentVisibility({ [key]: value });
+      if (key === 'feed') updatePostVisibility(value);
+      if (key === 'diveLogs') updateDiveLogVisibility(value);
+      if (key === 'profile') updatePrivacySetting('profilePublic', value !== 'private');
+    } catch {
+      setContentVisibility((current) => ({ ...current, [key]: previous }));
+      Alert.alert(tx('common.error', '오류'), tx('settingsPage.privacy.saveFailed', '공개 범위를 저장하지 못했습니다.'));
+    }
+  };
+
+  const pickContentVisibility = (key: keyof ContentVisibility, title: string) => {
+    Alert.alert(
+      title,
+      tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
+      [
+        { text: labelMap.visibility.public, onPress: () => void persistVisibility(key, 'public') },
+        { text: labelMap.visibility.followers, onPress: () => void persistVisibility(key, 'followers') },
+        { text: labelMap.visibility.private, onPress: () => void persistVisibility(key, 'private') },
         { text: tx('common.cancel', '취소'), style: 'cancel' as const },
       ]
     );
   };
 
-  const pickPostVisibility = () => {
-    Alert.alert(
-      tx('settingsPage.privacy.postVisibility', '게시글 공개 범위'),
-      tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
-      [
-        { text: labelMap.visibility.public, onPress: () => updatePostVisibility('public') },
-        { text: labelMap.visibility.followers, onPress: () => updatePostVisibility('followers') },
-        { text: labelMap.visibility.private, onPress: () => updatePostVisibility('private') },
-        { text: tx('common.cancel', '취소'), style: 'cancel' as const },
-      ]
-    );
-  };
-
-  const pickDiveLogVisibility = () => {
-    Alert.alert(
-      tx('settingsPage.privacy.logVisibility', '다이빙 로그 공개 범위'),
-      tx('settingsPage.common.selectOption', '옵션을 선택하세요.'),
-      [
-        { text: labelMap.visibility.public, onPress: () => updateDiveLogVisibility('public') },
-        { text: labelMap.visibility.followers, onPress: () => updateDiveLogVisibility('followers') },
-        { text: labelMap.visibility.private, onPress: () => updateDiveLogVisibility('private') },
-        { text: tx('common.cancel', '취소'), style: 'cancel' as const },
-      ]
-    );
-  };
+  const pickPostVisibility = () => pickContentVisibility('feed', tx('settingsPage.privacy.postVisibility', '게시글 공개 범위'));
+  const pickDiveLogVisibility = () => pickContentVisibility('diveLogs', tx('settingsPage.privacy.logVisibility', '다이빙 로그 공개 범위'));
 
   const pickThemeMode = () => {
     Alert.alert(
@@ -530,6 +567,26 @@ export default function SettingsScreen() {
                   }
                 />
               ) : null}
+              <SocialButton
+                label="Facebook"
+                actionLabel={socialActionLabel('facebook')}
+                onPress={() => router.push('/(tabs)/settings-detail?mode=link-facebook' as never)}
+                badge={
+                  <View style={[styles.socialBadge, { borderColor: '#c9d9ee' }]}>
+                    <SocialBrandIcon provider="facebook" size={24} />
+                  </View>
+                }
+              />
+              <SocialButton
+                label="Threads"
+                actionLabel={socialActionLabel('threads')}
+                onPress={() => router.push('/(tabs)/settings-detail?mode=link-threads' as never)}
+                badge={
+                  <View style={[styles.socialBadge, { borderColor: '#c9d9ee' }]}>
+                    <AtSign size={23} color={isDark ? '#f8fafc' : '#101010'} />
+                  </View>
+                }
+              />
             </View>
           </View>
           <ActionRow
@@ -537,6 +594,66 @@ export default function SettingsScreen() {
             title={tx('settingsPage.profile.title', '프로필 설정')}
             subtitle={tx('settingsPage.profile.subtitle', '프로필 이미지, 닉네임, 소개, 연락처 정보를 편집합니다.')}
             onPress={() => router.push(appRouteMap.profile_edit.path as never)}
+          />
+          <ToggleRow
+            icon={<SocialBrandIcon provider="instagram" size={20} />}
+            title={tx('settingsPage.account.instagramCrossPost', 'Instagram에도 게시')}
+            subtitle={socialLinks.instagram?.linked ? linkedAccountLabel('instagram') : tx('settingsPage.account.instagramCrossPostSubtitle', 'Divergram 게시 완료 후 Instagram 공유 화면을 엽니다.')}
+            value={shareToInstagramAfterPost}
+            onToggle={(next) => {
+              if (next && !socialLinks.instagram?.linked) {
+                Alert.alert(
+                  tx('settingsPage.account.linkRequiredTitle', '계정 연동이 필요합니다'),
+                  tx('settingsPage.account.instagramLinkRequired', 'Instagram 계정을 먼저 연동해주세요.'),
+                  [
+                    { text: tx('common.cancel', '취소'), style: 'cancel' },
+                    { text: tx('settingsPage.account.linkAction', '연동하기'), onPress: () => router.push('/(tabs)/settings-detail?mode=link-instagram&enableCrossPost=instagram' as never) },
+                  ]
+                );
+                return;
+              }
+              updateSocialPublishingSetting('shareToInstagramAfterPost', next);
+            }}
+          />
+          <ToggleRow
+            icon={<SocialBrandIcon provider="facebook" size={20} />}
+            title={tx('settingsPage.account.facebookCrossPost', 'Facebook에도 게시')}
+            subtitle={socialLinks.facebook?.linked ? linkedAccountLabel('facebook') : tx('settingsPage.account.facebookCrossPostSubtitle', 'Divergram 게시 완료 후 Facebook 공유 화면을 엽니다.')}
+            value={shareToFacebookAfterPost}
+            onToggle={(next) => {
+              if (next && !socialLinks.facebook?.linked) {
+                Alert.alert(
+                  tx('settingsPage.account.linkRequiredTitle', '계정 연동이 필요합니다'),
+                  tx('settingsPage.account.facebookLinkRequired', 'Facebook 계정을 먼저 연동해주세요.'),
+                  [
+                    { text: tx('common.cancel', '취소'), style: 'cancel' },
+                    { text: tx('settingsPage.account.linkAction', '연동하기'), onPress: () => router.push('/(tabs)/settings-detail?mode=link-facebook&enableCrossPost=facebook' as never) },
+                  ]
+                );
+                return;
+              }
+              updateSocialPublishingSetting('shareToFacebookAfterPost', next);
+            }}
+          />
+          <ToggleRow
+            icon={<AtSign size={20} color={isDark ? '#f8fafc' : '#101010'} />}
+            title={tx('settingsPage.account.threadsCrossPost', 'Threads에도 게시')}
+            subtitle={socialLinks.threads?.linked ? linkedAccountLabel('threads') : tx('settingsPage.account.threadsCrossPostSubtitle', 'Divergram 게시 완료 후 Threads 공유 화면을 엽니다.')}
+            value={shareToThreadsAfterPost}
+            onToggle={(next) => {
+              if (next && !socialLinks.threads?.linked) {
+                Alert.alert(
+                  tx('settingsPage.account.linkRequiredTitle', '계정 연동이 필요합니다'),
+                  tx('settingsPage.account.threadsLinkRequired', 'Threads 계정을 먼저 연동해주세요.'),
+                  [
+                    { text: tx('common.cancel', '취소'), style: 'cancel' },
+                    { text: tx('settingsPage.account.linkAction', '연동하기'), onPress: () => router.push('/(tabs)/settings-detail?mode=link-threads&enableCrossPost=threads' as never) },
+                  ]
+                );
+                return;
+              }
+              updateSocialPublishingSetting('shareToThreadsAfterPost', next);
+            }}
           />
           <ActionRow
             icon={<Link2 size={18} color="#4d5d6b" />}
@@ -593,25 +710,47 @@ export default function SettingsScreen() {
     }
 
     if (activeTab === 'privacy') {
+      const openAdPrivacyOptions = async () => {
+        const opened = await showAdPrivacyOptions();
+        if (!opened) {
+          Alert.alert(
+            tx('common.info', '안내'),
+            tx('settingsPage.privacy.adPrivacyUnavailable', '현재 지역 또는 광고 동의 상태에서는 별도의 광고 개인정보 옵션이 필요하지 않습니다.')
+          );
+        }
+      };
+
       return (
         <View>
           <ToggleRow
             icon={<User size={18} color="#4d5d6b" />}
             title={tx('settingsPage.privacy.profilePublic', '프로필 공개 여부')}
-            value={profilePublic}
-            onToggle={(next) => updatePrivacySetting('profilePublic', next)}
+            value={contentVisibility.profile !== 'private'}
+            onToggle={(next) => void persistVisibility('profile', next ? 'public' : 'private')}
           />
           <ActionRow
             icon={<Globe size={18} color="#4d5d6b" />}
             title={tx('settingsPage.privacy.postVisibility', '게시글 공개 범위')}
-            value={labelMap.visibility[postVisibility]}
+            value={labelMap.visibility[contentVisibility.feed]}
             onPress={pickPostVisibility}
           />
           <ActionRow
             icon={<MapPin size={18} color="#4d5d6b" />}
             title={tx('settingsPage.privacy.logVisibility', '다이빙 로그 공개 범위')}
-            value={labelMap.visibility[diveLogVisibility]}
+            value={labelMap.visibility[contentVisibility.diveLogs]}
             onPress={pickDiveLogVisibility}
+          />
+          <ActionRow
+            icon={<Globe size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.privacy.reelsVisibility', '릴스 공개 범위')}
+            value={labelMap.visibility[contentVisibility.reels]}
+            onPress={() => pickContentVisibility('reels', tx('settingsPage.privacy.reelsVisibility', '릴스 공개 범위'))}
+          />
+          <ActionRow
+            icon={<Globe size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.privacy.marineLifeVisibility', '생물도감 공개 범위')}
+            value={labelMap.visibility[contentVisibility.marineLife]}
+            onPress={() => pickContentVisibility('marineLife', tx('settingsPage.privacy.marineLifeVisibility', '생물도감 공개 범위'))}
           />
           <ToggleRow
             icon={<MapPin size={18} color="#4d5d6b" />}
@@ -623,6 +762,12 @@ export default function SettingsScreen() {
             icon={<Shield size={18} color="#4d5d6b" />}
             title={tx('settingsPage.privacy.blockedUsers', '차단 사용자 관리')}
             onPress={() => router.push('/(tabs)/settings-detail?mode=blocked-users' as never)}
+          />
+          <ActionRow
+            icon={<Shield size={18} color="#4d5d6b" />}
+            title={tx('settingsPage.privacy.adPrivacy', '광고 개인정보 설정')}
+            subtitle={tx('settingsPage.privacy.adPrivacySubtitle', '광고 동의 및 개인정보 옵션을 확인하거나 변경합니다.')}
+            onPress={openAdPrivacyOptions}
             border={false}
           />
         </View>
@@ -706,12 +851,6 @@ export default function SettingsScreen() {
             onPress={() => router.push(appRouteMap.ai_settings.path as never)}
           />
           <ActionRow
-            icon={<HandCoins size={18} color="#4d5d6b" />}
-            title={tx('settingsPage.app.donate', '후원하기')}
-            subtitle={tx('settingsPage.app.donateSubtitle', 'Divergram 개발과 운영을 응원합니다.')}
-            onPress={() => router.push(appRouteMap.donate.path as never)}
-          />
-          <ActionRow
             icon={<Link2 size={18} color="#4d5d6b" />}
             title={tx('settingsPage.app.bottomMenuManager', '하단메뉴 관리')}
             subtitle={tx('settingsPage.app.bottomMenuManagerSubtitle', '하단 탭 구성과 순서를 변경합니다.')}
@@ -791,7 +930,9 @@ export default function SettingsScreen() {
         <View style={[styles.footerCard, { backgroundColor: shellColors.cardBg, borderColor: shellColors.cardBorder }]}>
           <Text style={[styles.footerTitle, { color: shellColors.footerTitle }]}>{tx('settingsPage.appInfoTitle', '앱 정보')}</Text>
           <View style={styles.footerRow}>
-            <Text style={[styles.footerValue, { color: shellColors.footerValue }]}>{tx('settingsPage.versionLabel', '버전 {{version}}', { version })}</Text>
+            <Text style={[styles.footerValue, { color: shellColors.footerValue }]}>
+              {tx('settingsPage.versionBuildLabel', '버전 {{version}} · 빌드 {{build}}', { version, build: buildNumber || '-' })}
+            </Text>
             <Text style={[styles.footerCopy, { color: shellColors.footerCopy }]}>© {appYear} Divergram</Text>
           </View>
           <TouchableOpacity style={styles.accountDeleteLinkWrap} onPress={handleAccountDelete} activeOpacity={0.84}>

@@ -1,16 +1,11 @@
-export const CERTIFICATION_AGENCY_PRESETS = [
-  'PADI',
-  'SSI',
-  'CMAS',
-  'NAUI',
-  'AIDA',
-  'RAID',
-  'BSAC',
-  'PSS',
-  'TDI',
-  'SDI',
-  'MOLCHANOVS',
-] as const;
+export type CertificationDiscipline = 'scuba' | 'freediving';
+
+export const CERTIFICATION_AGENCIES: Record<CertificationDiscipline, readonly string[]> = {
+  scuba: ['PADI', 'SSI', 'NAUI', 'CMAS', 'SDI', 'TDI', 'RAID', 'BSAC', 'IANTD', 'GUE', 'NASE', 'PSS', 'SNSI', 'PSAI'],
+  freediving: ['AIDA', 'MOLCHANOVS', 'SSI FREEDIVING', 'PADI FREEDIVER', 'CMAS', 'RAID FREEDIVING', 'APNEA ACADEMY', 'PURE APNEA'],
+};
+
+export const CERTIFICATION_AGENCY_PRESETS = Array.from(new Set(Object.values(CERTIFICATION_AGENCIES).flat()));
 
 export type CertificationAgency = string;
 export type CertificationStatus = 'unregistered' | 'reviewing' | 'verified' | 'rejected';
@@ -26,6 +21,7 @@ export function normalizeCertificationAgency(value: unknown) {
 export interface Certification {
   id: string;
   userId: string;
+  discipline?: CertificationDiscipline;
   agency: CertificationAgency;
   certificationNumber?: string;
   level?: string;

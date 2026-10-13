@@ -1,0 +1,11 @@
+"CFBundleDisplayName" = "Divergram";
+"NSLocationWhenInUseUsageDescription" = "Your location is used for dive points, resort distance, and dive log recording.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Your location is used to record the route while you have started dive tracking.";
+"NSCameraUsageDescription" = "The camera is used to capture photos and videos for profiles, posts, dive logs, and resort check-ins.";
+"NSMicrophoneUsageDescription" = "The microphone is used to record dive log voice memos and transcribe them when you request it.";
+"NSMotionUsageDescription" = "Motion information is used for dive activity recording and safety features.";
+"NSPhotoLibraryUsageDescription" = "Select photos, videos, and capture details for profiles, certifications, posts, and dive logs.";
+"NSPhotoLibraryAddUsageDescription" = "Save dive record images you choose to your photo library.";
+"NSBluetoothAlwaysUsageDescription" = "Bluetooth is used to discover and connect supported dive equipment.";
+"NSBluetoothPeripheralUsageDescription" = "Bluetooth is used to exchange data with supported dive equipment.";
+"NSUserTrackingUsageDescription" = "With your consent, the advertising identifier is used for personalized ads and ad performance measurement.";

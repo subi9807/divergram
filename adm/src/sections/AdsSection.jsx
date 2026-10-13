@@ -23,6 +23,7 @@ const STATUS_OPTIONS = [
 ];
 
 const PLACEMENT_OPTIONS = [
+  ['member_home', '회원 홈 배너'],
   ['feed_inline', '피드 중간'],
   ['reel_inline', '릴스 중간'],
   ['map_banner', '지도 배너'],

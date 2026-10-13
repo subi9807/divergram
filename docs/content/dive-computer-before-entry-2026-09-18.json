@@ -1,0 +1,31 @@
+[
+  {
+    "category": "equipment",
+    "status": "published",
+    "featured": true,
+    "sortOrder": 120,
+    "coverImageUrl": "https://api.divergram.com/api/uploads/b89d0d31-9225-4bec-848a-287eb2d4b94b.png",
+    "translations": {
+      "ko": {
+        "title": "다이브 컴퓨터 · 입수 전 화면을 읽는 습관",
+        "summary": "손목에 차는 것만으로 준비가 끝나지 않습니다. 배터리, 모드, 기체 설정과 경고를 이해하고 버디와 계획을 맞추는 출발점을 알아봅니다.",
+        "body": "컴퓨터는 계획을 대신하지 않습니다\n다이브 컴퓨터는 자신의 수심과 시간을 바탕으로 실시간 정보를 보여주는 도구입니다. 숫자가 나타난다고 해서 자동으로 안전한 다이빙이 되는 것은 아닙니다. 자신의 교육 수준과 현장 조건에 맞는 계획을 세우고, 화면이 무엇을 뜻하는지 설명서와 교육을 통해 이해한 뒤 사용하세요.\n\n입수 전에 내 장비를 확인합니다\n전원이 켜지고 화면을 읽을 수 있는지, 배터리가 충분한지, 오늘 사용할 모드와 호흡 기체 설정이 맞는지 확인합니다. 이전 다이빙에서 바꾼 설정이 남아 있을 수 있습니다. 공기 통합형이라면 연결 상태도 제조사 지침에 따라 확인하세요. 오류나 경고의 의미를 모른 채 입수하지 말고 담당자에게 묻습니다.\n\n버디와 숫자가 다를 수 있습니다\n서로 다른 컴퓨터는 모델과 설정에 따라 안내가 달라질 수 있습니다. 버디의 화면을 내 수심과 시간의 대신으로 삼지 않고, 각자 자신의 기기를 보며 합의한 계획 안에서 함께 움직입니다. 화면만 좇느라 기체, 버디, 환경을 놓치지 않는 것도 중요합니다.\n\n경고를 무시하지 않습니다\n경고가 나타나면 더 오래 머물기 위해 설정을 임의로 완화하거나 화면을 꺼서 문제를 없애려 하지 않습니다. 교육받은 절차와 현장 계획에 따라 안전하게 대응합니다. 기기 이상이나 배터리 문제가 발생했을 때의 대처도 다이빙 전에 버디, 가이드와 논의해야 합니다.\n\n로그는 배움의 기록입니다\n다이빙 후 컴퓨터 기록을 로그와 비교하면 실제 깊이와 시간, 계획과 달랐던 지점을 돌아볼 수 있습니다. 자동으로 저장된 숫자 옆에 조류, 시야, 컨디션처럼 기기가 알지 못하는 경험도 적어 보세요. 기록은 다음 계획을 더 분명하게 만들지만, 감압 정보나 개인의 건강 상태를 진단해 주지는 않습니다.\n\n이 글은 일반적인 장비 이해를 위한 안내이며 제조사 설명서, 공인 교육, 현장 계획과 의료 조언을 대신하지 않습니다. 표지는 새로 제작한 AI 개념 일러스트로 실제 컴퓨터 화면이나 설정값의 기준이 아닙니다.\n\n콘텐츠 제작: Divergram"
+      },
+      "en": {
+        "title": "Dive computers · Read before you enter",
+        "summary": "Wearing a computer is not the whole preparation. Understand the battery, mode, gas setting and alerts before reviewing the dive plan with your buddy.",
+        "body": "A computer does not replace a plan\nA dive computer displays real-time information based on your depth and time. Numbers on a screen do not automatically make a dive safe. Plan within your training and the conditions at the site, and learn what the display means through instruction and the manufacturer's manual before relying on it.\n\nCheck your own device before entry\nConfirm that it turns on, the display is legible, the battery is adequate, and the mode and breathing-gas setting match today's dive. A setting from an earlier dive may still be active. If the device is air-integrated, confirm its connection as directed by the manufacturer. Ask a qualified person about any warning you do not understand rather than entering the water with a mystery alert.\n\nYour buddy may see different numbers\nDifferent models and user settings can produce different guidance. Do not substitute your buddy's display for your own depth and time history. Each diver should monitor their own device while staying together within the agreed plan. Keep attention on gas, your buddy and the environment as well as the screen.\n\nDo not dismiss an alert\nAn alert is not solved by making the settings less conservative to gain more time or by switching off the display. Respond using your training and the site plan. Discuss with your buddy and guide before the dive how you would respond to a device fault or battery problem.\n\nUse the log to learn\nAfter surfacing, compare the computer record with your log to see the actual depth and time and where the dive differed from the plan. Add observations the device cannot know, such as current, visibility and how you felt. A record can improve the next plan, but it does not diagnose decompression status or personal health.\n\nThis article offers general equipment education and does not replace the manufacturer's manual, certified training, the site plan or medical advice. The cover is a newly created AI concept illustration, not a reference for a real computer display or setting.\n\nContent created by Divergram"
+      },
+      "ja": {
+        "title": "ダイブコンピューター · 入水前に画面を読む習慣",
+        "summary": "腕に着けるだけでは準備は終わりません。電池、モード、呼吸ガス設定、警告を理解し、バディと計画を確かめましょう。",
+        "body": "コンピューターは計画の代わりではありません\nダイブコンピューターは、自分の深度と時間をもとにリアルタイムの情報を表示する道具です。数字が表示されるだけで安全が保証されるわけではありません。講習で得た知識と現地の条件に合う計画を立て、画面の意味を説明書と講習で理解してから使います。\n\n入水前に自分の機器を確認します\n起動するか、表示を読み取れるか、電池に余裕があるか、今日の潜水に適したモードと呼吸ガス設定かを確認します。前回変更した設定が残っていることもあります。空気残圧連動型では、メーカーの説明に従って接続状態も確かめます。意味の分からない警告を残したまま潜らず、担当者に質問してください。\n\nバディの数字とは違うことがあります\n機種や設定が異なれば、表示される案内も異なる場合があります。バディの画面を自分の深度と時間の履歴の代わりにせず、各自が自分の機器を見ながら合意した計画の範囲で行動します。画面だけに集中せず、ガス、バディ、環境にも注意を向けましょう。\n\n警告を消して済ませないでください\n長く滞在するために設定を安易に緩めたり、表示を切ったりしても問題は解決しません。講習で学んだ手順と現地の計画に従って安全に対応します。故障や電池の問題が起きた場合の対応は、潜る前にバディやガイドと相談しておきます。\n\nログを学びに使います\n浮上後に機器の記録とログを照らし合わせると、実際の深度や時間、計画と違った点を振り返れます。流れ、視界、体調など機器には分からない体験も書き添えてください。記録は次の計画に役立ちますが、減圧状態や健康状態を診断するものではありません。\n\n本記事は一般的な器材理解の案内であり、メーカーの説明書、認定講習、現地の計画や医療上の助言を代替しません。表紙は新たに制作したAI概念イラストで、実際の画面表示や設定値の基準ではありません。\n\nコンテンツ制作：Divergram"
+      },
+      "zh": {
+        "title": "潜水电脑 · 入水前先读懂屏幕",
+        "summary": "戴上设备不等于准备完成。入水前确认电量、模式、呼吸气体设置和警报，再与潜伴核对计划。",
+        "body": "电脑不能替代计划\n潜水电脑根据你的深度和时间显示实时信息。屏幕上有数字，并不意味着潜水自动变得安全。应在自身培训范围和现场条件内制定计划，并通过培训和制造商手册了解显示含义后再使用。\n\n入水前检查自己的设备\n确认设备能够启动、屏幕清晰、电量充足，且模式与呼吸气体设置符合当天的潜水。上次潜水留下的设置可能仍然有效。如果设备与气瓶压力联动，还应按制造商说明检查连接状态。遇到不理解的警告时先请教相关人员，不要带着疑问入水。\n\n潜伴的数字可能不同\n不同机型与个人设置可能给出不同提示。不要用潜伴的屏幕替代自己的深度与时间记录。每位潜水员都要关注自己的设备，同时在共同约定的计划内行动。除了看屏幕，也要留意气量、潜伴和周围环境。\n\n不要忽略警报\n为了延长停留时间而随意放宽设置，或关掉显示，都不能解决警报所指的问题。应依照培训和现场计划安全应对。入水前还应与潜伴、向导讨论设备故障或电量不足时的处理方式。\n\n用日志回顾学习\n上岸后把电脑记录与日志对照，可以回看实际深度、时间以及偏离原计划的地方。还可以记下设备无法知道的感受，例如水流、能见度和身体状态。记录有助于改进下一次计划，但不能诊断减压状态或个人健康。\n\n本文仅提供一般性的装备知识，不能替代制造商手册、认证培训、现场计划或医疗建议。封面为新制作的AI概念插画，不作为真实电脑屏幕或设置值的依据。\n\n内容制作：Divergram"
+      }
+    }
+  }
+]

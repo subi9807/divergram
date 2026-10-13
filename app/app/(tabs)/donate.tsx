@@ -7,6 +7,7 @@ import { HandCoins, Heart, ShieldCheck } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { getPaypalDonatePageUrl, getPaypalHostedButtonId } from '../../src/config/paypal';
+import { donationPaymentsAvailable } from '../../src/config/paymentAvailability';
 
 export default function DonateScreen() {
   const router = useRouter();
@@ -32,8 +33,9 @@ export default function DonateScreen() {
       };
 
   const handleOpenPaypal = async () => {
+    if (!donationPaymentsAvailable) return;
     if (!donatePageUrl) {
-      Alert.alert(t('common.info', { defaultValue: '안내' }), 'PayPal 후원 링크가 아직 설정되지 않았습니다.');
+      Alert.alert(t('common.info'), t('settingsPage.donate.unavailable'));
       return;
     }
     await WebBrowser.openBrowserAsync(donatePageUrl, {
@@ -42,6 +44,12 @@ export default function DonateScreen() {
       showTitle: true,
     });
   };
+
+  if (!donationPaymentsAvailable) return <Screen><ScrollView contentContainerStyle={{ padding: 20 }}>
+    <TouchableOpacity onPress={() => router.back()}><Text style={{ fontSize: 22, color: colors.title }}>‹</Text></TouchableOpacity>
+    <Text style={{ marginTop: 18, fontSize: 26, fontWeight: '800', color: colors.title }}>{t('settingsPage.donate.title')}</Text>
+    <Text style={{ marginTop: 16, color: colors.subtitle, lineHeight: 21 }}>{t('settingsPage.donate.androidPaymentsUnavailable')}</Text>
+  </ScrollView></Screen>;
 
   return (
     <Screen>

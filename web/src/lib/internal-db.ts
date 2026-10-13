@@ -67,6 +67,15 @@ function authHeaders(json = false) {
   };
 }
 
+export async function chatRequest(path: string, body: AnyObj = {}) {
+  const response = await fetch(`${API_BASE}/api/chat/${path}`, {
+    method: 'POST', headers: authHeaders(true), body: JSON.stringify(body),
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'chat_request_failed');
+  return result;
+}
+
 async function fetchTable(table: string, options: AnyObj = {}) {
   const q = new URLSearchParams();
   if (options.filters?.length) q.set('filters', JSON.stringify(options.filters));
@@ -549,10 +558,10 @@ export const db = {
       listeners.add(cb);
       return { data: { subscription: { unsubscribe: () => { listeners.delete(cb); } } } };
     },
-    async signUp({ email, password }: { email: string; password: string }) {
+    async signUp({ email, password, consents }: { email: string; password: string; consents: Array<{ key: string; policyType: string; version: string; agreed: boolean }> }) {
       const username = email.split('@')[0];
       const r = await fetch(`${API_BASE}/api/auth/signup`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, username }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, username, consents, locale: 'ko' }),
       });
       const j = await r.json();
       if (!r.ok) return { data: { user: null }, error: { message: j.error || 'signup failed' } };
@@ -564,7 +573,7 @@ export const db = {
     },
     async signInWithPassword({ email, password }: { email: string; password: string }) {
       const r = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, accountScope: 'personal' }),
       });
       const j = await r.json();
       if (!r.ok) return { data: null, error: { message: j.error || 'login failed' } };

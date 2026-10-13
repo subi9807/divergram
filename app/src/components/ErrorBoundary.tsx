@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Button } from './Button';
 import { AlertTriangle } from 'lucide-react-native';
+import i18n from '../lib/i18n';
+import { Sentry } from '../lib/sentry';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -24,7 +26,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // TODO: Log to analytics service
+    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }
 
   render() {
@@ -33,16 +35,16 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <View className="flex-1 items-center justify-center px-8 bg-white">
           <AlertTriangle size={64} color="#ef4444" />
           <Text className="text-2xl font-bold text-secondary-800 mt-6 mb-2 text-center">
-            Something went wrong
+            {i18n.t('common.unexpectedErrorTitle')}
           </Text>
           <Text className="text-secondary-600 text-center mb-8 leading-6">
-            We are sorry, but something unexpected happened. Please try restarting the app.
+            {i18n.t('common.unexpectedErrorBody')}
           </Text>
           <Button 
             onPress={() => this.setState({ hasError: false })}
             variant="primary"
           >
-            Try Again
+            {i18n.t('common.tryAgain')}
           </Button>
         </View>
       );

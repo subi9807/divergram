@@ -1,6 +1,6 @@
 import { apiClient } from '../lib/api';
 import i18n from '../lib/i18n';
-import { bottomTabDefault, useSettingsStore } from '../stores/settingsStore';
+import { bottomTabDefault, normalizeBottomTabItems, useSettingsStore } from '../stores/settingsStore';
 import { useSettingsFeatureStore } from '../stores/settingsFeatureStore';
 import { useIntegrationStore } from '../stores/integrationStore';
 import { useLegalStore } from '../stores/legalStore';
@@ -21,10 +21,15 @@ type UserPreferences = {
   units: 'metric' | 'imperial';
   defaultDiveMode: 'recreational' | 'technical';
   emergencyShareEnabled: boolean;
+  shareToInstagramAfterPost: boolean;
+  shareToFacebookAfterPost: boolean;
+  shareToThreadsAfterPost: boolean;
   bottomTabItems: typeof bottomTabDefault;
+  headerMenuItems: string[];
   blockedUsers: ReturnType<typeof useSettingsFeatureStore.getState>['blockedUsers'];
   emergencyContact: ReturnType<typeof useSettingsFeatureStore.getState>['emergencyContact'];
   insuranceInfo: ReturnType<typeof useSettingsFeatureStore.getState>['insuranceInfo'];
+  marineWeatherLocations: ReturnType<typeof useSettingsFeatureStore.getState>['marineWeatherLocations'];
   integrationState: Pick<ReturnType<typeof useIntegrationStore.getState>, 'integrations' | 'syncFailures' | 'autoSyncEnabled' | 'registeredDiveDevices'>;
   legalState: Pick<ReturnType<typeof useLegalStore.getState>, 'consentHistory' | 'legalAgreements' | 'reports' | 'moderationActions'>;
 };
@@ -56,10 +61,15 @@ function snapshot(): UserPreferences {
     units: settings.units,
     defaultDiveMode: settings.defaultDiveMode,
     emergencyShareEnabled: settings.emergencyShareEnabled,
+    shareToInstagramAfterPost: settings.shareToInstagramAfterPost,
+    shareToFacebookAfterPost: settings.shareToFacebookAfterPost,
+    shareToThreadsAfterPost: settings.shareToThreadsAfterPost,
     bottomTabItems: settings.bottomTabItems as typeof bottomTabDefault,
+    headerMenuItems: settings.headerMenuItems,
     blockedUsers: features.blockedUsers,
     emergencyContact: features.emergencyContact,
     insuranceInfo: features.insuranceInfo,
+    marineWeatherLocations: features.marineWeatherLocations,
     integrationState: {
       integrations: integrations.integrations,
       syncFailures: integrations.syncFailures,
@@ -92,12 +102,17 @@ function applyServerPreferences(input: Partial<UserPreferences>) {
     units: input.units,
     defaultDiveMode: input.defaultDiveMode,
     emergencyShareEnabled: input.emergencyShareEnabled,
-    bottomTabItems: input.bottomTabItems,
+    shareToInstagramAfterPost: input.shareToInstagramAfterPost,
+    shareToFacebookAfterPost: input.shareToFacebookAfterPost,
+    shareToThreadsAfterPost: input.shareToThreadsAfterPost,
+    ...(Array.isArray(input.bottomTabItems) ? { bottomTabItems: normalizeBottomTabItems(input.bottomTabItems) } : {}),
+    ...(Array.isArray(input.headerMenuItems) ? { headerMenuItems: input.headerMenuItems } : {}),
   });
   useSettingsFeatureStore.setState({
     blockedUsers: input.blockedUsers,
     emergencyContact: input.emergencyContact,
     insuranceInfo: input.insuranceInfo,
+    marineWeatherLocations: input.marineWeatherLocations,
   });
   if (input.integrationState) useIntegrationStore.setState(input.integrationState);
   if (input.legalState) useLegalStore.setState(input.legalState);

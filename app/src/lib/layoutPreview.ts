@@ -13,6 +13,8 @@ type LayoutPreviewAuth = {
 type LayoutPreviewPayload = {
   tutorialDone?: boolean;
   auth?: LayoutPreviewAuth;
+  locale?: 'ko' | 'en' | 'ja' | 'zh';
+  route?: string;
 };
 
 function readEnvPreview(): LayoutPreviewPayload | null {

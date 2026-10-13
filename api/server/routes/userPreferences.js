@@ -14,10 +14,18 @@ const DEFAULT_PREFERENCES = {
   units: 'metric',
   defaultDiveMode: 'recreational',
   emergencyShareEnabled: false,
+  shareToInstagramAfterPost: false,
+  shareToFacebookAfterPost: false,
+  shareToThreadsAfterPost: false,
   bottomTabItems: ['index', 'explore', 'location', 'logs', 'profile'],
+  headerMenuItems: [
+    'explore', 'messages', 'settings', 'activity', 'reels', 'resorts', 'booking_history', 'location', 'stamps',
+    'notifications', 'license_management', 'app_info',
+  ],
   blockedUsers: [],
   emergencyContact: { name: '', phone: '', relation: '' },
   insuranceInfo: { provider: '', policyNumber: '', emergencyPhone: '', validUntil: '' },
+  marineWeatherLocations: [],
   integrationState: { integrations: [], syncFailures: [], autoSyncEnabled: true, registeredDiveDevices: [] },
   legalState: { consentHistory: [], legalAgreements: [], reports: [], moderationActions: [] },
 };
@@ -41,9 +49,21 @@ const BOOLEAN_KEYS = [
   'locationTracking',
   'analyticsEnabled',
   'emergencyShareEnabled',
+  'shareToInstagramAfterPost',
+  'shareToFacebookAfterPost',
+  'shareToThreadsAfterPost',
 ];
 
-const TAB_ITEMS = new Set(['index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'resorts']);
+const TAB_ITEMS = new Set([
+  'index', 'explore', 'location', 'logs', 'profile', 'messages', 'notifications', 'resorts',
+  'reels', 'saved', 'stamps', 'license-management', 'activity', 'settings',
+  'booking-history', 'dive-education', 'dive-guide', 'dive-discovery',
+]);
+const HEADER_MENU_ITEMS = new Set([
+  'explore', 'messages', 'settings', 'activity', 'reels', 'resorts', 'booking_history', 'location', 'stamps',
+  'notifications', 'license_management', 'app_info', 'admin',
+  'dive_education', 'dive_guide', 'dive_discovery', 'membership',
+]);
 
 function text(value, maxLength = 120) {
   return String(value ?? '').trim().slice(0, maxLength);
@@ -59,6 +79,20 @@ function normalizeBlockedUsers(value) {
   })).filter((item) => item.id && item.name);
 }
 
+function normalizeMarineWeatherLocations(value) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 30).map((item) => ({
+    id: text(item?.id, 120),
+    name: text(item?.name, 120),
+    latitude: Number(item?.latitude),
+    longitude: Number(item?.longitude),
+    region: text(item?.region, 120) || undefined,
+  })).filter((item) =>
+    item.id && item.name && Number.isFinite(item.latitude) && Number.isFinite(item.longitude)
+    && item.latitude >= -90 && item.latitude <= 90 && item.longitude >= -180 && item.longitude <= 180
+  );
+}
+
 function boundedArray(value, limit, maxBytes = 200_000) {
   if (!Array.isArray(value)) return [];
   const rows = value.slice(0, limit).filter((item) => item && typeof item === 'object' && !Array.isArray(item));
@@ -69,7 +103,7 @@ function boundedArray(value, limit, maxBytes = 200_000) {
   }
 }
 
-function normalizePreferences(input, fallback = DEFAULT_PREFERENCES) {
+export function normalizePreferences(input, fallback = DEFAULT_PREFERENCES) {
   const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
   const next = { ...fallback };
 
@@ -81,12 +115,25 @@ function normalizePreferences(input, fallback = DEFAULT_PREFERENCES) {
   }
 
   if (Array.isArray(source.bottomTabItems)) {
-    const tabs = [...new Set(source.bottomTabItems.filter((item) => TAB_ITEMS.has(item)))].slice(0, 5);
-    if (tabs.length >= 3) next.bottomTabItems = tabs;
+    const tabs = [...new Set(source.bottomTabItems.filter((item) => TAB_ITEMS.has(item)))].slice(0, 6);
+    if (!tabs.includes('index')) tabs.unshift('index');
+    for (const item of DEFAULT_PREFERENCES.bottomTabItems) {
+      if (tabs.length >= 4) break;
+      if (!tabs.includes(item)) tabs.push(item);
+    }
+    next.bottomTabItems = tabs.slice(0, 6);
+  }
+
+  if (Array.isArray(source.headerMenuItems)) {
+    const menuItems = [...new Set(source.headerMenuItems.filter((item) => HEADER_MENU_ITEMS.has(item)))].slice(0, 50);
+    if (menuItems.length) next.headerMenuItems = menuItems;
   }
 
   if (Object.prototype.hasOwnProperty.call(source, 'blockedUsers')) {
     next.blockedUsers = normalizeBlockedUsers(source.blockedUsers);
+  }
+  if (Object.prototype.hasOwnProperty.call(source, 'marineWeatherLocations')) {
+    next.marineWeatherLocations = normalizeMarineWeatherLocations(source.marineWeatherLocations);
   }
   if (source.emergencyContact && typeof source.emergencyContact === 'object') {
     next.emergencyContact = {

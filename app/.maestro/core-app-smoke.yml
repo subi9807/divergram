@@ -1,0 +1,54 @@
+appId: com.divergram.app.ios
+name: Core signed-in app smoke
+---
+- launchApp
+- tapOn:
+    text: "(지금 안 함|Not Now)"
+    optional: true
+- runFlow:
+    when:
+      visible: "(Apple 계정 확인|Apple Account Verification)"
+    commands:
+      - tapOn:
+          point: "31%,61%"
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "(지금 안 함|Not Now)"
+    optional: true
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*(피드|Feed|フィード|动态).*"
+- swipe:
+    start: "50%,25%"
+    end: "50%,75%"
+    duration: 900
+- waitForAnimationToEnd
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- tapOn:
+    text: "(리조트|Resorts|リゾート|度假村)"
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*(리조트|Resorts|リゾート|度假村).*"
+- swipe:
+    start: "50%,25%"
+    end: "50%,75%"
+    duration: 900
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- tapOn:
+    text: "(알림|Notifications|通知)"
+- waitForAnimationToEnd
+- swipe:
+    start: "50%,25%"
+    end: "50%,75%"
+    duration: 900
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- tapOn:
+    text: "(다이빙 교육|Dive Education|ダイビング教育|潜水培训)"
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*(교육 로드맵|Learning roadmap|講習ロードマップ|学习路线).*"
+- takeScreenshot: core-app-smoke-complete

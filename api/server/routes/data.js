@@ -1,4 +1,6 @@
 import { deliverUserEventNotification } from '../lib/userNotificationDelivery.js';
+import { canViewVisibility, effectiveVisibility, normalizeVisibility } from '../lib/contentVisibility.js';
+import { compileRead, compileFilters } from '../lib/dataQuery.js';
 
 function applyJsonFilters(rows, filters = []) {
   const get = (obj, key) => obj?.[key];
@@ -33,7 +35,7 @@ function applyJsonFilters(rows, filters = []) {
   }));
 }
 
-const DATA_TABLES = {
+export const DATA_TABLES = {
   profiles: {
     table: 'app_profiles',
     columns: [
@@ -46,6 +48,10 @@ const DATA_TABLES = {
       'resort_photo_urls',
       'resort_amenities',
       'website',
+      'resort_instagram_url',
+      'resort_facebook_url',
+      'resort_youtube_url',
+      'resort_tiktok_url',
       'account_type',
       'diving_level',
       'scuba_level',
@@ -61,29 +67,50 @@ const DATA_TABLES = {
       'resort_lng',
       'resort_rating_avg',
       'resort_review_count',
+      'resort_record_key',
+      'resort_source',
+      'resort_source_record_id',
+      'resort_source_url',
+      'resort_country',
+      'resort_country_code',
+      'resort_city',
+      'resort_phones',
+      'resort_emails',
+      'resort_certifications',
+      'resort_source_raw',
+      'resort_collected_at',
+      'resort_coordinate_source',
+      'resort_geocoded_at',
+      'resort_reverse_geocode_source',
+      'resort_nearest_city_distance_km',
+      'resort_booking_enabled',
+      'resort_booking_deposit_amount',
+      'resort_booking_deposit_currency',
       'created_at',
     ],
   },
-  posts: { table: 'app_posts', columns: ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','location_lat','location_lng','visibility','gas_type','gas_percent','buddy','buddy_name','publish_to_feed','publish_to_reels','created_at'] },
+  posts: { table: 'app_posts', columns: ['id','user_id','image_url','video_url','caption','location','dive_type','dive_date','max_depth','water_temperature','dive_duration','dive_site','location_lat','location_lng','visibility','visibility_type','gas_type','gas_percent','buddy','buddy_name','publish_to_feed','publish_to_reels','created_at'] },
   post_media: { table: 'app_post_media', columns: ['id','post_id','media_url','media_type','order_index','created_at'] },
   likes: { table: 'app_likes', columns: ['id','post_id','user_id','created_at'] },
   comments: { table: 'app_comments', columns: ['id','post_id','user_id','content','created_at'] },
   follows: { table: 'app_follows', columns: ['id','follower_id','following_id','created_at'] },
   saved_posts: { table: 'app_saved_posts', columns: ['id','user_id','post_id','created_at'] },
+  saved_resorts: { table: 'app_saved_resorts', columns: ['id','user_id','resort_id','created_at'] },
   notifications: { table: 'app_notifications', columns: ['id','user_id','actor_id','type','post_id','title','body','image_url','deep_link','source','event_key','data','delivery_status','is_read','read_at','opened_at','sent_at','updated_at','created_at'] },
   rooms: { table: 'app_rooms', columns: ['id','type','created_at'] },
   participants: { table: 'app_participants', columns: ['id','room_id','user_id','joined_at'] },
   messages: { table: 'app_messages', columns: ['id','room_id','sender_id','content','created_at','read_at'] },
   reports: { table: 'app_reports', columns: ['id','user_id','reason','status','created_at'] },
-  certifications: { table: 'app_certifications', columns: ['id','user_id','agency','certification_number','level','issued_at','expires_at','image_url','status','created_at','updated_at'] },
+  certifications: { table: 'app_certifications', columns: ['id','user_id','discipline','agency','certification_number','level','issued_at','expires_at','image_url','status','created_at','updated_at'] },
   resort_reviews: { table: 'app_resort_reviews', columns: ['id','resort_id','user_id','rating','content','created_at'] },
+  resort_prices: { table: 'app_resort_prices', columns: ['id','resort_id','price_type','title','image_url','description','duration_text','unit_label','currency','amount','included_items','sort_order','is_active','created_at','updated_at'] },
 };
 
 function resolveDataTable(name) {
   return DATA_TABLES[name] || null;
 }
 
-const PRIVATE_READ_TABLES = new Set(['saved_posts', 'notifications', 'rooms', 'participants', 'messages', 'reports', 'certifications']);
+const PRIVATE_READ_TABLES = new Set(['saved_posts', 'saved_resorts', 'notifications', 'rooms', 'participants', 'messages', 'reports', 'certifications']);
 
 async function getRequestIdentity(req, pool, getAuthUserId) {
   const userId = getAuthUserId(req);
@@ -100,13 +127,51 @@ function requireIdentity(identity, res) {
   return false;
 }
 
-async function scopeRowsForRead(key, rows, identity, pool) {
+async function visiblePostRows(rows, identity, pool, channel = '') {
+  if (!rows.length || identity?.isAdmin) return rows;
+  const ownerIds = [...new Set(rows.map((row) => String(row.user_id || '')).filter(Boolean))];
+  const profileResult = await pool.query(
+    `SELECT id,profile_content_visibility,feed_content_visibility,reels_content_visibility
+       FROM app_profiles WHERE id = ANY($1::text[])`,
+    [ownerIds]
+  );
+  const profileMap = new Map(profileResult.rows.map((row) => [String(row.id), row]));
+  let followingIds = new Set();
+  if (identity?.userId && ownerIds.length) {
+    const follows = await pool.query(
+      'SELECT following_id FROM app_follows WHERE follower_id=$1 AND following_id = ANY($2::text[])',
+      [String(identity.userId), ownerIds]
+    );
+    followingIds = new Set(follows.rows.map((row) => String(row.following_id)));
+  }
+  return rows.flatMap((row) => {
+    const ownerId = String(row.user_id || '');
+    const profile = profileMap.get(ownerId);
+    if (!profile) return [];
+    const access = { isOwner: ownerId === String(identity?.userId || ''), isFollowing: followingIds.has(ownerId) };
+    if (!canViewVisibility(normalizeVisibility(profile.profile_content_visibility, 'private'), access)) return [];
+    const scopes = channel === 'feed'
+      ? [profile.feed_content_visibility]
+      : channel === 'reels'
+        ? [profile.reels_content_visibility]
+        : [
+            ...(row.publish_to_feed !== false ? [profile.feed_content_visibility] : []),
+            ...(row.publish_to_reels === true || row.video_url ? [profile.reels_content_visibility] : []),
+          ];
+    const effectiveScopes = (scopes.length ? scopes : [profile.feed_content_visibility]).map((scope) => effectiveVisibility(row.visibility_type, scope));
+    if (!effectiveScopes.some((scope) => canViewVisibility(scope, access))) return [];
+    const effective = effectiveScopes.includes('public') ? 'public' : effectiveScopes.includes('followers') ? 'followers' : 'private';
+    return [{ ...row, effective_visibility: effective }];
+  });
+}
+
+async function scopeRowsForRead(key, rows, identity, pool, channel = '') {
   const userId = identity?.userId;
   if (identity?.isAdmin) return rows;
   if (key === 'posts') {
-    return rows.filter((row) => row.user_id === userId || !row.visibility || row.visibility === 'public');
+    return visiblePostRows(rows, identity, pool, channel);
   }
-  if (key === 'saved_posts' || key === 'notifications' || key === 'reports' || key === 'certifications') {
+  if (key === 'saved_posts' || key === 'saved_resorts' || key === 'notifications' || key === 'reports' || key === 'certifications') {
     return rows.filter((row) => row.user_id === userId);
   }
   if (key === 'rooms' || key === 'participants' || key === 'messages') {
@@ -116,18 +181,55 @@ async function scopeRowsForRead(key, rows, identity, pool) {
     return key === 'rooms' ? rows.filter((row) => roomIds.has(row.id)) : rows.filter((row) => roomIds.has(row.room_id));
   }
   if (['post_media', 'likes', 'comments'].includes(key)) {
-    const visiblePosts = userId
-      ? await pool.query(
-          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public' OR user_id=$1`,
-          [userId]
-        )
-      : await pool.query(
-          `SELECT id FROM app_posts WHERE visibility IS NULL OR visibility::text='public'`
-        );
-    const postIds = new Set(visiblePosts.rows.map((row) => row.id));
-    return rows.filter((row) => postIds.has(row.post_id));
+    const candidateIds = [...new Set(rows.map((row) => String(row.post_id || '')).filter(Boolean))];
+    if (!candidateIds.length) return [];
+    const candidates = await pool.query(
+      'SELECT id,user_id,video_url,publish_to_feed,publish_to_reels,visibility_type FROM app_posts WHERE id = ANY($1::text[])',
+      [candidateIds]
+    );
+    const visiblePosts = await visiblePostRows(candidates.rows, identity, pool, channel);
+    const postIds = new Set(visiblePosts.map((row) => String(row.id)));
+    return rows.filter((row) => postIds.has(String(row.post_id)));
   }
   return rows;
+}
+
+async function enrichResortImages(key, rows, pool) {
+  if (key !== 'profiles') return rows;
+
+  const resortIds = rows
+    .filter((row) => row.account_type === 'resort')
+    .map((row) => String(row.id || ''))
+    .filter(Boolean);
+  if (!resortIds.length) return rows;
+
+  const imports = await pool.query(
+    `SELECT approved_resort_id, source_image_urls, mirrored_image_urls, image_rights_status
+       FROM app_resort_import_staging
+      WHERE approved_resort_id = ANY($1::text[])
+        AND status = 'approved'`,
+    [resortIds],
+  );
+  const importByResort = new Map(imports.rows.map((row) => [String(row.approved_resort_id), row]));
+
+  return rows.map((row) => {
+    if (row.account_type !== 'resort') return row;
+    const imported = importByResort.get(String(row.id));
+    if (!imported) return row;
+
+    const currentPhotos = Array.isArray(row.resort_photo_urls) ? row.resort_photo_urls.filter(Boolean) : [];
+    const mirroredPhotos = Array.isArray(imported.mirrored_image_urls) ? imported.mirrored_image_urls.filter(Boolean) : [];
+    const sourcePhotos = Array.isArray(imported.source_image_urls) ? imported.source_image_urls.filter(Boolean) : [];
+    const fallbackPhotos = mirroredPhotos.length ? mirroredPhotos : sourcePhotos;
+    const photos = currentPhotos.length ? currentPhotos : fallbackPhotos;
+
+    return {
+      ...row,
+      resort_cover_url: row.resort_cover_url || row.avatar_url || photos[0] || null,
+      resort_photo_urls: photos,
+      resort_image_rights_status: imported.image_rights_status || null,
+    };
+  });
 }
 
 async function canWriteRow(key, row, identity, pool, operation) {
@@ -135,7 +237,16 @@ async function canWriteRow(key, row, identity, pool, operation) {
   const userId = identity.userId;
   if (key === 'profiles') return row.id === userId;
   if (key === 'posts') return row.user_id === userId;
-  if (['likes', 'comments', 'saved_posts', 'reports', 'certifications', 'resort_reviews'].includes(key)) return row.user_id === userId;
+  if (['likes', 'comments', 'saved_posts'].includes(key)) {
+    if (row.user_id !== userId) return false;
+    if (operation !== 'create') return true;
+    const result = await pool.query(
+      'SELECT id,user_id,video_url,publish_to_feed,publish_to_reels,visibility_type FROM app_posts WHERE id=$1 LIMIT 1',
+      [row.post_id]
+    );
+    return (await visiblePostRows(result.rows, identity, pool)).length > 0;
+  }
+  if (['saved_resorts', 'reports', 'certifications', 'resort_reviews'].includes(key)) return row.user_id === userId;
   if (key === 'follows') return row.follower_id === userId;
   if (key === 'notifications') return operation === 'create' ? row.actor_id === userId : row.user_id === userId;
   if (key === 'post_media') {
@@ -143,19 +254,15 @@ async function canWriteRow(key, row, identity, pool, operation) {
     return post.rows[0]?.user_id === userId;
   }
   if (key === 'messages') {
-    if (operation === 'create' && row.sender_id !== userId) return false;
+    if (row.sender_id !== userId) return false;
     const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.room_id, userId]);
     return member.rows.length > 0;
   }
   if (key === 'rooms') {
-    if (operation === 'create') return true;
-    const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.id, userId]);
-    return member.rows.length > 0;
+    return false; // Use the transactional direct/group chat endpoints.
   }
   if (key === 'participants') {
-    if (row.user_id === userId) return true;
-    const member = await pool.query('SELECT 1 FROM app_participants WHERE room_id=$1 AND user_id=$2 LIMIT 1', [row.room_id, userId]);
-    return member.rows.length > 0;
+    return operation === 'delete' && row.user_id === userId;
   }
   return false;
 }
@@ -169,22 +276,11 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
     try {
       const identity = await getRequestIdentity(req, pool, getAuthUserId);
       if (PRIVATE_READ_TABLES.has(key) && !requireIdentity(identity, res)) return;
-      const raw = await pool.query(`SELECT * FROM ${spec.table}`);
-      let rows = await scopeRowsForRead(key, raw.rows, identity, pool);
-      const filters = req.query.filters ? JSON.parse(String(req.query.filters)) : [];
-      rows = applyJsonFilters(rows, filters);
-
-      if (req.query.order) {
-        const order = JSON.parse(String(req.query.order));
-        const col = order.column;
-        const asc = order.ascending !== false;
-        rows.sort((a, b) => (a[col] > b[col] ? 1 : -1) * (asc ? 1 : -1));
-      }
-      if (req.query.range) {
-        const [a, b] = JSON.parse(String(req.query.range));
-        rows = rows.slice(Number(a), Number(b) + 1);
-      }
-      if (req.query.limit) rows = rows.slice(0, Number(req.query.limit));
+      const compiled = compileRead(spec, key, req.query, identity);
+      const raw = await pool.query(compiled.sql, compiled.values);
+      let rows = raw.rows;
+      rows = await scopeRowsForRead(key, rows, identity, pool, String(req.query.channel || ''));
+      rows = await enrichResortImages(key, rows, pool);
 
       res.json({ data: rows, error: null, count: rows.length });
     } catch {
@@ -203,6 +299,18 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
       if (!requireIdentity(identity, res)) return;
       for (const row of rows) {
         const payload = { ...row, id: String(row.id || crypto.randomUUID()) };
+        if (key === 'certifications') {
+          if (!identity.isAdmin) payload.status = 'pending';
+          if (!['scuba', 'freediving'].includes(String(payload.discipline || ''))) {
+            return res.status(400).json({ error: 'invalid_certification_discipline' });
+          }
+          if (!String(payload.agency || '').trim()) {
+            return res.status(400).json({ error: 'certification_agency_required' });
+          }
+          if (!String(payload.image_url || '').trim()) {
+            return res.status(400).json({ error: 'certification_image_required' });
+          }
+        }
         if (!(await canWriteRow(key, payload, identity, pool, 'create'))) {
           return res.status(403).json({ error: 'forbidden' });
         }
@@ -210,11 +318,16 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
         if (!cols.includes('id')) cols.unshift('id');
         const vals = cols.map((c) => payload[c]);
         const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-        const updates = cols.filter((c) => c !== 'id').map((c) => `${c}=EXCLUDED.${c}`).join(', ');
-        await pool.query(
-          `INSERT INTO ${spec.table}(${cols.join(',')}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${updates || 'id=EXCLUDED.id'}`,
+        const owner = { profiles: 'id', posts: 'user_id', likes: 'user_id', comments: 'user_id', saved_posts: 'user_id', saved_resorts: 'user_id', follows: 'follower_id', reports: 'user_id', certifications: 'user_id', resort_reviews: 'user_id' }[key];
+        const immutable = new Set(['id', owner, 'user_id', 'post_id', 'resort_id', 'follower_id', 'following_id', 'sender_id', 'room_id', 'actor_id']);
+        const updates = cols.filter(c => !immutable.has(c)).map(c => `${c}=EXCLUDED.${c}`).join(', ');
+        const conflict = owner && updates ? `DO UPDATE SET ${updates} WHERE ${spec.table}.${owner}=EXCLUDED.${owner}` : 'DO NOTHING';
+        const inserted = await pool.query(
+          `INSERT INTO ${spec.table}(${cols.join(',')}) VALUES (${placeholders}) ON CONFLICT (id) ${conflict} RETURNING *`,
           vals
         );
+        if (!inserted.rowCount) return res.status(409).json({ error: 'data_conflict' });
+        Object.assign(row, inserted.rows[0]);
         if (key === 'likes') {
           const post = await pool.query(`SELECT user_id FROM app_posts WHERE id=$1 LIMIT 1`, [payload.post_id]);
           const targetUserId = post.rows[0]?.user_id;
@@ -224,7 +337,6 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
             type: 'like',
             eventKey: `like:${payload.id}`,
             postId: payload.post_id,
-            body: '회원님의 게시물을 좋아합니다.',
             deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
           }).catch(() => undefined);
         } else if (key === 'comments') {
@@ -236,7 +348,6 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
             type: 'comment',
             eventKey: `comment:${payload.id}`,
             postId: payload.post_id,
-            body: '회원님의 게시물에 댓글을 남겼습니다.',
             deepLink: `https://divergram.com/post?post=${encodeURIComponent(payload.post_id)}`,
           }).catch(() => undefined);
         } else if (key === 'follows') {
@@ -245,7 +356,6 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
             actorUserId: identity.userId,
             type: 'follow',
             eventKey: `follow:${payload.id}`,
-            body: '회원님을 팔로우하기 시작했습니다.',
             deepLink: 'divergram://notifications',
           }).catch(() => undefined);
         }
@@ -267,13 +377,33 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
     try {
       const identity = await getRequestIdentity(req, pool, getAuthUserId);
       if (!requireIdentity(identity, res)) return;
-      const raw = await pool.query(`SELECT * FROM ${spec.table}`);
-      const matched = applyJsonFilters(raw.rows, filters);
+      const compiled = compileFilters(filters, spec.columns);
+      const raw = await pool.query(`SELECT * FROM ${spec.table} WHERE ${compiled.where}`, compiled.values);
+      const matched = raw.rows;
+      if (key === 'certifications' && !identity.isAdmin) {
+        if (patch.status !== undefined && patch.status !== 'pending') return res.status(403).json({ error: 'certification_review_admin_only' });
+        patch.status = 'pending';
+      }
       const patchCols = spec.columns.filter((c) => c !== 'id' && patch[c] !== undefined);
+
+      if (key === 'certifications') {
+        for (const row of matched) {
+          const next = { ...row, ...patch };
+          if (!['scuba', 'freediving'].includes(String(next.discipline || ''))) {
+            return res.status(400).json({ error: 'invalid_certification_discipline' });
+          }
+          if (!String(next.agency || '').trim()) {
+            return res.status(400).json({ error: 'certification_agency_required' });
+          }
+          if (!String(next.image_url || '').trim()) {
+            return res.status(400).json({ error: 'certification_image_required' });
+          }
+        }
+      }
 
       const ownerColumns = {
         posts: ['user_id'], likes: ['user_id'], comments: ['user_id'], follows: ['follower_id'],
-        saved_posts: ['user_id'], notifications: ['user_id', 'actor_id'], messages: ['sender_id', 'room_id'],
+        saved_posts: ['user_id'], saved_resorts: ['user_id'], notifications: ['user_id', 'actor_id'], messages: ['sender_id', 'room_id'],
         reports: ['user_id'], certifications: ['user_id'], resort_reviews: ['user_id'], post_media: ['post_id'],
         participants: ['room_id', 'user_id'],
       };
@@ -310,8 +440,9 @@ export function registerDataRoutes(app, { pool, crypto, getAuthUserId, requireAd
     try {
       const identity = await getRequestIdentity(req, pool, getAuthUserId);
       if (!requireIdentity(identity, res)) return;
-      const raw = await pool.query(`SELECT * FROM ${spec.table}`);
-      const matched = applyJsonFilters(raw.rows, filters);
+      const compiled = compileFilters(filters, spec.columns);
+      const raw = await pool.query(`SELECT * FROM ${spec.table} WHERE ${compiled.where}`, compiled.values);
+      const matched = raw.rows;
       for (const row of matched) {
         if (!(await canWriteRow(key, row, identity, pool, 'delete'))) {
           return res.status(403).json({ error: 'forbidden' });

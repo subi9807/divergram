@@ -4,9 +4,17 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
-export function formatDate(date: Date | string): string {
+const dateLocales: Record<string, string> = {
+  ko: 'ko-KR',
+  en: 'en-US',
+  ja: 'ja-JP',
+  zh: 'zh-CN',
+};
+
+export function formatDate(date: Date | string, language = 'en'): string {
   const d = new Date(date);
-  return d.toLocaleDateString('ko-KR', {
+  const normalizedLanguage = String(language || 'en').split(/[-_]/)[0];
+  return d.toLocaleDateString(dateLocales[normalizedLanguage] || 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

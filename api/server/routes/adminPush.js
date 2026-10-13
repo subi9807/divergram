@@ -2,7 +2,9 @@ import {
   normalizeIso,
   normalizePushData,
   normalizeUserIds,
+  collectPushRecipients,
   processAdminPushJob,
+  summarizePushAudience,
 } from '../lib/adminPushDelivery.js';
 import { sendPushToToken } from '../lib/pushDelivery.js';
 
@@ -36,10 +38,11 @@ function buildFilters(body = {}) {
 
 async function queueScheduledPush(pool, crypto, actorUserId, payload) {
   const jobId = crypto.randomUUID();
+  const queuedPayload = { ...payload, actorUserId };
   await pool.query(
     `INSERT INTO app_jobs(id, type, payload, status, attempts, created_at, updated_at)
      VALUES ($1,'admin.push.send',$2::jsonb,'queued',0,now(),now())`,
-    [jobId, JSON.stringify(payload)]
+    [jobId, JSON.stringify(queuedPayload)]
   );
   await pool.query(
     `INSERT INTO admin_audit_logs(action, target_user_id, detail)
@@ -51,7 +54,7 @@ async function queueScheduledPush(pool, crypto, actorUserId, payload) {
         actorUserId,
         jobId,
         title: payload?.title || '',
-        body: payload?.body || '',
+        bodyLength: String(payload?.body || '').length,
         scheduledAt: payload?.scheduledAt || '',
         filters: payload?.filters || {},
       }),
@@ -61,6 +64,20 @@ async function queueScheduledPush(pool, crypto, actorUserId, payload) {
 }
 
 export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
+  app.post('/api/admin/push/audience-preview', requireAdmin, async (req, res) => {
+    try {
+      const filters = buildFilters(req.body || {});
+      const { rows, unsupportedCount } = await collectPushRecipients(pool, filters);
+      return res.json({ ok: true, ...summarizePushAudience(rows, filters), unsupportedCount });
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        error: 'admin_push_audience_preview_failed',
+        detail: String(error?.message || error),
+      });
+    }
+  });
+
   app.get('/api/admin/push/templates', requireAdmin, async (req, res) => {
     const limit = normalizeLimit(req.query.limit, 20, 100);
     try {
@@ -178,8 +195,7 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
             tokenHash,
             tokenSuffix: token.slice(-8),
             title,
-            body,
-            data,
+            bodyLength: body.length,
             provider: result?.provider || 'fcm',
             ok: Boolean(result?.ok),
             reason: result?.reason || '',
@@ -224,6 +240,19 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
     }
 
     try {
+      const { rows: previewRows } = await collectPushRecipients(pool, filters);
+      const audience = summarizePushAudience(previewRows, filters);
+      if (audience.requiresConfirmation) {
+        const confirmed = req.body?.confirmAudience === true || req.body?.confirm_audience === true;
+        const fingerprint = String(req.body?.audienceFingerprint || req.body?.audience_fingerprint || '').trim();
+        if (!confirmed || !fingerprint || fingerprint !== audience.fingerprint) {
+          return res.status(409).json({
+            ok: false,
+            error: 'push_audience_confirmation_required',
+            audience,
+          });
+        }
+      }
       if (scheduledAt && new Date(scheduledAt).getTime() > Date.now()) {
         const jobId = await queueScheduledPush(pool, crypto, String(req.adminAuth?.userId || '').trim() || null, {
           title,
@@ -265,17 +294,33 @@ export function registerAdminPushRoutes(app, { pool, requireAdmin, crypto }) {
     const limit = normalizeLimit(req.query.limit, 20, 100);
     try {
       const sentQ = await pool.query(
-        `SELECT id, action, target_user_id, detail, created_at
-         FROM admin_audit_logs
-         WHERE action IN ('push_send', 'push_schedule', 'push_test')
-         ORDER BY created_at DESC
+        `SELECT audit.id, audit.action, audit.target_user_id, audit.detail, audit.created_at,
+                COALESCE(stats.notification_count, 0) AS notification_count,
+                COALESCE(stats.queued_count, 0) AS queued_count,
+                COALESCE(stats.sent_count, 0) AS sent_count,
+                COALESCE(stats.failed_count, 0) AS failed_count,
+                COALESCE(stats.read_count, 0) AS read_count,
+                COALESCE(stats.open_count, 0) AS open_count
+         FROM admin_audit_logs audit
+         LEFT JOIN LATERAL (
+           SELECT COUNT(*)::int AS notification_count,
+                  (COUNT(*) FILTER (WHERE notification.delivery_status='queued'))::int AS queued_count,
+                  (COUNT(*) FILTER (WHERE notification.delivery_status IN ('sent','topic_accepted')))::int AS sent_count,
+                  (COUNT(*) FILTER (WHERE notification.delivery_status='failed'))::int AS failed_count,
+                  (COUNT(*) FILTER (WHERE notification.read_at IS NOT NULL OR notification.is_read=true))::int AS read_count,
+                  (COUNT(*) FILTER (WHERE notification.opened_at IS NOT NULL))::int AS open_count
+           FROM app_notifications notification
+           WHERE notification.event_key=NULLIF(audit.detail->>'eventKey', '')
+         ) stats ON true
+         WHERE audit.action IN ('push_send', 'push_schedule', 'push_test')
+         ORDER BY audit.created_at DESC
          LIMIT $1`,
         [limit]
       );
       const scheduledQ = await pool.query(
         `SELECT id, type, status, payload, attempts, last_error, created_at, updated_at
          FROM app_jobs
-         WHERE type='admin.push.send'
+         WHERE type IN ('admin.push.send','admin.push.retry','admin.push.dead-letter')
          ORDER BY created_at DESC
          LIMIT $1`,
         [limit]

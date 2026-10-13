@@ -1,14 +1,15 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { MapPinned, RefreshCw } from 'lucide-react-native';
+import { ChevronLeft, MapPinned, RefreshCw } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { PermissionGate } from '../../src/components/PermissionGate';
 import { useAuth } from '../../src/hooks/useAuth';
 import { apiClient } from '../../src/lib/api';
+import { appRouteMap } from '../../src/config/sitemap';
 import { describeGoogleMapsIssue, getGoogleMapsApiKey, isGoogleMapsApiConfigured } from '../../src/lib/googleMapSearch';
 import { getDivePoints } from '../../src/services/googleMapService';
 
@@ -33,6 +34,21 @@ type MapMarkerItem = {
   lastVisitedAt?: string;
 };
 
+type MapCopy = {
+  visitedPoint: string;
+  verifiedResort: string;
+  markerGroup: string;
+  myLocation: string;
+  currentLocation: string;
+  gpsBased: string;
+  loadFailed: string;
+  initFailed: string;
+  runtimeFailed: string;
+  loading: string;
+  delayed: string;
+  scriptFailed: string;
+};
+
 function findAreaCoord(areaRaw: unknown): { lat: number; lng: number } | null {
   const area = String(areaRaw || '').trim().toLowerCase();
   if (!area) return null;
@@ -46,9 +62,17 @@ function toFinite(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, markers: MapMarkerItem[], currentLocation: { lat: number; lng: number } | null) {
+function buildMapHtml(
+  apiKey: string,
+  center: { lat: number; lng: number },
+  markers: MapMarkerItem[],
+  currentLocation: { lat: number; lng: number } | null,
+  focusRequested: boolean,
+  copy: MapCopy
+) {
   const markerJson = JSON.stringify(markers).replace(/</g, '\\u003c');
   const currentLocationJson = JSON.stringify(currentLocation).replace(/</g, '\\u003c');
+  const copyJson = JSON.stringify(copy).replace(/</g, '\\u003c');
   return `<!doctype html>
 <html>
   <head>
@@ -77,6 +101,8 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
       const center = ${JSON.stringify(center)};
       const markers = ${markerJson};
       const currentLocation = ${currentLocationJson};
+      const focusRequested = ${focusRequested ? 'true' : 'false'};
+      const copy = ${copyJson};
       let mapInitialized = false;
 
       function postError(code, detail) {
@@ -280,7 +306,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
 
                   marker.addListener('click', () => {
                     infoWindow.setContent(
-                      '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">' + escapeHtml(item.name) + '</div><div class="dg-info-meta">' + escapeHtml(item.description) + '</div><div class="dg-info-chip">' + (item.type === 'point' ? '다녀온 포인트' : '검증된 리조트') + '</div></div></div>'
+                      '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">' + escapeHtml(item.name) + '</div><div class="dg-info-meta">' + escapeHtml(item.description) + '</div><div class="dg-info-chip">' + (item.type === 'point' ? copy.visitedPoint : copy.verifiedResort) + '</div></div></div>'
                     );
                     infoWindow.open({ anchor: marker, map });
                   });
@@ -293,7 +319,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
               const marker = new google.maps.Marker({
                 position: { lat: centerPoint.lat, lng: centerPoint.lng },
                 map,
-                title: group.length > 1 ? group.length + '개 마커 그룹' : group[0].name,
+                title: group.length > 1 ? copy.markerGroup.replace('{{count}}', String(group.length)) : group[0].name,
                 icon: {
                   url: makeIconUrl(group.length === 1 ? group[0].type : 'point', group.length, tone),
                   scaledSize: new google.maps.Size(group.length > 1 ? 40 : 36, group.length > 1 ? 40 : 44),
@@ -312,7 +338,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
                 }
                 const item = group[0];
                 infoWindow.setContent(
-                  '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">' + escapeHtml(item.name) + '</div><div class="dg-info-meta">' + escapeHtml(item.description) + '</div><div class="dg-info-chip">' + (item.type === 'point' ? '다녀온 포인트' : '검증된 리조트') + '</div></div></div>'
+                  '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">' + escapeHtml(item.name) + '</div><div class="dg-info-meta">' + escapeHtml(item.description) + '</div><div class="dg-info-chip">' + (item.type === 'point' ? copy.visitedPoint : copy.verifiedResort) + '</div></div></div>'
                 );
                 infoWindow.open({ anchor: marker, map });
               });
@@ -324,7 +350,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
               const currentMarker = new google.maps.Marker({
                 position: { lat: Number(currentLocation.lat), lng: Number(currentLocation.lng) },
                 map,
-                title: '내 위치',
+                title: copy.myLocation,
                 icon: {
                   url: toDataUrl(buildCurrentLocationSvg()),
                   scaledSize: new google.maps.Size(34, 34),
@@ -335,7 +361,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
               });
 
               const currentInfo = new google.maps.InfoWindow({
-                content: '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">내 현재 위치</div><div class="dg-info-meta">' + Number(currentLocation.lat).toFixed(5) + ', ' + Number(currentLocation.lng).toFixed(5) + '</div><div class="dg-info-chip">GPS 기준</div></div></div>',
+                content: '<div class="dg-card"><div class="dg-info-header"></div><div class="dg-card-inner"><div class="dg-info-title">' + copy.currentLocation + '</div><div class="dg-info-meta">' + Number(currentLocation.lat).toFixed(5) + ', ' + Number(currentLocation.lng).toFixed(5) + '</div><div class="dg-info-chip">' + copy.gpsBased + '</div></div></div>',
               });
               currentMarker.addListener('click', () => {
                 currentInfo.open({ anchor: currentMarker, map });
@@ -356,7 +382,10 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
           const latSpan = Math.max.apply(null, lats) - Math.min.apply(null, lats);
           const lngSpan = Math.max.apply(null, lngs) - Math.min.apply(null, lngs);
 
-          if (markers.length > 1 && latSpan <= 6 && lngSpan <= 6) {
+          if (focusRequested) {
+            map.setCenter(center);
+            map.setZoom(12);
+          } else if (markers.length > 1 && latSpan <= 6 && lngSpan <= 6) {
             map.fitBounds(bounds, 48);
           } else {
             map.setCenter(center);
@@ -371,20 +400,20 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
           mapInitialized = true;
         } catch (error) {
           postError('map_init_failed', String(error && error.message ? error.message : error || 'unknown'));
-          showFallback('지도를 불러오지 못했습니다', 'Google Maps 초기화에 실패했습니다. 사용량 초과 또는 네트워크 문제일 수 있습니다.', 'MAP_INIT_FAILED');
+          showFallback(copy.loadFailed, copy.initFailed, 'MAP_INIT_FAILED');
         }
       }
 
       window.onerror = function(message, source, lineno, colno) {
         postError('map_runtime_error', String(message || 'unknown') + ' @ ' + String(lineno || 0) + ':' + String(colno || 0));
-        showFallback('지도를 불러오지 못했습니다', 'Google Maps 실행 중 오류가 발생했습니다. 다른 화면은 계속 이용할 수 있습니다.', 'MAP_RUNTIME_ERROR');
+        showFallback(copy.loadFailed, copy.runtimeFailed, 'MAP_RUNTIME_ERROR');
         return true;
       };
 
       setTimeout(function() {
         if (!mapInitialized) {
           postError('map_init_timeout', 'Google Maps callback timeout');
-          showFallback('지도를 불러오는 중입니다', 'Google Maps 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.', 'MAP_INIT_TIMEOUT');
+          showFallback(copy.loading, copy.delayed, 'MAP_INIT_TIMEOUT');
         }
       }, 8000);
     </script>
@@ -395,7 +424,7 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
       s.src = 'https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&callback=initMap';
       s.onerror = function() {
         postError('map_script_failed', 'Google Maps script load failed');
-        showFallback('지도를 불러오지 못했습니다', '지도 스크립트 로드에 실패했습니다. 사용량 초과 또는 네트워크 문제를 확인해주세요.', 'MAP_SCRIPT_FAILED');
+        showFallback(copy.loadFailed, copy.scriptFailed, 'MAP_SCRIPT_FAILED');
       };
       document.head.appendChild(s);
     </script>
@@ -405,11 +434,18 @@ function buildMapHtml(apiKey: string, center: { lat: number; lng: number }, mark
 
 export default function LocationScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ location?: string }>();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ location?: string; lat?: string; lng?: string }>();
   const { user } = useAuth();
-  const isDark = useColorScheme() === 'dark';
   const selectedLocation = String(params.location || '').trim();
   const normalizedSelected = selectedLocation.toLowerCase();
+  const selectedLat = toFinite(params.lat);
+  const selectedLng = toFinite(params.lng);
+  const selectedCoordinate = useMemo(
+    () => selectedLat != null && selectedLng != null ? { lat: selectedLat, lng: selectedLng } : null,
+    [selectedLat, selectedLng]
+  );
+  const focusRequested = Boolean(selectedLocation || selectedCoordinate);
 
   const { data: divePoints = [] } = useQuery({
     queryKey: ['dive-points', user?.id],
@@ -418,6 +454,20 @@ export default function LocationScreen() {
   });
   const { data: resorts = [] } = useQuery({ queryKey: ['resorts'], queryFn: apiClient.getResorts });
   const [currentLocation, setCurrentLocation] = React.useState<{ lat: number; lng: number } | null>(null);
+  const mapCopy = useMemo<MapCopy>(() => ({
+    visitedPoint: t('locationMap.visitedPoint'),
+    verifiedResort: t('locationMap.verifiedResort'),
+    markerGroup: t('locationMap.markerGroup'),
+    myLocation: t('locationMap.myLocation'),
+    currentLocation: t('locationMap.currentLocation'),
+    gpsBased: t('locationMap.gpsBased'),
+    loadFailed: t('locationMap.loadFailed'),
+    initFailed: t('locationMap.initFailed'),
+    runtimeFailed: t('locationMap.runtimeFailed'),
+    loading: t('locationMap.loading'),
+    delayed: t('locationMap.delayed'),
+    scriptFailed: t('locationMap.scriptFailed'),
+  }), [t]);
 
   React.useEffect(() => {
     let canceled = false;
@@ -452,8 +502,8 @@ export default function LocationScreen() {
             item.country || '',
             item.region || '',
             item.address || '',
-            item.visitCount ? `방문 ${item.visitCount}회` : '',
-            item.lastVisitedAt ? `마지막 ${String(item.lastVisitedAt).slice(0, 10)}` : '',
+            item.visitCount ? t('locationMap.visitCount', { count: item.visitCount }) : '',
+            item.lastVisitedAt ? t('locationMap.lastVisited', { date: String(item.lastVisitedAt).slice(0, 10) }) : '',
           ]
             .filter(Boolean)
             .join(' · '),
@@ -480,7 +530,7 @@ export default function LocationScreen() {
             item.country || '',
             item.region || '',
             item.address || item.area || '',
-            item.rating ? `평점 ${Number(item.rating).toFixed(1)}` : '',
+            item.rating ? t('locationMap.rating', { rating: Number(item.rating).toFixed(1) }) : '',
           ]
             .filter(Boolean)
             .join(' · '),
@@ -490,22 +540,37 @@ export default function LocationScreen() {
       })
       .filter(Boolean) as MapMarkerItem[];
 
-    return [...pointMarkers, ...resortMarkers];
-  }, [divePoints, resorts]);
+    const selectedMarker = selectedCoordinate && selectedLocation
+      ? [{
+          id: 'selected-point',
+          type: 'point' as const,
+          name: selectedLocation,
+          description: t('locationMap.selectedPoint'),
+          lat: selectedCoordinate.lat,
+          lng: selectedCoordinate.lng,
+        }]
+      : [];
+
+    return [...selectedMarker, ...pointMarkers, ...resortMarkers];
+  }, [divePoints, resorts, selectedCoordinate, selectedLocation, t]);
 
   const selectedFirst = normalizedSelected ? markers.find((item) => `${item.name} ${item.description}`.toLowerCase().includes(normalizedSelected)) || null : null;
 
   const focusMarker = currentLocation || markers.find((item) => item.type === 'point') || markers[0] || null;
   const center = useMemo(() => {
-    if (currentLocation) return currentLocation;
+    if (selectedCoordinate) return selectedCoordinate;
     if (selectedFirst) return { lat: selectedFirst.lat, lng: selectedFirst.lng };
+    if (currentLocation) return currentLocation;
     if (focusMarker) return { lat: focusMarker.lat, lng: focusMarker.lng };
     return { lat: 33.2196, lng: 126.569 };
-  }, [currentLocation, focusMarker, selectedFirst]);
+  }, [currentLocation, focusMarker, selectedCoordinate, selectedFirst]);
 
   const hasGoogleMap = isGoogleMapsApiConfigured();
   const googleKey = getGoogleMapsApiKey();
-  const mapHtml = useMemo(() => (hasGoogleMap ? buildMapHtml(googleKey, center, markers, currentLocation) : ''), [center, currentLocation, googleKey, hasGoogleMap, markers]);
+  const mapHtml = useMemo(
+    () => (hasGoogleMap ? buildMapHtml(googleKey, center, markers, currentLocation, focusRequested, mapCopy) : ''),
+    [center, currentLocation, focusRequested, googleKey, hasGoogleMap, mapCopy, markers]
+  );
   const [MapWebView, setMapWebView] = React.useState<any>(null);
   const [mapLoadReady, setMapLoadReady] = React.useState(false);
   const [mapRuntimeError, setMapRuntimeError] = React.useState('');
@@ -525,12 +590,12 @@ export default function LocationScreen() {
       .catch(() => {
         if (canceled) return;
         setMapWebView(null);
-        setMapRuntimeError('인터랙티브 지도 컴포넌트를 불러오지 못했습니다.');
+        setMapRuntimeError(t('locationMap.componentFailed'));
       });
     return () => {
       canceled = true;
     };
-  }, [MapWebView, hasGoogleMap]);
+  }, [MapWebView, hasGoogleMap, t]);
 
   React.useEffect(() => {
     if (!hasGoogleMap) return undefined;
@@ -546,6 +611,14 @@ export default function LocationScreen() {
     setMapLoadAttempt((prev) => prev + 1);
   };
 
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace(appRouteMap.home.path as never);
+  };
+
   const renderMapFallback = (title: string, body: string, code?: string) => (
     <View className="absolute inset-x-4 top-4 overflow-hidden rounded-3xl border border-white/20 bg-[#07111d]/90 px-4 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
       <View className="flex-row items-start justify-between">
@@ -555,7 +628,7 @@ export default function LocationScreen() {
           {code ? <Text className="mt-2 text-[11px] font-semibold text-cyan-300">{code}</Text> : null}
         </View>
         <TouchableOpacity onPress={retryMap} className="rounded-full bg-white/12 px-3 py-2">
-          <Text className="text-xs font-semibold text-white">다시</Text>
+          <Text className="text-xs font-semibold text-white">{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -573,8 +646,8 @@ export default function LocationScreen() {
             <>
               {mapRuntimeError ? (
                 renderMapFallback(
-                  '지도 연결 실패',
-                  mapRuntimeError || 'Google Maps 사용량 초과 또는 네트워크 문제로 지도를 열지 못했습니다.',
+                  t('locationMap.connectionFailed'),
+                  mapRuntimeError || t('locationMap.openFailed'),
                   'MAP_FALLBACK'
                 )
               ) : mapLoadReady && MapWebView ? (
@@ -593,7 +666,7 @@ export default function LocationScreen() {
                         setMapRuntimeError(detail);
                       }
                     } catch {
-                      setMapRuntimeError('Google Maps 실행 중 오류가 발생했습니다.');
+                      setMapRuntimeError(t('locationMap.runtimeError'));
                     }
                   }}
                   onError={(event: any) => {
@@ -602,7 +675,7 @@ export default function LocationScreen() {
                     );
                   }}
                   onHttpError={() => {
-                    setMapRuntimeError('Google Maps 네트워크 응답 오류가 발생했습니다.');
+                    setMapRuntimeError(t('locationMap.networkError'));
                   }}
                 />
               ) : (
@@ -612,16 +685,27 @@ export default function LocationScreen() {
                   </View>
                   <ActivityIndicator color="#8fd1ff" />
                   <Text className="mt-3 text-center text-xs text-white/80">
-                    {t('common.loading', { defaultValue: '지도를 불러오는 중...' })}
+                    {t('locationMap.loading')}
                   </Text>
                   <TouchableOpacity onPress={retryMap} className="mt-4 rounded-full bg-white/10 px-4 py-2">
-                    <Text className="text-xs font-semibold text-white">로딩 다시 시도</Text>
+                    <Text className="text-xs font-semibold text-white">{t('locationMap.retryLoading')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
+              <View className="absolute left-4 top-4">
+                <TouchableOpacity
+                  onPress={goBack}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.back')}
+                  className="h-11 w-11 items-center justify-center rounded-full bg-black/55 shadow-md"
+                >
+                  <ChevronLeft size={25} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
               {selectedLocation ? (
-                <View className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-2">
-                  <Text className="text-[11px] font-semibold text-white">{t('pages.location.selectedRegion', { location: selectedLocation, defaultValue: `선택 지역: ${selectedLocation}` })}</Text>
+                <View className="absolute left-4 top-16 rounded-full bg-black/40 px-3 py-2">
+                  <Text className="text-[11px] font-semibold text-white">{t('pages.location.selectedRegion', { location: selectedLocation })}</Text>
                 </View>
               ) : null}
               <View className="absolute right-4 top-4">
@@ -631,7 +715,7 @@ export default function LocationScreen() {
               </View>
             </>
           ) : (
-            renderMapFallback('지도 대체 보기', t('pages.location.mapPlaceholder'), 'GOOGLE_MAPS_KEY_MISSING')
+            renderMapFallback(t('locationMap.fallbackTitle'), t('pages.location.mapPlaceholder'), 'GOOGLE_MAPS_KEY_MISSING')
           )}
         </View>
       </PermissionGate>

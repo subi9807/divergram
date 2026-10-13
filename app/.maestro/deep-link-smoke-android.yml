@@ -1,0 +1,21 @@
+appId: com.divergram.app
+name: Android deep-link signed-out continuation smoke
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- tapOn:
+    text: "(시작하기|Get Started|始める|开始使用)"
+    optional: true
+- openLink: "divergram://notifications"
+- waitForAnimationToEnd:
+    timeout: 15000
+- assertVisible:
+    text: ".*(환영합니다|Welcome|ようこそ|欢迎).*"
+- openLink: "https://divergram.com/guide/a476e781-9eb9-46bb-a4d4-8b4951d4fd97"
+- waitForAnimationToEnd:
+    timeout: 15000
+- assertVisible:
+    text: ".*(계정에 로그인하세요|Sign in to your account|アカウントにログイン|登录您的账户).*"
+- takeScreenshot: android-deep-link-smoke-complete

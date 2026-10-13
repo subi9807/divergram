@@ -77,6 +77,29 @@ const linuxHermesCompilerTarget = path.join(
   'linux64-bin',
   'hermesc'
 );
+const mmkvCmakeTarget = path.join(
+  __dirname,
+  '..',
+  'node_modules',
+  'react-native-mmkv',
+  'android',
+  'CMakeLists.txt'
+);
+
+if (fs.existsSync(mmkvCmakeTarget)) {
+  const mmkvSource = fs.readFileSync(mmkvCmakeTarget, 'utf8');
+  const mmkvMarker = 'target_link_libraries(\n        reactnativemmkv\n';
+  const mmkvPatch = 'target_link_options(reactnativemmkv PRIVATE "-Wl,-z,max-page-size=16384")\n\n' + mmkvMarker;
+  if (mmkvSource.includes('max-page-size=16384')) {
+    console.log('[fix-expo-xcframework] react-native-mmkv already supports 16 KB pages.');
+  } else if (mmkvSource.includes(mmkvMarker)) {
+    fs.writeFileSync(mmkvCmakeTarget, mmkvSource.replace(mmkvMarker, mmkvPatch));
+    console.log('[fix-expo-xcframework] Patched react-native-mmkv for 16 KB page alignment.');
+  } else {
+    console.error('[fix-expo-xcframework] react-native-mmkv CMake marker not found.');
+    process.exit(1);
+  }
+}
 
 if (fs.existsSync(linuxHermesCompilerTarget)) {
   fs.chmodSync(linuxHermesCompilerTarget, 0o755);

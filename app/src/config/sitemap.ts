@@ -6,6 +6,9 @@ export type AppRouteId =
   | 'profile'
   | 'resorts'
   | 'resort_detail'
+  | 'resort_booking'
+  | 'booking_history'
+  | 'resort_checkin'
   | 'reels'
   | 'location'
   | 'notifications'
@@ -22,6 +25,8 @@ export type AppRouteId =
   | 'devices'
   | 'profile_edit'
   | 'dive_log_management'
+  | 'dive_discovery'
+  | 'marine_life_detail'
   | 'dive_log_detail'
   | 'dive_log_edit'
   | 'integration_settings'
@@ -29,6 +34,9 @@ export type AppRouteId =
   | 'bluetooth_devices'
   | 'certifications'
   | 'license_management'
+  | 'dive_education'
+  | 'dive_guide'
+  | 'stamps'
   | 'notification_settings'
   | 'ai_settings'
   | 'policy_center'
@@ -41,6 +49,7 @@ export type AppRouteId =
   | 'ai_usage_policy'
   | 'open_source_licenses'
   | 'app_info'
+  | 'membership'
   | 'donate'
   | 'settings_detail'
   | 'auth_tutorial'
@@ -65,6 +74,9 @@ export const appSitemap: AppRoute[] = [
   { id: 'profile', path: '/(tabs)/profile', titleKey: 'tabs.profile', section: 'tabs', visibleInTabBar: true },
   { id: 'resorts', path: '/(tabs)/resorts', titleKey: 'tabs.resorts', section: 'tabs', visibleInTabBar: false },
   { id: 'resort_detail', path: '/(tabs)/resort-detail', titleKey: 'tabs.resorts', section: 'tabs', visibleInTabBar: false },
+  { id: 'resort_booking', path: '/(tabs)/resort-booking', titleKey: 'resortBooking.title', section: 'tabs', visibleInTabBar: false },
+  { id: 'booking_history', path: '/(tabs)/booking-history', titleKey: 'resortBooking.historyTitle', section: 'tabs', visibleInTabBar: false },
+  { id: 'resort_checkin', path: '/(tabs)/resort-checkin', titleKey: 'resortCheckin.title', section: 'tabs', visibleInTabBar: false },
   { id: 'reels', path: '/(tabs)/reels', titleKey: 'tabs.reels', section: 'tabs', visibleInTabBar: false },
   { id: 'location', path: '/(tabs)/location', titleKey: 'tabs.location', section: 'tabs', visibleInTabBar: true },
   { id: 'notifications', path: '/(tabs)/notifications', titleKey: 'tabs.notifications', section: 'tabs', visibleInTabBar: false },
@@ -81,6 +93,8 @@ export const appSitemap: AppRoute[] = [
   { id: 'devices', path: '/(tabs)/devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
   { id: 'profile_edit', path: '/(tabs)/profile-edit', titleKey: 'tabs.profileEdit', section: 'tabs', visibleInTabBar: false },
   { id: 'dive_log_management', path: '/(tabs)/dive-log-management', titleKey: 'settingsPage.diving.diveLogManagement', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_discovery', path: '/(tabs)/dive-discovery', titleKey: 'marineLifeGuide', section: 'tabs', visibleInTabBar: false },
+  { id: 'marine_life_detail', path: '/(tabs)/marine-life-detail', titleKey: 'marineLife.detail.title', section: 'tabs', visibleInTabBar: false },
   { id: 'dive_log_detail', path: '/(tabs)/dive-log-detail', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: false },
   { id: 'dive_log_edit', path: '/(tabs)/dive-log-edit', titleKey: 'tabs.logs', section: 'tabs', visibleInTabBar: false },
   { id: 'integration_settings', path: '/(tabs)/integration-settings', titleKey: 'settingsPage.sections.account', section: 'tabs', visibleInTabBar: false },
@@ -88,6 +102,9 @@ export const appSitemap: AppRoute[] = [
   { id: 'bluetooth_devices', path: '/(tabs)/bluetooth-devices', titleKey: 'tabs.devices', section: 'tabs', visibleInTabBar: false },
   { id: 'certifications', path: '/(tabs)/certifications', titleKey: 'settingsPage.diving.certifications', section: 'tabs', visibleInTabBar: false },
   { id: 'license_management', path: '/(tabs)/license-management', titleKey: 'settingsPage.diving.licenseManagement', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_education', path: '/(tabs)/dive-education', titleKey: 'diveEducation.menuTitle', section: 'tabs', visibleInTabBar: false },
+  { id: 'dive_guide', path: '/(tabs)/dive-guide', titleKey: 'diveGuide.menuTitle', section: 'tabs', visibleInTabBar: false },
+  { id: 'stamps', path: '/(tabs)/stamps', titleKey: 'stamps.title', section: 'tabs', visibleInTabBar: false },
   { id: 'notification_settings', path: '/(tabs)/notification-settings', titleKey: 'settingsPage.sections.notifications', section: 'tabs', visibleInTabBar: false },
   { id: 'ai_settings', path: '/(tabs)/ai-settings', titleKey: 'settingsPage.sections.app', section: 'tabs', visibleInTabBar: false },
   { id: 'policy_center', path: '/(tabs)/policy-center', titleKey: 'settingsPage.app.policyCenter', section: 'tabs', visibleInTabBar: false },
@@ -100,6 +117,7 @@ export const appSitemap: AppRoute[] = [
   { id: 'ai_usage_policy', path: '/(tabs)/ai-usage-policy', titleKey: 'settingsPage.app.aiNotice', section: 'tabs', visibleInTabBar: false },
   { id: 'open_source_licenses', path: '/(tabs)/open-source-licenses', titleKey: 'settingsPage.app.openSourceLicenses', section: 'tabs', visibleInTabBar: false },
   { id: 'app_info', path: '/(tabs)/app-info', titleKey: 'settingsPage.app.appInfo', section: 'tabs', visibleInTabBar: false },
+  { id: 'membership', path: '/(tabs)/membership', titleKey: 'membership.menuTitle', section: 'tabs', visibleInTabBar: false },
   { id: 'donate', path: '/(tabs)/donate', titleKey: 'settingsPage.app.donate', section: 'tabs', visibleInTabBar: false },
   { id: 'settings_detail', path: '/(tabs)/settings-detail', titleKey: 'tabs.settings', section: 'tabs', visibleInTabBar: false },
   { id: 'auth_tutorial', path: '/(auth)/tutorial', titleKey: 'welcome.getStarted', section: 'auth' },

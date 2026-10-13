@@ -1,0 +1,27 @@
+appId: com.divergram.app.ios
+name: Full menu long-press reorder
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 12000
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- takeScreenshot: menu-before-reorder
+- startRecording: menu-reorder-motion
+- swipe:
+    start: "23%,55%"
+    end: "77%,55%"
+    duration: 2200
+- waitForAnimationToEnd
+- stopRecording
+- takeScreenshot: menu-after-reorder
+- tapOn:
+    point: "50%,20%"
+- waitForAnimationToEnd
+- stopApp
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 12000
+- tapOn: "전체 메뉴 열기"
+- waitForAnimationToEnd
+- takeScreenshot: menu-after-relaunch

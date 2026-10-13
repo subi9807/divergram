@@ -1,8 +1,10 @@
 import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, CreditCard, FileText, HandCoins, HelpCircle, Link2, Mail, MapPin, Shield } from 'lucide-react-native';
+import { ChevronRight, CreditCard, FileText, HelpCircle, Link2, Mail, MapPin, Shield } from 'lucide-react-native';
 import { Screen } from '../../src/components/Screen';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
 import { appRouteMap } from '../../src/config/sitemap';
@@ -19,6 +21,16 @@ export default function AppInfoScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { isDark } = useResolvedTheme();
+  const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || '-';
+  const buildNumber = Application.nativeBuildVersion
+    || String(Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode || '-');
+  const contactSupport = async () => {
+    const email = 'support@metabytree.com';
+    const subject = encodeURIComponent(`[Divergram ${version} (${buildNumber})] Support`);
+    const url = `mailto:${email}?subject=${subject}`;
+    if (await Linking.canOpenURL(url)) await Linking.openURL(url);
+    else Alert.alert(t('settingsPage.app.contact'), email);
+  };
 
   const colors = isDark
     ? {
@@ -48,42 +60,49 @@ export default function AppInfoScreen() {
     {
       key: 'terms',
       title: t('settingsPage.app.terms', { defaultValue: '이용약관' }),
+      subtitle: t('settingsPage.app.menuDescriptions.terms'),
       icon: <FileText size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.terms_policy.path as never),
     },
     {
       key: 'privacy',
       title: t('settingsPage.app.privacyPolicy', { defaultValue: '개인정보처리방침' }),
+      subtitle: t('settingsPage.app.menuDescriptions.privacy'),
       icon: <Shield size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.privacy_policy.path as never),
     },
     {
       key: 'location_terms',
       title: t('settingsPage.app.locationTerms', { defaultValue: '위치정보 이용약관' }),
+      subtitle: t('settingsPage.app.menuDescriptions.location'),
       icon: <MapPin size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.location_policy.path as never),
     },
     {
       key: 'community',
       title: t('settingsPage.app.communityPolicy', { defaultValue: '커뮤니티 운영정책' }),
+      subtitle: t('settingsPage.app.menuDescriptions.community'),
       icon: <HelpCircle size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.community_policy.path as never),
     },
     {
       key: 'safety',
       title: t('settingsPage.app.safetyNotice', { defaultValue: '안전 고지' }),
+      subtitle: t('settingsPage.app.menuDescriptions.safety'),
       icon: <Shield size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.safety_disclaimer.path as never),
     },
     {
       key: 'ai_notice',
       title: t('settingsPage.app.aiNotice', { defaultValue: 'AI 기능 안내' }),
+      subtitle: t('settingsPage.app.menuDescriptions.ai'),
       icon: <Link2 size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.ai_usage_policy.path as never),
     },
     {
       key: 'open_source',
       title: t('settingsPage.app.openSourceLicenses', { defaultValue: '오픈소스 라이선스' }),
+      subtitle: t('settingsPage.app.menuDescriptions.openSource'),
       icon: <FileText size={18} color="#4d5d6b" />,
       onPress: () => router.push(appRouteMap.open_source_licenses.path as never),
     },
@@ -95,24 +114,18 @@ export default function AppInfoScreen() {
       onPress: () => router.push(appRouteMap.license_management.path as never),
     },
     {
-      key: 'donate',
-      title: t('settingsPage.app.donate', { defaultValue: '후원하기' }),
-      subtitle: t('settingsPage.app.donateSubtitle', { defaultValue: 'Divergram을 응원하고 개발을 지원합니다.' }),
-      icon: <HandCoins size={18} color="#4d5d6b" />,
-      onPress: () => router.push(appRouteMap.donate.path as never),
-    },
-    {
       key: 'customer_center',
       title: t('settingsPage.app.customerCenter', { defaultValue: '고객센터' }),
+      subtitle: t('settingsPage.app.menuDescriptions.customerCenter'),
       icon: <HelpCircle size={18} color="#4d5d6b" />,
       onPress: () => router.push('/(tabs)/settings-detail?mode=customer-center' as never),
     },
     {
       key: 'contact',
       title: t('settingsPage.app.contact', { defaultValue: '문의하기' }),
-      subtitle: t('pages.report.subtitle', { defaultValue: '서비스 문제를 남겨주세요' }),
+      subtitle: t('settingsPage.app.menuDescriptions.contact'),
       icon: <Mail size={18} color="#4d5d6b" />,
-      onPress: () => router.push(appRouteMap.report.path as never),
+      onPress: () => { void contactSupport(); },
     },
   ];
 
@@ -121,6 +134,13 @@ export default function AppInfoScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 64 }}>
         <Text style={{ fontSize: 26, fontWeight: '800', color: colors.title }}>{t('settingsPage.app.appInfo', { defaultValue: '앱 정보' })}</Text>
         <Text style={{ marginTop: 8, color: colors.subtitle }}>{t('settingsPage.app.appInfoSubtitle', { defaultValue: '약관, 정책, 고객 지원 항목을 관리합니다.' })}</Text>
+        <Text style={{ marginTop: 8, fontSize: 13, fontWeight: '700', color: colors.subtitle }}>
+          {t('settingsPage.versionBuildLabel', {
+            defaultValue: '버전 {{version}} · 빌드 {{build}}',
+            version,
+            build: buildNumber,
+          })}
+        </Text>
 
         <View style={{ marginTop: 16, borderRadius: 18, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.cardBg, overflow: 'hidden' }}>
           {items.map((item, index) => (

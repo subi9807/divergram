@@ -208,9 +208,9 @@ export async function uploadVideo(uri: string): Promise<UploadResult> {
 
 export function generateThumbnail(videoUrl: string): string {
   const url = String(videoUrl || '').trim();
-  if (!url) return 'https://res.cloudinary.com/demo/image/upload/divergram-placeholder-thumb.jpg';
+  if (!url) return '';
   if (!url.includes('/upload/')) {
-    return 'https://res.cloudinary.com/demo/image/upload/divergram-placeholder-thumb.jpg';
+    return '';
   }
   return url
     .replace('/video/upload/', '/video/upload/so_1/')
