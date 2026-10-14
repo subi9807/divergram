@@ -1,6 +1,7 @@
 import { loadSignupConsentConfig, saveSignupConsents, validateSignupConsents } from '../legal-consents.js';
 import { allocateUniqueOAuthUsername } from '../lib/oauthProfileDefaults.js';
 import { decryptSensitiveText, encryptSensitiveText } from '../lib/dataEncryption.js';
+import { EMAIL_COMPANY_NAME, normalizeEmailSender, stripEmailBrandMarkdown } from '../lib/emailBrand.js';
 
 export function registerAuthRoutes(app, deps) {
   const {
@@ -516,7 +517,7 @@ export function registerAuthRoutes(app, deps) {
   const sendEmailVerifyCode = async ({ userId, email, code, verifyLink }) => {
     const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
     const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
-    const infobipEmailSender = String(process.env.INFOBIP_EMAIL_SENDER || '').trim();
+    const infobipEmailSender = stripEmailBrandMarkdown(process.env.INFOBIP_EMAIL_SENDER);
     if (infobipBaseUrl && infobipApiKey && infobipEmailSender) {
       const response = await fetch(`https://${infobipBaseUrl}/email/4/messages`, {
         method: 'POST',
@@ -531,8 +532,8 @@ export function registerAuthRoutes(app, deps) {
             sender: infobipEmailSender,
             content: {
               subject: '[Divergram] 이메일 인증을 완료해 주세요',
-              text: `Divergram 이메일 인증\n\n인증코드: ${code}\n인증링크: ${verifyLink}\n\n인증코드는 10분 동안 유효합니다.`,
-              html: `<h2>Divergram 이메일 인증</h2><p>인증코드: <b>${code}</b></p><p><a href="${verifyLink}">이메일 인증 완료하기</a></p><p>인증코드는 10분 동안 유효합니다.</p>`,
+              text: `Divergram 이메일 인증\n\n인증코드: ${code}\n인증링크: ${verifyLink}\n\n인증코드는 10분 동안 유효합니다.\n\n${EMAIL_COMPANY_NAME}`,
+              html: `<h2>Divergram 이메일 인증</h2><p>인증코드: <b>${code}</b></p><p><a href="${verifyLink}">이메일 인증 완료하기</a></p><p>인증코드는 10분 동안 유효합니다.</p><p>${EMAIL_COMPANY_NAME}</p>`,
             },
           }],
         }),
@@ -555,11 +556,11 @@ export function registerAuthRoutes(app, deps) {
         auth: { user: smtpUser, pass: smtpPass },
       });
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || smtpUser,
+        from: normalizeEmailSender(process.env.SMTP_FROM, smtpUser),
         to: email,
         subject: '[Divergram] 이메일 인증을 완료해 주세요',
-        text: `Divergram 이메일 인증\n\n인증코드: ${code}\n인증링크: ${verifyLink}\n\n링크는 24시간 동안 유효합니다.`,
-        html: `<h2>Divergram 이메일 인증</h2><p>인증코드: <b>${code}</b></p><p><a href="${verifyLink}">이메일 인증 완료하기</a></p><p>링크는 24시간 동안 유효합니다.</p>`,
+        text: `Divergram 이메일 인증\n\n인증코드: ${code}\n인증링크: ${verifyLink}\n\n링크는 24시간 동안 유효합니다.\n\n${EMAIL_COMPANY_NAME}`,
+        html: `<h2>Divergram 이메일 인증</h2><p>인증코드: <b>${code}</b></p><p><a href="${verifyLink}">이메일 인증 완료하기</a></p><p>링크는 24시간 동안 유효합니다.</p><p>${EMAIL_COMPANY_NAME}</p>`,
       });
       return;
     }

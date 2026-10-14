@@ -1,3 +1,5 @@
+import { EMAIL_COMPANY_NAME, normalizeEmailSender, stripEmailBrandMarkdown } from '../lib/emailBrand.js';
+
 const RESET_TTL_MINUTES = 30;
 
 const normalizeBaseUrl = (value) => String(value || 'https://adm.divergram.com').trim().replace(/\/+$/, '');
@@ -12,8 +14,8 @@ const accountLabel = (scope) => {
 async function sendPasswordResetEmail({ email, resetLink, scope }) {
   const subject = '[Divergram] 비밀번호를 재설정해 주세요';
   const label = accountLabel(scope);
-  const text = `Divergram ${label} 비밀번호 재설정\n\n아래 링크에서 새 비밀번호를 설정해 주세요.\n${resetLink}\n\n이 링크는 ${RESET_TTL_MINUTES}분 동안 한 번만 사용할 수 있습니다. 요청하지 않았다면 이 메일을 무시해 주세요.`;
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#17343e"><p style="color:#087f79;font-weight:700">DIVERGRAM</p><h2>비밀번호 재설정</h2><p>${label} 계정의 새 비밀번호를 설정하려면 아래 버튼을 눌러 주세요.</p><p style="margin:28px 0"><a href="${resetLink}" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#087f79;color:#fff;text-decoration:none;font-weight:700">새 비밀번호 설정</a></p><p style="font-size:13px;color:#677b80">이 링크는 ${RESET_TTL_MINUTES}분 동안 한 번만 사용할 수 있습니다.<br>요청하지 않았다면 이 메일을 무시해 주세요.</p></div>`;
+  const text = `Divergram ${label} 비밀번호 재설정\n\n아래 링크에서 새 비밀번호를 설정해 주세요.\n${resetLink}\n\n이 링크는 ${RESET_TTL_MINUTES}분 동안 한 번만 사용할 수 있습니다. 요청하지 않았다면 이 메일을 무시해 주세요.\n\n${EMAIL_COMPANY_NAME}`;
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;color:#17343e"><p style="color:#087f79;font-weight:700">DIVERGRAM</p><h2>비밀번호 재설정</h2><p>${label} 계정의 새 비밀번호를 설정하려면 아래 버튼을 눌러 주세요.</p><p style="margin:28px 0"><a href="${resetLink}" style="display:inline-block;padding:13px 22px;border-radius:10px;background:#087f79;color:#fff;text-decoration:none;font-weight:700">새 비밀번호 설정</a></p><p style="font-size:13px;color:#677b80">이 링크는 ${RESET_TTL_MINUTES}분 동안 한 번만 사용할 수 있습니다.<br>요청하지 않았다면 이 메일을 무시해 주세요.</p><p style="font-size:13px;color:#677b80">${EMAIL_COMPANY_NAME}</p></div>`;
 
   const smtpHost = String(process.env.SMTP_HOST || '').trim();
   const smtpPort = Number(process.env.SMTP_PORT || 587);
@@ -29,8 +31,7 @@ async function sendPasswordResetEmail({ email, resetLink, scope }) {
         secure: smtpPort === 465,
         auth: { user: smtpUser, pass: smtpPass },
       });
-      const fromAddress = String(process.env.SMTP_FROM || smtpUser).trim();
-      const from = fromAddress.includes('<') ? fromAddress : `Divergram <${fromAddress}>`;
+      const from = normalizeEmailSender(process.env.SMTP_FROM, smtpUser);
       await transporter.sendMail({ from, to: email, subject, text, html });
       return 'smtp';
     } catch (error) {
@@ -40,7 +41,7 @@ async function sendPasswordResetEmail({ email, resetLink, scope }) {
 
   const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
   const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
-  const infobipEmailSender = String(process.env.INFOBIP_EMAIL_SENDER || '').trim();
+  const infobipEmailSender = stripEmailBrandMarkdown(process.env.INFOBIP_EMAIL_SENDER);
   if (infobipBaseUrl && infobipApiKey && infobipEmailSender) {
     const response = await fetch(`https://${infobipBaseUrl}/email/4/messages`, {
       method: 'POST',
