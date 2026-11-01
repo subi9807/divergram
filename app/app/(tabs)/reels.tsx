@@ -187,7 +187,7 @@ export default function ReelsScreen() {
   };
 
   return (
-    <Screen safe={false} tone="plain" style={{ backgroundColor: '#04111f' }}>
+    <Screen safe={false} fullBleed tone="plain" style={{ backgroundColor: '#04111f' }}>
       <ScrollView
         ref={scrollRef}
         pagingEnabled

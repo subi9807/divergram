@@ -18,6 +18,7 @@ platform :ios do
 
     options = {
       app_identifier: ENV.fetch('APP_IDENTIFIER', 'com.divergram.app.ios'),
+      app_version: ENV.fetch('APP_VERSION', '1.2.13'),
       force: true,
       submit_for_review: false,
       automatic_release: false,

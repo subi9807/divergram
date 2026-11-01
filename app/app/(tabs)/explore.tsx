@@ -9,6 +9,7 @@ import { Compass, MapPin, Search, Sparkles, Video, X } from 'lucide-react-native
 import { Screen } from '../../src/components/Screen';
 import { apiClient } from '../../src/lib/api';
 import { useResolvedTheme } from '../../src/hooks/useResolvedTheme';
+import { getAdaptiveLayout } from '../../src/utils/adaptiveLayout';
 import { appRouteMap } from '../../src/config/sitemap';
 import { isVideoFile } from '../../src/utils/videoUtils';
 
@@ -110,7 +111,8 @@ export default function ExploreScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const params = useLocalSearchParams<{ q?: string; tag?: string }>();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const adaptiveLayout = getAdaptiveLayout(width, height);
   const { isDark } = useResolvedTheme();
   const [searchText, setSearchText] = useState('');
   const [activeTopic, setActiveTopic] = useState<TopicKey | null>(null);
@@ -176,7 +178,7 @@ export default function ExploreScreen() {
     setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredItems.length));
   };
 
-  const boardWidth = Math.max(0, width - 24);
+  const boardWidth = Math.max(0, Math.min(width, adaptiveLayout.contentMaxWidth) - 24);
   const gridGap = 4;
   const cellSize = (boardWidth - gridGap * 2) / 3;
   const board = useMemo(() => buildGridPlacements(visibleItems, cellSize, gridGap), [cellSize, visibleItems]);

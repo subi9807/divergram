@@ -1,0 +1,16 @@
+Divergram brings your dive community, logbook, maps, guides, and travel planning together.
+
+Key features
+- Feed and Reels for underwater photos, videos, reviews, and dive stories
+- Dive-site map and resort discovery with location and facility details
+- Dive logs for depth, temperature, time, buddy, equipment, and location
+- Dive guides and education covering safety, equipment, skills, and marine environments
+- Marine-life discovery and observation records
+- Resort booking history and on-site check-in flows
+- Digital diving license management
+- Customizable bottom navigation for your most-used features
+- Notifications, messages, saved posts, stamps, membership, and donations
+- Korean, English, Japanese, and Chinese with light and dark themes
+- Adaptive layouts for iPhone, iPad, Android foldables, tablets, landscape, and split-screen windows
+
+Divergram helps divers discover new places, keep organized records, and connect with the diving community.

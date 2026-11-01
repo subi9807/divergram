@@ -14,3 +14,9 @@ test('rounded navigation retains home-indicator and landscape safe areas', () =>
     assert.equal(style.position, undefined);
   }
 });
+
+test('wide layouts center the floating tab bar without exceeding its maximum width', () => {
+  const style = floatingTabGeometry({ bottom: 20, left: 0, right: 0 }, 1366);
+  assert.equal(style.marginLeft, 303);
+  assert.equal(style.marginRight, 303);
+});

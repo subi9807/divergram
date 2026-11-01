@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { formatDepth, formatTemperature } from '../../lib/utils';
 
@@ -12,7 +12,7 @@ interface DiveDataChartProps {
 }
 
 export function DiveDataChart({ data }: DiveDataChartProps) {
-  const screenWidth = Dimensions.get('window').width;
+  const [chartWidth, setChartWidth] = useState(0);
   
   if (data.length === 0) {
     return (
@@ -53,7 +53,7 @@ export function DiveDataChart({ data }: DiveDataChartProps) {
   const latestData = data[data.length - 1];
 
   return (
-    <View>
+    <View onLayout={(event) => setChartWidth(Math.floor(event.nativeEvent.layout.width))}>
       <View className="flex-row justify-between mb-4">
         <View className="items-center">
           <Text className="text-secondary-600 text-sm">Current Depth</Text>
@@ -70,16 +70,18 @@ export function DiveDataChart({ data }: DiveDataChartProps) {
         </View>
       </View>
 
-      <LineChart
-        data={chartData}
-        width={screenWidth - 80}
-        height={180}
-        chartConfig={chartConfig}
-        style={{
-          marginVertical: 8,
-          borderRadius: 8
-        }}
-      />
+      {chartWidth > 0 ? (
+        <LineChart
+          data={chartData}
+          width={chartWidth}
+          height={180}
+          chartConfig={chartConfig}
+          style={{
+            marginVertical: 8,
+            borderRadius: 8
+          }}
+        />
+      ) : null}
     </View>
   );
 }

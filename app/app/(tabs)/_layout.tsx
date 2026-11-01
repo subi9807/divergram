@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Activity, Award, Bell, BookOpen, Bookmark, CalendarDays, Crown, Fish, GraduationCap, HandCoins, House, Info, MapPin, MessageCircle, Play, Search, Settings, ShieldCheck, Store, User } from 'lucide-react-native';
-import { ActivityIndicator, ColorValue, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ColorValue, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { appRouteMap } from '../../src/config/sitemap';
@@ -28,6 +28,7 @@ export default function TabLayout() {
   const { loading, user, accountDeletion, accountDeletionLoading } = useAuth();
   const { isDark } = useResolvedTheme();
   const insets = useSafeAreaInsets();
+  const { width: viewportWidth } = useWindowDimensions();
   const bottomTabItemsRaw = useSettingsStore((state) => state.bottomTabItems);
   const bottomTabItems = useMemo(() => {
     const seen = new Set<BottomTabRoute>();
@@ -105,7 +106,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: isDark ? '#94a3b8' : '#6f8193',
         tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          ...floatingTabGeometry(insets),
+          ...floatingTabGeometry(insets, viewportWidth),
           backgroundColor: isDark ? '#0b1520' : '#ffffff',
           borderWidth: 1,
           borderTopWidth: 1,

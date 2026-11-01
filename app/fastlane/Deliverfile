@@ -7,7 +7,7 @@ secondary_category 'TRAVEL'
 # 리뷰 정보 (필요시 환경변수로 덮어쓰기)
 submission_information({
   add_id_info_uses_idfa: false,
-  add_id_info_serves_ads: false,
+  add_id_info_serves_ads: true,
   add_id_info_tracks_install: false,
   add_id_info_tracks_action: false,
   add_id_info_limits_tracking: true,

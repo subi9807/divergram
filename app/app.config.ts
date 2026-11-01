@@ -117,7 +117,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: 'Divergram',
     slug: 'divergram',
-    version: '1.2.12',
+    version: '1.2.13',
     orientation: 'default',
     icon: './assets/images/icon.png',
     userInterfaceStyle: 'automatic',
@@ -126,7 +126,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.divergram.app.ios',
-      buildNumber: config.ios?.buildNumber || '68',
+      buildNumber: '69',
       associatedDomains: ['applinks:divergram.com', 'applinks:www.divergram.com'],
       googleServicesFile: './GoogleService-Info.plist',
       usesAppleSignIn: true,
@@ -170,7 +170,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       package: 'com.divergram.app',
       googleServicesFile: './google-services.json',
-      versionCode: 67,
+      versionCode: 68,
       intentFilters: [
         {
           action: 'VIEW',
@@ -324,6 +324,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         projectId: '2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a'
       }
     },
-    runtimeVersion: '1.2.12-build68'
+    runtimeVersion: '1.2.13-build69'
   } as ExpoConfig;
 };

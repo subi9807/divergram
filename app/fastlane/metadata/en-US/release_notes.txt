@@ -1,0 +1,6 @@
+Divergram 1.2.13
+
+- Improved layouts for iPhone, iPad, Android foldables, tablets, landscape, and split-screen windows.
+- Added customizable access to dive guides, education, marine-life discovery, bookings, and membership.
+- Charts and discovery grids now resize with the app window.
+- Improved sign-in, notifications, deep links, payments, and overall reliability.

@@ -11,7 +11,7 @@
     <key>EXUpdatesEnableBsdiffPatchSupport</key>
     <true/>
     <key>EXUpdatesRuntimeVersion</key>
-    <string>1.2.12-build68</string>
+    <string>1.2.13-build69</string>
     <key>EXUpdatesURL</key>
     <string>https://u.expo.dev/2ad9695c-8e3c-4cf6-a32a-e7f091e69f1a</string>
   </dict>

@@ -1,0 +1,5 @@
+Improved support for more screens and new menus.
+- Better foldable, tablet, landscape, and split-screen layouts.
+- Customize access to guides, education, marine life, bookings, and membership.
+- Charts and discovery grids now resize with the app window.
+- Improved sign-in, notifications, deep links, payments, and reliability.

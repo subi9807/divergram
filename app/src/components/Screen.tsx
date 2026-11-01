@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { cn } from '../lib/utils';
 import { useResolvedTheme } from '../hooks/useResolvedTheme';
+import { getAdaptiveLayout } from '../utils/adaptiveLayout';
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -11,11 +12,14 @@ interface ScreenProps {
   safe?: boolean;
   tone?: 'gradient' | 'plain';
   style?: StyleProp<ViewStyle>;
+  fullBleed?: boolean;
 }
 
-export function Screen({ children, className, safe = true, tone = 'plain', style }: ScreenProps) {
+export function Screen({ children, className, safe = true, tone = 'plain', style, fullBleed = false }: ScreenProps) {
   const Container = safe ? SafeAreaView : View;
   const { isDark } = useResolvedTheme();
+  const { width, height } = useWindowDimensions();
+  const layout = getAdaptiveLayout(width, height);
 
   return (
     <Container style={[styles.root, isDark ? styles.rootDark : undefined, style]} className={cn('flex-1', className)}>
@@ -34,7 +38,14 @@ export function Screen({ children, className, safe = true, tone = 'plain', style
           <View pointerEvents="none" style={[styles.bottomOrb, isDark ? styles.bottomOrbDark : undefined]} />
         </>
       ) : null}
-      <View style={styles.content}>{children}</View>
+      <View
+        style={[
+          styles.content,
+          !fullBleed && layout.isLargeScreen ? { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' } : null,
+        ]}
+      >
+        {children}
+      </View>
     </Container>
   );
 }

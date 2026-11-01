@@ -635,7 +635,7 @@ export default function LocationScreen() {
   );
 
   return (
-    <Screen>
+    <Screen fullBleed>
       <PermissionGate
         permission="location"
         title={t('permissions.location.title')}
